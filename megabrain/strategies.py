@@ -1,0 +1,144 @@
+"""Chunking-strategy registry: maps a file extension to a chunker + an optional
+edge extractor, so adding a language or content type is a config entry rather
+than a branch in the indexer. Every strategy emits the same content-agnostic
+FileResult, so the embed/store/query/ask pipeline never changes.
+
+A strategy has three parts:
+  - exts:            extensions it claims
+  - chunk_file:      relpath, source -> FileResult   (the per-file chunker)
+  - build_edge_ctx:  whole-repo prepass for the graph (or None if no graph)
+  - extract_edges:   relpath, source, ctx -> [(dst, kind)] | None
+                     None means "this content type has no graph" (e.g. docs) —
+                     the indexer skips edge handling entirely for that file.
+
+Language strategies whose tree-sitter grammar isn't installed are dropped from
+the active registry (build_registry), so a new language is "config + pip install
+tree_sitter_<lang>": the entry is always here; it activates when the grammar is.
+"""
+
+from __future__ import annotations
+
+import importlib.util
+
+from .chunker import CastChunker, FileResult
+from .chunker_ts import GO_SPEC, RUBY_SPEC, TS_SPEC, LangSpec, TsChunker, TreeSitterChunker
+from .graph import extract_edges, python_package_index, ts_edges
+from .markdown import MarkdownChunker
+
+
+class PythonStrategy:
+    exts = (".py",)
+
+    def __init__(self, repo: str = ""):
+        self._chunker = CastChunker(repo=repo)
+
+    def chunk_file(self, relpath: str, source: str) -> FileResult:
+        return self._chunker.chunk_file(relpath, source)
+
+    def build_edge_ctx(self, sources: dict[str, str], repo_name: str):
+        pkg_prefixes = {repo_name.replace("-", "_")}
+        for rel in sources:
+            parts = rel.split("/")
+            if len(parts) >= 2 and parts[0] == "src":
+                pkg_prefixes.add(parts[1])
+        mod2file, unique_defs, qualdefs, trees = python_package_index(sources, pkg_prefixes)
+        return {"mod2file": mod2file, "unique_defs": unique_defs,
+                "qualdefs": qualdefs, "trees": trees, "pkg_prefixes": pkg_prefixes}
+
+    def extract_edges(self, relpath, source, ctx):
+        tree = ctx["trees"].get(relpath)
+        if tree is None:           # unparsed file: no edges (delete_file already cleared)
+            return None
+        return extract_edges(relpath, tree, ctx["mod2file"], ctx["unique_defs"],
+                             ctx["qualdefs"], ctx["pkg_prefixes"])
+
+
+class TsJsStrategy:
+    # TS grammar is a JS superset; .jsx routes to the tsx grammar in chunker_ts.
+    exts = (".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs")
+
+    def __init__(self, repo: str = ""):
+        self._chunker = TsChunker(repo=repo)
+
+    def chunk_file(self, relpath: str, source: str) -> FileResult:
+        return self._chunker.chunk_file(relpath, source)
+
+    def build_edge_ctx(self, sources: dict[str, str], repo_name: str):
+        return set(sources.keys())   # all repo files, for relative-import resolution
+
+    def extract_edges(self, relpath, source, ctx):
+        return ts_edges(relpath, source, ctx)
+
+
+class TreeSitterStrategy:
+    """Generic strategy for a tree-sitter LangSpec with no graph yet (Ruby, Go,
+    …). A language starts without an import resolver and retrieval still works;
+    an edge extractor can be added later without touching the indexer."""
+
+    def __init__(self, spec: LangSpec, exts: tuple[str, ...], repo: str = ""):
+        self.spec = spec
+        self.exts = exts
+        self._chunker = TreeSitterChunker(spec, repo=repo)
+
+    def chunk_file(self, relpath: str, source: str) -> FileResult:
+        return self._chunker.chunk_file(relpath, source)
+
+    def build_edge_ctx(self, sources: dict[str, str], repo_name: str):
+        return None
+
+    def extract_edges(self, relpath, source, ctx):
+        return None
+
+
+class MarkdownStrategy:
+    exts = (".md", ".markdown", ".mdx")
+
+    def __init__(self, repo: str = ""):
+        self._chunker = MarkdownChunker(repo=repo)
+
+    def chunk_file(self, relpath: str, source: str) -> FileResult:
+        return self._chunker.chunk_file(relpath, source)
+
+    def build_edge_ctx(self, sources: dict[str, str], repo_name: str):
+        return None
+
+    def extract_edges(self, relpath, source, ctx):
+        return None   # docs have no graph (markdown-link edges are a future option)
+
+
+# Language strategies gated on their grammar being importable. (spec, exts, module)
+_TREE_SITTER_LANGS = [
+    (RUBY_SPEC, (".rb",), "tree_sitter_ruby"),
+    (GO_SPEC, (".go",), "tree_sitter_go"),
+]
+
+
+def _grammar_available(module: str) -> bool:
+    return importlib.util.find_spec(module) is not None
+
+
+def build_registry(repo: str = "") -> list:
+    """Active strategies for this index. Always-on: Python, TS/JS, Markdown.
+    Optional languages are included only if their grammar is installed."""
+    reg = [PythonStrategy(repo), TsJsStrategy(repo), MarkdownStrategy(repo)]
+    for spec, exts, module in _TREE_SITTER_LANGS:
+        if _grammar_available(module):
+            reg.append(TreeSitterStrategy(spec, exts, repo))
+    return reg
+
+
+def strategy_for(registry: list, relpath: str):
+    """First strategy whose ext matches, or None (file is skipped)."""
+    dot = relpath.rfind(".")
+    if dot == -1:
+        return None
+    ext = relpath[dot:]
+    for s in registry:
+        if ext in s.exts:
+            return s
+    return None
+
+
+def all_exts(registry: list) -> tuple[str, ...]:
+    """Every extension the active registry can index — drives discover()."""
+    return tuple(e for s in registry for e in s.exts)
