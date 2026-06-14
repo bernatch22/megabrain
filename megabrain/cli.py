@@ -3,6 +3,7 @@
   megabrain index  [path]                      index/update a repo (incremental)
   megabrain query  [path] "task" [--compact]   one-shot code map
   megabrain get    [path] <file> [--symbol N]  pull code for navigation
+  megabrain serve-api [path] --port N          long-running JSON API (warm state)
   megabrain stats  [path]                      index stats
 """
 
@@ -38,6 +39,13 @@ def main(argv=None):
     p.add_argument("file")
     p.add_argument("--symbol")
 
+    p = sub.add_parser("serve-api")
+    p.add_argument("path", nargs="?", default=".")
+    p.add_argument("--port", type=int, default=2134)
+    p.add_argument("--host", default="127.0.0.1")
+    p.add_argument("--cors", help="allowed browser origin, e.g. https://docs.pinecall.io")
+    p.add_argument("--no-llm", action="store_true", help="disable the /ask endpoint")
+
     p = sub.add_parser("stats")
     p.add_argument("path", nargs="?", default=".")
 
@@ -62,6 +70,9 @@ def main(argv=None):
     elif a.cmd == "get":
         from .query import get_code
         print(get_code(root, a.file, a.symbol))
+    elif a.cmd == "serve-api":
+        from .serve import serve
+        serve(root, port=a.port, host=a.host, cors=a.cors, enable_llm=not a.no_llm)
     elif a.cmd == "stats":
         from .store import Store
         s = Store(root)

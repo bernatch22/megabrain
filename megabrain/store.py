@@ -45,11 +45,14 @@ CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT);
 
 
 class Store:
-    def __init__(self, repo_root: Path):
+    def __init__(self, repo_root: Path, check_same_thread: bool = True):
+        # check_same_thread=False lets a long-running server (serve.py) read the
+        # same connection from worker threads; the server serializes access with
+        # a lock, so this stays safe. Default True keeps CLI/index behaviour.
         self.root = Path(repo_root)
         d = self.root / ".megabrain"
         d.mkdir(exist_ok=True)
-        self.db = sqlite3.connect(d / "db.sqlite")
+        self.db = sqlite3.connect(d / "db.sqlite", check_same_thread=check_same_thread)
         self.db.executescript(SCHEMA)
 
     # ---- files / incremental

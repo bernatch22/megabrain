@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import re
 import time
+from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
@@ -47,12 +48,37 @@ def _ident_tokens(text: str) -> set[str]:
     return out
 
 
-def search(root: Path, query: str, rerank: bool = False) -> dict:
-    t0 = time.time()
-    store = Store(Path(root))
-    emb = PplxEmbedder()
+@dataclass
+class SearchState:
+    """Preloaded, reusable retrieval state for one repo. Build once with
+    load_state(); a long-running server (serve.py) keeps it warm so each query
+    skips the SQLite matrix load. CLI/MCP go through search(), which builds it
+    per call — identical results, just not cached."""
+    store: Store
+    emb: PplxEmbedder
+    metas: list
+    M: np.ndarray
+    fpaths: list
+    fskels: list
+    F: np.ndarray
+    repo: str
+
+
+def load_state(root: Path, check_same_thread: bool = True) -> SearchState:
+    """Load the per-repo retrieval state (chunk + file matrices) once. The
+    expensive part of a query — kept out of the hot path by serve.py."""
+    store = Store(Path(root), check_same_thread=check_same_thread)
     metas, M = store.load_matrix()
     fpaths, fskels, F = store.load_file_matrix()
+    repo = store.get_meta("repo_name") or Path(root).name
+    return SearchState(store, PplxEmbedder(), metas, M, fpaths, fskels, F, repo)
+
+
+def search_with_state(st: SearchState, query: str, rerank: bool = False) -> dict:
+    t0 = time.time()
+    store, emb = st.store, st.emb
+    metas, M = st.metas, st.M
+    fpaths, fskels, F = st.fpaths, st.fskels, st.F
     if not metas:
         raise RuntimeError("index is empty — run: megabrain index")
     qv = emb.embed([query])[0]
@@ -212,8 +238,14 @@ def search(root: Path, query: str, rerank: bool = False) -> dict:
             "symbols": [s for s in syms if s["kind"] in OUTLINE_KINDS][:12],
         })
     return {"query": query, "tier1": out_t1, "tier2": out_t2,
-            "repo": store.get_meta("repo_name") or Path(root).name,
+            "repo": st.repo,
             "ms": int((time.time() - t0) * 1000)}
+
+
+def search(root: Path, query: str, rerank: bool = False) -> dict:
+    """One-shot retrieval (CLI/MCP entry). Builds state then queries — identical
+    output to search_with_state(load_state(root), ...)."""
+    return search_with_state(load_state(Path(root)), query, rerank)
 
 
 def search_multi(roots: list[Path], query: str) -> dict:

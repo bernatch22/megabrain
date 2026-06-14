@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "megabrain"
+dynamic = ["version"]                       # single-sourced from megabrain/__init__.py
+description = "Local code-intelligence engine: one call returns all the code related to a question, explained with the real code spliced in."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Berna Castro", email = "bernacas@gmail.com" }]
+keywords = ["code-intelligence", "retrieval", "rag", "embeddings", "code-search",
+            "mcp", "ast", "tree-sitter", "developer-tools"]
+classifiers = [
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Documentation",
+]
+# Always-on languages (Python via stdlib ast; TS/JS via tree-sitter) + markdown,
+# retrieval, the MCP server and serve-api all run on this base. urllib (stdlib)
+# handles the Perplexity/Anthropic calls — no SDK dependency.
+dependencies = [
+    "numpy>=1.24",
+    "tree_sitter>=0.21",
+    "tree_sitter_typescript>=0.23",
+]
+
+[project.optional-dependencies]
+# Extra code languages — activate when their grammar is installed.
+languages = ["tree_sitter_ruby>=0.23", "tree_sitter_go>=0.23"]
+
+[project.scripts]
+megabrain = "megabrain.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/pinecall/megabrain"
+Repository = "https://github.com/pinecall/megabrain"
+
+[tool.setuptools]
+packages = ["megabrain"]
+
+[tool.setuptools.dynamic]
+version = { attr = "megabrain.__version__" }

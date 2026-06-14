@@ -34,7 +34,7 @@ kept out of this repo.
 
 ## Module map
 
-`chunker.py` Python cAST · `chunker_ts.py` generic `TreeSitterChunker` + `LangSpec` (TS/JS, Ruby, Go) · `markdown.py` no-LLM QMD-style doc chunker · `strategies.py` ext→strategy registry · `embeddings.py` pplx (int8, L2-norm) · `store.py` SQLite · `graph.py` import/call edges · `indexer.py` registry-driven incremental walk · `query.py` fusion + bundle + render · `issue.py` deterministic issue parsing (traceback grounding, variant ensemble) · `bm25.py` sparse entity lane · `rerank.py`/`rerank2.py` optional Haiku reorder · `ask.py` explanation with spliced code · `cli.py` · `mcp_server.py`.
+`chunker.py` Python cAST · `chunker_ts.py` generic `TreeSitterChunker` + `LangSpec` (TS/JS, Ruby, Go) · `markdown.py` no-LLM QMD-style doc chunker · `strategies.py` ext→strategy registry · `embeddings.py` pplx (int8, L2-norm) · `store.py` SQLite · `graph.py` import/call edges · `indexer.py` registry-driven incremental walk · `query.py` fusion + bundle + render (split into `load_state` / `search_with_state` so a server can keep the matrix warm) · `issue.py` deterministic issue parsing (traceback grounding, variant ensemble) · `bm25.py` sparse entity lane · `rerank.py`/`rerank2.py` optional Haiku reorder · `ask.py` explanation with spliced code · `serve.py` warm-state HTTP API (`serve-api`: `/search` `/docsearch` `/ask` `/get` `/index` `/health`) · `cli.py` · `mcp_server.py`.
 
 ## What's next
 
@@ -43,7 +43,12 @@ Priority 1 (chunking-strategy registry) is
 agnostic. Indexed today: `.py` · `.ts/.tsx/.js/.jsx/.mjs/.cjs` (TS grammar, JS-superset) ·
 Ruby `.rb` · Go `.go` (optional — `pip install tree_sitter_ruby tree_sitter_go`) ·
 markdown `.md/.markdown/.mdx` (no-LLM QMD-style scored chunking). Adding a language or
-content type is now a registry entry, not a branch in the indexer. Remaining is Priority 2
-(embedding-provider abstraction, `.tsx` arrow-component symbols, packaging, SWE-bench eval).
+content type is now a registry entry, not a branch in the indexer.
+
+**Packaging done**: published to PyPI (`pip install megabrain`, MIT) — `pyproject.toml`,
+console entry point, version single-sourced from `megabrain/__init__.py`. **serve-api done**:
+`serve.py` exposes warm-state retrieval over HTTP; it powers semantic search on
+docs.pinecall.io (a megabrain daemon behind nginx). Remaining Priority 2: embedding-provider
+abstraction, `.tsx` arrow-component symbols, SWE-bench eval.
 
 Keys: `PERPLEXITY_API_KEY` (required), `ANTHROPIC_API_KEY` (ask/--best only) — env or `~/.zshrc` fallback. Repo: github.com/pinecall/megabrain (branch `best-mode` = current stack).
