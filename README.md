@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/megabrain.png" alt="megabrain" width="180">
+  <img src="https://raw.githubusercontent.com/pinecall/megabrain/master/assets/megabrain.png" alt="megabrain" width="180">
 </p>
 
 <h1 align="center">megabrain</h1>
@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python 3.11+">
+  <img src="https://img.shields.io/badge/python-3.10+-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python 3.10+">
   <img src="https://img.shields.io/badge/retrieval-no%20LLM%20·%20~200ms-2ea44f?style=flat-square" alt="No LLM in the retrieval path">
   <img src="https://img.shields.io/badge/code-zero%20hallucination-6f42c1?style=flat-square" alt="Zero code hallucination">
   <img src="https://img.shields.io/badge/MCP-ready-000000?style=flat-square" alt="MCP ready">
@@ -26,14 +26,16 @@ nothing is hallucinated.
 
 ## Install
 
-No packaging step — runs straight from a clone:
+```bash
+pip install megabrain                 # core: Python · TS/JS · markdown
+pip install 'megabrain[languages]'    # + Ruby · Go
+```
+
+Or from a clone, for development:
 
 ```bash
-git clone https://github.com/pinecall/megabrain.git
-cd megabrain
-pip install numpy                                # core (Python indexing)
-pip install tree_sitter tree_sitter_typescript  # TS/JS (+ tree_sitter_ruby tree_sitter_go for Ruby/Go)
-alias megabrain='python3 -m megabrain.cli'       # optional: clean invocation
+git clone https://github.com/pinecall/megabrain.git && cd megabrain
+pip install -e .
 ```
 
 Keys are read from the environment (with a `~/.zshrc` fallback):
@@ -51,6 +53,7 @@ megabrain ask    ~/repo "how does auth work end to end"      # walkthrough + rea
 megabrain ask    ~/repo "how do I configure X" --docs        # explain the docs instead of code
 megabrain query  ~/repo "request retry logic"                # raw code map, no LLM (~200ms)
 megabrain get    ~/repo src/x.py --symbol Class.method       # one file or symbol
+megabrain serve-api ~/repo --port 2134                       # long-running JSON API (warm state)
 ```
 
 Indexes code (`.py` · `.ts` · `.tsx` · `.js` · `.jsx` · `.mjs` · `.cjs` · Ruby · Go) and
@@ -81,6 +84,26 @@ claude mcp add megabrain -- python3 -m megabrain.mcp_server
 Tools: `megabrain_ask` (primary), `megabrain_query`, `megabrain_get`, `megabrain_index`.
 The server auto-refreshes a stale index before answering, so results always match disk.
 
+## HTTP API
+
+`serve-api` keeps the index warm in memory and serves retrieval over HTTP (stdlib only —
+no framework). Embed it in any app, or front a static site with semantic search.
+
+```bash
+megabrain serve-api ~/repo --port 2134 [--host 0.0.0.0] [--cors https://site] [--no-llm]
+```
+
+| route | returns |
+|---|---|
+| `POST /search` `{query}` | raw bundle (`tier1` / `tier2`), same as `query` |
+| `GET /docsearch?q=` | doc-search hits — `{title, slug, snippet, context, score, group}` |
+| `POST /ask` `{question}` | LLM walkthrough (`{text, …}`) |
+| `GET /get?file=&symbol=` · `POST /index` · `GET /health` | one file/symbol · reindex · status |
+
+State loads once and reloads only when the index changes on disk, so each query skips the
+SQLite matrix load. Binds localhost by default (front it with a reverse proxy); `--cors`
+opts into a browser origin.
+
 ## Design
 
 Every choice below is backed by an internal golden set (30 verified queries):
@@ -100,7 +123,7 @@ with the trained CodeRankEmbed retriever.
 ## Project layout
 
 ```
-megabrain/   engine — chunkers, embeddings, SQLite store, graph, indexer, query, ask, cli, mcp_server
+megabrain/   engine — chunkers, embeddings, SQLite store, graph, indexer, query, ask, serve, cli, mcp_server
 evals/       golden.json (30 verified queries) + swebench harness
 tests/       engine + chunker gates
 ```
