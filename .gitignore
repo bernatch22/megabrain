@@ -25,3 +25,6 @@ evals/swebench/wt/
 evals/swebench/wt_best/
 evals/swebench/wt_ask/
 evals/swebench/out/
+
+# benchmarks / evals — kept local, never committed
+evals/
