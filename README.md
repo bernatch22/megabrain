@@ -28,7 +28,7 @@ nothing is hallucinated.
 
 ```bash
 pip install megabrain                 # core: Python · TS/JS · markdown
-pip install 'megabrain[languages]'    # + Ruby · Go
+pip install 'megabrain[languages]'    # + Ruby · Go · Rust
 ```
 
 Or from a clone, for development:
@@ -56,7 +56,7 @@ megabrain get    ~/repo src/x.py --symbol Class.method       # one file or symbo
 megabrain serve-api ~/repo --port 2134                       # long-running JSON API (warm state)
 ```
 
-Indexes code (`.py` · `.ts` · `.tsx` · `.js` · `.jsx` · `.mjs` · `.cjs` · Ruby · Go) and
+Indexes code (`.py` · `.ts` · `.tsx` · `.js` · `.jsx` · `.mjs` · `.cjs` · Ruby · Go · Rust) and
 markdown (`.md` · `.markdown` · `.mdx`) through a **strategy registry** — adding a language
 or content type is a config entry, not a branch in the indexer.
 

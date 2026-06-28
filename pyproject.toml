@@ -32,7 +32,7 @@ dependencies = [
 
 [project.optional-dependencies]
 # Extra code languages — activate when their grammar is installed.
-languages = ["tree_sitter_ruby>=0.23", "tree_sitter_go>=0.23"]
+languages = ["tree_sitter_ruby>=0.23", "tree_sitter_go>=0.23", "tree_sitter_rust>=0.23"]
 
 [project.scripts]
 megabrain = "megabrain.cli:main"

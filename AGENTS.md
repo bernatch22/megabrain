@@ -34,14 +34,14 @@ kept out of this repo.
 
 ## Module map
 
-`chunker.py` Python cAST · `chunker_ts.py` generic `TreeSitterChunker` + `LangSpec` (TS/JS, Ruby, Go) · `markdown.py` no-LLM QMD-style doc chunker · `strategies.py` ext→strategy registry · `embeddings.py` pplx (int8, L2-norm) · `store.py` SQLite · `graph.py` import/call edges · `indexer.py` registry-driven incremental walk · `query.py` fusion + bundle + render (split into `load_state` / `search_with_state` so a server can keep the matrix warm) · `issue.py` deterministic issue parsing (traceback grounding, variant ensemble) · `bm25.py` sparse entity lane · `rerank.py`/`rerank2.py` optional Haiku reorder · `ask.py` explanation with spliced code · `serve.py` warm-state HTTP API (`serve-api`: `/search` `/docsearch` `/ask` `/get` `/index` `/health`) · `cli.py` · `mcp_server.py`.
+`chunker.py` Python cAST · `chunker_ts.py` generic `TreeSitterChunker` + `LangSpec` (TS/JS, Ruby, Go, Rust) · `markdown.py` no-LLM QMD-style doc chunker · `strategies.py` ext→strategy registry · `embeddings.py` pplx (int8, L2-norm) · `store.py` SQLite · `graph.py` import/call edges · `indexer.py` registry-driven incremental walk · `query.py` fusion + bundle + render (split into `load_state` / `search_with_state` so a server can keep the matrix warm) · `issue.py` deterministic issue parsing (traceback grounding, variant ensemble) · `bm25.py` sparse entity lane · `rerank.py`/`rerank2.py` optional Haiku reorder · `ask.py` explanation with spliced code · `serve.py` warm-state HTTP API (`serve-api`: `/search` `/docsearch` `/ask` `/get` `/index` `/health`) · `cli.py` · `mcp_server.py`.
 
 ## What's next
 
 Priority 1 (chunking-strategy registry) is
 **done**: a `strategies.py` maps extension → chunk strategy, so the indexer is content-
 agnostic. Indexed today: `.py` · `.ts/.tsx/.js/.jsx/.mjs/.cjs` (TS grammar, JS-superset) ·
-Ruby `.rb` · Go `.go` (optional — `pip install tree_sitter_ruby tree_sitter_go`) ·
+Ruby `.rb` · Go `.go` · Rust `.rs` (optional — `pip install tree_sitter_ruby tree_sitter_go tree_sitter_rust`) ·
 markdown `.md/.markdown/.mdx` (no-LLM QMD-style scored chunking). Adding a language or
 content type is now a registry entry, not a branch in the indexer.
 

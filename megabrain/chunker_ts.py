@@ -39,6 +39,8 @@ class LangSpec:
     def_types: dict[str, str]             # node type -> chunk/symbol kind
     container_types: frozenset[str] = frozenset()  # types whose body holds nested defs (classes)
     name_field: str = "name"              # field carrying the declared name
+    extra_name_fields: tuple[str, ...] = ()  # fallback fields when `name` is absent
+    #   (e.g. Rust `impl Foo` has no `name`; its target is in the `type` field)
     name_via: dict[str, tuple[str, str]] = field(default_factory=dict)
     # node types whose name is nested: type -> (child_type, child_name_field)
     body_field: str = "body"
@@ -58,6 +60,11 @@ def _ruby_grammar(ext: str):
 def _go_grammar(ext: str):
     import tree_sitter_go
     return tree_sitter_go.language()
+
+
+def _rust_grammar(ext: str):
+    import tree_sitter_rust
+    return tree_sitter_rust.language()
 
 
 TS_SPEC = LangSpec(
@@ -112,6 +119,30 @@ GO_SPEC = LangSpec(
     },
 )
 
+RUST_SPEC = LangSpec(
+    name="rust",
+    grammar=_rust_grammar,
+    def_types={
+        "function_item": "function",
+        "function_signature_item": "function",   # trait method decls (no body)
+        "struct_item": "struct",
+        "enum_item": "enum",
+        "union_item": "union",
+        "trait_item": "trait",
+        "impl_item": "impl",
+        "mod_item": "module",
+        "type_item": "type",
+        "const_item": "const",
+        "static_item": "static",
+        "macro_definition": "macro",
+    },
+    # impl/trait/mod bodies hold nested fns -> recurse so methods become symbols.
+    container_types=frozenset({"impl_item", "trait_item", "mod_item"}),
+    # `impl Foo`/`impl Trait for Foo` carry no `name`; fall back to the `type`
+    # field (the implemented-on type). All other Rust defs resolve via `name`.
+    extra_name_fields=("type",),
+)
+
 
 _parsers: dict[tuple[str, str], Parser] = {}
 
@@ -144,6 +175,10 @@ class TreeSitterChunker:
         n = node.child_by_field_name(self.spec.name_field)
         if n is not None:
             return n.text.decode()
+        for fld in self.spec.extra_name_fields:
+            n = node.child_by_field_name(fld)
+            if n is not None:
+                return n.text.decode()
         via = self.spec.name_via.get(node.type)
         if via:
             child_type, fname = via
