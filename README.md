@@ -49,7 +49,7 @@ per role via env (defaults reproduce the validated stack exactly):
 
 ```bash
 export MEGABRAIN_EMBED_MODEL=perplexity/pplx-embed-v1-0.6b   # embeddings (default)
-export MEGABRAIN_ASK_MODEL=anthropic/claude-haiku-4.5        # ask / --best (default)
+export MEGABRAIN_ASK_MODEL=qwen/qwen3-coder                  # ask / --best (default; ~5x cheaper than haiku, on par)
 ```
 
 Embeddings can also point straight at a provider's own OpenAI-compatible API (e.g.

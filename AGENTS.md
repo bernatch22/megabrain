@@ -55,7 +55,8 @@ is selectable by env. Remaining Priority 2: `.tsx` arrow-component symbols, SWE-
 Provider: everything runs through **OpenRouter** (`providers.py`). Key `OPENROUTER_API_KEY`
 (required) — env or `~/.zshrc` fallback. Models overridable by env: `MEGABRAIN_EMBED_MODEL`
 (default `perplexity/pplx-embed-v1-0.6b`), `MEGABRAIN_ASK_MODEL` / `MEGABRAIN_RERANK_MODEL`
-(default `anthropic/claude-haiku-4.5`). Embeddings can target a non-OpenRouter OpenAI-compatible
+(default `qwen/qwen3-coder` — a code bakeoff found it on par with claude-haiku-4.5 on
+citation selection at ~5x lower cost, since retrieval already guarantees completeness). Embeddings can target a non-OpenRouter OpenAI-compatible
 endpoint via `MEGABRAIN_EMBED_BASE_URL` (+ `MEGABRAIN_EMBED_API_KEY`, or `PERPLEXITY_API_KEY`
 when pointed at `api.perplexity.ai`) — chat has no such override (Anthropic's native API isn't
 OpenAI-shaped). Dims are inferred per model (`MEGABRAIN_EMBED_DIMS` to assert). Changing the
