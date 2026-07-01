@@ -21,6 +21,9 @@ MODEL = providers.EMBED_MODEL
 # 0 = infer the dimension from the model's own output (any OpenRouter embedding
 # model works). Pin MEGABRAIN_EMBED_DIMS only to assert an expected width.
 DIMS = int(os.environ.get("MEGABRAIN_EMBED_DIMS", "0"))
+# Batch size per /embeddings request. Local servers (Ollama on a laptop) can
+# choke on 64 large code chunks in one request — drop to 4-8 there.
+BATCH = int(os.environ.get("MEGABRAIN_EMBED_BATCH", "64"))
 CACHE = Path.home() / ".megabrain/cache" / MODEL.replace("/", "_")
 
 
@@ -35,7 +38,7 @@ class Embedder:
         h = hashlib.sha1(f"{MODEL}\x00{text}".encode()).hexdigest()
         return CACHE / f"{h}.npy"
 
-    def embed(self, texts: list[str], batch_size: int = 64) -> np.ndarray:
+    def embed(self, texts: list[str], batch_size: int = BATCH) -> np.ndarray:
         out: list[np.ndarray | None] = [None] * len(texts)
         missing = []
         for i, t in enumerate(texts):

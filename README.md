@@ -63,7 +63,8 @@ export MEGABRAIN_EMBED_MODEL=pplx-embed-v1-0.6b   # uses PERPLEXITY_API_KEY
 
 # hybrid: local embeddings (Ollama) + OpenRouter chat — private index, cheap ask:
 export MEGABRAIN_EMBED_BASE_URL=http://localhost:11434/v1
-export MEGABRAIN_EMBED_MODEL=embeddinggemma       # 300M, runs on any laptop
+export MEGABRAIN_EMBED_MODEL=embeddinggemma       # 300M — needs a machine with RAM headroom
+export MEGABRAIN_EMBED_BATCH=8                    # smaller requests for local servers
 
 # fully local (decent GPU, ~24GB — see evals/LOCAL_MODELS.md):
 export MEGABRAIN_CHAT_BASE_URL=http://localhost:11434/v1
