@@ -86,7 +86,7 @@ A three-stage pipeline. **Only `ask` calls an LLM — and only to narrate.**
 |---|---|
 | **index** | cAST chunk → OpenRouter embed (`pplx-embed-v1-0.6b`, int8, L2-normalized) → SQLite. Incremental by `sha256`, no watcher. |
 | **query** | No-LLM retrieval (~200ms): dense-chunk + file-skeleton fusion, with import/call-graph candidates. Returns a map — **CORE** (full code of the top files) + **RELATED** (every connected file with its best chunk). |
-| **ask** | One streamed OpenRouter chat call (Haiku by default) writes the walkthrough and cites code as `[[k]]`; the engine **replaces each citation with the verbatim block** (real file, real line numbers). Non-cited related files are listed at the end. Fail-open: any API error falls back to the full `query` bundle. |
+| **ask** | One streamed OpenRouter chat call (qwen3-coder by default) writes the walkthrough and cites code as `[[k]]`; the engine **replaces each citation with the verbatim block** (real file, real line numbers). Non-cited related files are listed at the end. Fail-open: any API error falls back to the full `query` bundle. |
 
 Because the model only emits citations and the engine splices code from disk, **code cannot
 be hallucinated or rewritten.**
