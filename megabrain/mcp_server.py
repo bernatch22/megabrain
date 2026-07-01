@@ -36,8 +36,10 @@ TOOLS = [
         "inputSchema": {
             "type": "object",
             "properties": {
-                "repo_path": {"type": "string", "description": "absolute path to the indexed repo root"},
+                "repo_path": {"type": "string", "description": "path to the indexed repo root, OR a sub-path inside it (e.g. ~/repo/src/dispatch) to scope the walkthrough to that folder — the repo root is auto-detected from .megabrain"},
                 "question": {"type": "string", "description": "how/where/why question, natural language"},
+                "subpath": {"type": "string",
+                            "description": "optional repo-relative sub-path (e.g. src/dispatch) to scope retrieval to files under it; leave empty for the whole repo"},
                 "docs": {"type": "boolean",
                          "description": "explain documentation (markdown) only, instead of code (default false)"},
             },
@@ -55,8 +57,10 @@ TOOLS = [
         "inputSchema": {
             "type": "object",
             "properties": {
-                "repo_path": {"type": "string", "description": "absolute path to the indexed repo root"},
+                "repo_path": {"type": "string", "description": "path to the indexed repo root, OR a sub-path inside it to scope the bundle to that folder — the repo root is auto-detected from .megabrain"},
                 "task": {"type": "string", "description": "feature/question, natural language"},
+                "subpath": {"type": "string",
+                            "description": "optional repo-relative sub-path (e.g. src/dispatch) to scope retrieval to files under it; leave empty for the whole repo"},
                 "compact": {"type": "boolean", "description": "signatures only, no code bodies"},
             },
             "required": ["repo_path", "task"],
@@ -100,21 +104,43 @@ def _maybe_reindex(root: Path):
         index_repo(root, quiet=True)
 
 
+def _scope(args: dict) -> tuple[Path, str | None]:
+    """Resolve repo_path (+ optional subpath) to (repo_root, path_filter) for
+    PATH-SCOPE. repo_path may itself be a sub-path inside an indexed repo; an
+    explicit `subpath` arg is appended to it. path_filter is None at the root."""
+    from .store import resolve_root
+    p = Path(args["repo_path"]).expanduser()
+    sub = (args.get("subpath") or "").strip().strip("/")
+    if sub:
+        p = p / sub
+    root, subpath = resolve_root(p)
+    return root, (subpath or None)
+
+
 def call_tool(name: str, args: dict) -> str:
-    root = Path(args["repo_path"]).expanduser().resolve()
     if name == "megabrain_query":
         from .query import render, search
+        root, pf = _scope(args)
         _maybe_reindex(root)
-        return render(search(root, args["task"]), compact=bool(args.get("compact")))
+        return render(search(root, args["task"], path_filter=pf),
+                      compact=bool(args.get("compact")))
     if name == "megabrain_ask":
         from .ask import ask, render_ask
+        root, pf = _scope(args)
         _maybe_reindex(root)
-        return render_ask(ask(root, args["question"], docs_only=bool(args.get("docs"))))
+        return render_ask(ask(root, args["question"],
+                              docs_only=bool(args.get("docs")), path_filter=pf))
     if name == "megabrain_get":
         from .query import get_code
-        return get_code(root, args["file"], args.get("symbol"))
+        from .store import resolve_root
+        root, sub = resolve_root(Path(args["repo_path"]).expanduser())
+        rel = args["file"]
+        if sub and not (root / rel).exists() and (root / sub / rel).exists():
+            rel = (Path(sub) / rel).as_posix()
+        return get_code(root, rel, args.get("symbol"))
     if name == "megabrain_index":
         from .indexer import index_repo
+        root = Path(args["repo_path"]).expanduser().resolve()
         return json.dumps(index_repo(root, quiet=True))
     raise ValueError(f"unknown tool {name}")
 

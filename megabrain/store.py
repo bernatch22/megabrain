@@ -13,6 +13,28 @@ from pathlib import Path
 
 import numpy as np
 
+def resolve_root(path: Path) -> tuple[Path, str]:
+    """Resolve a filesystem path to (repo_root, subpath).
+
+    repo_root = the nearest ancestor (including `path` itself) that contains
+    `.megabrain/db.sqlite`. subpath = `path` relative to that root as a POSIX
+    string, or "" when `path` IS the root. Raises ValueError if no
+    `.megabrain/db.sqlite` is found walking up.
+
+    Enables PATH-SCOPE: `megabrain ask ~/repo/src/sub "…"` anchors the repo at
+    ~/repo (where the index lives) and returns subpath "src/sub" to filter
+    retrieval to files under it.
+    """
+    p = Path(path).expanduser().resolve()
+    for anc in (p, *p.parents):
+        if (anc / ".megabrain" / "db.sqlite").exists():
+            rel = p.relative_to(anc).as_posix()
+            return anc, ("" if rel == "." else rel)
+    raise ValueError(
+        f"no megabrain index found at or above {p} — run `megabrain index` "
+        f"on the repo root (looked for .megabrain/db.sqlite up the tree)")
+
+
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS files (
     path TEXT PRIMARY KEY,
