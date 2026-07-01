@@ -2,9 +2,15 @@
 
   megabrain index  [path]                      index/update a repo (incremental)
   megabrain query  [path] "task" [--compact]   one-shot code map
+  megabrain ask    [path] "question"           explained walkthrough
   megabrain get    [path] <file> [--symbol N]  pull code for navigation
   megabrain serve-api [path] --port N          long-running JSON API (warm state)
   megabrain stats  [path]                      index stats
+
+PATH-SCOPE: for query/ask/get, `path` may be the repo root OR a sub-path inside
+it (e.g. ~/repo/src/dispatch). megabrain auto-detects the repo root (the nearest
+ancestor with .megabrain/db.sqlite) and scopes retrieval to files under the
+sub-path. The repo root itself behaves exactly as before (no filter).
 """
 
 import argparse
@@ -52,26 +58,44 @@ def main(argv=None):
     p.add_argument("path", nargs="?", default=".")
 
     a = ap.parse_args(argv)
-    roots = [Path(p).resolve() for p in a.path.split(",")]
-    root = roots[0]
+    # index/serve-api/stats take repo roots verbatim (index may have no db yet).
+    # query/ask/get support PATH-SCOPE: each comma-separated token may be a repo
+    # root OR a sub-path inside one — resolve_root() finds the .megabrain root and
+    # the sub-path used to scope retrieval to files under it.
+    raw = [Path(p).resolve() for p in a.path.split(",")]
+    root = raw[0]
 
     if a.cmd == "index":
         from .indexer import index_repo
-        for r in roots:
+        for r in raw:
             index_repo(r, force=a.force)
     elif a.cmd == "query":
         import json as _json
 
-        from .query import render, search_multi
-        res = search_multi(roots, a.task) if len(roots) > 1 else __import__("megabrain.query", fromlist=["search"]).search(roots[0], a.task, rerank=a.best)
+        from .query import render, search, search_multi
+        from .store import resolve_root
+        scoped = [resolve_root(p) for p in raw]           # [(root, subpath), …]
+        roots = [r for r, _ in scoped]
+        pfs = [sp or None for _, sp in scoped]
+        res = (search_multi(roots, a.task, path_filters=pfs) if len(roots) > 1
+               else search(roots[0], a.task, rerank=a.best, path_filter=pfs[0]))
         print(_json.dumps(res, indent=1) if a.json else render(res, compact=a.compact))
     elif a.cmd == "ask":
         from .ask import stream_ask
-        stream_ask(root, a.question, rerank=a.best, show_map=not a.no_map,
-                   docs_only=a.docs)
+        from .store import resolve_root
+        r0, sp = resolve_root(root)
+        stream_ask(r0, a.question, rerank=a.best, show_map=not a.no_map,
+                   docs_only=a.docs, path_filter=sp or None)
     elif a.cmd == "get":
         from .query import get_code
-        print(get_code(root, a.file, a.symbol))
+        from .store import resolve_root
+        r0, sp = resolve_root(root)
+        # a bare file arg under a sub-path is joined onto the sub-path so
+        # `megabrain get ~/repo/src dispatch.ts` finds src/dispatch.ts.
+        rel = a.file
+        if sp and not (Path(r0) / rel).exists() and (Path(r0) / sp / rel).exists():
+            rel = (Path(sp) / rel).as_posix()
+        print(get_code(r0, rel, a.symbol))
     elif a.cmd == "serve-api":
         from .serve import serve
         serve(root, port=a.port, host=a.host, cors=a.cors, enable_llm=not a.no_llm)

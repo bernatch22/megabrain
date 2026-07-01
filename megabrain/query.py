@@ -38,6 +38,30 @@ OUTLINE_KINDS = ("class", "function", "async_function", "method", "async_method"
                  "module", "heading")
 
 
+def _under_path(relpath: str, path_filter: str) -> bool:
+    """True when `relpath` is the filter file itself or lives under the filter
+    directory (directory-boundary aware, so `src/dispatch` never matches
+    `src/dispatcher.ts`). Empty filter matches everything."""
+    if not path_filter:
+        return True
+    pf = path_filter.rstrip("/")
+    return relpath == pf or relpath.startswith(pf + "/")
+
+
+def _apply_path_filter(metas: list, M: np.ndarray, path_filter: str | None):
+    """Restrict the candidate chunk set to files under `path_filter`. Applied at
+    the START of scoring so the ENTIRE bundle (CORE, RELATED, graph neighbors)
+    stays within the sub-path. Fail-open: if the filter matches nothing, return
+    the unfiltered set unchanged (a bad/stale subpath won't silently empty the
+    bundle). Returns (metas, M) — untouched when no filter."""
+    if not path_filter:
+        return metas, M
+    idx = [i for i, m in enumerate(metas) if _under_path(m["file"], path_filter)]
+    if not idx:
+        return metas, M
+    return [metas[i] for i in idx], M[idx]
+
+
 def _ident_tokens(text: str) -> set[str]:
     """Identifier-aware tokens: split camelCase/snake_case, len>=4 to avoid noise."""
     out = set()
@@ -75,13 +99,17 @@ def load_state(root: Path, check_same_thread: bool = True) -> SearchState:
     return SearchState(store, Embedder(), metas, M, fpaths, fskels, F, repo)
 
 
-def search_with_state(st: SearchState, query: str, rerank: bool = False) -> dict:
+def search_with_state(st: SearchState, query: str, rerank: bool = False,
+                      path_filter: str | None = None) -> dict:
     t0 = time.time()
     store, emb = st.store, st.emb
     metas, M = st.metas, st.M
     fpaths, fskels, F = st.fpaths, st.fskels, st.F
     if not metas:
         raise RuntimeError("index is empty — run: megabrain index")
+    # PATH-SCOPE: restrict candidates to files under the sub-path BEFORE scoring,
+    # so CORE/RELATED/graph-neighbors all stay within it. No filter -> unchanged.
+    metas, M = _apply_path_filter(metas, M, path_filter)
     qv = emb.embed([query])[0]
 
     dense = (M @ qv + 1) / 2
@@ -243,17 +271,22 @@ def search_with_state(st: SearchState, query: str, rerank: bool = False) -> dict
             "ms": int((time.time() - t0) * 1000)}
 
 
-def search(root: Path, query: str, rerank: bool = False) -> dict:
+def search(root: Path, query: str, rerank: bool = False,
+           path_filter: str | None = None) -> dict:
     """One-shot retrieval (CLI/MCP entry). Builds state then queries — identical
-    output to search_with_state(load_state(root), ...)."""
-    return search_with_state(load_state(Path(root)), query, rerank)
+    output to search_with_state(load_state(root), ...). `path_filter` (a POSIX
+    subpath relative to root) scopes retrieval to files under it (PATH-SCOPE)."""
+    return search_with_state(load_state(Path(root)), query, rerank, path_filter)
 
 
-def search_multi(roots: list[Path], query: str) -> dict:
+def search_multi(roots: list[Path], query: str,
+                 path_filters: list[str | None] | None = None) -> dict:
     """Search several repos, merge by score (same embedder -> comparable).
-    Files are prefixed repo-name/path. Tier1 capped at TIER1_MAX+2 across repos."""
+    Files are prefixed repo-name/path. Tier1 capped at TIER1_MAX+2 across repos.
+    `path_filters` (one per root, or None) applies PATH-SCOPE per repo."""
     t0 = time.time()
-    results = [search(r, query) for r in roots]
+    pfs = path_filters or [None] * len(roots)
+    results = [search(r, query, path_filter=pf) for r, pf in zip(roots, pfs)]
     if len(results) == 1:
         return results[0]
     t1, t2 = [], []

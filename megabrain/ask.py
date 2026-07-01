@@ -140,9 +140,9 @@ def _code_block(c: dict, lo: int | None, hi: int | None, seen: set,
 
 
 def ask(root: Path, question: str, rerank: bool = False,
-        docs_only: bool = False) -> dict:
+        docs_only: bool = False, path_filter: str | None = None) -> dict:
     t0 = time.time()
-    res = search(Path(root), question, rerank=rerank)
+    res = search(Path(root), question, rerank=rerank, path_filter=path_filter)
     retrieval_ms = int((time.time() - t0) * 1000)
     cands = _candidates(res, docs_only)
     key = providers.find_key(required=False)
@@ -207,7 +207,8 @@ def render_ask(out: dict) -> str:
 
 
 def stream_ask(root: Path, question: str, out=None, rerank: bool = False,
-               show_map: bool = True, docs_only: bool = False) -> None:
+               show_map: bool = True, docs_only: bool = False,
+               path_filter: str | None = None) -> None:
     """Live-streaming `ask` for the terminal: prose appears token by token and each
     [[k]]/[[k:lo-hi]] citation is spliced into its real code block as soon as its line
     completes (citations are emitted on their own line). Same grounding + fail-open as
@@ -220,7 +221,7 @@ def stream_ask(root: Path, question: str, out=None, rerank: bool = False,
         out.flush()
 
     t0 = time.time()
-    res = search(Path(root), question, rerank=rerank)
+    res = search(Path(root), question, rerank=rerank, path_filter=path_filter)
     retrieval_ms = int((time.time() - t0) * 1000)
     cands = _candidates(res, docs_only)
     key = providers.find_key(required=False)
