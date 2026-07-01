@@ -59,7 +59,8 @@ Provider: everything runs through **OpenRouter** (`providers.py`). Key `OPENROUT
 citation selection at ~5x lower cost, since retrieval already guarantees completeness). Embeddings AND chat can each target a non-OpenRouter OpenAI-compatible
 endpoint via `MEGABRAIN_EMBED_BASE_URL` / `MEGABRAIN_CHAT_BASE_URL` (+ `_API_KEY` variants;
 `PERPLEXITY_API_KEY` auto-picked for `api.perplexity.ai`; localhost endpoints — Ollama,
-LM Studio, vLLM — need no key). Local/hybrid stacks measured in `evals/LOCAL_MODELS.md`. Dims are inferred per model (`MEGABRAIN_EMBED_DIMS` to assert). Changing the
+LM Studio, vLLM — need no key; `MEGABRAIN_EMBED_BATCH` shrinks request size for local
+servers). Local/hybrid stacks measured in `evals/LOCAL_MODELS.md`. Dims are inferred per model (`MEGABRAIN_EMBED_DIMS` to assert). Changing the
 embed model auto-triggers a full re-embed on next `index` (or `index --force`). Repo:
 github.com/pinecall/megabrain.
 
