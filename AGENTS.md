@@ -56,10 +56,10 @@ Provider: everything runs through **OpenRouter** (`providers.py`). Key `OPENROUT
 (required) — env or `~/.zshrc` fallback. Models overridable by env: `MEGABRAIN_EMBED_MODEL`
 (default `perplexity/pplx-embed-v1-0.6b`), `MEGABRAIN_ASK_MODEL` / `MEGABRAIN_RERANK_MODEL`
 (default `qwen/qwen3-coder` — a code bakeoff found it on par with claude-haiku-4.5 on
-citation selection at ~5x lower cost, since retrieval already guarantees completeness). Embeddings can target a non-OpenRouter OpenAI-compatible
-endpoint via `MEGABRAIN_EMBED_BASE_URL` (+ `MEGABRAIN_EMBED_API_KEY`, or `PERPLEXITY_API_KEY`
-when pointed at `api.perplexity.ai`) — chat has no such override (Anthropic's native API isn't
-OpenAI-shaped). Dims are inferred per model (`MEGABRAIN_EMBED_DIMS` to assert). Changing the
+citation selection at ~5x lower cost, since retrieval already guarantees completeness). Embeddings AND chat can each target a non-OpenRouter OpenAI-compatible
+endpoint via `MEGABRAIN_EMBED_BASE_URL` / `MEGABRAIN_CHAT_BASE_URL` (+ `_API_KEY` variants;
+`PERPLEXITY_API_KEY` auto-picked for `api.perplexity.ai`; localhost endpoints — Ollama,
+LM Studio, vLLM — need no key). Local/hybrid stacks measured in `evals/LOCAL_MODELS.md`. Dims are inferred per model (`MEGABRAIN_EMBED_DIMS` to assert). Changing the
 embed model auto-triggers a full re-embed on next `index` (or `index --force`). Repo:
 github.com/pinecall/megabrain.
 

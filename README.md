@@ -52,12 +52,22 @@ export MEGABRAIN_EMBED_MODEL=perplexity/pplx-embed-v1-0.6b   # embeddings (defau
 export MEGABRAIN_ASK_MODEL=qwen/qwen3-coder                  # ask / --best (default; ~5x cheaper than haiku, on par)
 ```
 
-Embeddings can also point straight at a provider's own OpenAI-compatible API (e.g.
-Perplexity native) instead of OpenRouter — handy to A/B a provider:
+Embeddings and chat can each point at ANY OpenAI-compatible endpoint instead of
+OpenRouter — a provider's native API, or a **local server** (Ollama / LM Studio / vLLM;
+localhost needs no API key):
 
 ```bash
+# native provider (A/B testing):
 export MEGABRAIN_EMBED_BASE_URL=https://api.perplexity.ai/v1
 export MEGABRAIN_EMBED_MODEL=pplx-embed-v1-0.6b   # uses PERPLEXITY_API_KEY
+
+# hybrid: local embeddings (Ollama) + OpenRouter chat — private index, cheap ask:
+export MEGABRAIN_EMBED_BASE_URL=http://localhost:11434/v1
+export MEGABRAIN_EMBED_MODEL=embeddinggemma       # 300M, runs on any laptop
+
+# fully local (decent GPU, ~24GB — see evals/LOCAL_MODELS.md):
+export MEGABRAIN_CHAT_BASE_URL=http://localhost:11434/v1
+export MEGABRAIN_ASK_MODEL=qwen3-coder:30b        # 30B MoE via Ollama
 ```
 
 Re-index after any embed-model change — megabrain detects it and re-embeds automatically

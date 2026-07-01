@@ -17,13 +17,13 @@ MODEL = providers.RERANK_MODEL
 
 def _key() -> str | None:
     """Back-compat shim: single OpenRouter key (env or ~/.zshrc)."""
-    return providers.find_key(required=False)
+    return providers.find_chat_key(required=False)
 
 
 def haiku_order(query: str, candidates: list[dict]) -> list[int]:
     """candidates: [{file, evidence}] -> permutation of indices (fail-open: identity)."""
     ident = list(range(len(candidates)))
-    key = providers.find_key(required=False)
+    key = providers.find_chat_key(required=False)
     if not key or len(candidates) < 2:
         return ident
     lines = [f"[{i}] {c['file']}\n    {c['evidence'][:400]}" for i, c in enumerate(candidates)]

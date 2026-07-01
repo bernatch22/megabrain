@@ -48,7 +48,7 @@ def haiku_order2(query: str, candidates: list[dict], votes: int = 3) -> list[int
     """candidates: [{file, code}] -> permutation (identity on failure)."""
     n = len(candidates)
     ident = list(range(n))
-    key = providers.find_key(required=False)
+    key = providers.find_chat_key(required=False)
     if not key or n < 2:
         return ident
     lines = []
