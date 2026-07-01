@@ -1,20 +1,19 @@
 """Listwise rerank v2 — code evidence + parallel majority vote.
 
 vs v1: candidates carry actual code (best chunk, trimmed), pool is deeper,
-and N parallel Haiku votes are merged by mean rank (LocAgent-style MRR
-merge). Still permute-only: recall untouched. Fail-open everywhere.
+and N parallel votes are merged by mean rank (LocAgent-style MRR merge).
+Still permute-only: recall untouched. Fail-open everywhere.
 """
 
 from __future__ import annotations
 
 import json
 import re
-import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
-from .rerank import _key
+from . import providers
 
-MODEL = "claude-haiku-4-5"
+MODEL = providers.RERANK_MODEL
 
 
 def _one_vote(key: str, query: str, lines: list[str], n: int) -> list[int] | None:
@@ -33,16 +32,9 @@ Rules:
 - Include EVERY index exactly once, best first.
 
 Reply ONLY a JSON array of all {n} indices, e.g. [2,0,5,...]"""
-    body = {"model": MODEL, "max_tokens": 220, "temperature": 0,
-            "messages": [{"role": "user", "content": prompt}]}
-    req = urllib.request.Request(
-        "https://api.anthropic.com/v1/messages", data=json.dumps(body).encode(),
-        headers={"x-api-key": key, "anthropic-version": "2023-06-01",
-                 "content-type": "application/json"})
     try:
-        with urllib.request.urlopen(req, timeout=45) as res:
-            d = json.loads(res.read())
-        m = re.search(r"\[[\d,\s]*\]", d["content"][0]["text"])
+        text = providers.chat_text(MODEL, prompt, max_tokens=220, key=key, timeout=45)
+        m = re.search(r"\[[\d,\s]*\]", text)
         if not m:
             return None
         order = [i for i in json.loads(m.group(0)) if isinstance(i, int) and 0 <= i < n]
@@ -56,7 +48,7 @@ def haiku_order2(query: str, candidates: list[dict], votes: int = 3) -> list[int
     """candidates: [{file, code}] -> permutation (identity on failure)."""
     n = len(candidates)
     ident = list(range(n))
-    key = _key()
+    key = providers.find_key(required=False)
     if not key or n < 2:
         return ident
     lines = []

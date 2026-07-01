@@ -38,12 +38,30 @@ git clone https://github.com/pinecall/megabrain.git && cd megabrain
 pip install -e .
 ```
 
-Keys are read from the environment (with a `~/.zshrc` fallback):
+One key, read from the environment (with a `~/.zshrc` fallback):
 
 ```bash
-export PERPLEXITY_API_KEY=...   # required — embeddings
-export ANTHROPIC_API_KEY=...    # only for `ask` and `--best`
+export OPENROUTER_API_KEY=...   # required — embeddings + ask/--best, all via OpenRouter
 ```
+
+Everything runs through OpenRouter's OpenAI-compatible API, so any model works — pick
+per role via env (defaults reproduce the validated stack exactly):
+
+```bash
+export MEGABRAIN_EMBED_MODEL=perplexity/pplx-embed-v1-0.6b   # embeddings (default)
+export MEGABRAIN_ASK_MODEL=anthropic/claude-haiku-4.5        # ask / --best (default)
+```
+
+Embeddings can also point straight at a provider's own OpenAI-compatible API (e.g.
+Perplexity native) instead of OpenRouter — handy to A/B a provider:
+
+```bash
+export MEGABRAIN_EMBED_BASE_URL=https://api.perplexity.ai/v1
+export MEGABRAIN_EMBED_MODEL=pplx-embed-v1-0.6b   # uses PERPLEXITY_API_KEY
+```
+
+Re-index after any embed-model change — megabrain detects it and re-embeds automatically
+(or force it: `megabrain index <repo> --force`).
 
 ## Usage
 
@@ -66,9 +84,9 @@ A three-stage pipeline. **Only `ask` calls an LLM — and only to narrate.**
 
 | stage | what it does |
 |---|---|
-| **index** | cAST chunk → Perplexity embed (int8, L2-normalized) → SQLite. Incremental by `sha256`, no watcher. |
+| **index** | cAST chunk → OpenRouter embed (`pplx-embed-v1-0.6b`, int8, L2-normalized) → SQLite. Incremental by `sha256`, no watcher. |
 | **query** | No-LLM retrieval (~200ms): dense-chunk + file-skeleton fusion, with import/call-graph candidates. Returns a map — **CORE** (full code of the top files) + **RELATED** (every connected file with its best chunk). |
-| **ask** | One streamed Haiku call writes the walkthrough and cites code as `[[k]]`; the engine **replaces each citation with the verbatim block** (real file, real line numbers). Non-cited related files are listed at the end. Fail-open: any API error falls back to the full `query` bundle. |
+| **ask** | One streamed OpenRouter chat call (Haiku by default) writes the walkthrough and cites code as `[[k]]`; the engine **replaces each citation with the verbatim block** (real file, real line numbers). Non-cited related files are listed at the end. Fail-open: any API error falls back to the full `query` bundle. |
 
 Because the model only emits citations and the engine splices code from disk, **code cannot
 be hallucinated or rewritten.**
@@ -111,7 +129,7 @@ Every choice below is backed by an internal golden set (30 verified queries):
 | decision | evidence |
 |---|---|
 | cAST chunking (4K nws chars, breadcrumbs, partition-guaranteed) | unit-tested; every line lands in exactly one chunk — no gaps, no overlaps |
-| `pplx-embed-v1` (1024-d, int8 wire, **L2-normalized**) | beats `openai-3-large` on code; ~$0.0016/repo |
+| `pplx-embed-v1` via OpenRouter (1024-d, int8 wire, **L2-normalized**) | beats `openai-3-large` on code; ~$0.0016/repo |
 | dense chunk + 0.5 × file-skeleton score | dual-granularity; precision up, no downside |
 | graph (import + call edges) for candidates only | PageRank-as-ranking **rejected** by data (Acc@1 0.91 → 0.73) |
 | **no LLM in the retrieval path** | every LLM *prune* variant cost completeness; `ask` explains, it never prunes |

@@ -9,15 +9,13 @@ disk. Streamed, ~1-3s. Fail-open: no citations / API error -> full bundle.
 
 from __future__ import annotations
 
-import json
 import re
 import sys
 import time
-import urllib.request
 from pathlib import Path
 
+from . import providers
 from .query import lang_of, render, search
-from .rerank import _key
 from .strategies import MarkdownStrategy
 
 # ask is a CODE walkthrough: docs (markdown) are excluded from its candidates so a
@@ -25,7 +23,7 @@ from .strategies import MarkdownStrategy
 # walkthrough. Docs stay retrievable via `query` regardless.
 DOC_EXTS = MarkdownStrategy.exts
 
-MODEL = "claude-haiku-4-5"
+MODEL = providers.ASK_MODEL
 MAX_CTX_CHARS = 200_000  # ~50K tokens of candidate code; Haiku window is 200K
 # double-bracket so the model can still mention [n] in prose without collision.
 # Tolerate an "L" prefix and stray spaces on the line range: the chunk headers in
@@ -67,7 +65,7 @@ _RULES = """- NEVER paste or quote code. Cite it with DOUBLE brackets: [[3]] (wh
 
 
 def _build_body(question: str, cands: list[dict]) -> dict:
-    """Anthropic request body: the cite-only walkthrough prompt over numbered chunks."""
+    """Chat request body (OpenAI schema): the cite-only walkthrough prompt over numbered chunks."""
     blocks, used = [], 0
     for i, c in enumerate(cands):
         head = f'[{i}] {c["file"]} L{c["start_line"]}-{c["end_line"]}' + \
@@ -92,68 +90,13 @@ RETRIEVED CHUNKS:
 
 
 def _explain_stream(question: str, cands: list[dict], key: str) -> str:
-    """ONE streamed Haiku call -> explanation text with [[k]]/[[k:lo-hi]] citations."""
-    text, stop = _stream_with_retry(_build_body(question, cands), key)
-    if stop == "max_tokens":
+    """ONE streamed chat call -> explanation text with [[k]]/[[k:lo-hi]] citations."""
+    text, stop = providers.stream_chat(_build_body(question, cands), key)
+    if stop == "length":
         cut = max(text.rfind("\n\n"), text.rfind(". "))
         if cut > 0:
             text = text[:cut + 1].rstrip() + "\n\n_(walkthrough truncated — ask a narrower question for the rest)_"
     return text
-
-
-def _stream_with_retry(body: dict, key: str, retries: int = 4,
-                       on_delta=None) -> tuple[str, str]:
-    """Streamed Anthropic call with backoff on 429/5xx/overloaded. Returns (text, stop).
-    If on_delta is given it's called with each text delta (live rendering); once any
-    delta has been emitted we stop retrying, so the terminal never sees duplicate text."""
-    import time as _t
-    last = None
-    emitted = False
-    for attempt in range(retries):
-        req = urllib.request.Request(
-            "https://api.anthropic.com/v1/messages", data=json.dumps(body).encode(),
-            headers={"x-api-key": key, "anthropic-version": "2023-06-01",
-                     "content-type": "application/json"})
-        text, stop = "", ""
-        try:
-            with urllib.request.urlopen(req, timeout=90) as r:
-                for raw in r:
-                    line = raw.decode("utf-8", "replace").strip()
-                    if not line.startswith("data: "):
-                        continue
-                    try:
-                        ev = json.loads(line[6:])
-                    except json.JSONDecodeError:
-                        continue
-                    t = ev.get("type")
-                    if t == "content_block_delta":
-                        d = ev["delta"].get("text", "")
-                        text += d
-                        if d and on_delta is not None:
-                            on_delta(d)
-                            emitted = True
-                    elif t == "message_delta":
-                        stop = ev.get("delta", {}).get("stop_reason") or stop
-                    elif t == "error":  # mid-stream overloaded_error etc.
-                        raise urllib.error.HTTPError(req.full_url, 529, "stream error", None, None)
-            return text, stop
-        except urllib.error.HTTPError as e:
-            last = e
-            if emitted:  # already streamed live: a retry would double-print
-                raise
-            if e.code in (429, 500, 502, 503, 529) and attempt < retries - 1:
-                _t.sleep(2 ** attempt)
-                continue
-            raise
-        except (urllib.error.URLError, TimeoutError) as e:
-            last = e
-            if emitted:
-                raise
-            if attempt < retries - 1:
-                _t.sleep(2 ** attempt)
-                continue
-            raise
-    raise last if last else RuntimeError("unreachable")
 
 
 def _code_block(c: dict, lo: int | None, hi: int | None, seen: set,
@@ -202,7 +145,7 @@ def ask(root: Path, question: str, rerank: bool = False,
     res = search(Path(root), question, rerank=rerank)
     retrieval_ms = int((time.time() - t0) * 1000)
     cands = _candidates(res, docs_only)
-    key = _key()
+    key = providers.find_key(required=False)
     text, llm_ms = "", 0
     if key and cands:
         t1 = time.time()
@@ -280,7 +223,7 @@ def stream_ask(root: Path, question: str, out=None, rerank: bool = False,
     res = search(Path(root), question, rerank=rerank)
     retrieval_ms = int((time.time() - t0) * 1000)
     cands = _candidates(res, docs_only)
-    key = _key()
+    key = providers.find_key(required=False)
     if not key or not cands:           # no LLM available / nothing retrieved
         write(render(res) + "\n")
         return
@@ -317,7 +260,7 @@ def stream_ask(root: Path, question: str, out=None, rerank: bool = False,
     interrupted = False
     stop = ""
     try:
-        _, stop = _stream_with_retry(_build_body(question, cands), key, on_delta=on_delta)
+        _, stop = providers.stream_chat(_build_body(question, cands), key, on_delta=on_delta)
     except Exception:
         interrupted = True
     if pending[0]:                     # flush the trailing partial line
@@ -330,7 +273,7 @@ def stream_ask(root: Path, question: str, out=None, rerank: bool = False,
             else "_(no code cited — full bundle below)_"
         write(f"\n\n{note}\n\n{render(res)}\n")
         return
-    if stop == "max_tokens":
+    if stop == "length":
         write("\n\n_(walkthrough truncated — ask a narrower question for the rest)_")
 
     n_files = len({cands[k]["file"] for k in cited})

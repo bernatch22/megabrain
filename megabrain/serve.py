@@ -20,8 +20,8 @@ Endpoints:
 Single repo, pinned at boot. State auto-reloads when the index (db mtime)
 changes, so a re-index or redeploy is picked up without a restart.
 
-Query embedding goes through Perplexity, so the process needs PERPLEXITY_API_KEY
-in its environment (and ANTHROPIC_API_KEY for /ask). CORS is off by default
+Query embedding and /ask both go through OpenRouter, so the process needs
+OPENROUTER_API_KEY in its environment. CORS is off by default
 (localhost / behind a reverse proxy); pass --cors <origin> for a browser origin.
 """
 
@@ -287,7 +287,8 @@ def _make_handler(repo: _Repo, cors: str | None, enable_llm: bool):
                     return self._send(200, out)
                 if path == "/index":
                     from .indexer import index_repo
-                    return self._send(200, index_repo(repo.root, quiet=True))
+                    return self._send(200, index_repo(repo.root, quiet=True,
+                                                      force=bool(body.get("force"))))
                 return self._err(404, "not found")
             except Exception as e:       # noqa: BLE001
                 return self._err(500, str(e))
