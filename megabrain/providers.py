@@ -4,15 +4,16 @@ One key — OPENROUTER_API_KEY (env or ~/.zshrc fallback) — for everything.
 Both embeddings and chat go through OpenRouter's OpenAI-compatible API
 (https://openrouter.ai/api/v1), so the whole engine is provider-agnostic:
 any OpenRouter model works, selected purely by env. The defaults reproduce
-the validated stack exactly (pplx-embed-v1-0.6b embeddings — same 1024-dim
-int8 vectors as before — and claude-haiku-4.5 for `ask`/`--best`).
+the validated stack (pplx-embed-v1-0.6b embeddings — same 1024-dim int8
+vectors as before) with qwen3-coder narrating `ask`/`--best` (a code bakeoff
+found it on par with claude-haiku-4.5 at ~5x lower cost — see evals/ASK_MODELS.md).
 
 Env surface (all optional except the key):
     OPENROUTER_API_KEY      required — one Bearer key for chat + embeddings
     OPENROUTER_BASE_URL     default https://openrouter.ai/api/v1
     MEGABRAIN_EMBED_MODEL   default perplexity/pplx-embed-v1-0.6b
-    MEGABRAIN_ASK_MODEL     default anthropic/claude-haiku-4.5
-    MEGABRAIN_RERANK_MODEL  default anthropic/claude-haiku-4.5
+    MEGABRAIN_ASK_MODEL     default qwen/qwen3-coder
+    MEGABRAIN_RERANK_MODEL  default qwen/qwen3-coder
     OPENROUTER_HTTP_REFERER / OPENROUTER_APP_TITLE  optional attribution headers
 
 urllib only — no SDK dependency, matching the engine's no-framework stance.
@@ -31,9 +32,13 @@ from pathlib import Path
 BASE_URL = os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1").rstrip("/")
 
 # Model defaults — provider/slug ids, overridable by env so any OpenRouter model works.
+# ask defaults to qwen3-coder: a code bakeoff (evals/ASK_MODELS.md) found it matches
+# claude-haiku-4.5 on citation selection (retrieval already guarantees completeness, so
+# the LLM only narrates+points) at ~5x lower cost. Set MEGABRAIN_ASK_MODEL=anthropic/
+# claude-haiku-4.5 for the last bit of secondary-citation completeness.
 EMBED_MODEL = os.environ.get("MEGABRAIN_EMBED_MODEL", "perplexity/pplx-embed-v1-0.6b")
-ASK_MODEL = os.environ.get("MEGABRAIN_ASK_MODEL", "anthropic/claude-haiku-4.5")
-RERANK_MODEL = os.environ.get("MEGABRAIN_RERANK_MODEL", "anthropic/claude-haiku-4.5")
+ASK_MODEL = os.environ.get("MEGABRAIN_ASK_MODEL", "qwen/qwen3-coder")
+RERANK_MODEL = os.environ.get("MEGABRAIN_RERANK_MODEL", "qwen/qwen3-coder")
 
 # Optional OpenRouter attribution (leaderboard only — not required to function).
 _REFERER = os.environ.get("OPENROUTER_HTTP_REFERER", "https://github.com/pinecall/megabrain")
