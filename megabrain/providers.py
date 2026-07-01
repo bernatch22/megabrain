@@ -8,13 +8,22 @@ the validated stack (pplx-embed-v1-0.6b embeddings — same 1024-dim int8
 vectors as before) with qwen3-coder narrating `ask`/`--best` (a code bakeoff
 found it on par with claude-haiku-4.5 at ~5x lower cost — see evals/ASK_MODELS.md).
 
-Env surface (all optional except the key):
-    OPENROUTER_API_KEY      required — one Bearer key for chat + embeddings
+Env surface (all optional except the OpenRouter key):
+    OPENROUTER_API_KEY      Bearer key for OpenRouter (chat + embeddings)
     OPENROUTER_BASE_URL     default https://openrouter.ai/api/v1
     MEGABRAIN_EMBED_MODEL   default perplexity/pplx-embed-v1-0.6b
     MEGABRAIN_ASK_MODEL     default qwen/qwen3-coder
     MEGABRAIN_RERANK_MODEL  default qwen/qwen3-coder
     OPENROUTER_HTTP_REFERER / OPENROUTER_APP_TITLE  optional attribution headers
+
+Local / hybrid stacks — point embeddings and/or chat at ANY OpenAI-compatible
+endpoint (Ollama, LM Studio, vLLM, or a provider's native API), independently
+per role. localhost endpoints need no API key:
+    MEGABRAIN_EMBED_BASE_URL / MEGABRAIN_EMBED_API_KEY
+    MEGABRAIN_CHAT_BASE_URL  / MEGABRAIN_CHAT_API_KEY
+  · fully local (Ollama):  EMBED+CHAT_BASE_URL=http://localhost:11434/v1,
+      MEGABRAIN_EMBED_MODEL=embeddinggemma, MEGABRAIN_ASK_MODEL=qwen3-coder:30b
+  · hybrid: local embed + OpenRouter chat (set only MEGABRAIN_EMBED_BASE_URL).
 
 urllib only — no SDK dependency, matching the engine's no-framework stance.
 """
@@ -66,24 +75,38 @@ def find_key(required: bool = True) -> str | None:
     return _resolve("OPENROUTER_API_KEY", required)
 
 
-# Embeddings can target a DIFFERENT OpenAI-compatible endpoint than chat — e.g.
-# Perplexity's native API directly, to A/B a provider against OpenRouter:
-#   MEGABRAIN_EMBED_BASE_URL=https://api.perplexity.ai/v1
-#   MEGABRAIN_EMBED_MODEL=pplx-embed-v1-0.6b   (no provider prefix, direct)
-# Default = OpenRouter (BASE_URL). Chat has no such override: Anthropic's native
-# API is NOT OpenAI-shaped, so chat only makes sense through OpenRouter.
+# Embeddings and chat can each target a DIFFERENT OpenAI-compatible endpoint than
+# OpenRouter — a provider's native API (e.g. api.perplexity.ai) or a LOCAL server
+# (Ollama/LM Studio/vLLM). Both default to OpenRouter (BASE_URL).
 EMBED_BASE_URL = os.environ.get("MEGABRAIN_EMBED_BASE_URL", BASE_URL).rstrip("/")
+CHAT_BASE_URL = os.environ.get("MEGABRAIN_CHAT_BASE_URL", BASE_URL).rstrip("/")
+
+
+def _is_local(url: str) -> bool:
+    """A localhost / private-host endpoint (Ollama, LM Studio) — needs no auth."""
+    return bool(re.search(r"://(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\]|"
+                          r"host\.docker\.internal)\b", url))
+
+
+def _key_for(base_url: str, explicit: str | None, required: bool) -> str | None:
+    if _is_local(base_url):
+        return explicit or "local"          # local servers ignore the auth header
+    if explicit:
+        return explicit
+    if "perplexity.ai" in base_url:
+        return _resolve("PERPLEXITY_API_KEY", required)
+    return find_key(required)
 
 
 def find_embed_key(required: bool = True) -> str | None:
-    """Key for the embeddings endpoint: explicit MEGABRAIN_EMBED_API_KEY wins;
-    else PERPLEXITY_API_KEY when pointed at Perplexity's native API; else the
-    OpenRouter key."""
-    if os.environ.get("MEGABRAIN_EMBED_API_KEY"):
-        return os.environ["MEGABRAIN_EMBED_API_KEY"]
-    if "perplexity.ai" in EMBED_BASE_URL:
-        return _resolve("PERPLEXITY_API_KEY", required)
-    return find_key(required)
+    """Key for the embeddings endpoint (local → none; native provider → its key;
+    else the OpenRouter key)."""
+    return _key_for(EMBED_BASE_URL, os.environ.get("MEGABRAIN_EMBED_API_KEY"), required)
+
+
+def find_chat_key(required: bool = True) -> str | None:
+    """Key for the chat (ask/rerank) endpoint — same resolution as embeddings."""
+    return _key_for(CHAT_BASE_URL, os.environ.get("MEGABRAIN_CHAT_API_KEY"), required)
 
 
 def _headers(key: str, base_url: str = BASE_URL) -> dict:
@@ -120,7 +143,8 @@ def chat_text(model: str, prompt: str, max_tokens: int, temperature: float = 0.0
     """One non-streamed chat completion -> assistant text (OpenAI schema)."""
     body = {"model": model, "max_tokens": max_tokens, "temperature": temperature,
             "messages": [{"role": "user", "content": prompt}]}
-    d = post_json("/chat/completions", body, key, retries=retries, timeout=timeout)
+    d = post_json("/chat/completions", body, key or find_chat_key(),
+                  retries=retries, timeout=timeout, base_url=CHAT_BASE_URL)
     return (d.get("choices") or [{}])[0].get("message", {}).get("content") or ""
 
 
@@ -132,14 +156,14 @@ def stream_chat(body: dict, key: str | None = None, retries: int = 4,
     by `data: [DONE]`; SSE comment/keep-alive lines are skipped. Backoff on
     429/5xx; once any delta has been emitted via on_delta we stop retrying so
     the terminal never double-prints. finish_reason is OpenAI's ("length" on cap)."""
-    key = key or find_key()
+    key = key or find_chat_key()
     body = {**body, "stream": True}
     data = json.dumps(body).encode()
     last: Exception | None = None
     emitted = False
     for attempt in range(retries):
-        req = urllib.request.Request(f"{BASE_URL}/chat/completions", data=data,
-                                     method="POST", headers=_headers(key))
+        req = urllib.request.Request(f"{CHAT_BASE_URL}/chat/completions", data=data,
+                                     method="POST", headers=_headers(key, CHAT_BASE_URL))
         text, finish = "", ""
         try:
             with urllib.request.urlopen(req, timeout=timeout) as r:

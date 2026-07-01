@@ -145,7 +145,7 @@ def ask(root: Path, question: str, rerank: bool = False,
     res = search(Path(root), question, rerank=rerank, path_filter=path_filter)
     retrieval_ms = int((time.time() - t0) * 1000)
     cands = _candidates(res, docs_only)
-    key = providers.find_key(required=False)
+    key = providers.find_chat_key(required=False)
     text, llm_ms = "", 0
     if key and cands:
         t1 = time.time()
@@ -224,7 +224,7 @@ def stream_ask(root: Path, question: str, out=None, rerank: bool = False,
     res = search(Path(root), question, rerank=rerank, path_filter=path_filter)
     retrieval_ms = int((time.time() - t0) * 1000)
     cands = _candidates(res, docs_only)
-    key = providers.find_key(required=False)
+    key = providers.find_chat_key(required=False)
     if not key or not cands:           # no LLM available / nothing retrieved
         write(render(res) + "\n")
         return
