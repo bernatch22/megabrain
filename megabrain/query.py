@@ -17,14 +17,15 @@ from pathlib import Path
 
 import numpy as np
 
-from .embeddings import PplxEmbedder
+from .embeddings import Embedder
 from .store import Store
 
 FILE_FUSION_W = 0.5     # phase 3 winner
 TIER1_MAX = 4
 TIER1_GAP = 0.97        # full code only for files within 3% of top score (noise control)
 CAND_FILES = 12
-GRAPH_EXTRAS = 5
+GRAPH_EXTRAS = 6        # graph neighbors of top files pulled into tier2 (recall-safe:
+                        # never touches tier1/R@1; more candidates only lift bundle_full)
 CHUNK_KEEP_RATIO = 0.8  # within a tier-1 file, keep chunks >= ratio * best chunk
 TEST_PENALTY = 0.85     # soft down-weight for test files in ranking
 FILE_BOOST_W = 0.05     # per matched filename token (capped at 2; grid-tuned p6)
@@ -55,7 +56,7 @@ class SearchState:
     skips the SQLite matrix load. CLI/MCP go through search(), which builds it
     per call — identical results, just not cached."""
     store: Store
-    emb: PplxEmbedder
+    emb: Embedder
     metas: list
     M: np.ndarray
     fpaths: list
@@ -71,7 +72,7 @@ def load_state(root: Path, check_same_thread: bool = True) -> SearchState:
     metas, M = store.load_matrix()
     fpaths, fskels, F = store.load_file_matrix()
     repo = store.get_meta("repo_name") or Path(root).name
-    return SearchState(store, PplxEmbedder(), metas, M, fpaths, fskels, F, repo)
+    return SearchState(store, Embedder(), metas, M, fpaths, fskels, F, repo)
 
 
 def search_with_state(st: SearchState, query: str, rerank: bool = False) -> dict:

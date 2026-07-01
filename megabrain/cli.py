@@ -18,6 +18,8 @@ def main(argv=None):
 
     p = sub.add_parser("index")
     p.add_argument("path", nargs="?", default=".")
+    p.add_argument("--force", action="store_true",
+                   help="re-embed every file, ignoring the sha cache (e.g. after an embed-model change)")
 
     p = sub.add_parser("query")
     p.add_argument("path")
@@ -56,7 +58,7 @@ def main(argv=None):
     if a.cmd == "index":
         from .indexer import index_repo
         for r in roots:
-            index_repo(r)
+            index_repo(r, force=a.force)
     elif a.cmd == "query":
         import json as _json
 

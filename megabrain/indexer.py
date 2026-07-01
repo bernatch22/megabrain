@@ -9,7 +9,8 @@ import time
 from pathlib import Path
 
 from .chunker import embed_text, validate_partition
-from .embeddings import PplxEmbedder
+from .embeddings import MODEL as EMBED_MODEL
+from .embeddings import Embedder
 from .store import Store
 from .strategies import all_exts, build_registry, strategy_for
 
@@ -34,13 +35,23 @@ def discover(root: Path, exts: tuple[str, ...]) -> list[Path]:
     return out
 
 
-def index_repo(root: Path, repo_name: str | None = None, quiet: bool = False) -> dict:
+def index_repo(root: Path, repo_name: str | None = None, quiet: bool = False,
+               force: bool = False) -> dict:
     root = Path(root).resolve()
     name = repo_name or root.name
     t0 = time.time()
     store = Store(root)
-    emb = PplxEmbedder()
+    emb = Embedder()
     registry = build_registry(name)
+
+    # A change of embedding model invalidates every stored vector (different
+    # space/dims), so re-embed everything — not just sha-changed files. This
+    # makes MEGABRAIN_EMBED_MODEL swaps safe: stale vectors never silently linger.
+    prev_model = store.get_meta("embed_model")
+    if prev_model is not None and prev_model != EMBED_MODEL:
+        force = True
+        if not quiet:
+            print(f"embed model changed ({prev_model} -> {EMBED_MODEL}); re-embedding all")
 
     paths = discover(root, all_exts(registry))
     rels = {p: str(p.relative_to(root)) for p in paths}
@@ -58,7 +69,7 @@ def index_repo(root: Path, repo_name: str | None = None, quiet: bool = False) ->
         if strat is None:
             continue
         sha = hashlib.sha256(src.encode()).hexdigest()
-        if store.file_sha(rel) == sha:
+        if not force and store.file_sha(rel) == sha:
             unchanged += 1
             continue
         store.delete_file(rel)
@@ -88,6 +99,7 @@ def index_repo(root: Path, repo_name: str | None = None, quiet: bool = False) ->
         removed += 1
 
     store.set_meta("repo_name", name)
+    store.set_meta("embed_model", EMBED_MODEL)
     store.set_meta("last_index", {"t": time.time(), "files": len(paths)})
     store.commit()
     result = {"files": len(paths), "changed": changed, "unchanged": unchanged,
