@@ -44,5 +44,9 @@ Repository = "https://github.com/bernatch22/megabrain"
 [tool.setuptools]
 packages = ["megabrain"]
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
 [tool.setuptools.dynamic]
 version = { attr = "megabrain.__version__" }
