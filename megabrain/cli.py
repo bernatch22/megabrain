@@ -26,6 +26,9 @@ def main(argv=None):
     p.add_argument("path", nargs="?", default=".")
     p.add_argument("--force", action="store_true",
                    help="re-embed every file, ignoring the sha cache (e.g. after an embed-model change)")
+    p.add_argument("--exclude", action="append", default=[], metavar="PATTERN",
+                   help="skip a dir name or a glob/path (repeatable, or comma-separated); "
+                        "merged with built-ins and .megabrainignore")
 
     p = sub.add_parser("query")
     p.add_argument("path")
@@ -67,8 +70,9 @@ def main(argv=None):
 
     if a.cmd == "index":
         from .indexer import index_repo
+        exclude = [x for item in a.exclude for x in item.split(",") if x.strip()]
         for r in raw:
-            index_repo(r, force=a.force)
+            index_repo(r, force=a.force, exclude=exclude)
     elif a.cmd == "query":
         import json as _json
 

@@ -89,3 +89,43 @@ def test_reindex_preserves_incoming_edges(tiny_repo):
     st.delete_file("util.py", drop_incoming=True)   # orphan semantics
     rows = st.db.execute("SELECT src,dst FROM edges WHERE dst='util.py'").fetchall()
     assert rows == []
+
+
+# ---------------------------------------------------------------- exclude / ignore
+
+def test_split_and_match_patterns():
+    from megabrain.indexer import _split_patterns, _excluded
+    names, globs = _split_patterns(["migrations", "src/generated/", "*.pb.go", ""])
+    assert names == {"migrations"} and set(globs) == {"src/generated", "*.pb.go"}
+    assert _excluded("app/migrations/001.py", names, globs)        # bare name, any segment
+    assert _excluded("src/generated/api.ts", names, globs)         # path prefix
+    assert _excluded("src/generated", names, globs)                # the dir itself
+    assert _excluded("pkg/user.pb.go", names, globs)               # glob on relpath
+    assert not _excluded("src/app/main.py", names, globs)
+    assert not _excluded("src/migrations_helper.py", names, globs) # not a full segment
+
+
+def test_load_ignore_file(tmp_path):
+    from megabrain.indexer import load_ignore
+    (tmp_path / ".megabrainignore").write_text(
+        "# comment\nvendor\n\nsrc/generated  # trailing note\n*.min.js\n")
+    assert load_ignore(tmp_path) == ["vendor", "src/generated", "*.min.js"]
+
+
+def test_discover_honors_exclude_and_ignorefile(tmp_path, fake_embedder):
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "keep.py").write_text("def a():\n    return 1\n")
+    (tmp_path / "generated").mkdir()
+    (tmp_path / "generated" / "skip.py").write_text("def g():\n    return 2\n")
+    (tmp_path / "vendor").mkdir()
+    (tmp_path / "vendor" / "lib.py").write_text("def v():\n    return 3\n")
+    (tmp_path / ".megabrainignore").write_text("vendor\n")
+    from megabrain.indexer import discover, index_repo
+    from megabrain.store import Store
+    # discover() applies the patterns it's handed (+ built-ins):
+    found = {p.relative_to(tmp_path).as_posix()
+             for p in discover(tmp_path, (".py",), ["generated", "vendor"])}
+    assert found == {"src/keep.py"}
+    # index_repo() merges .megabrainignore (vendor) with the --exclude flag (generated):
+    index_repo(tmp_path, quiet=True, exclude=["generated"])
+    assert Store(tmp_path).all_paths() == {"src/keep.py"}

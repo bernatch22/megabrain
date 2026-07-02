@@ -90,6 +90,18 @@ megabrain serve-api ~/repo --port 2134                     # long-running JSON A
 and retrieval is confined to files under it — the repo root (where the index lives) is
 auto-detected. Multi-repo works too: `megabrain query ~/a/src,~/b "..."`.
 
+**Excluding files:** build artifacts (`node_modules`, `.venv`, `dist`, …) are skipped by
+default. Add your own with `megabrain index ~/repo --exclude generated --exclude '*.pb.go'`
+or a persistent **`.megabrainignore`** at the repo root (one pattern per line; a bare name
+matches any path segment, a glob or `path/` matches the repo-relative path):
+
+```
+generated/
+vendor
+*.min.js
+docs/legacy
+```
+
 ## Provider flexibility — cloud, native, local, hybrid
 
 Embeddings and chat can **each** point at any OpenAI-compatible endpoint. localhost

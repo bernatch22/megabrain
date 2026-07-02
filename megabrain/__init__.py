@@ -10,4 +10,4 @@ Validated configuration (experiments phases 0-5, June 2026):
 - pruning: OFF by default (LLM pruning costs completeness); --prune optional
 """
 
-__version__ = "0.3.1"
+__version__ = "0.3.2"
