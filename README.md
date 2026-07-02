@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/pinecall/megabrain/master/assets/megabrain.png" alt="megabrain" width="180">
+  <img src="https://raw.githubusercontent.com/bernatch22/megabrain/master/assets/megabrain.png" alt="megabrain" width="180">
 </p>
 
 <h1 align="center">megabrain</h1>
@@ -34,7 +34,7 @@ pip install 'megabrain[languages]'    # + Ruby · Go · Rust
 Or from a clone, for development:
 
 ```bash
-git clone https://github.com/pinecall/megabrain.git && cd megabrain
+git clone https://github.com/bernatch22/megabrain.git && cd megabrain
 pip install -e .
 ```
 
@@ -159,4 +159,4 @@ tests/       engine + chunker gates
 
 ---
 
-<p align="center"><sub>github.com/pinecall/megabrain</sub></p>
+<p align="center"><sub>github.com/bernatch22/megabrain</sub></p>

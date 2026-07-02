@@ -38,8 +38,8 @@ languages = ["tree_sitter_ruby>=0.23", "tree_sitter_go>=0.23", "tree_sitter_rust
 megabrain = "megabrain.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/pinecall/megabrain"
-Repository = "https://github.com/pinecall/megabrain"
+Homepage = "https://github.com/bernatch22/megabrain"
+Repository = "https://github.com/bernatch22/megabrain"
 
 [tool.setuptools]
 packages = ["megabrain"]

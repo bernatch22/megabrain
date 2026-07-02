@@ -62,7 +62,7 @@ endpoint via `MEGABRAIN_EMBED_BASE_URL` / `MEGABRAIN_CHAT_BASE_URL` (+ `_API_KEY
 LM Studio, vLLM — need no key; `MEGABRAIN_EMBED_BATCH` shrinks request size for local
 servers). Local/hybrid stacks measured in `evals/LOCAL_MODELS.md`. Dims are inferred per model (`MEGABRAIN_EMBED_DIMS` to assert). Changing the
 embed model auto-triggers a full re-embed on next `index` (or `index --force`). Repo:
-github.com/pinecall/megabrain.
+github.com/bernatch22/megabrain.
 
 Embedding bakeoff (2026-07-01, python golden / sdk-server): **pplx-embed-v1-0.6b wins** — R@1
 0.864, bundle_full 0.955, ~11ms; no OpenRouter model beats it (pplx-4b, codestral-embed,
