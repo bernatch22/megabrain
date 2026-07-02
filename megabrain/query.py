@@ -24,8 +24,10 @@ FILE_FUSION_W = 0.5     # phase 3 winner
 TIER1_MAX = 4
 TIER1_GAP = 0.97        # full code only for files within 3% of top score (noise control)
 CAND_FILES = 12
-GRAPH_EXTRAS = 6        # graph neighbors of top files pulled into tier2 (recall-safe:
-                        # never touches tier1/R@1; more candidates only lift bundle_full)
+GRAPH_EXTRAS = 7        # graph neighbors of top files pulled into tier2 (recall-safe:
+                        # never touches tier1/R@1; more candidates only lift bundle_full).
+                        # Retuned 6->7 after the edge-preservation fix: the healed graph
+                        # (+35% edges) has more neighbors competing for the slots.
 CHUNK_KEEP_RATIO = 0.8  # within a tier-1 file, keep chunks >= ratio * best chunk
 TEST_PENALTY = 0.85     # soft down-weight for test files in ranking
 FILE_BOOST_W = 0.05     # per matched filename token (capped at 2; grid-tuned p6)
