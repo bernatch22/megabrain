@@ -1,9 +1,9 @@
 """Minimal MCP stdio server for megabrain (no external deps).
 
 Tools:
-  megabrain_ask(repo_path, question, docs?)   -> explained answer, real code spliced
-                                                 (docs=true -> explain docs instead)
-  megabrain_query(repo_path, task, compact?)  -> full unfiltered code bundle
+  megabrain_ask(repo_path, question, scope_path?, docs?)  -> explained answer, real code
+                                                spliced (docs=true -> explain docs instead)
+  megabrain_query(repo_path, task, scope_path?, compact?) -> full unfiltered code bundle
   megabrain_get(repo_path, file, symbol?)     -> one file or symbol
   megabrain_index(repo_path)                  -> incremental index
 
@@ -28,7 +28,7 @@ TOOLS = [
             "Returns a senior-engineer walkthrough that explains the whole relevant "
             "flow with the REAL code spliced in at each step (verbatim from disk, true "
             "line numbers — the model narrates and cites code spans but cannot rewrite "
-            "them, so code is never hallucinated). Retrieval has no LLM; one Haiku call "
+            "them, so code is never hallucinated). Retrieval has no LLM; one chat call "
             "writes the explanation. Use this INSTEAD OF reading files one by one or "
             "spawning explore agents — one call replaces minutes of navigation. "
             "Non-cited related files are listed at the end. Explains CODE only by "
@@ -36,10 +36,10 @@ TOOLS = [
         "inputSchema": {
             "type": "object",
             "properties": {
-                "repo_path": {"type": "string", "description": "path to the indexed repo root, OR a sub-path inside it (e.g. ~/repo/src/dispatch) to scope the walkthrough to that folder — the repo root is auto-detected from .megabrain"},
+                "repo_path": {"type": "string", "description": "path to the indexed repo root (a sub-path also works — the root is auto-detected from .megabrain)"},
                 "question": {"type": "string", "description": "how/where/why question, natural language"},
-                "subpath": {"type": "string",
-                            "description": "optional repo-relative sub-path (e.g. src/dispatch) to scope retrieval to files under it; leave empty for the whole repo"},
+                "scope_path": {"type": "string",
+                               "description": "optional repo-relative folder (e.g. src/dispatch) to scope the walkthrough to files under it; omit for the whole repo"},
                 "docs": {"type": "boolean",
                          "description": "explain documentation (markdown) only, instead of code (default false)"},
             },
@@ -57,10 +57,10 @@ TOOLS = [
         "inputSchema": {
             "type": "object",
             "properties": {
-                "repo_path": {"type": "string", "description": "path to the indexed repo root, OR a sub-path inside it to scope the bundle to that folder — the repo root is auto-detected from .megabrain"},
+                "repo_path": {"type": "string", "description": "path to the indexed repo root (a sub-path also works — the root is auto-detected from .megabrain)"},
                 "task": {"type": "string", "description": "feature/question, natural language"},
-                "subpath": {"type": "string",
-                            "description": "optional repo-relative sub-path (e.g. src/dispatch) to scope retrieval to files under it; leave empty for the whole repo"},
+                "scope_path": {"type": "string",
+                               "description": "optional repo-relative folder (e.g. src/dispatch) to scope the bundle to files under it; omit for the whole repo"},
                 "compact": {"type": "boolean", "description": "signatures only, no code bodies"},
             },
             "required": ["repo_path", "task"],
@@ -105,12 +105,12 @@ def _maybe_reindex(root: Path):
 
 
 def _scope(args: dict) -> tuple[Path, str | None]:
-    """Resolve repo_path (+ optional subpath) to (repo_root, path_filter) for
+    """Resolve repo_path (+ optional scope_path) to (repo_root, path_filter) for
     PATH-SCOPE. repo_path may itself be a sub-path inside an indexed repo; an
-    explicit `subpath` arg is appended to it. path_filter is None at the root."""
+    explicit `scope_path` arg is appended to it. path_filter is None at the root."""
     from .store import resolve_root
     p = Path(args["repo_path"]).expanduser()
-    sub = (args.get("subpath") or "").strip().strip("/")
+    sub = (args.get("scope_path") or args.get("subpath") or "").strip().strip("/")
     if sub:
         p = p / sub
     root, subpath = resolve_root(p)
