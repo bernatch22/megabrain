@@ -23,7 +23,8 @@ import importlib.util
 from .chunker import CastChunker, FileResult
 from .chunker_ts import (GO_SPEC, PHP_SPEC, RUBY_SPEC, RUST_SPEC, TS_SPEC,
                          LangSpec, TsChunker, TreeSitterChunker)
-from .graph import extract_edges, python_package_index, ts_edges
+from .graph import (extract_edges, php_class_index, php_edges,
+                    python_package_index, ts_edges)
 from .markdown import MarkdownChunker
 
 
@@ -107,12 +108,26 @@ class MarkdownStrategy:
         return None   # docs have no graph (markdown-link edges are a future option)
 
 
+class PhpStrategy(TreeSitterStrategy):
+    """PHP = the generic tree-sitter chunker + a `use`-statement import graph:
+    a namespace+declaration scan maps FQCN -> file (PSR-4-agnostic), then each
+    `use A\\B\\C;` / group-use / trait-use resolves to its repo file."""
+
+    def __init__(self, repo: str = ""):
+        super().__init__(PHP_SPEC, (".php",), repo=repo)
+
+    def build_edge_ctx(self, sources: dict[str, str], repo_name: str):
+        return php_class_index(sources)
+
+    def extract_edges(self, relpath, source, ctx):
+        return php_edges(relpath, source, ctx)
+
+
 # Language strategies gated on their grammar being importable. (spec, exts, module)
 _TREE_SITTER_LANGS = [
     (RUBY_SPEC, (".rb",), "tree_sitter_ruby"),
     (GO_SPEC, (".go",), "tree_sitter_go"),
     (RUST_SPEC, (".rs",), "tree_sitter_rust"),
-    (PHP_SPEC, (".php",), "tree_sitter_php"),
 ]
 
 
@@ -127,6 +142,8 @@ def build_registry(repo: str = "") -> list:
     for spec, exts, module in _TREE_SITTER_LANGS:
         if _grammar_available(module):
             reg.append(TreeSitterStrategy(spec, exts, repo))
+    if _grammar_available("tree_sitter_php"):
+        reg.append(PhpStrategy(repo))    # chunker + `use`-import graph
     return reg
 
 

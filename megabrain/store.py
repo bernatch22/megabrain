@@ -83,10 +83,19 @@ class Store:
         r = self.db.execute("SELECT sha FROM files WHERE path=?", (path,)).fetchone()
         return r[0] if r else None
 
-    def delete_file(self, path: str):
+    def delete_file(self, path: str, drop_incoming: bool = False):
+        """Remove a file's rows before re-inserting (re-index) or for good (orphan).
+
+        Outgoing edges (src=path) always go — they're rebuilt from the new source.
+        Incoming edges (dst=path) drop ONLY for orphans (drop_incoming=True): on a
+        normal re-index the importers' A->B edges are still valid, and deleting
+        them here silently destroyed every edge whose src file happened to be
+        processed before its dst in the same indexing pass."""
         self.db.execute("DELETE FROM chunks WHERE file=?", (path,))
         self.db.execute("DELETE FROM symbols WHERE file=?", (path,))
-        self.db.execute("DELETE FROM edges WHERE src=? OR dst=?", (path, path))
+        self.db.execute("DELETE FROM edges WHERE src=?", (path,))
+        if drop_incoming:
+            self.db.execute("DELETE FROM edges WHERE dst=?", (path,))
         self.db.execute("DELETE FROM files WHERE path=?", (path,))
 
     def upsert_file(self, path: str, sha: str, skeleton: str, skel_vec: np.ndarray | None):

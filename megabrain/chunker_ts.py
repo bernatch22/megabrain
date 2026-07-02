@@ -263,7 +263,10 @@ class TreeSitterChunker:
         units = []
         cursor = region_start
         for n in nodes:
-            s, e = n.start_point[0] + 1, n.end_point[0] + 1
+            # clamp: a node that swallows the file's trailing newline (PHP
+            # mixed-HTML `text` nodes) reports end_point one PAST the last line,
+            # which would break the line-partition guarantee.
+            s, e = n.start_point[0] + 1, min(n.end_point[0] + 1, region_end)
             if e < cursor:
                 continue
             units.append((n, cursor, e))

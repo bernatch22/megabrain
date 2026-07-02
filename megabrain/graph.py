@@ -106,3 +106,60 @@ def extract_edges(rel: str, tree: ast.Module, mod2file: dict[str, str],
             if tgt and tgt != rel:
                 edges.add((tgt, "call"))
     return [(dst, kind) for dst, kind in edges if dst != rel]
+
+
+# ---------------------------------------------------------------- PHP
+
+_PHP_NS = re.compile(r"^\s*namespace\s+([A-Za-z_][\w\\]*)\s*[;{]", re.M)
+_PHP_DECL = re.compile(
+    r"^\s*(?:abstract\s+|final\s+|readonly\s+)*(?:class|interface|trait|enum)\s+"
+    r"([A-Za-z_]\w*)", re.M)
+# `use A\B\C;` / `use A\B as X;` — both top-level imports and trait-use inside a
+# class body (a trait IS a file dependency, so both become edges). Skips
+# `use function`/`use const`.
+_PHP_USE = re.compile(
+    r"^\s*use\s+(?!function\b|const\b)([A-Za-z_][\w\\]*)(?:\s+as\s+\w+)?\s*;", re.M)
+# group form: `use A\B\{C, D as E};`
+_PHP_USE_GROUP = re.compile(
+    r"^\s*use\s+(?!function\b|const\b)([A-Za-z_][\w\\]*)\\\{([^}]+)\}\s*;", re.M)
+
+
+def php_class_index(sources: dict[str, str]) -> dict[str, str]:
+    """FQCN -> relpath for every class/interface/trait/enum declared in the repo
+    (PSR-4-agnostic: built from the actual `namespace` + declarations, so it
+    works whatever the folder layout)."""
+    fqcn2file: dict[str, str] = {}
+    for rel, src in sources.items():
+        if not rel.endswith(".php"):
+            continue
+        m = _PHP_NS.search(src)
+        ns = m.group(1) if m else ""
+        for d in _PHP_DECL.finditer(src):
+            fqcn = f"{ns}\\{d.group(1)}" if ns else d.group(1)
+            fqcn2file.setdefault(fqcn, rel)
+    return fqcn2file
+
+
+def php_edges(rel: str, source: str, fqcn2file: dict[str, str]) -> list[tuple[str, str]]:
+    """Resolve `use` statements (imports, aliases, group-use, trait-use) to repo
+    files. Bare names also try the file's own namespace, so `use LogsActivity;`
+    inside a class resolves to the sibling trait. Returns [(dst, 'import')]."""
+    m = _PHP_NS.search(source)
+    ns = m.group(1) if m else ""
+    names: set[str] = set()
+    for u in _PHP_USE.finditer(source):
+        names.add(u.group(1).lstrip("\\"))
+    for g in _PHP_USE_GROUP.finditer(source):
+        prefix = g.group(1).lstrip("\\")
+        for item in g.group(2).split(","):
+            leaf = item.strip().split(" as ")[0].strip().lstrip("\\")
+            if leaf:
+                names.add(f"{prefix}\\{leaf}")
+    out = set()
+    for name in names:
+        for cand in (name, f"{ns}\\{name}" if ns else name):
+            dst = fqcn2file.get(cand)
+            if dst and dst != rel:
+                out.add((dst, "import"))
+                break
+    return sorted(out)
