@@ -21,7 +21,8 @@ from __future__ import annotations
 import importlib.util
 
 from .chunker import CastChunker, FileResult
-from .chunker_ts import GO_SPEC, RUBY_SPEC, RUST_SPEC, TS_SPEC, LangSpec, TsChunker, TreeSitterChunker
+from .chunker_ts import (GO_SPEC, PHP_SPEC, RUBY_SPEC, RUST_SPEC, TS_SPEC,
+                         LangSpec, TsChunker, TreeSitterChunker)
 from .graph import extract_edges, python_package_index, ts_edges
 from .markdown import MarkdownChunker
 
@@ -111,6 +112,7 @@ _TREE_SITTER_LANGS = [
     (RUBY_SPEC, (".rb",), "tree_sitter_ruby"),
     (GO_SPEC, (".go",), "tree_sitter_go"),
     (RUST_SPEC, (".rs",), "tree_sitter_rust"),
+    (PHP_SPEC, (".php",), "tree_sitter_php"),
 ]
 
 

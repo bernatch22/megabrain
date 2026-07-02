@@ -67,6 +67,11 @@ def _rust_grammar(ext: str):
     return tree_sitter_rust.language()
 
 
+def _php_grammar(ext: str):
+    import tree_sitter_php
+    return tree_sitter_php.language_php()   # handles <?php + mixed HTML in .php
+
+
 TS_SPEC = LangSpec(
     name="ts",
     grammar=_ts_grammar,
@@ -143,6 +148,26 @@ RUST_SPEC = LangSpec(
     extra_name_fields=("type",),
 )
 
+PHP_SPEC = LangSpec(
+    name="php",
+    grammar=_php_grammar,
+    def_types={
+        "function_definition": "function",
+        "method_declaration": "method",
+        "class_declaration": "class",
+        "interface_declaration": "interface",
+        "trait_declaration": "trait",
+        "enum_declaration": "enum",
+        "namespace_definition": "namespace",
+        "const_declaration": "const",
+    },
+    # class/interface/trait/enum bodies hold nested methods -> recurse for symbols.
+    container_types=frozenset({"class_declaration", "interface_declaration",
+                               "trait_declaration", "enum_declaration"}),
+    # `const NAME = …;` carries its name one level down in a const_element.
+    name_via={"const_declaration": ("const_element", "name")},
+)
+
 
 _parsers: dict[tuple[str, str], Parser] = {}
 
@@ -184,7 +209,11 @@ class TreeSitterChunker:
             child_type, fname = via
             for ch in node.named_children:
                 if ch.type == child_type:
-                    nn = ch.child_by_field_name(fname)
+                    # name is either a FIELD of the child (Go const_spec.name) or,
+                    # when the grammar has no such field, a child of TYPE `fname`
+                    # (PHP const_element -> a `name` node).
+                    nn = ch.child_by_field_name(fname) or \
+                        next((g for g in ch.named_children if g.type == fname), None)
                     if nn is not None:
                         return nn.text.decode()
         return None
