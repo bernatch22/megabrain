@@ -6,6 +6,7 @@ from __future__ import annotations
 import hashlib
 import json
 import time
+from fnmatch import fnmatch
 from pathlib import Path
 
 from .chunker import embed_text, validate_partition
@@ -20,14 +21,57 @@ EXCLUDE_DIRS = {"__pycache__", ".venv", "venv", "node_modules", ".git", "dist",
                 # benchmark/eval scratch (checked-out foreign repos — not our source)
                 "clones", "wt", "wt_ask", "wt_best", ".pytest_cache"}
 MAX_FILE_BYTES = 600_000
+IGNORE_FILE = ".megabrainignore"
 
 
-def discover(root: Path, exts: tuple[str, ...]) -> list[Path]:
+def load_ignore(root: Path) -> list[str]:
+    """User exclude patterns from `<root>/.megabrainignore` (one per line; blank
+    lines and `#` comments skipped)."""
+    f = root / IGNORE_FILE
+    if not f.exists():
+        return []
+    out = []
+    for ln in f.read_text(errors="replace").splitlines():
+        ln = ln.split("#", 1)[0].strip()
+        if ln:
+            out.append(ln)
+    return out
+
+
+def _split_patterns(patterns) -> tuple[set[str], list[str]]:
+    """A bare token (no `/`, no glob char) matches any path SEGMENT; anything
+    with `/` or a glob metachar is an fnmatch pattern on the repo-relative path."""
+    names, globs = set(), []
+    for p in patterns:
+        p = p.strip().rstrip("/")
+        if not p:
+            continue
+        if "/" in p or any(c in p for c in "*?["):
+            globs.append(p)
+        else:
+            names.add(p)
+    return names, globs
+
+
+def _excluded(rel: str, names: set[str], globs: list[str]) -> bool:
+    parts = rel.split("/")
+    if names.intersection(parts):
+        return True
+    for g in globs:
+        if rel == g or rel.startswith(g + "/") or fnmatch(rel, g) or fnmatch(rel, g + "/*"):
+            return True
+    return False
+
+
+def discover(root: Path, exts: tuple[str, ...], exclude=()) -> list[Path]:
+    names, globs = _split_patterns(exclude)
+    names |= EXCLUDE_DIRS
     out = []
     for p in sorted(root.rglob("*")):
         if p.suffix not in exts or not p.is_file():
             continue
-        if EXCLUDE_DIRS & set(p.parts):
+        rel = p.relative_to(root).as_posix()
+        if _excluded(rel, names, globs):
             continue
         if p.stat().st_size > MAX_FILE_BYTES:
             continue
@@ -36,13 +80,15 @@ def discover(root: Path, exts: tuple[str, ...]) -> list[Path]:
 
 
 def index_repo(root: Path, repo_name: str | None = None, quiet: bool = False,
-               force: bool = False) -> dict:
+               force: bool = False, exclude=()) -> dict:
     root = Path(root).resolve()
     name = repo_name or root.name
     t0 = time.time()
     store = Store(root)
     emb = Embedder()
     registry = build_registry(name)
+    # exclude = built-in dirs + `.megabrainignore` (persistent) + caller-supplied.
+    excludes = [*load_ignore(root), *exclude]
 
     # A change of embedding model invalidates every stored vector (different
     # space/dims), so re-embed everything — not just sha-changed files. This
@@ -53,7 +99,7 @@ def index_repo(root: Path, repo_name: str | None = None, quiet: bool = False,
         if not quiet:
             print(f"embed model changed ({prev_model} -> {EMBED_MODEL}); re-embedding all")
 
-    paths = discover(root, all_exts(registry))
+    paths = discover(root, all_exts(registry), excludes)
     rels = {p: str(p.relative_to(root)) for p in paths}
     sources = {rels[p]: p.read_text(errors="replace") for p in paths}
 
