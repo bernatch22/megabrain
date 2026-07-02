@@ -75,3 +75,17 @@ def test_search_root_equals_no_filter(tiny_repo):
     a = _bundle_files(search(tiny_repo, "flatten nested list"))
     b = _bundle_files(search(tiny_repo, "flatten nested list", path_filter=None))
     assert a == b
+
+
+def test_reindex_preserves_incoming_edges(tiny_repo):
+    """Regression: delete_file on re-index must NOT wipe A->B edges stored by an
+    earlier-processed A when B is re-indexed later in the same pass."""
+    st = Store(tiny_repo)
+    st.replace_edges("auth/login.py", [("util.py", "import")])
+    st.commit()
+    st.delete_file("util.py")                       # re-index semantics
+    rows = st.db.execute("SELECT src,dst FROM edges WHERE dst='util.py'").fetchall()
+    assert rows == [("auth/login.py", "util.py")]
+    st.delete_file("util.py", drop_incoming=True)   # orphan semantics
+    rows = st.db.execute("SELECT src,dst FROM edges WHERE dst='util.py'").fetchall()
+    assert rows == []

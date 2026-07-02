@@ -93,9 +93,9 @@ def index_repo(root: Path, repo_name: str | None = None, quiet: bool = False,
         stats["chunks"] += len(r.chunks)
         changed += 1
 
-    # orphans: indexed files no longer on disk
+    # orphans: indexed files no longer on disk — here incoming edges die too
     for gone in store.all_paths() - set(rels.values()):
-        store.delete_file(gone)
+        store.delete_file(gone, drop_incoming=True)
         removed += 1
 
     store.set_meta("repo_name", name)
