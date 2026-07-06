@@ -222,8 +222,10 @@ megabrain.index_repo("path/to/repo", strategies=[MySqlStrategy()])
 Custom strategies are matched **before** the built-ins, so they can claim a new
 extension (`.sql`, `.proto`, …) or override how an existing one is chunked; everything
 downstream (embedding, retrieval, `ask`) is content-agnostic. Runnable examples —
-programmatic API, a complete `.sql` chunker, a terminal chunk heatmap — in
-[`examples/`](examples/).
+programmatic API, a complete `.sql` chunker, a terminal chunk heatmap, and a **live
+web demo** (`python examples/webui/server.py` → ask a question, watch retrieval rank
+the files and light up the selected chunks on a bundled legacy-PHP sample or any repo
+you pass) — in [`examples/`](examples/).
 
 ## Project layout
 
