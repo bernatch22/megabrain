@@ -109,12 +109,16 @@ class MarkdownStrategy:
 
 
 class PhpStrategy(TreeSitterStrategy):
-    """PHP = the generic tree-sitter chunker + a `use`-statement import graph:
-    a namespace+declaration scan maps FQCN -> file (PSR-4-agnostic), then each
-    `use A\\B\\C;` / group-use / trait-use resolves to its repo file."""
+    """PHP = shape-routed chunking + a `use`-statement import graph. Modern
+    (namespaced/PSR) files keep the generic tree-sitter chunker; legacy-2000s
+    procedural/mixed-HTML files take the section chunker (chunker_php). The
+    graph: a namespace+declaration scan maps FQCN -> file (PSR-4-agnostic),
+    then each `use A\\B\\C;` / group-use / trait-use resolves to its repo file."""
 
     def __init__(self, repo: str = ""):
         super().__init__(PHP_SPEC, (".php",), repo=repo)
+        from .chunker_php import PhpChunker
+        self._chunker = PhpChunker(repo=repo)   # replaces the generic chunker
 
     def build_edge_ctx(self, sources: dict[str, str], repo_name: str):
         return php_class_index(sources)

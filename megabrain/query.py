@@ -101,9 +101,12 @@ def load_state(root: Path, check_same_thread: bool = True) -> SearchState:
     return SearchState(store, Embedder(), metas, M, fpaths, fskels, F, repo)
 
 
-def search_with_state(st: SearchState, query: str, rerank: bool = False,
-                      path_filter: str | None = None) -> dict:
-    t0 = time.time()
+def _score_chunks(st: SearchState, query: str,
+                  path_filter: str | None = None) -> tuple[list, np.ndarray]:
+    """Full per-chunk scoring (dense + file-fusion + test penalty + issue-mode /
+    lexical boosts) WITHOUT ranking/tiering. Returns (path-filtered metas, fused
+    score array), index-aligned. Single source of truth for chunk scoring —
+    shared by search_with_state() and chunks_for_file()."""
     store, emb = st.store, st.emb
     metas, M = st.metas, st.M
     fpaths, fskels, F = st.fpaths, st.fskels, st.F
@@ -207,6 +210,18 @@ def search_with_state(st: SearchState, query: str, rerank: bool = False,
         # — it raised SWE recall but cost golden bundle completeness (the product
         # priority). It stays in issue-mode RRF only, where rerank cleans ordering.
 
+    return metas, fused
+
+
+def search_with_state(st: SearchState, query: str, rerank: bool = False,
+                      path_filter: str | None = None,
+                      scored: tuple[list, np.ndarray] | None = None) -> dict:
+    """Full retrieval: score every chunk, then rank + tier into CORE/RELATED.
+    `scored` accepts a precomputed (metas, fused) from _score_chunks so callers
+    that also need the raw scores (chunks_for_file) score exactly once."""
+    t0 = time.time()
+    store = st.store
+    metas, fused = scored if scored is not None else _score_chunks(st, query, path_filter)
     order = np.argsort(-fused)
     file_rank: list[str] = []
     file_chunks: dict[str, list[int]] = {}
@@ -281,6 +296,57 @@ def search(root: Path, query: str, rerank: bool = False,
     return search_with_state(load_state(Path(root)), query, rerank, path_filter)
 
 
+def chunks_for_file(st: SearchState, relpath: str, query: str,
+                    path_filter: str | None = None) -> dict:
+    """One file + query → EVERY chunk of that file with its span, relevance
+    score, and whether the full retrieval SELECTED it into the bundle.
+
+    Selection reflects a real cross-file search: a chunk is `selected` when its
+    file lands in CORE and the chunk survives the CHUNK_KEEP_RATIO cut, or when it
+    is the best chunk of a RELATED file. So the map shows true signal-vs-noise
+    (what the agent would actually read), not just an intra-file threshold.
+    Powers the chunk-selection demo UI."""
+    metas, fused = _score_chunks(st, query, path_filter)
+    res = search_with_state(st, query, path_filter=path_filter,
+                            scored=(metas, fused))
+    selected: set[int] = set()
+    role = "unranked"
+    for t in res["tier1"]:
+        if t["file"] == relpath:
+            role = "core"
+            selected |= {c["id"] for c in t["chunks"]}
+    if role == "unranked":
+        for t in res["tier2"]:
+            if t["file"] == relpath:
+                role = "related"
+                bc = t.get("best_chunk")
+                if bc:
+                    selected.add(bc["id"])
+                break
+    rows = []
+    for i, m in enumerate(metas):
+        if m["file"] != relpath:
+            continue
+        rows.append({
+            "id": m["id"], "kind": m["kind"], "name": m["name"], "part": m["part"],
+            "start_line": m["start_line"], "end_line": m["end_line"],
+            "breadcrumb": m["breadcrumb"], "text": m["text"],
+            "score": float(fused[i]), "selected": m["id"] in selected,
+        })
+    rows.sort(key=lambda r: r["start_line"])
+    scores = [r["score"] for r in rows] or [0.0]
+    return {"file": relpath, "query": query, "role": role, "repo": st.repo,
+            "score_min": float(min(scores)), "score_max": float(max(scores)),
+            "selected_count": sum(1 for r in rows if r["selected"]),
+            "chunks": rows}
+
+
+def chunks_for_file_root(root: Path, relpath: str, query: str,
+                         path_filter: str | None = None) -> dict:
+    """CLI/one-shot entry for chunks_for_file (builds state then queries)."""
+    return chunks_for_file(load_state(Path(root)), relpath, query, path_filter)
+
+
 def search_multi(roots: list[Path], query: str,
                  path_filters: list[str | None] | None = None) -> dict:
     """Search several repos, merge by score (same embedder -> comparable).
@@ -317,8 +383,8 @@ def search_multi(roots: list[Path], query: str,
 def lang_of(path: str) -> str:
     return {"py": "python", "ts": "typescript", "tsx": "tsx", "js": "javascript",
             "jsx": "jsx", "mjs": "javascript", "cjs": "javascript", "rb": "ruby",
-            "go": "go", "md": "markdown", "markdown": "markdown", "mdx": "markdown"}.get(
-        path.rsplit(".", 1)[-1], "")
+            "go": "go", "php": "php", "md": "markdown", "markdown": "markdown",
+            "mdx": "markdown"}.get(path.rsplit(".", 1)[-1], "")
 
 
 def render(res: dict, compact: bool = False) -> str:
