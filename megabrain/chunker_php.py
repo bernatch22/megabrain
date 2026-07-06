@@ -26,11 +26,10 @@ from __future__ import annotations
 
 import re
 
-from .chunker import Chunk, FileResult, Symbol, nws
+from .chunker import DEFAULT_BUDGET, Chunk, FileResult, Symbol, nws
 from .chunker_ts import PHP_SPEC, TreeSitterChunker, _parser, _signature
 from .markdown import qmd_cut
 
-DEFAULT_BUDGET = 4000
 BANNER_MIN_FLUSH = 400   # a banner starts a new section only once the current
                          # one holds this much code (avoids dust sections)
 

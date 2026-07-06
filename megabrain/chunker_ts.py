@@ -23,9 +23,7 @@ from typing import Callable
 
 from tree_sitter import Language, Parser
 
-from .chunker import Chunk, FileResult, Symbol, nws
-
-DEFAULT_BUDGET = 4000
+from .chunker import DEFAULT_BUDGET, Chunk, FileResult, Symbol, nws
 
 
 # ---------------------------------------------------------------- language specs

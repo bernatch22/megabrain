@@ -18,6 +18,8 @@ import json
 import sys
 from pathlib import Path
 
+from . import __version__
+
 PROTOCOL = "2024-11-05"
 
 TOOLS = [
@@ -186,7 +188,7 @@ def main():
         if method == "initialize":
             result = {"protocolVersion": PROTOCOL,
                       "capabilities": {"tools": {}},
-                      "serverInfo": {"name": "megabrain", "version": "0.1.0"}}
+                      "serverInfo": {"name": "megabrain", "version": __version__}}
         elif method == "tools/list":
             result = {"tools": TOOLS}
         elif method == "tools/call":
