@@ -77,6 +77,15 @@ class Store:
         self.db = sqlite3.connect(d / "db.sqlite", check_same_thread=check_same_thread)
         self.db.executescript(SCHEMA)
 
+    def close(self):
+        self.db.close()
+
+    def __enter__(self) -> "Store":
+        return self
+
+    def __exit__(self, *exc):
+        self.close()
+
     # ---- files / incremental
 
     def file_sha(self, path: str) -> str | None:

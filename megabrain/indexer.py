@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import time
 from fnmatch import fnmatch
 from pathlib import Path
@@ -96,8 +97,8 @@ def index_repo(root: Path, repo_name: str | None = None, quiet: bool = False,
     prev_model = store.get_meta("embed_model")
     if prev_model is not None and prev_model != EMBED_MODEL:
         force = True
-        if not quiet:
-            print(f"embed model changed ({prev_model} -> {EMBED_MODEL}); re-embedding all")
+        logging.getLogger(__name__).info(
+            "embed model changed (%s -> %s); re-embedding all", prev_model, EMBED_MODEL)
 
     paths = discover(root, all_exts(registry), excludes)
     rels = {p: str(p.relative_to(root)) for p in paths}

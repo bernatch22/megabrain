@@ -9,14 +9,17 @@ disk. Streamed, ~1-3s. Fail-open: no citations / API error -> full bundle.
 
 from __future__ import annotations
 
+import logging
 import re
 import sys
 import time
 from pathlib import Path
 
 from . import providers
-from .query import lang_of, render, search
+from .query import SearchState, lang_of, load_state, render, search_with_state
 from .strategies import MarkdownStrategy
+
+log = logging.getLogger(__name__)
 
 # ask is a CODE walkthrough: docs (markdown) are excluded from its candidates so a
 # code explanation isn't diluted with prose. docs_only flips it to a docs-only
@@ -140,9 +143,11 @@ def _code_block(c: dict, lo: int | None, hi: int | None, seen: set,
 
 
 def ask(root: Path, question: str, rerank: bool = False,
-        docs_only: bool = False, path_filter: str | None = None) -> dict:
+        docs_only: bool = False, path_filter: str | None = None,
+        state: SearchState | None = None) -> dict:
     t0 = time.time()
-    res = search(Path(root), question, rerank=rerank, path_filter=path_filter)
+    st = state or load_state(Path(root))
+    res = search_with_state(st, question, rerank=rerank, path_filter=path_filter)
     retrieval_ms = int((time.time() - t0) * 1000)
     cands = _candidates(res, docs_only)
     key = providers.find_chat_key(required=False)
@@ -152,11 +157,11 @@ def ask(root: Path, question: str, rerank: bool = False,
         try:
             text = _explain_stream(question, cands, key)
         except Exception:
+            log.debug("ask explanation failed (falling back to full bundle)",
+                      exc_info=True)
             text = ""
         llm_ms = int((time.time() - t1) * 1000)
-    from .store import Store
-    st = Store(Path(root))
-    file_syms = {f: st.symbols_for(f) for f in {c["file"] for c in cands}}
+    file_syms = {f: st.store.symbols_for(f) for f in {c["file"] for c in cands}}
     return {"result": res, "cands": cands, "text": text, "file_syms": file_syms,
             "retrieval_ms": retrieval_ms, "llm_ms": llm_ms,
             "query": question, "repo": res["repo"]}
@@ -221,7 +226,8 @@ def stream_ask(root: Path, question: str, out=None, rerank: bool = False,
         out.flush()
 
     t0 = time.time()
-    res = search(Path(root), question, rerank=rerank, path_filter=path_filter)
+    st = load_state(Path(root))
+    res = search_with_state(st, question, rerank=rerank, path_filter=path_filter)
     retrieval_ms = int((time.time() - t0) * 1000)
     cands = _candidates(res, docs_only)
     key = providers.find_chat_key(required=False)
@@ -229,9 +235,7 @@ def stream_ask(root: Path, question: str, out=None, rerank: bool = False,
         write(render(res) + "\n")
         return
 
-    from .store import Store
-    st = Store(Path(root))
-    file_syms = {f: st.symbols_for(f) for f in {c["file"] for c in cands}}
+    file_syms = {f: st.store.symbols_for(f) for f in {c["file"] for c in cands}}
 
     write(f'# megabrain — "{question}"\n')
     write(f'repo `{res["repo"]}` · {retrieval_ms}ms retrieval · streaming {MODEL}…\n\n')
@@ -263,6 +267,7 @@ def stream_ask(root: Path, question: str, out=None, rerank: bool = False,
     try:
         _, stop = providers.stream_chat(_build_body(question, cands), key, on_delta=on_delta)
     except Exception:
+        log.debug("ask stream interrupted", exc_info=True)
         interrupted = True
     if pending[0]:                     # flush the trailing partial line
         write(_SEL.sub(sub, pending[0]))

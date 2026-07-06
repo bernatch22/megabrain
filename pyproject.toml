@@ -45,6 +45,9 @@ Repository = "https://github.com/bernatch22/megabrain"
 [tool.setuptools.packages.find]
 include = ["megabrain*"]
 
+[tool.setuptools.package-data]
+megabrain = ["py.typed"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
