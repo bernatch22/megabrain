@@ -95,6 +95,28 @@
                 font-size:12px; font-weight:600; cursor:pointer; }
   .seg button + button { border-left:1px solid var(--line); }
   .seg button.on { background:var(--accent); color:#04231a; }
+  button.alt { background:var(--accent2); color:#fff; }
+
+  #overlay { position:fixed; inset:0; background:rgba(6,8,12,.72); backdrop-filter:blur(4px);
+             z-index:20; display:none; padding:32px 16px; overflow:auto; }
+  #overlay.show { display:block; }
+  .modal { max-width:900px; margin:0 auto; background:var(--panel); border:1px solid var(--line);
+           border-radius:14px; overflow:hidden; }
+  .modal .top { display:flex; gap:12px; align-items:center; padding:14px 18px; border-bottom:1px solid var(--line);
+                flex-wrap:wrap; position:sticky; top:0; background:var(--panel); }
+  .modal .top h3 { font-size:14px; font-weight:650; }
+  .modal .top .sub { color:var(--dim); font-size:12px; font-family:var(--mono); }
+  .modal .top .x { margin-left:auto; background:var(--panel2); color:var(--txt); border:1px solid var(--line);
+                   border-radius:8px; padding:6px 12px; }
+  .ask { padding:18px 22px; font-size:14px; line-height:1.6; }
+  .ask h1 { font-size:18px; margin:6px 0 12px; }
+  .ask h2 { font-size:15px; margin:18px 0 8px; color:var(--accent); }
+  .ask code { background:var(--panel2); padding:1px 5px; border-radius:4px; font-family:var(--mono); font-size:12.5px; }
+  .ask pre { background:#0b0e14; border:1px solid var(--line); border-radius:8px; padding:12px 14px;
+             overflow-x:auto; margin:8px 0; }
+  .ask pre code { background:none; padding:0; font-size:12px; line-height:1.45; }
+  .ask p { margin:8px 0; }
+  .ask .fileref { color:var(--accent); font-family:var(--mono); font-size:12px; font-weight:600; }
 </style>
 </head>
 <body>
@@ -103,12 +125,27 @@
   <label class="fld">repo <select id="repo"></select></label>
   <input id="query" type="text" />
   <button id="go">Search</button>
+  <button id="explain" class="alt" title="LLM walkthrough with real code spliced in">Explain ⚡</button>
   <div class="seg" id="docmode" title="include documentation (.md) files in the bundle?">
     <button data-mode="all" class="on">Code + Docs</button>
     <button data-mode="code">Code only</button>
     <button data-mode="docs">Docs only</button>
   </div>
 </header>
+<div id="overlay">
+  <div class="modal">
+    <div class="top">
+      <h3>ask — walkthrough</h3>
+      <div class="seg" id="prov" title="which LLM narrates — compare the two">
+        <button data-p="claude" class="on">Claude</button>
+        <button data-p="openrouter">OpenRouter</button>
+      </div>
+      <span class="sub" id="asktime"></span>
+      <button class="x" id="closeask">Close</button>
+    </div>
+    <div class="ask" id="askbody"></div>
+  </div>
+</div>
 <div id="pathrow">
   <button id="browse" class="ghost">Browse…</button>
   <label class="fld">absolute repo path <input id="path" type="text" spellcheck="false" /></label>
@@ -166,7 +203,84 @@ async function boot() {
   META = await api("/api/meta", {});
   fillRepoSelect(META.repos[0] && META.repos[0].name);
   renderPills();
+  initProviders();
   $("status").textContent = "ready — index warm, every query runs the real engine";
+}
+
+// ---- ask walkthrough (LLM) with a Claude vs OpenRouter A/B toggle ----------
+let askProvider = "claude";
+
+function initProviders() {
+  const chat = META.chat || { default: "openrouter", claude: false };
+  askProvider = chat.default;
+  const cb = document.querySelector('#prov button[data-p="claude"]');
+  if (!chat.claude) {                       // SDK not installed → Claude disabled
+    cb.disabled = true;
+    cb.title = "install 'megabrain[claude]' to narrate on Claude Code credits";
+  }
+  document.querySelectorAll("#prov button").forEach(b =>
+    b.classList.toggle("on", b.dataset.p === askProvider));
+}
+
+$("prov").onclick = e => {
+  const b = e.target.closest("button[data-p]");
+  if (!b || b.disabled) return;
+  askProvider = b.dataset.p;
+  document.querySelectorAll("#prov button").forEach(x => x.classList.toggle("on", x === b));
+  runAsk();   // re-narrate with the other provider — this is the A/B
+};
+$("explain").onclick = () => { if ($("query").value.trim()) runAsk(); };
+$("closeask").onclick = () => $("overlay").classList.remove("show");
+$("overlay").onclick = e => { if (e.target === $("overlay")) $("overlay").classList.remove("show"); };
+
+async function runAsk() {
+  const q = $("query").value.trim();
+  const name = $("repo").value;
+  if (!q || name === OTHER) return;
+  $("overlay").classList.add("show");
+  const label = askProvider === "claude" ? "Claude (Claude Code)" : "OpenRouter";
+  $("asktime").textContent = "";
+  $("askbody").innerHTML = `<p style="color:var(--dim)">● narrating on <b>${label}</b> — one LLM call, real code spliced in…</p>`;
+  const t0 = performance.now();
+  try {
+    const d = await api("/api/ask", { repo: name, q, provider: askProvider });
+    if (d.error) throw new Error(d.error);
+    const wall = Math.round(performance.now() - t0);
+    $("asktime").textContent =
+      `${d.provider} · ${d.retrieval_ms}ms retrieval + ${d.llm_ms}ms explain · ${wall}ms wall`;
+    $("askbody").innerHTML = renderMarkdown(d.text) +
+      (d.grounded ? "" : `<p style="color:var(--accent2)">(no code cited — full bundle shown)</p>`);
+  } catch (e) {
+    $("askbody").innerHTML = `<p style="color:var(--accent2)">error: ${esc(e.message)}</p>`;
+  }
+}
+
+// minimal markdown → HTML (headings, fenced code, inline code/bold, file refs)
+function renderMarkdown(md) {
+  const blocks = md.split(/```/);
+  let html = "";
+  blocks.forEach((b, i) => {
+    if (i % 2) {                            // inside a fence
+      const nl = b.indexOf("\n");
+      const code = nl >= 0 ? b.slice(nl + 1) : b;
+      html += `<pre><code>${esc(code.replace(/\n$/, ""))}</code></pre>`;
+    } else {
+      b.split("\n").forEach(line => {
+        const h = line.match(/^(#{1,3})\s+(.*)/);
+        if (h) { html += `<h${h[1].length}>${inline(h[2])}</h${h[1].length}>`; return; }
+        if (line.trim()) html += `<p>${inline(line)}</p>`;
+      });
+    }
+  });
+  return html;
+}
+function inline(s) {
+  return esc(s)
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    // **`file` Lx-y** style refs already bolded above; highlight bare file paths
+    .replace(/\b([\w./-]+\.(?:py|ts|tsx|js|jsx|php|rb|go|rs|md)(?::?L?\d+[-\d]*)?)\b/g,
+             '<span class="fileref">$1</span>');
 }
 
 function renderPills() {
