@@ -20,11 +20,19 @@ from __future__ import annotations
 
 import importlib.util
 
-from .chunkers import (GO_SPEC, PHP_SPEC, RUBY_SPEC, RUST_SPEC, TS_SPEC,
-                       CastChunker, FileResult, LangSpec, MarkdownChunker,
-                       TreeSitterChunker, TsChunker)
-from .graph import (extract_edges, php_class_index, php_edges,
-                    python_package_index, ts_edges)
+from .chunkers import (
+    GO_SPEC,
+    PHP_SPEC,
+    RUBY_SPEC,
+    RUST_SPEC,
+    CastChunker,
+    FileResult,
+    LangSpec,
+    MarkdownChunker,
+    TreeSitterChunker,
+    TsChunker,
+)
+from .graph import extract_edges, php_class_index, php_edges, python_package_index, ts_edges
 
 
 class PythonStrategy:

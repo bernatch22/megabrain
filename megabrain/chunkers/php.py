@@ -201,7 +201,7 @@ class LegacyPhpChunker:
                     score[i] = 85
                 elif not lines[i - 1].strip():
                     score[i] = 5
-            for n, us, ue in units:
+            for n, us, _ue in units:
                 start = us
                 score[start] = max(score[start],
                                    90 if n.type in ("text_interpolation", "text") else 20)

@@ -8,7 +8,6 @@ gate stays green on machines without the corpus.
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
 import numpy as np

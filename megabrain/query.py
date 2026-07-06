@@ -114,7 +114,7 @@ def _score_chunks(st: SearchState, query: str,
     shared by search_with_state() and chunks_for_file()."""
     store, emb = st.store, st.emb
     metas, M = st.metas, st.M
-    fpaths, fskels, F = st.fpaths, st.fskels, st.F
+    fpaths, F = st.fpaths, st.F
     if not metas:
         raise RuntimeError("index is empty — run: megabrain index")
     # PATH-SCOPE: restrict candidates to files under the sub-path BEFORE scoring,

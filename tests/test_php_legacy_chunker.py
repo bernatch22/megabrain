@@ -7,9 +7,8 @@ import pytest
 
 pytest.importorskip("tree_sitter_php")
 
-from megabrain.chunker import validate_partition                    # noqa: E402
-from megabrain.chunker_php import (LegacyPhpChunker, PhpChunker,    # noqa: E402
-                                   looks_legacy)
+from megabrain.chunker import validate_partition  # noqa: E402
+from megabrain.chunker_php import LegacyPhpChunker, PhpChunker, looks_legacy  # noqa: E402
 from megabrain.chunker_ts import PHP_SPEC, TreeSitterChunker, _parser  # noqa: E402
 
 LEGACY = """<?php

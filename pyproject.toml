@@ -14,8 +14,11 @@ authors = [{ name = "Berna Castro", email = "bernacas@gmail.com" }]
 keywords = ["code-intelligence", "retrieval", "rag", "embeddings", "code-search",
             "mcp", "ast", "tree-sitter", "developer-tools"]
 classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Operating System :: OS Independent",
     "Intended Audience :: Developers",
     "Topic :: Software Development :: Libraries",
@@ -23,7 +26,7 @@ classifiers = [
 ]
 # Always-on languages (Python via stdlib ast; TS/JS via tree-sitter) + markdown,
 # retrieval, the MCP server and serve-api all run on this base. urllib (stdlib)
-# handles the Perplexity/Anthropic calls — no SDK dependency.
+# talks to any OpenAI-compatible endpoint (OpenRouter/local) — no SDK dependency.
 dependencies = [
     "numpy>=1.24",
     "tree_sitter>=0.21",
@@ -41,6 +44,8 @@ megabrain = "megabrain.cli:main"
 [project.urls]
 Homepage = "https://github.com/bernatch22/megabrain"
 Repository = "https://github.com/bernatch22/megabrain"
+Issues = "https://github.com/bernatch22/megabrain/issues"
+Changelog = "https://github.com/bernatch22/megabrain/blob/master/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 include = ["megabrain*"]
@@ -51,6 +56,19 @@ megabrain = ["py.typed"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B"]
+# E501: prompts/tables/URLs legitimately run long; B905: zip(strict=) would be
+# a behavior change on the tuned retrieval path — revisit deliberately.
+ignore = ["E501", "B905"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E402"]   # tests insert the repo root on sys.path before importing
 
 [tool.setuptools.dynamic]
 version = { attr = "megabrain.__version__" }

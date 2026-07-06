@@ -4,7 +4,7 @@ import pytest
 
 pytest.importorskip("tree_sitter_php")
 
-from megabrain.chunker import validate_partition          # noqa: E402
+from megabrain.chunker import validate_partition  # noqa: E402
 from megabrain.chunker_ts import PHP_SPEC, TreeSitterChunker  # noqa: E402
 from megabrain.strategies import build_registry, strategy_for  # noqa: E402
 

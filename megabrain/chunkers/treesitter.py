@@ -25,7 +25,6 @@ from tree_sitter import Language, Parser
 
 from .base import DEFAULT_BUDGET, Chunk, FileResult, Symbol, nws
 
-
 # ---------------------------------------------------------------- language specs
 
 
@@ -308,7 +307,7 @@ class TreeSitterChunker:
 
     def _describe(self, buf, crumb, parent, src):
         named = []
-        for n, s, e in buf:
+        for n, _s, _e in buf:
             d = self._unwrap(n)
             if d.type in self.spec.def_types and self._name_of(d):
                 named.append(d)
@@ -357,7 +356,7 @@ class TreeSitterChunker:
         blocks = []
         bs = be = None
         size = 0
-        for n, s, e in units:
+        for _n, s, e in units:
             usz = self._usize(lines, s, e)
             if usz > self.budget:
                 # oversized single unit: flush, then line-window it

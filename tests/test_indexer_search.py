@@ -94,7 +94,7 @@ def test_reindex_preserves_incoming_edges(tiny_repo):
 # ---------------------------------------------------------------- exclude / ignore
 
 def test_split_and_match_patterns():
-    from megabrain.indexer import _split_patterns, _excluded
+    from megabrain.indexer import _excluded, _split_patterns
     names, globs = _split_patterns(["migrations", "src/generated/", "*.pb.go", ""])
     assert names == {"migrations"} and set(globs) == {"src/generated", "*.pb.go"}
     assert _excluded("app/migrations/001.py", names, globs)        # bare name, any segment
