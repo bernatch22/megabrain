@@ -26,11 +26,42 @@ Via MCP, `megabrain_ask` / `megabrain_query` are registered — use them instead
 ## After ANY change to `megabrain/`, run the gates
 
 ```bash
-python3 -m pytest tests/test_cast_chunker.py tests/test_chunker_ts.py tests/test_markdown_chunker.py tests/test_ask_citation.py -q
+ruff check .
+python3 -m pytest -q                 # full OFFLINE suite (no key/network) — this is what CI runs
 ```
-Current bar: 37 unit tests green (chunker + markdown + ask-citation). The end-to-end retrieval
-benchmark (R@1 0.86 · bundle_full 1.00 · p50 ~8ms) runs against a local indexed corpus and is
-kept out of this repo.
+For a change under `megabrain/` also run the retrieval gates (local indexed corpus, kept out of
+this repo): `python3 tests/test_engine_golden.py` (R@1 ≥ 0.85, **bundle_full ≥ 0.90**),
+`python3 tests/test_multi_repo.py`, `python3 tests/test_scale.py`. Current bar: R@1 0.86 ·
+bundle_full 1.00 · p50 ~10 ms. Never merge a change that lowers `bundle_full`.
+
+## Contributing workflow — branches, CI, PRs, releases
+
+CI runs on every push and PR (`.github/workflows/ci.yml`): **ruff** lint · the **offline pytest
+suite** on a matrix (Python 3.10–3.13 × ubuntu / macOS / **Windows**) · a **build smoke**
+(`python -m build` + `megabrain --help`). Keep `master` green; the two local commands above catch
+almost everything CI will before you ever push.
+
+**Branches & PRs — don't push non-trivial work straight to `master`:**
+```bash
+git switch -c fix/thing
+#   … commits (small, self-contained; why-focused message; Co-Authored-By trailer) …
+git push -u origin fix/thing         # HTTPS is fine for branches with no workflow-file changes
+gh pr create --fill                  # CI runs on the PR — merge only when green
+```
+
+**Windows is a first-class CI target and has caught real bugs.** Repo-relative paths are POSIX
+everywhere: use `Path.as_posix()`, never `str(path)`; match/split on `/`. Don't depend on
+case-sensitive filenames or a specific line ending.
+
+**Pushing workflow files:** the default HTTPS OAuth token lacks the `workflow` scope, so a push
+that TOUCHES `.github/workflows/*` is rejected. One-off: `git push
+git@github.com:bernatch22/megabrain.git <branch>` (SSH); permanent: `gh auth refresh -s workflow`.
+Only bites when the workflow YAML itself changes.
+
+**Releases (maintainer only):** bump `megabrain/__init__.py:__version__`, update `CHANGELOG.md`,
+tag `vX.Y.Z`, push the tag → `release.yml` builds and publishes to PyPI via Trusted Publishing
+(one-time trusted-publisher setup required on pypi.org). **Never `git push` a release tag or
+publish to PyPI without explicit approval from the maintainer.**
 
 ## Module map
 
