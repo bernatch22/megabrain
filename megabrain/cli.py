@@ -14,12 +14,16 @@ sub-path. The repo root itself behaves exactly as before (no filter).
 """
 
 import argparse
+import logging
 import os
 import sys
 from pathlib import Path
 
 
 def main(argv=None):
+    logging.basicConfig(
+        level=logging.DEBUG if os.environ.get("MEGABRAIN_DEBUG") else logging.INFO,
+        format="%(message)s")
     ap = argparse.ArgumentParser(prog="megabrain")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
