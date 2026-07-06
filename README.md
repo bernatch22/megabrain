@@ -211,6 +211,20 @@ print(render_ask(ask("path/to/repo", "how does auth work end to end")))
 package ships `py.typed`. Long-running apps: `load_state()` once +
 `search_with_state()` per query (that's exactly what `serve-api` does).
 
+**Custom chunkers** — teach the engine a new content type without forking. Any object
+with `exts` + `chunk_file(relpath, source) -> FileResult` (chunks must be an exact line
+partition — check with `validate_partition`) plugs in via:
+
+```python
+megabrain.index_repo("path/to/repo", strategies=[MySqlStrategy()])
+```
+
+Custom strategies are matched **before** the built-ins, so they can claim a new
+extension (`.sql`, `.proto`, …) or override how an existing one is chunked; everything
+downstream (embedding, retrieval, `ask`) is content-agnostic. Runnable examples —
+programmatic API, a complete `.sql` chunker, a terminal chunk heatmap — in
+[`examples/`](examples/).
+
 ## Project layout
 
 ```

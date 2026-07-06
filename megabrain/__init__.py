@@ -11,6 +11,11 @@ Public API (lazy — numpy/tree_sitter load on first use, not at import):
     search_with_state(state, query)     query against a warm state
     Store(root)                         low-level SQLite index access
 
+Custom chunkers: implement ChunkStrategy (exts + chunk_file -> FileResult made
+of Chunk/Symbol, partition-checked by validate_partition) and pass it to
+index_repo(root, strategies=[MyStrategy()]) — custom strategies are checked
+before the built-ins. See examples/02_custom_chunker.py.
+
 For the LLM walkthrough import the module: `from megabrain.ask import ask,
 render_ask, stream_ask` (kept off the top level so the `ask` submodule and the
 function never shadow each other).
@@ -36,6 +41,12 @@ _EXPORTS = {
     "load_state": ".query",
     "search_with_state": ".query",
     "Store": ".store",
+    # custom-chunker surface (see examples/02_custom_chunker.py):
+    "ChunkStrategy": ".strategies",
+    "Chunk": ".chunkers",
+    "Symbol": ".chunkers",
+    "FileResult": ".chunkers",
+    "validate_partition": ".chunkers",
 }
 __all__ = [*_EXPORTS, "__version__"]
 

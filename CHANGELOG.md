@@ -33,6 +33,12 @@ all three retrieval gates hold the locked bar (golden R@1 0.86 · bundle_full
   silently dropping everything after the first comma.
 
 ### Added
+- **Custom chunking strategies**: `index_repo(root, strategies=[MyStrategy()])`
+  plugs any content type in without forking (checked before the built-ins, so
+  a custom strategy can also override one). New `ChunkStrategy` protocol;
+  `Chunk`/`Symbol`/`FileResult`/`validate_partition` exported at top level.
+- `examples/`: programmatic API walkthrough, a complete custom `.sql` chunker
+  (offline-runnable), and a terminal chunk-score heatmap.
 - Lazy public API: `megabrain.{index_repo, search, render, get_code,
   load_state, search_with_state, Store}` (importing `megabrain` no longer
   pulls numpy/tree_sitter) + `py.typed`.
