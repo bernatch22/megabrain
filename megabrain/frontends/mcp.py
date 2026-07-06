@@ -34,10 +34,13 @@ TOOLS = [
             "flow with the REAL code spliced in at each step (verbatim from disk, true "
             "line numbers — the model narrates and cites code spans but cannot rewrite "
             "them, so code is never hallucinated). Retrieval has no LLM; one chat call "
-            "writes the explanation. Use this INSTEAD OF reading files one by one or "
-            "spawning explore agents — one call replaces minutes of navigation. "
-            "Non-cited related files are listed at the end. Explains CODE only by "
-            "default; set docs=true to explain documentation (markdown) instead. ~6-19s."),
+            "writes the explanation — and BROAD questions automatically fan out into "
+            "parallel sub-agents (one per subsystem, with retrieval tools) whose "
+            "answers are synthesized, same grounding. Use this INSTEAD OF reading "
+            "files one by one or spawning explore agents — one call replaces minutes "
+            "of navigation. Non-cited related files are listed at the end. Explains "
+            "CODE only by default; set docs=true to explain documentation (markdown) "
+            "instead. ~6-19s (broad fan-out: up to ~40s)."),
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -49,6 +52,9 @@ TOOLS = [
                          "description": "explain documentation (markdown) only, instead of code (default false)"},
                 "include_docs": {"type": "boolean",
                                  "description": "explain code AND docs together (default false = code only)"},
+                "agents": {"type": "boolean",
+                           "description": "true = force the multi-agent fan-out, false = never fan out; "
+                                          "omit for AUTO (fan out only when the question is broad)"},
             },
             "required": ["repo_path", "question"],
         },
@@ -150,10 +156,21 @@ def call_tool(name: str, args: dict) -> str:
         from ..ask import ask, render_ask
         root, pf = _scope(args)
         _maybe_reindex(root)
-        return render_ask(ask(root, args["question"],
-                              docs_only=bool(args.get("docs")),
-                              include_docs=bool(args.get("include_docs")),
-                              path_filter=pf))
+        ag = args.get("agents")
+        # MCP is request/response — the consuming agent only reads the final
+        # text, so the fan-out runs buffered (no streaming) and the trace
+        # lands as a one-line footer.
+        out = ask(root, args["question"],
+                  docs_only=bool(args.get("docs")),
+                  include_docs=bool(args.get("include_docs")),
+                  path_filter=pf,
+                  agents=None if ag is None else bool(ag))
+        text = render_ask(out)
+        if out.get("agents"):
+            tr = " · ".join(f'{a["label"]}({len(a["files"])}f)'
+                            for a in out["agents"])
+            text += f"\n\n— multi-agent: {tr}"
+        return text
     if name == "megabrain_get":
         from ..retrieval.query import get_code
         from ..store import resolve_root

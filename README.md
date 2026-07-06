@@ -85,6 +85,7 @@ megabrain ask    ~/repo "how does auth work end to end"    # walkthrough + real 
 megabrain ask    ~/repo/src/auth "how are tokens issued"   # scope to a sub-path (path-scope)
 megabrain ask    ~/repo "how do I configure X" --docs      # explain the docs, not the code
 megabrain ask    ~/repo "..." --with-docs                  # code AND docs together
+megabrain ask    ~/repo "..." --agents                     # force the multi-agent fan-out (AUTO on broad questions; --no-agents to disable)
 megabrain query  ~/repo "request retry logic"              # raw code map, no LLM (~200ms)
 megabrain query  ~/repo "..." --full                       # + RELATED code bodies (heavier; default is map-only)
 megabrain query  ~/repo "..." --best                       # + LLM order-rerank (~2s, never drops files)
@@ -127,7 +128,10 @@ It ships with a 2003-style **legacy-PHP sample app** (indexed on the first run,
 **RELATED**, in milliseconds, no LLM → click a file → every chunk of it renders
 **scored**, with the chunks retrieval actually *selected* highlighted and the noise
 dimmed. Nothing is precomputed: every query runs the same `search` + `chunks_for_file`
-path agents use. Point it at your own code too:
+path agents use. The **Explain** overlay streams live over SSE — on a broad question
+you watch the fan-out happen: one card per sub-agent (its sub-query, its chunks, its
+prose and tool calls), each minimizing as it finishes, then the synthesized walkthrough
+with the real code spliced in. Point it at your own code too:
 
 ```bash
 python examples/webui/server.py ~/my/repo /tmp/click   # any repos, auto-indexed
@@ -197,7 +201,7 @@ A three-stage pipeline. **Only `ask` calls an LLM — and only to narrate.**
 |---|---|
 | **index** | cAST chunk → embed (`pplx-embed-v1-0.6b`, int8, L2-normalized) → SQLite. Incremental by `sha256`, no watcher. |
 | **query** | No-LLM retrieval (~200 ms): dense-chunk + file-skeleton fusion, with import/call-graph candidates. Returns a map — **CORE** (full code of the top files) + **RELATED** (every connected file: best-match span + symbols; `--full` adds their code bodies). The default map is ~60% fewer tokens than inlining RELATED code — sized for agent context windows — while the bundle keeps every file (golden bundle_full stays 1.00). |
-| **ask** | One streamed chat call (qwen3-coder via OpenRouter by default; Claude via `MEGABRAIN_CHAT_PROVIDER=claude`) writes the walkthrough and cites code as `[[k]]`; the engine **replaces each citation with the verbatim block** (real file, real line numbers). Non-cited files are listed at the end. Fail-open: any API error falls back to the full `query` bundle. |
+| **ask** | One streamed chat call (qwen3-coder via OpenRouter by default; Claude via `MEGABRAIN_CHAT_PROVIDER=claude`) writes the walkthrough and cites code as `[[k]]`; the engine **replaces each citation with the verbatim block** (real file, real line numbers). Non-cited files are listed at the end. Fail-open: any API error falls back to the full `query` bundle. **Broad questions auto fan out (ask v2)**: a planner splits the bundle into ≤4 scoped slices, parallel sub-agents — each with the repo map and no-LLM retrieval tools (`search_more`/`get_file`/`get_symbol`) — explain their slice, and a synthesizer merges the partials with the same global `[[k]]` splice. Scoped questions never pay for it; every stage fails open to the single-agent call. |
 
 Because the model only emits citations and the engine splices code from disk, **code
 cannot be hallucinated or rewritten.**
@@ -214,7 +218,9 @@ claude mcp add megabrain -- python3 -m megabrain.mcp_server
 ```
 
 Tools: `megabrain_ask` (primary), `megabrain_query`, `megabrain_get`, `megabrain_chunks`,
-`megabrain_index` — `ask`/`query` take an optional `scope_path` for sub-path retrieval.
+`megabrain_index` — `ask`/`query` take an optional `scope_path` for sub-path retrieval,
+and `ask` takes `agents` (omit for AUTO: broad questions fan out into parallel sub-agents,
+buffered — MCP is request/response, so the trace lands as a one-line footer).
 The server auto-refreshes a stale index before answering, so results always match disk.
 
 ## HTTP API
@@ -231,7 +237,8 @@ megabrain serve-api ~/repo --port 2134 [--host 0.0.0.0] [--cors https://site] [-
 | `POST /search` `{query}` | raw bundle (`tier1` / `tier2`), same as `query` |
 | `GET /docsearch?q=` | doc-search hits — `{title, slug, snippet, context, score, group}` |
 | `GET /chunks?file=&q=` | every chunk of one file: span, score, selected flag |
-| `POST /ask` `{question}` | LLM walkthrough (`{text, …}`) |
+| `POST /ask` `{question, agents?}` | LLM walkthrough (`{text, agents, …}`); `agents`: `"auto"` (default) / `true` / `false` |
+| `POST /ask/stream` `{question, agents?}` | **SSE** — the ask v2 live view: `plan`, `agent_start/delta/tool/done`, `synthesis_delta` (spliced markdown), `done` |
 | `GET /get?file=&symbol=` · `POST /index` · `GET /health` | one file/symbol · reindex · status |
 
 Binds localhost by default; `--cors` opts into a browser origin. Off-localhost, set

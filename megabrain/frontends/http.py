@@ -14,7 +14,14 @@ Endpoints:
     GET  /docsearch ?q=&limit=         -> [{title, slug, snippet, context, score, group}]
                                           docs-site search shape, section-level semantic hits
     GET  /chunks    ?file=&q=          -> every chunk of one file: span, score, selected flag
-    POST /ask       {question, docs?, include_docs?} -> {text, retrieval_ms, llm_ms, repo}
+    POST /ask       {question, docs?, include_docs?, agents?}
+                                       -> {text, retrieval_ms, llm_ms, repo, agents}
+                                          agents: true | false | "auto" (default) —
+                                          broad questions fan out into parallel sub-agents
+    POST /ask/stream {question, docs?, include_docs?, agents?}
+                                       -> text/event-stream: retrieval, classified, plan,
+                                          agent_start/delta/tool/done, synthesis_delta
+                                          (spliced markdown), done — the multi-agent live view
     GET  /get       ?file=&symbol=     -> {code}
     POST /index     {force?}           -> index stats (needs source files on disk)
 
@@ -318,14 +325,55 @@ def _make_handler(repo: _Repo, cors: str | None, enable_llm: bool,
                     q = (body.get("question") or "").strip()
                     if not q:
                         return self._err(400, "missing question")
+                    ag = body.get("agents", "auto")
                     # ask() builds its own state/connection in this thread — no
                     # shared lock, so the slow LLM stream never blocks /search.
                     from ..ask import ask
                     out = ask(repo.root, q, docs_only=bool(body.get("docs")),
-                              include_docs=bool(body.get("include_docs")))
+                              include_docs=bool(body.get("include_docs")),
+                              agents=None if ag in (None, "auto") else bool(ag))
                     for k in ("result", "cands", "file_syms"):
                         out.pop(k, None)
                     return self._send(200, out)
+                if path == "/ask/stream":
+                    if not enable_llm:
+                        return self._err(503, "llm disabled (--no-llm)")
+                    q = (body.get("question") or "").strip()
+                    if not q:
+                        return self._err(400, "missing question")
+                    ag = body.get("agents", "auto")
+                    from ..ask_agents import stream_events
+                    self.send_response(200)
+                    self.send_header("Content-Type",
+                                     "text/event-stream; charset=utf-8")
+                    self.send_header("Cache-Control", "no-cache")
+                    self.send_header("Connection", "close")
+                    if cors:
+                        self.send_header("Access-Control-Allow-Origin", cors)
+                        self.send_header("Vary", "Origin")
+                    self.end_headers()
+                    self.close_connection = True
+
+                    def sse(ev: dict):
+                        self.wfile.write(f'event: {ev["type"]}\ndata: '
+                                         f'{json.dumps(ev)}\n\n'.encode())
+                        self.wfile.flush()
+
+                    # like /ask: stream_events loads its own state in this
+                    # thread, so the slow stream never holds the shared lock
+                    try:
+                        stream_events(repo.root, q, sse,
+                                      agents=None if ag in (None, "auto") else bool(ag),
+                                      docs_only=bool(body.get("docs")),
+                                      include_docs=bool(body.get("include_docs")))
+                    except (BrokenPipeError, ConnectionResetError):
+                        pass              # client went away mid-stream
+                    except Exception as e:  # noqa: BLE001 — headers already sent
+                        try:
+                            sse({"type": "error", "stage": "fatal", "msg": str(e)})
+                        except OSError:
+                            pass
+                    return
                 if path == "/index":
                     from ..indexing.indexer import index_repo
                     return self._send(200, index_repo(repo.root, quiet=True,
