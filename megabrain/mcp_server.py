@@ -80,6 +80,24 @@ TOOLS = [
         },
     },
     {
+        "name": "megabrain_chunks",
+        "description": (
+            "Score EVERY chunk of ONE file against a query: each chunk's span "
+            "(start/end line), relevance score, and whether the full retrieval "
+            "actually SELECTED it into the bundle. Shows signal-vs-noise inside a "
+            "file (what retrieval reads vs ignores); powers chunk-selection "
+            "visualizations."),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "repo_path": {"type": "string", "description": "path to the indexed repo root (a sub-path also works — the root is auto-detected from .megabrain)"},
+                "file": {"type": "string", "description": "repo-relative path of the file to map"},
+                "query": {"type": "string", "description": "the retrieval query to score chunks against"},
+            },
+            "required": ["repo_path", "file", "query"],
+        },
+    },
+    {
         "name": "megabrain_index",
         "description": "Index or incrementally update a repo before querying a NEW one (fast: only changed files are re-embedded; ask/query auto-refresh a stale index).",
         "inputSchema": {
@@ -138,6 +156,15 @@ def call_tool(name: str, args: dict) -> str:
         if sub and not (root / rel).exists() and (root / sub / rel).exists():
             rel = (Path(sub) / rel).as_posix()
         return get_code(root, rel, args.get("symbol"))
+    if name == "megabrain_chunks":
+        from .query import chunks_for_file_root
+        from .store import resolve_root
+        root, sub = resolve_root(Path(args["repo_path"]).expanduser())
+        rel = args["file"]
+        if sub and not (root / rel).exists() and (root / sub / rel).exists():
+            rel = (Path(sub) / rel).as_posix()
+        _maybe_reindex(root)
+        return json.dumps(chunks_for_file_root(root, rel, args["query"]))
     if name == "megabrain_index":
         from .indexer import index_repo
         root = Path(args["repo_path"]).expanduser().resolve()

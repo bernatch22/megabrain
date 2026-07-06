@@ -29,6 +29,56 @@ _HEADING = re.compile(r"^(#{1,6})\s+(.*?)\s*#*\s*$")
 _FENCE = re.compile(r"^\s*(```|~~~)")
 
 
+def qmd_cut(lines, start: int, end: int, score, forbidden, budget: int):
+    """Greedy QMD break selection over [start, end] (1-based inclusive): walk
+    forward, and near the size target pick the highest-scoring allowed cut line.
+    Returns contiguous (s, e) ranges that exactly partition the region.
+
+    Shared by the markdown chunker (start=1, end=total) and the legacy-PHP
+    chunker (per flow section) — `score`/`forbidden` are absolute-line-indexed."""
+    pre = {start - 1: 0}
+    acc = 0
+    for i in range(start, end + 1):
+        acc += nws(lines[i - 1])
+        pre[i] = acc
+
+    def size(s, e):
+        return pre[e] - pre[s - 1]
+
+    T = budget
+    W = max(T // 2, 1)
+    ranges = []
+    s = start
+    while s <= end:
+        if size(s, end) <= T + W:
+            ranges.append((s, end))
+            break
+        best_j, best_key = None, None
+        j = s + 1
+        while j <= end:
+            sz = size(s, j - 1)
+            if sz > T + W:
+                break
+            if sz >= T - W and not forbidden[j]:
+                key = (score[j], -abs(sz - T))   # best score, then nearest target
+                if best_key is None or key > best_key:
+                    best_key, best_j = key, j
+            j += 1
+        if best_j is None:
+            # no break in window (e.g. a huge code block): hard cut at the
+            # first line past target that isn't forbidden
+            j = s + 1
+            while j <= end and (size(s, j - 1) < T or forbidden[j]):
+                j += 1
+            if j > end:
+                ranges.append((s, end))
+                break
+            best_j = j
+        ranges.append((s, best_j - 1))
+        s = best_j
+    return ranges
+
+
 class MarkdownChunker:
     def __init__(self, budget: int = DEFAULT_BUDGET, repo: str = ""):
         self.budget = budget
@@ -125,45 +175,7 @@ class MarkdownChunker:
     # ---- cut selection (greedy, best-scoring break near the budget)
 
     def _cut(self, lines, total, score, forbidden):
-        pre = [0] * (total + 1)
-        for i in range(1, total + 1):
-            pre[i] = pre[i - 1] + nws(lines[i - 1])
-
-        def size(s, e):
-            return pre[e] - pre[s - 1]
-
-        T = self.budget
-        W = max(T // 2, 1)
-        ranges = []
-        s = 1
-        while s <= total:
-            if size(s, total) <= T + W:
-                ranges.append((s, total))
-                break
-            best_j, best_key = None, None
-            j = s + 1
-            while j <= total:
-                sz = size(s, j - 1)
-                if sz > T + W:
-                    break
-                if sz >= T - W and not forbidden[j]:
-                    key = (score[j], -abs(sz - T))   # best score, then nearest target
-                    if best_key is None or key > best_key:
-                        best_key, best_j = key, j
-                j += 1
-            if best_j is None:
-                # no break in window (e.g. a huge code block): hard cut at the
-                # first line past target that isn't inside a fence
-                j = s + 1
-                while j <= total and (size(s, j - 1) < T or forbidden[j]):
-                    j += 1
-                if j > total:
-                    ranges.append((s, total))
-                    break
-                best_j = j
-            ranges.append((s, best_j - 1))
-            s = best_j
-        return ranges
+        return qmd_cut(lines, 1, total, score, forbidden, self.budget)
 
     # ---- breadcrumb / heading stack
 

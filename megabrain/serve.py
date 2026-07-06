@@ -255,6 +255,14 @@ def _make_handler(repo: _Repo, cors: str | None, enable_llm: bool):
                     from .query import get_code
                     sym = (qs.get("symbol") or [None])[0]
                     return self._send(200, {"code": get_code(repo.root, rel, sym)})
+                if path == "/chunks":
+                    rel = (qs.get("file") or [""])[0]
+                    q = (qs.get("q") or qs.get("query") or [""])[0].strip()
+                    if not rel or not q:
+                        return self._err(400, "missing file or q")
+                    from .query import chunks_for_file
+                    return self._send(200, repo.with_state(
+                        lambda st: chunks_for_file(st, rel, q)))
                 return self._err(404, "not found")
             except Exception as e:       # noqa: BLE001 — surface any engine error as 500
                 return self._err(500, str(e))

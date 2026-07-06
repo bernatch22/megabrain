@@ -8,7 +8,7 @@ from megabrain.mcp_server import TOOLS, _scope, call_tool
 def test_tool_schemas_are_wellformed():
     names = [t["name"] for t in TOOLS]
     assert names == ["megabrain_ask", "megabrain_query", "megabrain_get",
-                     "megabrain_index"]
+                     "megabrain_chunks", "megabrain_index"]
     for t in TOOLS:
         req = t["inputSchema"].get("required", [])
         props = t["inputSchema"]["properties"]

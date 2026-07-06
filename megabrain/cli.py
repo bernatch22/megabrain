@@ -50,6 +50,12 @@ def main(argv=None):
     p.add_argument("file")
     p.add_argument("--symbol")
 
+    p = sub.add_parser("chunks",
+                       help="every chunk of one file, scored for a query, with a selected flag (JSON)")
+    p.add_argument("path")
+    p.add_argument("file")
+    p.add_argument("query")
+
     p = sub.add_parser("serve-api")
     p.add_argument("path", nargs="?", default=".")
     p.add_argument("--port", type=int, default=2134)
@@ -100,6 +106,16 @@ def main(argv=None):
         if sp and not (Path(r0) / rel).exists() and (Path(r0) / sp / rel).exists():
             rel = (Path(sp) / rel).as_posix()
         print(get_code(r0, rel, a.symbol))
+    elif a.cmd == "chunks":
+        import json as _json
+
+        from .query import chunks_for_file_root
+        from .store import resolve_root
+        r0, sp = resolve_root(root)
+        rel = a.file
+        if sp and not (Path(r0) / rel).exists() and (Path(r0) / sp / rel).exists():
+            rel = (Path(sp) / rel).as_posix()
+        print(_json.dumps(chunks_for_file_root(r0, rel, a.query, path_filter=sp or None), indent=1))
     elif a.cmd == "serve-api":
         from .serve import serve
         serve(root, port=a.port, host=a.host, cors=a.cors, enable_llm=not a.no_llm)
