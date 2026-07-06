@@ -39,6 +39,12 @@ all three retrieval gates hold the locked bar (golden R@1 0.86 · bundle_full
   silently dropping everything after the first comma.
 
 ### Added
+- `ask --with-docs` (MCP `include_docs`, HTTP `include_docs`): explain code
+  AND docs together — third mode next to the default (code only) and `--docs`
+  (docs only).
+- CLI `ask`/`query`/`chunks` now auto-refresh a stale index before answering
+  (60 s TTL, incremental, fail-open without a key) — previously only the MCP
+  server did, so CLI answers could cite stale code after an edit.
 - **Claude chat provider** (`MEGABRAIN_CHAT_PROVIDER=claude`, extra
   `megabrain[claude]`): `ask`/`--best` stream through the Claude Agent SDK —
   Claude Code **subscription credits** when the CLI is logged in, or

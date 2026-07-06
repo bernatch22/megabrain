@@ -84,6 +84,7 @@ megabrain index  ~/repo                                    # incremental (sha256
 megabrain ask    ~/repo "how does auth work end to end"    # walkthrough + real code (~6–20s)
 megabrain ask    ~/repo/src/auth "how are tokens issued"   # scope to a sub-path (path-scope)
 megabrain ask    ~/repo "how do I configure X" --docs      # explain the docs, not the code
+megabrain ask    ~/repo "..." --with-docs                  # code AND docs together
 megabrain query  ~/repo "request retry logic"              # raw code map, no LLM (~200ms)
 megabrain query  ~/repo "..." --best                       # + LLM order-rerank (~2s, never drops files)
 megabrain get    ~/repo src/x.py --symbol Class.method     # one file or symbol
@@ -95,6 +96,10 @@ megabrain serve-api ~/repo --port 2134                     # long-running JSON A
 **Path-scope:** pass a sub-folder (`~/repo/src/auth`) to any of `ask` / `query` / `get`
 and retrieval is confined to files under it — the repo root (where the index lives) is
 auto-detected. Multi-repo works too: `megabrain query ~/a/src,~/b "..."`.
+
+**Always fresh:** `ask` / `query` / `chunks` auto-refresh a stale index (60 s TTL,
+incremental — only changed files re-embed) before answering, so results always match
+what's on disk. Same behavior as the MCP server.
 
 **Excluding files:** build artifacts (`node_modules`, `.venv`, `dist`, …) are skipped by
 default. Add your own with `megabrain index ~/repo --exclude generated --exclude '*.pb.go'`
