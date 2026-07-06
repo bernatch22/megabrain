@@ -25,7 +25,9 @@ run it only on repos you trust on your own machine.
 
 from __future__ import annotations
 
+import importlib.util
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -34,8 +36,9 @@ import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from megabrain.ask import DOC_EXTS
+from megabrain.ask import DOC_EXTS, ask, render_ask
 from megabrain.indexer import index_repo
+from megabrain.providers import chat_provider
 from megabrain.query import chunks_for_file, search_with_state
 from megabrain.serve import _Repo
 
@@ -57,6 +60,32 @@ SUGGESTED = {
 
 _repos: dict[str, _Repo] = {}
 _lock = threading.Lock()
+_ask_lock = threading.Lock()   # serializes ask + the MEGABRAIN_CHAT_PROVIDER swap
+
+
+def claude_available() -> bool:
+    return importlib.util.find_spec("claude_agent_sdk") is not None
+
+
+def run_ask(repo: _Repo, q: str, provider: str) -> dict:
+    """Run the LLM walkthrough for the demo's provider A/B. ask() builds its
+    own SQLite connection (like serve-api /ask), so it never races the warm
+    search state. The provider is swapped via env under a lock — fine for a
+    single-user local demo. Returns rendered markdown + per-stage timings."""
+    provider = provider if provider in ("claude", "openrouter") else chat_provider()
+    with _ask_lock:
+        prev = os.environ.get("MEGABRAIN_CHAT_PROVIDER")
+        os.environ["MEGABRAIN_CHAT_PROVIDER"] = provider
+        try:
+            out = ask(repo.root, q)
+        finally:
+            if prev is None:
+                os.environ.pop("MEGABRAIN_CHAT_PROVIDER", None)
+            else:
+                os.environ["MEGABRAIN_CHAT_PROVIDER"] = prev
+    return {"text": render_ask(out), "provider": provider,
+            "retrieval_ms": out["retrieval_ms"], "llm_ms": out["llm_ms"],
+            "grounded": bool(out["text"])}
 
 
 def pick_folder() -> str | None:
@@ -180,7 +209,10 @@ def make_handler():
                 if u.path in ("/", "/index.html"):
                     return self._send(200, ui, "text/html")
                 if u.path == "/api/meta":
-                    return self._json(200, {"repos": [repo_meta(n) for n in _repos]})
+                    return self._json(200, {
+                        "repos": [repo_meta(n) for n in _repos],
+                        "chat": {"default": chat_provider(),
+                                 "claude": claude_available()}})
                 if u.path == "/api/pick":
                     p = pick_folder()
                     return self._json(200, {"path": p or ""})
@@ -208,6 +240,11 @@ def make_handler():
                         return self._json(400, {"error": "missing file or q"})
                     return self._json(200, repo.with_state(
                         lambda st: chunks_for_file(st, f, q)))
+                if u.path == "/api/ask":
+                    q = arg("q")
+                    if not q:
+                        return self._json(400, {"error": "missing q"})
+                    return self._json(200, run_ask(repo, q, arg("provider")))
                 return self._json(404, {"error": "not found"})
             except Exception as e:              # surface engine errors to the UI
                 return self._json(500, {"error": str(e)})
