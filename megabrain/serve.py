@@ -28,6 +28,7 @@ OPENROUTER_API_KEY in its environment. CORS is off by default
 from __future__ import annotations
 
 import json
+import os
 import re
 import threading
 import time
@@ -37,16 +38,28 @@ from pathlib import Path
 
 from .query import SearchState, load_state, search_with_state
 
-# ── docs-web adapter ──────────────────────────────────────────────────────
-# Mirrors docs-web/scripts/build-search-index.ts so /docsearch is a drop-in
-# replacement for the static client-side index, but with real semantic ranking.
+# ── docsearch adapter ─────────────────────────────────────────────────────
+# Section-level semantic hits shaped for a docs-site search box. Result groups
+# (sidebar sections) are per-deployment config, not engine knowledge:
+#   <repo>/.megabrain/docsearch.json   {"api/": "SDK API", "guides/": "Guides"}
+#   MEGABRAIN_DOCSEARCH_GROUPS         same JSON object, env fallback
+# Slug prefixes are matched in declaration order; no match -> "Docs".
 
-_GROUPS = (
-    ("api/", "SDK API"), ("concepts/", "Concepts"), ("guides/", "Guides"),
-    ("examples/", "Examples"), ("voice-core/", "Voice Core"),
-    ("voice-widget/", "Voice Widget"), ("chat-core/", "Chat Core"),
-    ("reference/", "Reference"),
-)
+
+def _load_groups(root: Path) -> tuple[tuple[str, str], ...]:
+    raw = None
+    cfg = root / ".megabrain" / "docsearch.json"
+    if cfg.exists():
+        raw = cfg.read_text(errors="replace")
+    elif os.environ.get("MEGABRAIN_DOCSEARCH_GROUPS"):
+        raw = os.environ["MEGABRAIN_DOCSEARCH_GROUPS"]
+    if not raw:
+        return ()
+    try:
+        d = json.loads(raw)
+        return tuple((str(k), str(v)) for k, v in d.items())
+    except (json.JSONDecodeError, AttributeError):
+        return ()
 
 # Markdown chunk text is raw (YAML frontmatter, '#' headings, fences, backticks).
 # Clean it for display so the snippet reads as prose and the title has no markup.
@@ -84,12 +97,12 @@ def _context(text: str, n: int = 2000) -> str:
     return (t[:n].rstrip() + "\n\n…") if len(t) > n else t
 
 
-def _group(slug: str) -> str:
+def _group(slug: str, groups: tuple[tuple[str, str], ...]) -> str:
     s = slug.lstrip("/")
-    for prefix, name in _GROUPS:
+    for prefix, name in groups:
         if s.startswith(prefix):
             return name
-    return "Get Started"
+    return "Docs"
 
 
 def _slug(relpath: str) -> str:
@@ -128,7 +141,8 @@ def _title(relpath: str, chunk: dict) -> str:
     return tail.replace("-", " ")
 
 
-def docsearch(state: SearchState, q: str, limit: int = 15) -> list[dict]:
+def docsearch(state: SearchState, q: str, limit: int = 15,
+              groups: tuple[tuple[str, str], ...] = ()) -> list[dict]:
     """Flatten retrieval to section-level hits in docs-web's SearchResult shape,
     deduped to the best hit per page (slug)."""
     res = search_with_state(state, q)
@@ -153,7 +167,7 @@ def docsearch(state: SearchState, q: str, limit: int = 15) -> list[dict]:
             "snippet": _snippet(raw),
             "context": _context(raw),
             "score": round(score / top * 100),
-            "group": _group(slug),
+            "group": _group(slug, groups),
         }
         prev = best_by_slug.get(slug)
         if prev is None or entry["score"] > prev["score"]:
@@ -166,6 +180,7 @@ def docsearch(state: SearchState, q: str, limit: int = 15) -> list[dict]:
 class _Repo:
     def __init__(self, root: Path):
         self.root = Path(root).resolve()
+        self.groups = _load_groups(self.root)   # docsearch section names (optional)
         self.start = time.time()
         self._lock = threading.Lock()
         self._state: SearchState | None = None
@@ -257,7 +272,8 @@ def _make_handler(repo: _Repo, cors: str | None, enable_llm: bool,
                     limit = max(1, min(50, int((qs.get("limit") or ["15"])[0])))
                     if len(q) < 2:
                         return self._send(200, [])
-                    return self._send(200, repo.with_state(lambda st: docsearch(st, q, limit)))
+                    return self._send(200, repo.with_state(
+                        lambda st: docsearch(st, q, limit, repo.groups)))
                 if path == "/get":
                     rel = (qs.get("file") or [""])[0]
                     if not rel:

@@ -15,11 +15,11 @@ from .embeddings import Embedder
 from .store import Store
 from .strategies import all_exts, build_registry, strategy_for
 
-EXCLUDE_DIRS = {"__pycache__", ".venv", "venv", "node_modules", ".git", "dist",
-                "build", ".megabrain", "logs", "data", "src.bkp", ".brainbank",
-                "coverage", ".next",
-                # benchmark/eval scratch (checked-out foreign repos — not our source)
-                "clones", "wt", "wt_ask", "wt_best", ".pytest_cache"}
+# Universal build/vendor/cache dirs only — anything project-specific belongs in
+# the repo's own `.megabrainignore` (or `--exclude`), never baked in here.
+EXCLUDE_DIRS = {".git", "__pycache__", ".venv", "venv", "node_modules", "dist",
+                "build", "coverage", ".next", ".nuxt", ".pytest_cache", ".tox",
+                ".mypy_cache", ".ruff_cache", "target", "vendor", ".megabrain"}
 MAX_FILE_BYTES = 600_000
 IGNORE_FILE = ".megabrainignore"
 

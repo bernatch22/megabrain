@@ -50,7 +50,7 @@ ASK_MODEL = os.environ.get("MEGABRAIN_ASK_MODEL", "qwen/qwen3-coder")
 RERANK_MODEL = os.environ.get("MEGABRAIN_RERANK_MODEL", "qwen/qwen3-coder")
 
 # Optional OpenRouter attribution (leaderboard only — not required to function).
-_REFERER = os.environ.get("OPENROUTER_HTTP_REFERER", "https://github.com/pinecall/megabrain")
+_REFERER = os.environ.get("OPENROUTER_HTTP_REFERER", "https://github.com/bernatch22/megabrain")
 _TITLE = os.environ.get("OPENROUTER_APP_TITLE", "megabrain")
 
 _RETRY_CODES = (429, 500, 502, 503, 529)
