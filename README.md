@@ -84,6 +84,7 @@ megabrain index  ~/repo                                    # incremental (sha256
 megabrain ask    ~/repo "how does auth work end to end"    # walkthrough + real code (~6–20s)
 megabrain ask    ~/repo/src/auth "how are tokens issued"   # scope to a sub-path (path-scope)
 megabrain ask    ~/repo "how do I configure X" --docs      # explain the docs, not the code
+megabrain ask    ~/repo "..." --with-docs                  # code AND docs together
 megabrain query  ~/repo "request retry logic"              # raw code map, no LLM (~200ms)
 megabrain query  ~/repo "..." --best                       # + LLM order-rerank (~2s, never drops files)
 megabrain get    ~/repo src/x.py --symbol Class.method     # one file or symbol
@@ -96,6 +97,10 @@ megabrain serve-api ~/repo --port 2134                     # long-running JSON A
 and retrieval is confined to files under it — the repo root (where the index lives) is
 auto-detected. Multi-repo works too: `megabrain query ~/a/src,~/b "..."`.
 
+**Always fresh:** `ask` / `query` / `chunks` auto-refresh a stale index (60 s TTL,
+incremental — only changed files re-embed) before answering, so results always match
+what's on disk. Same behavior as the MCP server.
+
 **Excluding files:** build artifacts (`node_modules`, `.venv`, `dist`, …) are skipped by
 default. Add your own with `megabrain index ~/repo --exclude generated --exclude '*.pb.go'`
 or a persistent **`.megabrainignore`** at the repo root (one pattern per line; a bare name
@@ -106,6 +111,25 @@ generated/
 vendor
 *.min.js
 docs/legacy
+```
+
+## See it live — web demo
+
+```bash
+git clone https://github.com/bernatch22/megabrain && cd megabrain
+pip install -e .                       # + OPENROUTER_API_KEY (or a local embed endpoint)
+python examples/webui/server.py        # → http://localhost:8688
+```
+
+It ships with a 2003-style **legacy-PHP sample app** (indexed on the first run,
+~30 s). Type a question → the real engine ranks the bundle files — **CORE** /
+**RELATED**, in milliseconds, no LLM → click a file → every chunk of it renders
+**scored**, with the chunks retrieval actually *selected* highlighted and the noise
+dimmed. Nothing is precomputed: every query runs the same `search` + `chunks_for_file`
+path agents use. Point it at your own code too:
+
+```bash
+python examples/webui/server.py ~/my/repo /tmp/click   # any repos, auto-indexed
 ```
 
 ## Provider flexibility — cloud, native, local, hybrid
@@ -131,6 +155,39 @@ Changing the embed model auto-triggers a full re-embed on the next `index` (or f
 with `--force`), so vectors never silently mismatch. Local-stack benchmarks live in
 `evals/LOCAL_MODELS.md`.
 
+### `ask` on Claude — Claude Code credits (default when installed), or the Anthropic API
+
+The narrator (`ask` / `--best`) runs on **Claude** by default when the Claude Agent SDK is
+installed, with the same live streaming — so a Claude Code user gets subscription-credit
+narration with zero config:
+
+```bash
+pip install 'megabrain[claude]'        # Claude Agent SDK → ask now runs on Claude (haiku)
+```
+
+**Credentials** — the SDK drives the Claude Code CLI, so it uses whatever Claude Code
+already has:
+
+- **Claude Code subscription (recommended)** — if the `claude` CLI is installed and
+  logged in, `ask` runs on your plan's credits. No API key, nothing else to configure.
+- **Anthropic API** — set `ANTHROPIC_API_KEY` and the same setup bills your API account.
+
+**Choosing the provider** — the default is auto (Claude when its SDK is importable, else
+OpenRouter, so a plain `pip install megabrain` always works). Pin it either way, per run:
+
+```bash
+export MEGABRAIN_CHAT_PROVIDER=claude       # force Claude   (or 'openrouter' to force that)
+export MEGABRAIN_ASK_MODEL=sonnet           # optional — any Claude model or alias
+
+MEGABRAIN_CHAT_PROVIDER=openrouter megabrain ask ~/repo "..."   # one-off on OpenRouter
+```
+
+> **Embeddings are a separate lane and always need OpenRouter (or a local embed endpoint).**
+> `index` / `query` / the web demo embed text, and Anthropic has no embeddings API — so
+> `OPENROUTER_API_KEY` (or `MEGABRAIN_EMBED_BASE_URL` → a local server like Ollama) is
+> required regardless of the chat provider. The Claude switch only covers the chat side
+> (`ask` and `--best`).
+
 ## How it works
 
 A three-stage pipeline. **Only `ask` calls an LLM — and only to narrate.**
@@ -139,7 +196,7 @@ A three-stage pipeline. **Only `ask` calls an LLM — and only to narrate.**
 |---|---|
 | **index** | cAST chunk → embed (`pplx-embed-v1-0.6b`, int8, L2-normalized) → SQLite. Incremental by `sha256`, no watcher. |
 | **query** | No-LLM retrieval (~200 ms): dense-chunk + file-skeleton fusion, with import/call-graph candidates. Returns a map — **CORE** (full code of the top files) + **RELATED** (every connected file with its best chunk). |
-| **ask** | One streamed chat call (qwen3-coder by default) writes the walkthrough and cites code as `[[k]]`; the engine **replaces each citation with the verbatim block** (real file, real line numbers). Non-cited files are listed at the end. Fail-open: any API error falls back to the full `query` bundle. |
+| **ask** | One streamed chat call (qwen3-coder via OpenRouter by default; Claude via `MEGABRAIN_CHAT_PROVIDER=claude`) writes the walkthrough and cites code as `[[k]]`; the engine **replaces each citation with the verbatim block** (real file, real line numbers). Non-cited files are listed at the end. Fail-open: any API error falls back to the full `query` bundle. |
 
 Because the model only emits citations and the engine splices code from disk, **code
 cannot be hallucinated or rewritten.**

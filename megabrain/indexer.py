@@ -21,6 +21,7 @@ from .strategies import all_exts, build_registry, strategy_for
 EXCLUDE_DIRS = {".git", "__pycache__", ".venv", "venv", "node_modules", "dist",
                 "build", "coverage", ".next", ".nuxt", ".pytest_cache", ".tox",
                 ".mypy_cache", ".ruff_cache", "target", "vendor", ".megabrain"}
+AUTO_REFRESH_TTL = 60  # seconds; ask/query refresh a staler index before answering
 MAX_FILE_BYTES = 600_000
 IGNORE_FILE = ".megabrainignore"
 
@@ -78,6 +79,24 @@ def discover(root: Path, exts: tuple[str, ...], exclude=()) -> list[Path]:
             continue
         out.append(p)
     return out
+
+
+def maybe_reindex(root: Path, ttl: int = AUTO_REFRESH_TTL) -> bool:
+    """Incrementally refresh the index when it's older than `ttl` seconds, so
+    answers always match disk (CLI ask/query/chunks and the MCP server call
+    this before retrieving). Fail-open: with no embedding credential or any
+    index error, keep the existing index — a stale answer beats a crash."""
+    from .store import Store
+    try:
+        with Store(Path(root)) as s:
+            meta = s.get_meta("last_index")
+        if meta and time.time() - meta["t"] <= ttl:
+            return False
+        index_repo(root, quiet=True)
+        return True
+    except Exception:
+        logging.getLogger(__name__).debug("index auto-refresh skipped", exc_info=True)
+        return False
 
 
 def index_repo(root: Path, repo_name: str | None = None, quiet: bool = False,

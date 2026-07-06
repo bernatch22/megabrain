@@ -48,6 +48,8 @@ def main(argv=None):
     p.add_argument("--no-map", action="store_true")
     p.add_argument("--docs", action="store_true",
                    help="explain docs (markdown) only, instead of code")
+    p.add_argument("--with-docs", action="store_true",
+                   help="explain code AND docs together (default is code only)")
 
     p = sub.add_parser("get")
     p.add_argument("path")
@@ -92,20 +94,26 @@ def main(argv=None):
     elif a.cmd == "query":
         import json as _json
 
+        from .indexer import maybe_reindex
         from .query import render, search, search_multi
         from .store import resolve_root
         scoped = [resolve_root(p) for p in raw]           # [(root, subpath), …]
         roots = [r for r, _ in scoped]
         pfs = [sp or None for _, sp in scoped]
+        for r in dict.fromkeys(roots):     # answers match disk (60s TTL, fail-open)
+            maybe_reindex(r)
         res = (search_multi(roots, a.task, path_filters=pfs) if len(roots) > 1
                else search(roots[0], a.task, rerank=a.best, path_filter=pfs[0]))
         print(_json.dumps(res, indent=1) if a.json else render(res, compact=a.compact))
     elif a.cmd == "ask":
         from .ask import stream_ask
+        from .indexer import maybe_reindex
         from .store import resolve_root
         r0, sp = resolve_root(root)
+        maybe_reindex(r0)                  # answers match disk (60s TTL, fail-open)
         stream_ask(r0, a.question, rerank=a.best, show_map=not a.no_map,
-                   docs_only=a.docs, path_filter=sp or None)
+                   docs_only=a.docs, path_filter=sp or None,
+                   include_docs=a.with_docs)
     elif a.cmd == "get":
         from .query import get_code
         from .store import resolve_root
@@ -119,9 +127,11 @@ def main(argv=None):
     elif a.cmd == "chunks":
         import json as _json
 
+        from .indexer import maybe_reindex
         from .query import chunks_for_file_root
         from .store import resolve_root
         r0, sp = resolve_root(root)
+        maybe_reindex(r0)
         rel = a.file
         if sp and not (Path(r0) / rel).exists() and (Path(r0) / sp / rel).exists():
             rel = (Path(sp) / rel).as_posix()

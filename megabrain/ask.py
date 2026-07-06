@@ -26,8 +26,7 @@ log = logging.getLogger(__name__)
 # walkthrough. Docs stay retrievable via `query` regardless.
 DOC_EXTS = MarkdownStrategy.exts
 
-MODEL = providers.ASK_MODEL
-MAX_CTX_CHARS = 200_000  # ~50K tokens of candidate code; Haiku window is 200K
+MAX_CTX_CHARS = 200_000  # ~50K tokens of candidate code; fits every default model
 # double-bracket so the model can still mention [n] in prose without collision.
 # Tolerate an "L" prefix and stray spaces on the line range: the chunk headers in
 # the prompt read "L1-172", so the model often mirrors that as [[0:L1-172]] — accept
@@ -35,14 +34,17 @@ MAX_CTX_CHARS = 200_000  # ~50K tokens of candidate code; Haiku window is 200K
 _SEL = re.compile(r"\[\[(\d+)(?::\s*[Ll]?(\d+)\s*-\s*[Ll]?(\d+))?\s*\]\]")
 
 
-def _candidates(res: dict, docs_only: bool = False) -> list[dict]:
+def _candidates(res: dict, docs_only: bool = False,
+                include_docs: bool = False) -> list[dict]:
     """Retrieved chunks for the walkthrough: CORE chunks + RELATED best chunks,
-    numbered. By default docs (markdown) are excluded — ask is a code walkthrough and
-    citing doc prose pollutes it. docs_only=True flips it to a docs-only walkthrough.
-    `query` surfaces both regardless of this setting."""
+    numbered. Three modes: default = code only (citing doc prose pollutes a code
+    walkthrough), docs_only = docs-only walkthrough, include_docs = code AND
+    docs together. `query` surfaces both regardless of this setting."""
     def keep(f: str) -> bool:
         is_doc = f.endswith(DOC_EXTS)
-        return is_doc if docs_only else not is_doc
+        if docs_only:
+            return is_doc
+        return True if include_docs else not is_doc
     out = []
     for t in res["tier1"]:
         if not keep(t["file"]):
@@ -88,8 +90,8 @@ QUERY: {question}
 RETRIEVED CHUNKS:
 
 {chr(10).join(blocks)}"""
-    return {"model": MODEL, "max_tokens": 2400, "temperature": 0, "stream": True,
-            "messages": [{"role": "user", "content": prompt}]}
+    return {"model": providers.ask_model(), "max_tokens": 2400, "temperature": 0,
+            "stream": True, "messages": [{"role": "user", "content": prompt}]}
 
 
 def _explain_stream(question: str, cands: list[dict], key: str) -> str:
@@ -144,12 +146,12 @@ def _code_block(c: dict, lo: int | None, hi: int | None, seen: set,
 
 def ask(root: Path, question: str, rerank: bool = False,
         docs_only: bool = False, path_filter: str | None = None,
-        state: SearchState | None = None) -> dict:
+        state: SearchState | None = None, include_docs: bool = False) -> dict:
     t0 = time.time()
     st = state or load_state(Path(root))
     res = search_with_state(st, question, rerank=rerank, path_filter=path_filter)
     retrieval_ms = int((time.time() - t0) * 1000)
-    cands = _candidates(res, docs_only)
+    cands = _candidates(res, docs_only, include_docs)
     key = providers.find_chat_key(required=False)
     text, llm_ms = "", 0
     if key and cands:
@@ -213,7 +215,7 @@ def render_ask(out: dict) -> str:
 
 def stream_ask(root: Path, question: str, out=None, rerank: bool = False,
                show_map: bool = True, docs_only: bool = False,
-               path_filter: str | None = None) -> None:
+               path_filter: str | None = None, include_docs: bool = False) -> None:
     """Live-streaming `ask` for the terminal: prose appears token by token and each
     [[k]]/[[k:lo-hi]] citation is spliced into its real code block as soon as its line
     completes (citations are emitted on their own line). Same grounding + fail-open as
@@ -229,7 +231,7 @@ def stream_ask(root: Path, question: str, out=None, rerank: bool = False,
     st = load_state(Path(root))
     res = search_with_state(st, question, rerank=rerank, path_filter=path_filter)
     retrieval_ms = int((time.time() - t0) * 1000)
-    cands = _candidates(res, docs_only)
+    cands = _candidates(res, docs_only, include_docs)
     key = providers.find_chat_key(required=False)
     if not key or not cands:           # no LLM available / nothing retrieved
         write(render(res) + "\n")
@@ -238,7 +240,8 @@ def stream_ask(root: Path, question: str, out=None, rerank: bool = False,
     file_syms = {f: st.store.symbols_for(f) for f in {c["file"] for c in cands}}
 
     write(f'# megabrain — "{question}"\n')
-    write(f'repo `{res["repo"]}` · {retrieval_ms}ms retrieval · streaming {MODEL}…\n\n')
+    write(f'repo `{res["repo"]}` · {retrieval_ms}ms retrieval · '
+          f'streaming {providers.ask_model()}…\n\n')
 
     seen: set = set()
     cited: set = set()
