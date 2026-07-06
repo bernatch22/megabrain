@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.4.1 — unreleased
+## 0.4.1 — 2026-07-06
 
 - **Internal package reorg** — the tree now mirrors the pipeline: `chunkers/` ·
   `indexing/` (indexer, strategies, graph) · `retrieval/` (query, issue, bm25,
