@@ -19,6 +19,14 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 DIMS = 256
 
 
+@pytest.fixture(autouse=True)
+def _pin_chat_provider(monkeypatch):
+    """Isolate the suite from the ambient chat provider: default to OpenRouter
+    (the network-mockable path) so tests are deterministic whether or not the
+    Claude SDK happens to be installed. Claude-provider tests override this."""
+    monkeypatch.setenv("MEGABRAIN_CHAT_PROVIDER", "openrouter")
+
+
 class FakeEmbedder:
     """Drop-in for megabrain.embeddings.Embedder: token-hash embeddings."""
 

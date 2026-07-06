@@ -11,10 +11,11 @@ found it on par with claude-haiku-4.5 at ~5x lower cost — see evals/ASK_MODELS
 Env surface (all optional except an embedding credential):
     OPENROUTER_API_KEY      Bearer key for OpenRouter (chat + embeddings)
     OPENROUTER_BASE_URL     default https://openrouter.ai/api/v1
-    MEGABRAIN_CHAT_PROVIDER 'openrouter' (default) | 'claude' — route ask/--best
-                            through the Claude Agent SDK (Claude Code
-                            subscription credits, or ANTHROPIC_API_KEY);
-                            see providers_claude.py. Embeddings unaffected.
+    MEGABRAIN_CHAT_PROVIDER 'claude' | 'openrouter' — route ask/--best. Default
+                            AUTO: claude when its SDK is importable, else
+                            openrouter. Claude uses Claude Code subscription
+                            credits or ANTHROPIC_API_KEY (providers_claude.py).
+                            Embeddings ALWAYS use OpenRouter/local, never this.
     MEGABRAIN_EMBED_MODEL   default perplexity/pplx-embed-v1-0.6b
     MEGABRAIN_ASK_MODEL     default qwen/qwen3-coder ('haiku' on claude)
     MEGABRAIN_RERANK_MODEL  default qwen/qwen3-coder ('haiku' on claude)
@@ -56,10 +57,19 @@ RERANK_MODEL = os.environ.get("MEGABRAIN_RERANK_MODEL", "qwen/qwen3-coder")
 
 def chat_provider() -> str:
     """Chat backend for ask/--best (read per call so tests/shells can flip it):
-    'openrouter' (default — any OpenAI-compatible endpoint, see CHAT_BASE_URL)
-    or 'claude' (Claude Agent SDK: Claude Code subscription credits, or
-    ANTHROPIC_API_KEY). Embeddings are NOT affected by this switch."""
-    return os.environ.get("MEGABRAIN_CHAT_PROVIDER", "openrouter").strip().lower()
+    'claude' (Claude Agent SDK: Claude Code subscription credits, or
+    ANTHROPIC_API_KEY) or 'openrouter' (any OpenAI-compatible endpoint, see
+    CHAT_BASE_URL). Embeddings are NOT affected by this switch.
+
+    Default is AUTO: Claude when its SDK is importable (so a Claude Code user
+    gets subscription-credit narration with zero config), else OpenRouter (so a
+    plain `pip install megabrain` still works out of the box). Set
+    MEGABRAIN_CHAT_PROVIDER to pin it either way."""
+    v = os.environ.get("MEGABRAIN_CHAT_PROVIDER")
+    if v:
+        return v.strip().lower()
+    import importlib.util
+    return "claude" if importlib.util.find_spec("claude_agent_sdk") else "openrouter"
 
 
 def ask_model() -> str:

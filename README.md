@@ -155,35 +155,38 @@ Changing the embed model auto-triggers a full re-embed on the next `index` (or f
 with `--force`), so vectors never silently mismatch. Local-stack benchmarks live in
 `evals/LOCAL_MODELS.md`.
 
-### `ask` on Claude — Claude Code credits, or the Anthropic API
+### `ask` on Claude — Claude Code credits (default when installed), or the Anthropic API
 
-The narrator can run on **Claude** instead of OpenRouter, with the same live streaming.
-One env var switches it:
+The narrator (`ask` / `--best`) runs on **Claude** by default when the Claude Agent SDK is
+installed, with the same live streaming — so a Claude Code user gets subscription-credit
+narration with zero config:
 
 ```bash
-pip install 'megabrain[claude]'            # Claude Agent SDK
-export MEGABRAIN_CHAT_PROVIDER=claude      # ask + --best now run on Claude (default: haiku)
-export MEGABRAIN_ASK_MODEL=sonnet          # optional — any Claude model or alias
+pip install 'megabrain[claude]'        # Claude Agent SDK → ask now runs on Claude (haiku)
 ```
 
-Credentials — the SDK drives the Claude Code CLI, so it uses whatever Claude Code
-already has, in this order:
+**Credentials** — the SDK drives the Claude Code CLI, so it uses whatever Claude Code
+already has:
 
 - **Claude Code subscription (recommended)** — if the `claude` CLI is installed and
   logged in, `ask` runs on your plan's credits. No API key, nothing else to configure.
-- **Anthropic API** — set `ANTHROPIC_API_KEY` and the exact same setup bills your API
-  account instead.
+- **Anthropic API** — set `ANTHROPIC_API_KEY` and the same setup bills your API account.
 
-Switching is per-environment, so you can flip per run:
+**Choosing the provider** — the default is auto (Claude when its SDK is importable, else
+OpenRouter, so a plain `pip install megabrain` always works). Pin it either way, per run:
 
 ```bash
-MEGABRAIN_CHAT_PROVIDER=claude megabrain ask ~/repo "how does auth work"   # Claude
-megabrain ask ~/repo "how does auth work"                                  # OpenRouter
+export MEGABRAIN_CHAT_PROVIDER=claude       # force Claude   (or 'openrouter' to force that)
+export MEGABRAIN_ASK_MODEL=sonnet           # optional — any Claude model or alias
+
+MEGABRAIN_CHAT_PROVIDER=openrouter megabrain ask ~/repo "..."   # one-off on OpenRouter
 ```
 
-> Embeddings are a separate lane: `index`/`query` still need `OPENROUTER_API_KEY` or a
-> local embedding endpoint (Anthropic has no embeddings API). The Claude switch covers
-> the chat side — `ask` and `--best`.
+> **Embeddings are a separate lane and always need OpenRouter (or a local embed endpoint).**
+> `index` / `query` / the web demo embed text, and Anthropic has no embeddings API — so
+> `OPENROUTER_API_KEY` (or `MEGABRAIN_EMBED_BASE_URL` → a local server like Ollama) is
+> required regardless of the chat provider. The Claude switch only covers the chat side
+> (`ask` and `--best`).
 
 ## How it works
 
