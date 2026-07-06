@@ -27,8 +27,10 @@ python examples/webui/server.py /tmp/click ~/x  # …or any repos you pass (auto
 The web demo is stdlib-only (one port, no frameworks): type a question →
 the real engine ranks the bundle files (CORE/RELATED, ~ms, no LLM) → click a
 file → every chunk appears scored, with what retrieval actually **selected**
-highlighted and the noise dimmed. Try it on a small GitHub repo:
-`git clone --depth 1 https://github.com/pallets/click /tmp/click`.
+highlighted and the noise dimmed. It ships the legacy-PHP sample; pick
+**"Other…"** in the repo dropdown to load any repo by absolute path from the
+UI (indexed on demand), or pass paths on the command line. Try a small GitHub
+repo: `git clone --depth 1 https://github.com/pallets/click /tmp/click`.
 
 ## Custom chunkers in one paragraph
 
