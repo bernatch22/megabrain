@@ -89,6 +89,11 @@ class SearchState:
     fskels: list
     F: np.ndarray
     repo: str
+    # issue-mode lanes, built lazily on the first long query and cached — a
+    # warm server would otherwise rebuild BM25 + the symbol corpus per query.
+    bm25: object | None = None
+    issue_files: list | None = None
+    issue_syms: list | None = None
 
 
 def load_state(root: Path, check_same_thread: bool = True) -> SearchState:
@@ -137,16 +142,19 @@ def _score_chunks(st: SearchState, query: str,
         from .bm25 import tokenize as _bt
         from .issue import parse_issue, query_variants
         # sparse entity-ID lane (LocAgent T4), built only in issue mode:
-        # BM25 over each file's path + symbol names + signatures.
-        file_docs = []
-        for f in fpaths:
-            toks = re.findall(r"[A-Za-z0-9_]+", f)
-            for s in store.symbols_for(f):
-                toks.append(s["name"])
-                if s.get("signature"):
-                    toks.append(s["signature"])
-            file_docs.append(_bt(" ".join(toks)))
-        bm25_fscore = BM25(file_docs).scores(query)
+        # BM25 over each file's path + symbol names + signatures. Built over
+        # the UNfiltered file set, so it caches safely across path filters.
+        if st.bm25 is None:
+            file_docs = []
+            for f in fpaths:
+                toks = re.findall(r"[A-Za-z0-9_]+", f)
+                for s in store.symbols_for(f):
+                    toks.append(s["name"])
+                    if s.get("signature"):
+                        toks.append(s["signature"])
+                file_docs.append(_bt(" ".join(toks)))
+            st.bm25 = BM25(file_docs)
+        bm25_fscore = st.bm25.scores(query)
         bf2i = {f: i for i, f in enumerate(fpaths)}
         cbi = np.array([bf2i.get(m["file"], -1) for m in metas])
         bm25_chunk = np.where(cbi >= 0, bm25_fscore[cbi], 0.0)
@@ -173,12 +181,19 @@ def _score_chunks(st: SearchState, query: str,
             ranks[order_] = np.arange(len(metas))
             rrf += 1.0 / (60 + ranks + 1)
             fused = rrf / rrf.max() if rrf.max() > 0 else rrf  # [0,1] so tier bonuses keep scale
-        all_files = list(dict.fromkeys(m["file"] for m in metas))
-        all_syms = []
-        for f in all_files:
-            for s in store.symbols_for(f):
-                all_syms.append({"file": f, "name": s["name"],
-                                 "line": s["line"], "end_line": s["end_line"]})
+        # symbol corpus for grounding: cache only the unfiltered view (under a
+        # path filter, grounding must stay within the filtered file set).
+        if path_filter is None and st.issue_syms is not None:
+            all_files, all_syms = st.issue_files, st.issue_syms
+        else:
+            all_files = list(dict.fromkeys(m["file"] for m in metas))
+            all_syms = []
+            for f in all_files:
+                for s in store.symbols_for(f):
+                    all_syms.append({"file": f, "name": s["name"],
+                                     "line": s["line"], "end_line": s["end_line"]})
+            if path_filter is None:
+                st.issue_files, st.issue_syms = all_files, all_syms
         g = parse_issue(query, all_files, all_syms)
         fused = np.where(is_test, -1.0, fused)
         TIER_BONUS = {0: 0.6, 1: 0.25, 2: 0.10}
@@ -354,7 +369,10 @@ def search_multi(roots: list[Path], query: str,
     `path_filters` (one per root, or None) applies PATH-SCOPE per repo."""
     t0 = time.time()
     pfs = path_filters or [None] * len(roots)
-    results = [search(r, query, path_filter=pf) for r, pf in zip(roots, pfs)]
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=min(len(roots), 8)) as ex:
+        results = list(ex.map(lambda rp: search(rp[0], query, path_filter=rp[1]),
+                              zip(roots, pfs)))
     if len(results) == 1:
         return results[0]
     t1, t2 = [], []

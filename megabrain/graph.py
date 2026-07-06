@@ -9,7 +9,10 @@ from collections import defaultdict
 from pathlib import PurePosixPath
 
 _TS_IMPORT = re.compile(
-    r"""(?:import|export)\s+[^'"]*?from\s+['"]([^'"]+)['"]|require\(\s*['"]([^'"]+)['"]\s*\)""")
+    r"""(?:import|export)\s+[^'"]*?from\s+['"]([^'"]+)['"]"""   # import x from / export * from
+    r"""|require\(\s*['"]([^'"]+)['"]\s*\)"""                    # require('x')
+    r"""|import\s*\(\s*['"]([^'"]+)['"]\s*\)"""                  # dynamic import('x')
+    r"""|import\s+['"]([^'"]+)['"]""")                           # side-effect import 'x'
 
 
 def ts_edges(rel: str, source: str, all_files: set[str]) -> list[tuple[str, str]]:
@@ -17,7 +20,7 @@ def ts_edges(rel: str, source: str, all_files: set[str]) -> list[tuple[str, str]
     base = PurePosixPath(rel).parent
     out = set()
     for m in _TS_IMPORT.finditer(source):
-        spec = m.group(1) or m.group(2)
+        spec = next((g for g in m.groups() if g), None)
         if not spec or not spec.startswith("."):
             continue
         target = PurePosixPath(str((base / spec)))
@@ -30,8 +33,10 @@ def ts_edges(rel: str, source: str, all_files: set[str]) -> list[tuple[str, str]
             elif p != ".":
                 parts.append(p)
         stem = "/".join(parts)
-        for cand in (f"{stem}.ts", f"{stem}.tsx", f"{stem}.js",
-                     f"{stem}/index.ts", f"{stem}/index.tsx", stem):
+        for cand in (f"{stem}.ts", f"{stem}.tsx", f"{stem}.js", f"{stem}.jsx",
+                     f"{stem}.mjs", f"{stem}.cjs",
+                     f"{stem}/index.ts", f"{stem}/index.tsx", f"{stem}/index.js",
+                     stem):
             if cand in all_files and cand != rel:
                 out.add((cand, "import"))
                 break
