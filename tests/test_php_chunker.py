@@ -4,9 +4,8 @@ import pytest
 
 pytest.importorskip("tree_sitter_php")
 
-from megabrain.chunker import validate_partition  # noqa: E402
-from megabrain.chunker_ts import PHP_SPEC, TreeSitterChunker  # noqa: E402
-from megabrain.strategies import build_registry, strategy_for  # noqa: E402
+from megabrain.chunkers import PHP_SPEC, TreeSitterChunker, validate_partition  # noqa: E402
+from megabrain.indexing.strategies import build_registry, strategy_for  # noqa: E402
 
 SRC = '''<?php
 namespace App\\Auth;
@@ -78,7 +77,7 @@ def test_broken_php_falls_back_not_crash():
 # ---------------------------------------------------------------- import graph
 
 def test_php_import_graph_resolves_use_statements():
-    from megabrain.graph import php_class_index, php_edges
+    from megabrain.indexing.graph import php_class_index, php_edges
     sources = {
         "src/Controller/Shop.php": (
             "<?php\nnamespace App\\Controller;\n"
@@ -101,7 +100,7 @@ def test_php_import_graph_resolves_use_statements():
 
 
 def test_php_trait_use_inside_class_resolves_same_namespace():
-    from megabrain.graph import php_class_index, php_edges
+    from megabrain.indexing.graph import php_class_index, php_edges
     sources = {
         "src/Svc.php": ("<?php\nnamespace App;\nclass Svc {\n    use LogsActivity;\n}\n"),
         "src/LogsActivity.php": "<?php\nnamespace App;\ntrait LogsActivity {}\n",
@@ -112,7 +111,7 @@ def test_php_trait_use_inside_class_resolves_same_namespace():
 
 
 def test_php_strategy_wires_the_graph():
-    from megabrain.strategies import PhpStrategy
+    from megabrain.indexing.strategies import PhpStrategy
     s = PhpStrategy("demo")
     sources = {
         "a.php": "<?php\nnamespace X;\nuse X\\B;\nclass A {}\n",
@@ -143,7 +142,7 @@ def test_full_index_keeps_edges_regardless_of_file_order(tmp_path, fake_embedder
         "<?php\nnamespace App;\nuse App\\ZRepo;\nclass AController {}\n")
     (tmp_path / "src" / "ZRepo.php").write_text(
         "<?php\nnamespace App;\nclass ZRepo {}\n")
-    from megabrain.indexer import index_repo
+    from megabrain.indexing.indexer import index_repo
     from megabrain.store import Store
     index_repo(tmp_path, quiet=True)
     rows = Store(tmp_path).db.execute("SELECT src,dst FROM edges").fetchall()

@@ -65,6 +65,13 @@ voice: comments explain *why* (constraints, evidence), not *what*.
 
 ## Releasing (maintainers)
 
-Bump `megabrain/__init__.py:__version__`, update `CHANGELOG.md`, tag `vX.Y.Z`,
-push the tag — the release workflow builds and publishes via PyPI Trusted
-Publishing.
+**Versioning policy (pre-1.0, small user base): patch-first, release-when-it-matters.**
+Merging to `master` does NOT imply a release — versions accumulate on `master` as
+`X.Y.Z+1 — unreleased` in the CHANGELOG and get published only when there's a concrete
+reason (a fix or feature someone is waiting for). Default bump is **patch**; reserve a
+minor bump for genuine milestones. Don't publish builds nobody asked for.
+
+Mechanics: bump `megabrain/__init__.py:__version__`, update `CHANGELOG.md`, tag
+`vX.Y.Z`, push the tag — the release workflow builds and publishes via PyPI Trusted
+Publishing (requires the one-time trusted-publisher setup on pypi.org; until then,
+`python -m build && twine upload dist/*`).

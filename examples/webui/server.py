@@ -37,10 +37,10 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from megabrain.ask import DOC_EXTS, ask, render_ask
-from megabrain.indexer import index_repo
+from megabrain.frontends.http import _Repo
+from megabrain.indexing.indexer import index_repo
 from megabrain.providers import chat_provider
-from megabrain.query import chunks_for_file, search_with_state
-from megabrain.serve import _Repo
+from megabrain.retrieval.query import chunks_for_file, search_with_state
 
 PORT = 8688
 HERE = Path(__file__).parent

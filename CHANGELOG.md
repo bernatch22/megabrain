@@ -1,6 +1,19 @@
 # Changelog
 
-## 0.4.0 — unreleased
+## 0.4.1 — unreleased
+
+- **Internal package reorg** — the tree now mirrors the pipeline: `chunkers/` ·
+  `indexing/` (indexer, strategies, graph) · `retrieval/` (query, issue, bm25,
+  rerank) · `providers/` (chat routing, claude, embeddings) · `frontends/`
+  (cli, mcp, http), with `ask.py`/`store.py` at the root. The **public API is
+  unchanged** (`megabrain.{index_repo, search, …}`, `megabrain.ask`), and
+  `python3 -m megabrain.mcp_server` keeps working via a launcher shim. Deep
+  imports of old module paths (`megabrain.query`, `megabrain.indexer`,
+  `megabrain.serve`, `megabrain.chunker*`) moved to their new homes.
+- Versioning policy going forward: patch-first, publish only when there's a
+  reason (see CONTRIBUTING → Releasing).
+
+## 0.4.0 — 2026-07-06
 
 Open-source readiness release. Retrieval behavior is unchanged where it counts:
 all three retrieval gates hold the locked bar (golden R@1 0.86 · bundle_full

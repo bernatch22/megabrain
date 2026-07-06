@@ -16,8 +16,8 @@ import time
 from pathlib import Path
 
 from . import providers
-from .query import SearchState, lang_of, load_state, render, search_with_state
-from .strategies import MarkdownStrategy
+from .indexing.strategies import MarkdownStrategy
+from .retrieval.query import SearchState, lang_of, load_state, render, search_with_state
 
 log = logging.getLogger(__name__)
 

@@ -7,9 +7,9 @@ import pytest
 
 pytest.importorskip("tree_sitter_php")
 
-from megabrain.chunker import validate_partition  # noqa: E402
-from megabrain.chunker_php import LegacyPhpChunker, PhpChunker, looks_legacy  # noqa: E402
-from megabrain.chunker_ts import PHP_SPEC, TreeSitterChunker, _parser  # noqa: E402
+from megabrain.chunkers import PHP_SPEC, TreeSitterChunker, validate_partition  # noqa: E402
+from megabrain.chunkers.php import LegacyPhpChunker, PhpChunker, looks_legacy  # noqa: E402
+from megabrain.chunkers.treesitter import _parser  # noqa: E402
 
 LEGACY = """<?php
 //---------------------------------------------------------
@@ -161,10 +161,10 @@ def test_chunks_for_file_scores_and_selection(tmp_path, fake_embedder):
     (tmp_path / "inc" / "funciones.php").write_text(LEGACY)
     (tmp_path / "otros.php").write_text(
         "<?php\nfunction sumar($a, $b) { return $a + $b; }\n")
-    from megabrain.indexer import index_repo
+    from megabrain.indexing.indexer import index_repo
     index_repo(tmp_path, quiet=True)
 
-    from megabrain.query import chunks_for_file_root, load_state, search_with_state
+    from megabrain.retrieval.query import chunks_for_file_root, load_state, search_with_state
     res = chunks_for_file_root(tmp_path, "inc/funciones.php",
                                "calcular total factura IVA descuento")
     assert res["chunks"], "file must have chunks"

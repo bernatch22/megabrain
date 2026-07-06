@@ -25,7 +25,7 @@ from __future__ import annotations
 import importlib.util
 from typing import Protocol, Sequence, runtime_checkable
 
-from .chunkers import (
+from ..chunkers import (
     GO_SPEC,
     PHP_SPEC,
     RUBY_SPEC,
@@ -147,7 +147,7 @@ class PhpStrategy(TreeSitterStrategy):
 
     def __init__(self, repo: str = ""):
         super().__init__(PHP_SPEC, (".php",), repo=repo)
-        from .chunkers.php import PhpChunker
+        from ..chunkers.php import PhpChunker
         self._chunker = PhpChunker(repo=repo)   # replaces the generic chunker
 
     def build_edge_ctx(self, sources: dict[str, str], repo_name: str):
