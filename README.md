@@ -202,6 +202,9 @@ A three-stage pipeline. **Only `ask` calls an LLM — and only to narrate.**
 Because the model only emits citations and the engine splices code from disk, **code
 cannot be hallucinated or rewritten.**
 
+Full design doc — every stage, the locked rules, and the measurements behind them:
+[ARCHITECTURE.md](ARCHITECTURE.md).
+
 ## MCP
 
 Use it from Claude Code or any MCP client:

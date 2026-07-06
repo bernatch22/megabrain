@@ -14,7 +14,7 @@ Endpoints:
     GET  /docsearch ?q=&limit=         -> [{title, slug, snippet, context, score, group}]
                                           docs-site search shape, section-level semantic hits
     GET  /chunks    ?file=&q=          -> every chunk of one file: span, score, selected flag
-    POST /ask       {question, docs?}  -> {text, retrieval_ms, llm_ms, repo}
+    POST /ask       {question, docs?, include_docs?} -> {text, retrieval_ms, llm_ms, repo}
     GET  /get       ?file=&symbol=     -> {code}
     POST /index     {force?}           -> index stats (needs source files on disk)
 
