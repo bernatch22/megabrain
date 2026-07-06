@@ -6,6 +6,12 @@ Open-source readiness release. Retrieval behavior is unchanged where it counts:
 all three retrieval gates hold the locked bar (golden R@1 0.86 · bundle_full
 1.00 · scale p50 < 20 ms).
 
+### Fixed
+- **Windows: indexes were corrupt** — relpaths were stored with `\` while the
+  whole engine matches on `/` (DB keys, excludes, path filters, graph edges,
+  `chunks`/`get` lookups), so nothing resolved. Relpaths are now POSIX on every
+  platform. (Caught by the new Windows CI matrix.)
+
 ### Security
 - `get_code` now enforces repo-root containment — `../` and absolute paths can
   no longer escape the index root (was reachable via `serve-api GET /get` and

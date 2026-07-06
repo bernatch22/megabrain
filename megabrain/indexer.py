@@ -104,7 +104,10 @@ def index_repo(root: Path, repo_name: str | None = None, quiet: bool = False,
             "embed model changed (%s -> %s); re-embedding all", prev_model, EMBED_MODEL)
 
     paths = discover(root, all_exts(registry), excludes)
-    rels = {p: str(p.relative_to(root)) for p in paths}
+    # POSIX relpaths everywhere: they're the DB keys and the engine matches
+    # them with "/" (excludes, path filters, graph). str() yields "\" on
+    # Windows — the source of cross-platform index corruption. Keep as_posix.
+    rels = {p: p.relative_to(root).as_posix() for p in paths}
     sources = {rels[p]: p.read_text(errors="replace") for p in paths}
 
     # per-strategy whole-repo graph prepass (cheap; None for content with no graph)
