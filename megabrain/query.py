@@ -405,7 +405,16 @@ def lang_of(path: str) -> str:
             "mdx": "markdown"}.get(path.rsplit(".", 1)[-1], "")
 
 
-def render(res: dict, compact: bool = False) -> str:
+def render(res: dict, compact: bool = False, related_code: bool = False) -> str:
+    """Bundle dict -> view-ready markdown map.
+
+    RELATED renders as a MAP by default — file, best-match span pointer,
+    symbols — without chunk code bodies. Measured on the golden set, RELATED
+    holds 45% of the gold files (it cannot be dropped) but ~95% of its VOLUME
+    is non-gold code bodies that flooded agent context windows (~16K of a
+    ~22K-token bundle). The bundle DATA is unchanged (ask/serve consume
+    best_chunk as before); `related_code=True` (CLI/MCP: full) restores the
+    old inline-code render."""
     L: list[str] = []
     n1, n2 = len(res["tier1"]), len(res["tier2"])
     L.append(f'# megabrain — "{res["query"]}"')
@@ -436,7 +445,9 @@ def render(res: dict, compact: bool = False) -> str:
         L.append("")
 
     if res["tier2"]:
-        L.append("## RELATED — matched code per file · expand with `megabrain get <file> [--symbol NAME]`\n")
+        hint = "" if related_code else " · code bodies: `--full`"
+        L.append("## RELATED — best match + symbols per file · expand with "
+                 f"`megabrain get <file> [--symbol NAME]`{hint}\n")
         for t in res["tier2"]:
             via = " ·via-graph" if t["via_graph"] else ""
             match = f' · matched: {", ".join(t["matched"])}' if t["matched"] else ""
@@ -445,9 +456,10 @@ def render(res: dict, compact: bool = False) -> str:
             bc = t.get("best_chunk")
             if bc and not compact:
                 L.append(f'**{bc["name"] or bc["kind"]}** L{bc["start_line"]}-{bc["end_line"]}')
-                L.append(f'```{lang_of(t["file"])}')
-                L.append(bc["text"].rstrip("\n"))
-                L.append("```")
+                if related_code:
+                    L.append(f'```{lang_of(t["file"])}')
+                    L.append(bc["text"].rstrip("\n"))
+                    L.append("```")
             for s in t["symbols"][:6]:
                 L.append(f'- `{s["signature"]}` L{s["line"]}-{s["end_line"]}')
             L.append("")
