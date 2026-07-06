@@ -11,6 +11,7 @@
 
 <p align="center">
   <a href="https://pypi.org/project/megabrain/"><img src="https://img.shields.io/pypi/v/megabrain?style=flat-square&color=3776AB" alt="PyPI"></a>
+  <a href="https://github.com/bernatch22/megabrain/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/bernatch22/megabrain/ci.yml?style=flat-square&label=CI" alt="CI"></a>
   <img src="https://img.shields.io/badge/python-3.10+-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python 3.10+">
   <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="MIT">
   <img src="https://img.shields.io/badge/retrieval-no%20LLM%20·%20~200ms-2ea44f?style=flat-square" alt="No LLM in the retrieval path">
@@ -39,9 +40,11 @@ arbitrary line windows.
 | **`[languages]` extra** | **Ruby**, **Go**, **Rust**, **PHP** | tree-sitter grammars |
 
 Adding a language is a `LangSpec` entry + `pip install tree_sitter_<lang>` — a config
-entry in a registry, not a branch in the indexer. Import/call **graph** edges are built
-for Python and TS/JS today; other languages retrieve on dense+lexical signals (no graph
-needed for correctness).
+entry in a registry, not a branch in the indexer ([CONTRIBUTING](CONTRIBUTING.md) has the
+recipe). Import/call **graph** edges are built for Python, TS/JS and PHP (`use`-statement
+resolution) today; other languages retrieve on dense+lexical signals (no graph needed for
+correctness). Legacy procedural PHP (2000s-era mixed HTML/SQL pages) gets its own
+section-aware chunker; modern PSR/namespaced files keep the generic one.
 
 ## Install
 
@@ -82,7 +85,10 @@ megabrain ask    ~/repo "how does auth work end to end"    # walkthrough + real 
 megabrain ask    ~/repo/src/auth "how are tokens issued"   # scope to a sub-path (path-scope)
 megabrain ask    ~/repo "how do I configure X" --docs      # explain the docs, not the code
 megabrain query  ~/repo "request retry logic"              # raw code map, no LLM (~200ms)
+megabrain query  ~/repo "..." --best                       # + LLM order-rerank (~2s, never drops files)
 megabrain get    ~/repo src/x.py --symbol Class.method     # one file or symbol
+megabrain chunks ~/repo src/x.py "query"                   # every chunk of one file, scored (JSON)
+megabrain stats  ~/repo                                    # index stats
 megabrain serve-api ~/repo --port 2134                     # long-running JSON API (warm state)
 ```
 
@@ -146,9 +152,9 @@ Use it from Claude Code or any MCP client:
 claude mcp add megabrain -- python3 -m megabrain.mcp_server
 ```
 
-Tools: `megabrain_ask` (primary), `megabrain_query`, `megabrain_get`, `megabrain_index` —
-`ask`/`query` take an optional `scope_path` for sub-path retrieval. The server
-auto-refreshes a stale index before answering, so results always match disk.
+Tools: `megabrain_ask` (primary), `megabrain_query`, `megabrain_get`, `megabrain_chunks`,
+`megabrain_index` — `ask`/`query` take an optional `scope_path` for sub-path retrieval.
+The server auto-refreshes a stale index before answering, so results always match disk.
 
 ## HTTP API
 
@@ -156,17 +162,21 @@ auto-refreshes a stale index before answering, so results always match disk.
 no framework). Embed it in an app, or front a docs site with real semantic search.
 
 ```bash
-megabrain serve-api ~/repo --port 2134 [--host 0.0.0.0] [--cors https://site] [--no-llm]
+megabrain serve-api ~/repo --port 2134 [--host 0.0.0.0] [--cors https://site] [--no-llm] [--token SECRET]
 ```
 
 | route | returns |
 |---|---|
 | `POST /search` `{query}` | raw bundle (`tier1` / `tier2`), same as `query` |
 | `GET /docsearch?q=` | doc-search hits — `{title, slug, snippet, context, score, group}` |
+| `GET /chunks?file=&q=` | every chunk of one file: span, score, selected flag |
 | `POST /ask` `{question}` | LLM walkthrough (`{text, …}`) |
 | `GET /get?file=&symbol=` · `POST /index` · `GET /health` | one file/symbol · reindex · status |
 
-Binds localhost by default (front it with a reverse proxy); `--cors` opts into a browser origin.
+Binds localhost by default; `--cors` opts into a browser origin. Off-localhost, set
+`--token` (or `MEGABRAIN_API_TOKEN`) — it requires `Authorization: Bearer <token>` on every
+route except `/health`. `/docsearch` groups are configurable per deployment via
+`.megabrain/docsearch.json` (`{"api/": "SDK API", …}`) or `MEGABRAIN_DOCSEARCH_GROUPS`.
 
 ## Design
 
@@ -184,13 +194,34 @@ Every choice below is backed by an internal golden set (30 verified queries):
 **SWE-bench Lite** localization (no training): retrieval Acc@1 ≈ 0.52 / @5 ≈ 0.83 — on par
 with the trained CodeRankEmbed retriever.
 
+## Python API
+
+```python
+import megabrain
+
+megabrain.index_repo("path/to/repo")
+res = megabrain.search("path/to/repo", "how are tokens issued")  # {tier1, tier2, ...}
+print(megabrain.render(res))
+
+from megabrain.ask import ask, render_ask                        # LLM walkthrough
+print(render_ask(ask("path/to/repo", "how does auth work end to end")))
+```
+
+`import megabrain` is dependency-lazy (numpy/tree-sitter load on first use), and the
+package ships `py.typed`. Long-running apps: `load_state()` once +
+`search_with_state()` per query (that's exactly what `serve-api` does).
+
 ## Project layout
 
 ```
-megabrain/   engine — chunkers, providers, embeddings, SQLite store, graph, indexer, query, ask, serve, cli, mcp_server
-tests/       offline suite (no network/key/corpus) — run with `python3 -m pytest`
-evals/       golden set + model bakeoffs (maintainer-side, private corpus)
+megabrain/            engine — providers, embeddings, SQLite store, graph, indexer, query, ask, serve, cli, mcp_server
+megabrain/chunkers/   cAST chunkers behind one FileResult contract (python · treesitter+LangSpec · php · markdown)
+tests/                offline suite (no network/key/corpus) — run with `python3 -m pytest`
+evals/                golden set + model bakeoffs (maintainer-side, private corpus)
 ```
+
+Contributions welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) (the best first PR is a new
+language `LangSpec`). Security reports: [SECURITY.md](SECURITY.md).
 
 ---
 

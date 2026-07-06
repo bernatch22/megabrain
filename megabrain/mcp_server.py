@@ -5,6 +5,7 @@ Tools:
                                                 spliced (docs=true -> explain docs instead)
   megabrain_query(repo_path, task, scope_path?, compact?) -> full unfiltered code bundle
   megabrain_get(repo_path, file, symbol?)     -> one file or symbol
+  megabrain_chunks(repo_path, file, query)    -> every chunk of one file, scored + selected flags
   megabrain_index(repo_path)                  -> incremental index
 
 Run: python3 -m megabrain.mcp_server

@@ -12,10 +12,14 @@ Endpoints:
     GET  /health                       -> {ok, repo, files, chunks, uptime}
     POST /search    {query, max?}      -> raw bundle {tier1, tier2, repo, ms}
     GET  /docsearch ?q=&limit=         -> [{title, slug, snippet, context, score, group}]
-                                          docs-web search shape, section-level semantic hits
+                                          docs-site search shape, section-level semantic hits
+    GET  /chunks    ?file=&q=          -> every chunk of one file: span, score, selected flag
     POST /ask       {question, docs?}  -> {text, retrieval_ms, llm_ms, repo}
     GET  /get       ?file=&symbol=     -> {code}
     POST /index     {force?}           -> index stats (needs source files on disk)
+
+Optional auth: --token / MEGABRAIN_API_TOKEN requires `Authorization: Bearer
+<token>` on every route except /health — set it whenever binding off-localhost.
 
 Single repo, pinned at boot. State auto-reloads when the index (db mtime)
 changes, so a re-index or redeploy is picked up without a restart.
