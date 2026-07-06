@@ -21,6 +21,13 @@ all three retrieval gates hold the locked bar (golden R@1 0.86 · bundle_full
   beyond localhost without one.
 
 ### Changed
+- **`query` renders RELATED as a map by default** (file, best-match span,
+  symbols — no chunk code bodies; CLI `--full` / MCP `full: true` restores
+  them). Measured on the golden set: RELATED holds 45% of the gold files so it
+  can't be dropped, but its code bodies were ~16K of a ~22K-token bundle at
+  ~5% verified signal — they flooded agent context windows. The bundle DATA is
+  unchanged (`ask`/HTTP consumers keep `best_chunk`), all three retrieval
+  gates hold (bundle_full 1.00), and a typical bundle drops ~22K → ~8K tokens.
 - **Default index excludes trimmed to universal dirs.** `data`, `logs` and
   maintainer-local names are no longer skipped by default — add them to your
   repo's `.megabrainignore` if you relied on that. New defaults add `.tox`,

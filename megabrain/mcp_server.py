@@ -67,6 +67,10 @@ TOOLS = [
                 "scope_path": {"type": "string",
                                "description": "optional repo-relative folder (e.g. src/dispatch) to scope the bundle to files under it; omit for the whole repo"},
                 "compact": {"type": "boolean", "description": "signatures only, no code bodies"},
+                "full": {"type": "boolean",
+                         "description": "include RELATED best-chunk code bodies (default false: "
+                                        "RELATED renders as a map — file, match span, symbols — "
+                                        "so the bundle stays context-friendly)"},
             },
             "required": ["repo_path", "task"],
         },
@@ -138,7 +142,8 @@ def call_tool(name: str, args: dict) -> str:
         root, pf = _scope(args)
         _maybe_reindex(root)
         return render(search(root, args["task"], path_filter=pf),
-                      compact=bool(args.get("compact")))
+                      compact=bool(args.get("compact")),
+                      related_code=bool(args.get("full")))
     if name == "megabrain_ask":
         from .ask import ask, render_ask
         root, pf = _scope(args)

@@ -38,6 +38,9 @@ def main(argv=None):
     p.add_argument("path")
     p.add_argument("task")
     p.add_argument("--compact", action="store_true")
+    p.add_argument("--full", action="store_true",
+                   help="include RELATED best-chunk code bodies (default renders "
+                        "RELATED as a map: file, match span, symbols — ~60%% fewer tokens)")
     p.add_argument("--best", action="store_true", help="LLM order-rerank of candidates (+~2s, never drops files)")
     p.add_argument("--json", action="store_true")
 
@@ -104,7 +107,8 @@ def main(argv=None):
             maybe_reindex(r)
         res = (search_multi(roots, a.task, path_filters=pfs) if len(roots) > 1
                else search(roots[0], a.task, rerank=a.best, path_filter=pfs[0]))
-        print(_json.dumps(res, indent=1) if a.json else render(res, compact=a.compact))
+        print(_json.dumps(res, indent=1) if a.json
+              else render(res, compact=a.compact, related_code=a.full))
     elif a.cmd == "ask":
         from .ask import stream_ask
         from .indexer import maybe_reindex

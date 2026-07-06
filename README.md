@@ -86,6 +86,7 @@ megabrain ask    ~/repo/src/auth "how are tokens issued"   # scope to a sub-path
 megabrain ask    ~/repo "how do I configure X" --docs      # explain the docs, not the code
 megabrain ask    ~/repo "..." --with-docs                  # code AND docs together
 megabrain query  ~/repo "request retry logic"              # raw code map, no LLM (~200ms)
+megabrain query  ~/repo "..." --full                       # + RELATED code bodies (heavier; default is map-only)
 megabrain query  ~/repo "..." --best                       # + LLM order-rerank (~2s, never drops files)
 megabrain get    ~/repo src/x.py --symbol Class.method     # one file or symbol
 megabrain chunks ~/repo src/x.py "query"                   # every chunk of one file, scored (JSON)
@@ -195,7 +196,7 @@ A three-stage pipeline. **Only `ask` calls an LLM — and only to narrate.**
 | stage | what it does |
 |---|---|
 | **index** | cAST chunk → embed (`pplx-embed-v1-0.6b`, int8, L2-normalized) → SQLite. Incremental by `sha256`, no watcher. |
-| **query** | No-LLM retrieval (~200 ms): dense-chunk + file-skeleton fusion, with import/call-graph candidates. Returns a map — **CORE** (full code of the top files) + **RELATED** (every connected file with its best chunk). |
+| **query** | No-LLM retrieval (~200 ms): dense-chunk + file-skeleton fusion, with import/call-graph candidates. Returns a map — **CORE** (full code of the top files) + **RELATED** (every connected file: best-match span + symbols; `--full` adds their code bodies). The default map is ~60% fewer tokens than inlining RELATED code — sized for agent context windows — while the bundle keeps every file (golden bundle_full stays 1.00). |
 | **ask** | One streamed chat call (qwen3-coder via OpenRouter by default; Claude via `MEGABRAIN_CHAT_PROVIDER=claude`) writes the walkthrough and cites code as `[[k]]`; the engine **replaces each citation with the verbatim block** (real file, real line numbers). Non-cited files are listed at the end. Fail-open: any API error falls back to the full `query` bundle. |
 
 Because the model only emits citations and the engine splices code from disk, **code
