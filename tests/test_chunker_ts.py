@@ -1,7 +1,8 @@
 """TS chunker tests — same guarantees as the Python chunker.
 Run: python3 -m pytest tests/test_chunker_ts.py -q"""
 
-from megabrain.chunker import validate_partition, nws as _nws
+from megabrain.chunker import nws as _nws
+from megabrain.chunker import validate_partition
 from megabrain.chunker_ts import TsChunker
 
 

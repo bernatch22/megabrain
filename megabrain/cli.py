@@ -16,7 +16,6 @@ sub-path. The repo root itself behaves exactly as before (no filter).
 import argparse
 import logging
 import os
-import sys
 from pathlib import Path
 
 

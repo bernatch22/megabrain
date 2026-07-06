@@ -4,8 +4,6 @@ break points. Run: python3 -m pytest tests/test_markdown_chunker.py -q"""
 import sys
 from pathlib import Path
 
-import pytest
-
 ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT))
 from megabrain.chunker import nws, validate_partition
@@ -40,7 +38,8 @@ def test_partition_full_coverage():
 def test_scored_cut_prefers_headings():
     """Several small sections (each < budget): cuts land on heading lines, not
     mid-section — the scored break point prefers headings over prose."""
-    sec = lambda h: f"## {h}\n" + "word word word word word word word word\n\n"
+    def sec(h):
+        return f"## {h}\n" + "word word word word word word word word\n\n"
     src = "# Doc\n\n" + "".join(sec(f"S{i}") for i in range(10))
     r = chunk(src, budget=100)
     assert validate_partition(r) == []

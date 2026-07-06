@@ -26,7 +26,7 @@ Validated configuration (experiments phases 0-5, June 2026):
 
 from importlib import import_module
 
-__version__ = "0.3.2"
+__version__ = "0.4.0"
 
 _EXPORTS = {
     "index_repo": ".indexer",

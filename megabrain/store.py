@@ -13,6 +13,7 @@ from pathlib import Path
 
 import numpy as np
 
+
 def resolve_root(path: Path) -> tuple[Path, str]:
     """Resolve a filesystem path to (repo_root, subpath).
 
