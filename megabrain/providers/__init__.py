@@ -179,10 +179,12 @@ def post_json(path: str, body: dict, key: str | None = None, retries: int = 5,
 
 def chat_text(model: str, prompt: str, max_tokens: int, temperature: float = 0.0,
               key: str | None = None, retries: int = 5, timeout: int = 45) -> str:
-    """One non-streamed chat completion -> assistant text (OpenAI schema)."""
+    """One non-streamed chat completion -> assistant text (OpenAI schema).
+    `timeout` bounds BOTH providers (on claude it caps the CLI spawn)."""
     if chat_provider() == "claude":
         from . import claude as providers_claude
-        return providers_claude.chat_text(model, prompt, max_tokens)
+        return providers_claude.chat_text(model, prompt, max_tokens,
+                                          timeout=timeout)
     body = {"model": model, "max_tokens": max_tokens, "temperature": temperature,
             "messages": [{"role": "user", "content": prompt}]}
     d = post_json("/chat/completions", body, key or find_chat_key(),
@@ -191,19 +193,26 @@ def chat_text(model: str, prompt: str, max_tokens: int, temperature: float = 0.0
 
 
 def stream_chat(body: dict, key: str | None = None, retries: int = 4,
-                on_delta=None, timeout: int = 90) -> tuple[str, str]:
-    """Streamed chat completion (OpenAI SSE). Returns (text, finish_reason).
+                on_delta=None, timeout: int = 90, with_tools: bool = False):
+    """Streamed chat completion (OpenAI SSE). Returns (text, finish_reason) —
+    or (text, finish_reason, tool_calls) when `with_tools=True` (ask v2 agents;
+    the caller puts the `tools` spec in the body and runs the loop).
 
     Parses `data: {...}` chunks: `choices[0].delta.content` deltas, terminated
-    by `data: [DONE]`; SSE comment/keep-alive lines are skipped. Backoff on
-    429/5xx; once any delta has been emitted via on_delta we stop retrying so
-    the terminal never double-prints. finish_reason is OpenAI's ("length" on cap).
+    by `data: [DONE]`; SSE comment/keep-alive lines are skipped. Fragmented
+    `delta.tool_calls` (id / function.name / function.arguments) accumulate per
+    index into [{id, name, arguments}] in call order. Backoff on 429/5xx; once
+    any delta has been emitted via on_delta we stop retrying so the terminal
+    never double-prints. finish_reason is OpenAI's ("length" on cap).
 
     MEGABRAIN_CHAT_PROVIDER=claude reroutes the same body through the Claude
-    Agent SDK (Claude Code credits / ANTHROPIC_API_KEY) — same return contract."""
+    Agent SDK (Claude Code credits / ANTHROPIC_API_KEY) — same return contract.
+    (Tool-enabled claude turns go through claude.agent_stream instead: the SDK
+    runs its own tool loop, so the claude route never returns tool_calls.)"""
     if chat_provider() == "claude":
         from . import claude as providers_claude
-        return providers_claude.stream_chat(body, on_delta=on_delta)
+        text, stop = providers_claude.stream_chat(body, on_delta=on_delta)
+        return (text, stop, []) if with_tools else (text, stop)
     key = key or find_chat_key()
     body = {**body, "stream": True}
     data = json.dumps(body).encode()
@@ -213,6 +222,7 @@ def stream_chat(body: dict, key: str | None = None, retries: int = 4,
         req = urllib.request.Request(f"{CHAT_BASE_URL}/chat/completions", data=data,
                                      method="POST", headers=_headers(key, CHAT_BASE_URL))
         text, finish = "", ""
+        calls: dict[int, dict] = {}
         try:
             with urllib.request.urlopen(req, timeout=timeout) as r:
                 for raw in r:
@@ -230,14 +240,27 @@ def stream_chat(body: dict, key: str | None = None, retries: int = 4,
                         raise urllib.error.HTTPError(req.full_url, 529,
                                                      "stream error", None, None)
                     ch = (ev.get("choices") or [{}])[0]
-                    d = (ch.get("delta") or {}).get("content") or ""
+                    delta = ch.get("delta") or {}
+                    d = delta.get("content") or ""
                     if d:
                         text += d
                         if on_delta is not None:
                             on_delta(d)
                             emitted = True
+                    for tc in delta.get("tool_calls") or []:
+                        cur = calls.setdefault(tc.get("index", 0),
+                                               {"id": "", "name": "", "arguments": ""})
+                        if tc.get("id"):
+                            cur["id"] = tc["id"]
+                        fn = tc.get("function") or {}
+                        if fn.get("name"):
+                            cur["name"] = fn["name"]
+                        if fn.get("arguments"):
+                            cur["arguments"] += fn["arguments"]
                     if ch.get("finish_reason"):
                         finish = ch["finish_reason"]
+            if with_tools:
+                return text, finish, [calls[i] for i in sorted(calls)]
             return text, finish
         except urllib.error.HTTPError as e:
             last = e

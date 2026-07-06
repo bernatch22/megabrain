@@ -132,6 +132,39 @@ def test_stream_chat_parses_sse(monkeypatch):
     assert deltas == ["Hello", " world"]
 
 
+def test_stream_chat_accumulates_fragmented_tool_calls(monkeypatch):
+    """with_tools=True: delta.tool_calls fragments (id, name, argument pieces)
+    accumulate per index; plain callers keep the 2-tuple contract untouched."""
+    events = [
+        b'data: {"choices":[{"delta":{"content":"Let me check."}}]}\n',
+        b'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_1",'
+        b'"function":{"name":"search_more","arguments":""}}]}}]}\n',
+        b'data: {"choices":[{"delta":{"tool_calls":[{"index":0,'
+        b'"function":{"arguments":"{\\"que"}}]}}]}\n',
+        b'data: {"choices":[{"delta":{"tool_calls":[{"index":0,'
+        b'"function":{"arguments":"ry\\": \\"x\\"}"}}]}}]}\n',
+        b'data: {"choices":[{"delta":{},"finish_reason":"tool_calls"}]}\n',
+        b'data: [DONE]\n',
+    ]
+    monkeypatch.setattr("urllib.request.urlopen",
+                        lambda req, timeout=0: _Resp(b"".join(events)))
+    text, finish, calls = providers.stream_chat(
+        {"model": "m", "messages": [], "tools": []}, key="k", with_tools=True)
+    assert text == "Let me check."
+    assert finish == "tool_calls"
+    assert calls == [{"id": "call_1", "name": "search_more",
+                      "arguments": '{"query": "x"}'}]
+
+
+def test_stream_chat_without_tools_keeps_two_tuple(monkeypatch):
+    events = [b'data: {"choices":[{"delta":{"content":"hi"},"finish_reason":"stop"}]}\n',
+              b'data: [DONE]\n']
+    monkeypatch.setattr("urllib.request.urlopen",
+                        lambda req, timeout=0: _Resp(b"".join(events)))
+    out = providers.stream_chat({"model": "m", "messages": []}, key="k")
+    assert out == ("hi", "stop")
+
+
 def test_chat_text_extracts_message(monkeypatch):
     body = {"choices": [{"message": {"role": "assistant", "content": "OK"}}]}
     monkeypatch.setattr("urllib.request.urlopen",

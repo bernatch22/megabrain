@@ -44,9 +44,21 @@ def fake_sdk(monkeypatch):
         yield StreamEvent({"type": "message_delta", "delta": {"stop_reason": "end_turn"}})
         yield AssistantMessage("Hello [[0]]")   # ignored: deltas already streamed
 
+    def tool(name, description, schema):
+        def deco(fn):
+            return {"name": name, "description": description,
+                    "schema": schema, "handler": fn}
+        return deco
+
+    def create_sdk_mcp_server(*, name, version, tools):
+        calls["mcp_tools"] = tools
+        return {"name": name, "version": version, "tools": tools}
+
     mod = types.ModuleType("claude_agent_sdk")
     mod.ClaudeAgentOptions = ClaudeAgentOptions
     mod.query = query
+    mod.tool = tool
+    mod.create_sdk_mcp_server = create_sdk_mcp_server
     monkeypatch.setitem(sys.modules, "claude_agent_sdk", mod)
     monkeypatch.setenv("MEGABRAIN_CHAT_PROVIDER", "claude")
     return calls
@@ -91,3 +103,34 @@ def test_missing_sdk_error_is_actionable(monkeypatch):
     monkeypatch.setitem(sys.modules, "claude_agent_sdk", None)  # import -> ImportError
     with pytest.raises(RuntimeError, match="megabrain\\[claude\\]"):
         providers.stream_chat({"model": "haiku", "messages": []})
+
+
+def test_agent_stream_registers_tools_and_unpins_narration(fake_sdk):
+    """ask v2 sub-agent turn: retrieval tools become an in-process MCP server,
+    only those tools are allowed (builtins stay disallowed), no no-tools
+    preamble, and the handler routes to megabrain's sync backend."""
+    import asyncio
+
+    from megabrain.providers import claude as providers_claude
+    tools = [{"name": "search_more", "description": "d",
+              "schema": {"type": "object"}, "fn": lambda a: f"R:{a['query']}"}]
+    text = providers_claude.agent_stream("PROMPT", model="haiku", tools=tools)
+    assert text == "Hello [[0]]"
+    opts = fake_sdk["options"]
+    assert opts["allowed_tools"] == ["mcp__megabrain__search_more"]
+    assert "megabrain" in opts["mcp_servers"]
+    assert opts["max_turns"] == 8
+    assert "Bash" in opts["disallowed_tools"]
+    assert fake_sdk["prompt"] == "PROMPT"       # raw — the agent path has tools
+    h = fake_sdk["mcp_tools"][0]["handler"]
+    assert asyncio.run(h({"query": "x"})) == \
+        {"content": [{"type": "text", "text": "R:x"}]}
+
+
+def test_stream_chat_with_tools_flag_returns_empty_calls(fake_sdk):
+    """providers.stream_chat(with_tools=True) on the claude route: the SDK runs
+    its own tool loop, so the 3-tuple always carries no tool_calls."""
+    text, stop, calls = providers.stream_chat(
+        {"model": "haiku", "messages": [{"role": "user", "content": "Q"}]},
+        with_tools=True)
+    assert text == "Hello [[0]]" and calls == []

@@ -144,29 +144,95 @@ def _code_block(c: dict, lo: int | None, hi: int | None, seen: set,
             f'```{lang_of(c["file"])}\n{text.rstrip(chr(10))}\n```\n')
 
 
+# A trailing PREFIX of a possible citation ("[", "[[3", "[[3:L1-"): the splicer
+# holds only this back, so prose streams token-by-token while a citation split
+# across deltas never leaks raw. Anchored to $ and bracket/digit-only, so any
+# intervening prose breaks the match.
+_PARTIAL = re.compile(r"\[(?:\[(?:\d+(?::\s*[Ll]?\d*(?:-\s*[Ll]?\d*)?)?\]?)?)?$")
+
+
+class _Splicer:
+    """Incremental [[k]]/[[k:lo-hi]] -> code-block substitution over a token
+    stream: emits prose IMMEDIATELY (token-level streaming) and holds back only
+    a trailing partial-citation prefix until it completes or turns out to be
+    plain text. One instance per answer, shared by the CLI stream, the SSE
+    endpoint and ask v2 synthesis so every surface grounds code identically
+    (same seen-dedupe, same cited set)."""
+
+    def __init__(self, cands: list[dict], file_syms: dict[str, list[dict]]):
+        self.cands, self.file_syms = cands, file_syms
+        self.seen: set = set()
+        self.cited: set = set()
+        self._pending = ""
+
+    def _sub(self, m):
+        k = int(m.group(1))
+        if not (0 <= k < len(self.cands)):
+            return m.group(0)
+        self.cited.add(k)
+        lo = int(m.group(2)) if m.group(2) else None
+        hi = int(m.group(3)) if m.group(3) else None
+        return _code_block(self.cands[k], lo, hi, self.seen, self.file_syms)
+
+    def feed(self, d: str) -> str:
+        self._pending += d
+        m = _PARTIAL.search(self._pending)
+        cut = m.start() if m else len(self._pending)
+        if cut == 0:
+            return ""
+        ready, self._pending = self._pending[:cut], self._pending[cut:]
+        return _SEL.sub(self._sub, ready)
+
+    def flush(self) -> str:
+        ready, self._pending = self._pending, ""
+        return _SEL.sub(self._sub, ready) if ready else ""
+
+    @property
+    def files(self) -> int:
+        return len({self.cands[k]["file"] for k in self.cited})
+
+
 def ask(root: Path, question: str, rerank: bool = False,
         docs_only: bool = False, path_filter: str | None = None,
-        state: SearchState | None = None, include_docs: bool = False) -> dict:
+        state: SearchState | None = None, include_docs: bool = False,
+        agents: bool | None = False) -> dict:
+    """One-shot ask. `agents`: False = always single-agent (the default, so
+    library callers and evals keep v1 behavior and cost), None = AUTO (fan out
+    into parallel sub-agents only when ask_agents.classify_bundle says the
+    question is broad), True = force the fan-out. Frontends (CLI/MCP/HTTP)
+    pass auto. Fan-out is fail-open: any error falls back to the single-agent
+    call, then to the bundle."""
     t0 = time.time()
     st = state or load_state(Path(root))
     res = search_with_state(st, question, rerank=rerank, path_filter=path_filter)
     retrieval_ms = int((time.time() - t0) * 1000)
     cands = _candidates(res, docs_only, include_docs)
     key = providers.find_chat_key(required=False)
-    text, llm_ms = "", 0
+    text, llm_ms, trace = "", 0, None
     if key and cands:
         t1 = time.time()
-        try:
-            text = _explain_stream(question, cands, key)
-        except Exception:
-            log.debug("ask explanation failed (falling back to full bundle)",
-                      exc_info=True)
-            text = ""
+        if agents is not False:
+            try:
+                from .ask_agents import classify_bundle, run_agents
+                if agents is True or classify_bundle(res, question)["broad"]:
+                    o = run_agents(root, question, res=res, cands=cands,
+                                   st=st, key=key)
+                    text, trace = o["text"], o["agents"]
+            except Exception:
+                log.debug("multi-agent ask failed (falling back to single-agent)",
+                          exc_info=True)
+        if not text:
+            try:
+                text = _explain_stream(question, cands, key)
+            except Exception:
+                log.debug("ask explanation failed (falling back to full bundle)",
+                          exc_info=True)
+                text = ""
         llm_ms = int((time.time() - t1) * 1000)
     file_syms = {f: st.store.symbols_for(f) for f in {c["file"] for c in cands}}
     return {"result": res, "cands": cands, "text": text, "file_syms": file_syms,
             "retrieval_ms": retrieval_ms, "llm_ms": llm_ms,
-            "query": question, "repo": res["repo"]}
+            "query": question, "repo": res["repo"], "agents": trace}
 
 
 def cited_files(out: dict) -> list[str]:
@@ -215,83 +281,70 @@ def render_ask(out: dict) -> str:
 
 def stream_ask(root: Path, question: str, out=None, rerank: bool = False,
                show_map: bool = True, docs_only: bool = False,
-               path_filter: str | None = None, include_docs: bool = False) -> None:
-    """Live-streaming `ask` for the terminal: prose appears token by token and each
-    [[k]]/[[k:lo-hi]] citation is spliced into its real code block as soon as its line
-    completes (citations are emitted on their own line). Same grounding + fail-open as
-    render_ask, but the reader sees output immediately instead of waiting for the whole
-    walkthrough. Programmatic/eval/MCP callers keep using ask()/render_ask()."""
+               path_filter: str | None = None, include_docs: bool = False,
+               agents: bool | None = None) -> None:
+    """Live-streaming `ask` for the terminal — a sink over
+    ask_agents.stream_events: prose appears token by token, each
+    [[k]]/[[k:lo-hi]] citation is spliced into its real code block as its line
+    completes, and broad questions print the fan-out plan + per-agent progress
+    as status lines while the sub-agents run in parallel (their prose stays
+    off the terminal — multiplexed streams are noise; the synthesis streams).
+    Same grounding + fail-open as render_ask. Programmatic/eval/MCP callers
+    keep using ask()/render_ask()."""
+    import json as _json
+
+    from .ask_agents import stream_events
     out = out or sys.stdout
 
     def write(s: str):
         out.write(s)
         out.flush()
 
-    t0 = time.time()
-    st = load_state(Path(root))
-    res = search_with_state(st, question, rerank=rerank, path_filter=path_filter)
-    retrieval_ms = int((time.time() - t0) * 1000)
-    cands = _candidates(res, docs_only, include_docs)
-    key = providers.find_chat_key(required=False)
-    if not key or not cands:           # no LLM available / nothing retrieved
-        write(render(res) + "\n")
-        return
+    def sink(ev: dict):
+        t = ev["type"]
+        if t == "retrieval":
+            if ev["llm"]:              # no LLM/candidates -> bare bundle, no header
+                write(f'# megabrain — "{question}"\n')
+                write(f'repo `{ev["repo"]}` · {ev["ms"]}ms retrieval · '
+                      f'streaming {ev["model"]}…\n\n')
+        elif t == "classified":
+            if ev["broad"] or ev["forced"]:
+                why = "; ".join(ev["reasons"]) or "forced"
+                write(f'◆ broad question ({why}) — fanning out…\n')
+        elif t == "planning":
+            write(f'◆ planner ({ev["model"]}) splitting the bundle…\n')
+        elif t == "plan":
+            for a in ev["agents"]:
+                write(f'◆ agent {a["id"] + 1}/{len(ev["agents"])} `{a["label"]}` — '
+                      f'"{a["sub_query"]}" · {len(a["chunks"])} chunks\n')
+        elif t == "agent_tool":
+            write(f'  ⌕ agent {ev["id"] + 1} → {ev["tool"]} '
+                  f'{_json.dumps(ev["args"])[:90]}\n')
+        elif t == "agent_done":
+            write(f'✓ agent {ev["id"] + 1} done ({ev["ms"] / 1000:.1f}s)\n')
+        elif t == "agent_error":
+            write(f'✗ agent {ev["id"] + 1} failed: {ev["msg"]}\n')
+        elif t == "synthesis_start":
+            if ev["agents"]:
+                write('— synthesizing…\n\n')
+        elif t == "synthesis_delta":
+            write(ev["text"])
+        elif t == "length":
+            write("\n\n_(walkthrough truncated — ask a narrower question for the rest)_")
+        elif t == "error":
+            write(f'✗ {ev["msg"]}\n')
+        elif t == "bundle":            # fail-open: ungrounded/no-LLM -> the bundle
+            if ev["note"]:
+                write(f'\n\n_({ev["note"]} — full bundle below)_\n\n')
+            write(ev["text"] + "\n")
+        elif t == "done":
+            write(f'\n\n— {ev["spans"]} code spans · {ev["files"]} files · '
+                  f'{ev["retrieval_ms"]}ms retrieval + {ev["llm_ms"]}ms explain\n')
+            if ev["dropped"]:
+                write(f'— not cited ({ev["n_dropped"]}): {", ".join(ev["dropped"])}\n')
+                write('— full bundle: `megabrain query` · any file: '
+                      '`megabrain get <file>`\n')
 
-    file_syms = {f: st.store.symbols_for(f) for f in {c["file"] for c in cands}}
-
-    write(f'# megabrain — "{question}"\n')
-    write(f'repo `{res["repo"]}` · {retrieval_ms}ms retrieval · '
-          f'streaming {providers.ask_model()}…\n\n')
-
-    seen: set = set()
-    cited: set = set()
-
-    def sub(m):
-        k = int(m.group(1))
-        if not (0 <= k < len(cands)):
-            return m.group(0)
-        cited.add(k)
-        lo = int(m.group(2)) if m.group(2) else None
-        hi = int(m.group(3)) if m.group(3) else None
-        return _code_block(cands[k], lo, hi, seen, file_syms)
-
-    pending = [""]  # hold the in-progress line; citations live on their own line
-
-    def on_delta(d: str):
-        pending[0] += d
-        nl = pending[0].rfind("\n")
-        if nl != -1:
-            ready, pending[0] = pending[0][:nl + 1], pending[0][nl + 1:]
-            write(_SEL.sub(sub, ready))
-
-    t1 = time.time()
-    interrupted = False
-    stop = ""
-    try:
-        _, stop = providers.stream_chat(_build_body(question, cands), key, on_delta=on_delta)
-    except Exception:
-        log.debug("ask stream interrupted", exc_info=True)
-        interrupted = True
-    if pending[0]:                     # flush the trailing partial line
-        write(_SEL.sub(sub, pending[0]))
-        pending[0] = ""
-    llm_ms = int((time.time() - t1) * 1000)
-
-    if not cited:                      # fail-open: ungrounded prose -> show the bundle
-        note = "_(explanation unavailable — full bundle below)_" if interrupted \
-            else "_(no code cited — full bundle below)_"
-        write(f"\n\n{note}\n\n{render(res)}\n")
-        return
-    if stop == "length":
-        write("\n\n_(walkthrough truncated — ask a narrower question for the rest)_")
-
-    n_files = len({cands[k]["file"] for k in cited})
-    write(f'\n\n— {len(seen)} code spans · {n_files} files · '
-          f'{retrieval_ms}ms retrieval + {llm_ms}ms explain\n')
-    if show_map:
-        dropped = [c for i, c in enumerate(cands) if i not in cited]
-        if dropped:
-            items = ", ".join(f'{c["file"].rsplit("/", 1)[-1]}:{c["start_line"]}'
-                              for c in dropped[:12])
-            write(f'— not cited ({len(dropped)}): {items}\n')
-            write('— full bundle: `megabrain query` · any file: `megabrain get <file>`\n')
+    stream_events(Path(root), question, sink, agents=agents, rerank=rerank,
+                  show_map=show_map, docs_only=docs_only,
+                  include_docs=include_docs, path_filter=path_filter)
