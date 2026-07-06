@@ -9,7 +9,7 @@ import time
 from fnmatch import fnmatch
 from pathlib import Path
 
-from .chunker import embed_text, validate_partition
+from .chunkers import embed_text, validate_partition
 from .embeddings import MODEL as EMBED_MODEL
 from .embeddings import Embedder
 from .store import Store

@@ -42,8 +42,8 @@ megabrain = "megabrain.cli:main"
 Homepage = "https://github.com/bernatch22/megabrain"
 Repository = "https://github.com/bernatch22/megabrain"
 
-[tool.setuptools]
-packages = ["megabrain"]
+[tool.setuptools.packages.find]
+include = ["megabrain*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
