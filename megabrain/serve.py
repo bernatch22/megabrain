@@ -321,7 +321,8 @@ def _make_handler(repo: _Repo, cors: str | None, enable_llm: bool,
                     # ask() builds its own state/connection in this thread — no
                     # shared lock, so the slow LLM stream never blocks /search.
                     from .ask import ask
-                    out = ask(repo.root, q, docs_only=bool(body.get("docs")))
+                    out = ask(repo.root, q, docs_only=bool(body.get("docs")),
+                              include_docs=bool(body.get("include_docs")))
                     for k in ("result", "cands", "file_syms"):
                         out.pop(k, None)
                     return self._send(200, out)

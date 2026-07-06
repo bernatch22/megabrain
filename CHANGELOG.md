@@ -39,6 +39,19 @@ all three retrieval gates hold the locked bar (golden R@1 0.86 · bundle_full
   silently dropping everything after the first comma.
 
 ### Added
+- `ask --with-docs` (MCP `include_docs`, HTTP `include_docs`): explain code
+  AND docs together — third mode next to the default (code only) and `--docs`
+  (docs only).
+- CLI `ask`/`query`/`chunks` now auto-refresh a stale index before answering
+  (60 s TTL, incremental, fail-open without a key) — previously only the MCP
+  server did, so CLI answers could cite stale code after an edit.
+- **Claude chat provider** (extra `megabrain[claude]`): `ask`/`--best` stream
+  through the Claude Agent SDK — Claude Code **subscription credits** when the
+  CLI is logged in, or `ANTHROPIC_API_KEY` for API billing. Default model
+  `haiku` (`MEGABRAIN_ASK_MODEL` accepts any Claude model/alias). The chat
+  provider **defaults to auto**: Claude when its SDK is importable, else
+  OpenRouter — pin with `MEGABRAIN_CHAT_PROVIDER=claude|openrouter`. Embeddings
+  are unaffected and still require OpenRouter or a local embed endpoint.
 - **Custom chunking strategies**: `index_repo(root, strategies=[MyStrategy()])`
   plugs any content type in without forking (checked before the built-ins, so
   a custom strategy can also override one). New `ChunkStrategy` protocol;

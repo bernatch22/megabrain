@@ -4,7 +4,7 @@
 
 megabrain is a local **code-intelligence engine**. One call returns all the code related to a question, explained with the real code spliced in. It exists to replace minutes of file-by-file crawling (grep + Read + explore agents) with one grounded answer. Overview: [README.md](README.md).
 
-Pipeline: `index` (cAST chunk → OpenRouter embed (`pplx-embed-v1-0.6b`) → SQLite, incremental by sha256) → `query` (no-LLM retrieval: dense chunk + file-skeleton fusion + graph candidates) → `ask` (one OpenRouter chat call, qwen3-coder by default, narrates and cites `[[k]]`; the engine replaces each citation with verbatim code — the model cannot rewrite code; streamed live to the terminal; **code-only by default**, `--docs` for a docs-only walkthrough).
+Pipeline: `index` (cAST chunk → OpenRouter embed (`pplx-embed-v1-0.6b`) → SQLite, incremental by sha256) → `query` (no-LLM retrieval: dense chunk + file-skeleton fusion + graph candidates) → `ask` (one OpenRouter chat call, qwen3-coder by default, narrates and cites `[[k]]`; the engine replaces each citation with verbatim code — the model cannot rewrite code; streamed live to the terminal; **code-only by default**, `--docs` for a docs-only walkthrough, `--with-docs` for code+docs). CLI ask/query/chunks auto-refresh a stale index (60s TTL) like the MCP server.
 
 ## Using it (dogfood — prefer this over crawling files)
 
@@ -52,8 +52,12 @@ docs.pinecall.io (a megabrain daemon behind nginx). **Provider abstraction done*
 LLM/embedding traffic goes through `providers.py` (OpenRouter, OpenAI-compatible) — any model
 is selectable by env. Remaining Priority 2: `.tsx` arrow-component symbols, SWE-bench eval.
 
-Provider: everything runs through **OpenRouter** (`providers.py`). Key `OPENROUTER_API_KEY`
-(required) — env or `~/.zshrc` fallback. Models overridable by env: `MEGABRAIN_EMBED_MODEL`
+Provider: chat (ask/--best) routes by `MEGABRAIN_CHAT_PROVIDER` — default AUTO (`claude` when
+its SDK is importable, else `openrouter`). `claude` = `providers_claude.py` (Claude Agent SDK:
+Claude Code subscription credits or `ANTHROPIC_API_KEY`; default model `haiku`; extra
+`megabrain[claude]`). Embeddings NEVER use this switch — always OpenRouter/local (Anthropic has
+no embeddings API). Key `OPENROUTER_API_KEY`
+(required for embeddings) — env or `~/.zshrc` fallback. Models overridable by env: `MEGABRAIN_EMBED_MODEL`
 (default `perplexity/pplx-embed-v1-0.6b`), `MEGABRAIN_ASK_MODEL` / `MEGABRAIN_RERANK_MODEL`
 (default `qwen/qwen3-coder` — a code bakeoff found it on par with claude-haiku-4.5 on
 citation selection at ~5x lower cost, since retrieval already guarantees completeness). Embeddings AND chat can each target a non-OpenRouter OpenAI-compatible

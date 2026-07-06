@@ -45,6 +45,8 @@ TOOLS = [
                                "description": "optional repo-relative folder (e.g. src/dispatch) to scope the walkthrough to files under it; omit for the whole repo"},
                 "docs": {"type": "boolean",
                          "description": "explain documentation (markdown) only, instead of code (default false)"},
+                "include_docs": {"type": "boolean",
+                                 "description": "explain code AND docs together (default false = code only)"},
             },
             "required": ["repo_path", "question"],
         },
@@ -112,17 +114,9 @@ TOOLS = [
 ]
 
 
-AUTO_INDEX_TTL = 60  # seconds; refresh index before query if older than this
-
-
 def _maybe_reindex(root: Path):
-    import time
-
-    from .store import Store
-    meta = Store(root).get_meta("last_index")
-    if not meta or time.time() - meta["t"] > AUTO_INDEX_TTL:
-        from .indexer import index_repo
-        index_repo(root, quiet=True)
+    from .indexer import maybe_reindex
+    maybe_reindex(root)
 
 
 def _scope(args: dict) -> tuple[Path, str | None]:
@@ -150,7 +144,9 @@ def call_tool(name: str, args: dict) -> str:
         root, pf = _scope(args)
         _maybe_reindex(root)
         return render_ask(ask(root, args["question"],
-                              docs_only=bool(args.get("docs")), path_filter=pf))
+                              docs_only=bool(args.get("docs")),
+                              include_docs=bool(args.get("include_docs")),
+                              path_filter=pf))
     if name == "megabrain_get":
         from .query import get_code
         from .store import resolve_root
