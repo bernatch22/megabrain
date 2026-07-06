@@ -8,12 +8,16 @@ the validated stack (pplx-embed-v1-0.6b embeddings — same 1024-dim int8
 vectors as before) with qwen3-coder narrating `ask`/`--best` (a code bakeoff
 found it on par with claude-haiku-4.5 at ~5x lower cost — see evals/ASK_MODELS.md).
 
-Env surface (all optional except the OpenRouter key):
+Env surface (all optional except an embedding credential):
     OPENROUTER_API_KEY      Bearer key for OpenRouter (chat + embeddings)
     OPENROUTER_BASE_URL     default https://openrouter.ai/api/v1
+    MEGABRAIN_CHAT_PROVIDER 'openrouter' (default) | 'claude' — route ask/--best
+                            through the Claude Agent SDK (Claude Code
+                            subscription credits, or ANTHROPIC_API_KEY);
+                            see providers_claude.py. Embeddings unaffected.
     MEGABRAIN_EMBED_MODEL   default perplexity/pplx-embed-v1-0.6b
-    MEGABRAIN_ASK_MODEL     default qwen/qwen3-coder
-    MEGABRAIN_RERANK_MODEL  default qwen/qwen3-coder
+    MEGABRAIN_ASK_MODEL     default qwen/qwen3-coder ('haiku' on claude)
+    MEGABRAIN_RERANK_MODEL  default qwen/qwen3-coder ('haiku' on claude)
     OPENROUTER_HTTP_REFERER / OPENROUTER_APP_TITLE  optional attribution headers
 
 Local / hybrid stacks — point embeddings and/or chat at ANY OpenAI-compatible
@@ -48,6 +52,27 @@ BASE_URL = os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
 EMBED_MODEL = os.environ.get("MEGABRAIN_EMBED_MODEL", "perplexity/pplx-embed-v1-0.6b")
 ASK_MODEL = os.environ.get("MEGABRAIN_ASK_MODEL", "qwen/qwen3-coder")
 RERANK_MODEL = os.environ.get("MEGABRAIN_RERANK_MODEL", "qwen/qwen3-coder")
+
+
+def chat_provider() -> str:
+    """Chat backend for ask/--best (read per call so tests/shells can flip it):
+    'openrouter' (default — any OpenAI-compatible endpoint, see CHAT_BASE_URL)
+    or 'claude' (Claude Agent SDK: Claude Code subscription credits, or
+    ANTHROPIC_API_KEY). Embeddings are NOT affected by this switch."""
+    return os.environ.get("MEGABRAIN_CHAT_PROVIDER", "openrouter").strip().lower()
+
+
+def ask_model() -> str:
+    """ask narrator model — per-provider default when MEGABRAIN_ASK_MODEL is
+    unset: Claude alias 'haiku' on the claude provider, qwen3-coder on
+    OpenRouter (the validated bakeoff pick)."""
+    return os.environ.get("MEGABRAIN_ASK_MODEL") or \
+        ("haiku" if chat_provider() == "claude" else "qwen/qwen3-coder")
+
+
+def rerank_model() -> str:
+    return os.environ.get("MEGABRAIN_RERANK_MODEL") or \
+        ("haiku" if chat_provider() == "claude" else "qwen/qwen3-coder")
 
 # Optional OpenRouter attribution (leaderboard only — not required to function).
 _REFERER = os.environ.get("OPENROUTER_HTTP_REFERER", "https://github.com/bernatch22/megabrain")
@@ -105,7 +130,11 @@ def find_embed_key(required: bool = True) -> str | None:
 
 
 def find_chat_key(required: bool = True) -> str | None:
-    """Key for the chat (ask/rerank) endpoint — same resolution as embeddings."""
+    """Key for the chat (ask/rerank) endpoint — same resolution as embeddings.
+    On the claude provider there may be no key at all (subscription auth lives
+    inside the Claude Code CLI), so a sentinel keeps ask's `if key` gate open."""
+    if chat_provider() == "claude":
+        return "claude"
     return _key_for(CHAT_BASE_URL, os.environ.get("MEGABRAIN_CHAT_API_KEY"), required)
 
 
@@ -141,6 +170,9 @@ def post_json(path: str, body: dict, key: str | None = None, retries: int = 5,
 def chat_text(model: str, prompt: str, max_tokens: int, temperature: float = 0.0,
               key: str | None = None, retries: int = 5, timeout: int = 45) -> str:
     """One non-streamed chat completion -> assistant text (OpenAI schema)."""
+    if chat_provider() == "claude":
+        from . import providers_claude
+        return providers_claude.chat_text(model, prompt, max_tokens)
     body = {"model": model, "max_tokens": max_tokens, "temperature": temperature,
             "messages": [{"role": "user", "content": prompt}]}
     d = post_json("/chat/completions", body, key or find_chat_key(),
@@ -155,7 +187,13 @@ def stream_chat(body: dict, key: str | None = None, retries: int = 4,
     Parses `data: {...}` chunks: `choices[0].delta.content` deltas, terminated
     by `data: [DONE]`; SSE comment/keep-alive lines are skipped. Backoff on
     429/5xx; once any delta has been emitted via on_delta we stop retrying so
-    the terminal never double-prints. finish_reason is OpenAI's ("length" on cap)."""
+    the terminal never double-prints. finish_reason is OpenAI's ("length" on cap).
+
+    MEGABRAIN_CHAT_PROVIDER=claude reroutes the same body through the Claude
+    Agent SDK (Claude Code credits / ANTHROPIC_API_KEY) — same return contract."""
+    if chat_provider() == "claude":
+        from . import providers_claude
+        return providers_claude.stream_chat(body, on_delta=on_delta)
     key = key or find_chat_key()
     body = {**body, "stream": True}
     data = json.dumps(body).encode()

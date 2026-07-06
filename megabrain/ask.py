@@ -26,8 +26,7 @@ log = logging.getLogger(__name__)
 # walkthrough. Docs stay retrievable via `query` regardless.
 DOC_EXTS = MarkdownStrategy.exts
 
-MODEL = providers.ASK_MODEL
-MAX_CTX_CHARS = 200_000  # ~50K tokens of candidate code; Haiku window is 200K
+MAX_CTX_CHARS = 200_000  # ~50K tokens of candidate code; fits every default model
 # double-bracket so the model can still mention [n] in prose without collision.
 # Tolerate an "L" prefix and stray spaces on the line range: the chunk headers in
 # the prompt read "L1-172", so the model often mirrors that as [[0:L1-172]] — accept
@@ -88,8 +87,8 @@ QUERY: {question}
 RETRIEVED CHUNKS:
 
 {chr(10).join(blocks)}"""
-    return {"model": MODEL, "max_tokens": 2400, "temperature": 0, "stream": True,
-            "messages": [{"role": "user", "content": prompt}]}
+    return {"model": providers.ask_model(), "max_tokens": 2400, "temperature": 0,
+            "stream": True, "messages": [{"role": "user", "content": prompt}]}
 
 
 def _explain_stream(question: str, cands: list[dict], key: str) -> str:
@@ -238,7 +237,8 @@ def stream_ask(root: Path, question: str, out=None, rerank: bool = False,
     file_syms = {f: st.store.symbols_for(f) for f in {c["file"] for c in cands}}
 
     write(f'# megabrain — "{question}"\n')
-    write(f'repo `{res["repo"]}` · {retrieval_ms}ms retrieval · streaming {MODEL}…\n\n')
+    write(f'repo `{res["repo"]}` · {retrieval_ms}ms retrieval · '
+          f'streaming {providers.ask_model()}…\n\n')
 
     seen: set = set()
     cited: set = set()

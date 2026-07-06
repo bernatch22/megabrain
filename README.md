@@ -108,6 +108,25 @@ vendor
 docs/legacy
 ```
 
+## See it live — web demo
+
+```bash
+git clone https://github.com/bernatch22/megabrain && cd megabrain
+pip install -e .                       # + OPENROUTER_API_KEY (or a local embed endpoint)
+python examples/webui/server.py        # → http://localhost:8688
+```
+
+It ships with a 2003-style **legacy-PHP sample app** (indexed on the first run,
+~30 s). Type a question → the real engine ranks the bundle files — **CORE** /
+**RELATED**, in milliseconds, no LLM → click a file → every chunk of it renders
+**scored**, with the chunks retrieval actually *selected* highlighted and the noise
+dimmed. Nothing is precomputed: every query runs the same `search` + `chunks_for_file`
+path agents use. Point it at your own code too:
+
+```bash
+python examples/webui/server.py ~/my/repo /tmp/click   # any repos, auto-indexed
+```
+
 ## Provider flexibility — cloud, native, local, hybrid
 
 Embeddings and chat can **each** point at any OpenAI-compatible endpoint. localhost
@@ -131,6 +150,36 @@ Changing the embed model auto-triggers a full re-embed on the next `index` (or f
 with `--force`), so vectors never silently mismatch. Local-stack benchmarks live in
 `evals/LOCAL_MODELS.md`.
 
+### `ask` on Claude — Claude Code credits, or the Anthropic API
+
+The narrator can run on **Claude** instead of OpenRouter, with the same live streaming.
+One env var switches it:
+
+```bash
+pip install 'megabrain[claude]'            # Claude Agent SDK
+export MEGABRAIN_CHAT_PROVIDER=claude      # ask + --best now run on Claude (default: haiku)
+export MEGABRAIN_ASK_MODEL=sonnet          # optional — any Claude model or alias
+```
+
+Credentials — the SDK drives the Claude Code CLI, so it uses whatever Claude Code
+already has, in this order:
+
+- **Claude Code subscription (recommended)** — if the `claude` CLI is installed and
+  logged in, `ask` runs on your plan's credits. No API key, nothing else to configure.
+- **Anthropic API** — set `ANTHROPIC_API_KEY` and the exact same setup bills your API
+  account instead.
+
+Switching is per-environment, so you can flip per run:
+
+```bash
+MEGABRAIN_CHAT_PROVIDER=claude megabrain ask ~/repo "how does auth work"   # Claude
+megabrain ask ~/repo "how does auth work"                                  # OpenRouter
+```
+
+> Embeddings are a separate lane: `index`/`query` still need `OPENROUTER_API_KEY` or a
+> local embedding endpoint (Anthropic has no embeddings API). The Claude switch covers
+> the chat side — `ask` and `--best`.
+
 ## How it works
 
 A three-stage pipeline. **Only `ask` calls an LLM — and only to narrate.**
@@ -139,7 +188,7 @@ A three-stage pipeline. **Only `ask` calls an LLM — and only to narrate.**
 |---|---|
 | **index** | cAST chunk → embed (`pplx-embed-v1-0.6b`, int8, L2-normalized) → SQLite. Incremental by `sha256`, no watcher. |
 | **query** | No-LLM retrieval (~200 ms): dense-chunk + file-skeleton fusion, with import/call-graph candidates. Returns a map — **CORE** (full code of the top files) + **RELATED** (every connected file with its best chunk). |
-| **ask** | One streamed chat call (qwen3-coder by default) writes the walkthrough and cites code as `[[k]]`; the engine **replaces each citation with the verbatim block** (real file, real line numbers). Non-cited files are listed at the end. Fail-open: any API error falls back to the full `query` bundle. |
+| **ask** | One streamed chat call (qwen3-coder via OpenRouter by default; Claude via `MEGABRAIN_CHAT_PROVIDER=claude`) writes the walkthrough and cites code as `[[k]]`; the engine **replaces each citation with the verbatim block** (real file, real line numbers). Non-cited files are listed at the end. Fail-open: any API error falls back to the full `query` bundle. |
 
 Because the model only emits citations and the engine splices code from disk, **code
 cannot be hallucinated or rewritten.**

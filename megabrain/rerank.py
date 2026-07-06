@@ -14,8 +14,6 @@ from concurrent.futures import ThreadPoolExecutor
 
 from . import providers
 
-MODEL = providers.RERANK_MODEL
-
 
 def _one_vote(key: str, query: str, lines: list[str], n: int) -> list[int] | None:
     prompt = f"""Rank candidate files by how likely each must be EDITED to fix this issue.
@@ -34,7 +32,8 @@ Rules:
 
 Reply ONLY a JSON array of all {n} indices, e.g. [2,0,5,...]"""
     try:
-        text = providers.chat_text(MODEL, prompt, max_tokens=220, key=key, timeout=45)
+        text = providers.chat_text(providers.rerank_model(), prompt,
+                                   max_tokens=220, key=key, timeout=45)
         m = re.search(r"\[[\d,\s]*\]", text)
         if not m:
             return None

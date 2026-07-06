@@ -39,6 +39,12 @@ all three retrieval gates hold the locked bar (golden R@1 0.86 · bundle_full
   silently dropping everything after the first comma.
 
 ### Added
+- **Claude chat provider** (`MEGABRAIN_CHAT_PROVIDER=claude`, extra
+  `megabrain[claude]`): `ask`/`--best` stream through the Claude Agent SDK —
+  Claude Code **subscription credits** when the CLI is logged in, or
+  `ANTHROPIC_API_KEY` for API billing. Default model `haiku`
+  (`MEGABRAIN_ASK_MODEL` accepts any Claude model/alias). OpenRouter stays the
+  default; embeddings are unaffected.
 - **Custom chunking strategies**: `index_repo(root, strategies=[MyStrategy()])`
   plugs any content type in without forking (checked before the built-ins, so
   a custom strategy can also override one). New `ChunkStrategy` protocol;
