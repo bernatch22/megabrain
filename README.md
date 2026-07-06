@@ -203,7 +203,7 @@ Because the model only emits citations and the engine splices code from disk, **
 cannot be hallucinated or rewritten.**
 
 Full design doc — every stage, the locked rules, and the measurements behind them:
-[ARCHITECTURE.md](ARCHITECTURE.md).
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## MCP
 
@@ -293,6 +293,8 @@ you pass) — in [`examples/`](examples/).
 ```
 megabrain/            engine — providers, embeddings, SQLite store, graph, indexer, query, ask, serve, cli, mcp_server
 megabrain/chunkers/   cAST chunkers behind one FileResult contract (python · treesitter+LangSpec · php · markdown)
+docs/                 ARCHITECTURE.md — full design, locked rules, measurements
+examples/             programmatic API · custom .sql chunker · chunk heatmap · web demo
 tests/                offline suite (no network/key/corpus) — run with `python3 -m pytest`
 evals/                golden set + model bakeoffs (maintainer-side, private corpus)
 ```
