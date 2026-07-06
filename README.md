@@ -290,9 +290,16 @@ you pass) — in [`examples/`](examples/).
 
 ## Project layout
 
+The tree mirrors the pipeline:
+
 ```
-megabrain/            engine — providers, embeddings, SQLite store, graph, indexer, query, ask, serve, cli, mcp_server
-megabrain/chunkers/   cAST chunkers behind one FileResult contract (python · treesitter+LangSpec · php · markdown)
+megabrain/
+  chunkers/           content → chunks (python · treesitter+LangSpec · php · markdown; one contract)
+  indexing/           build the index (indexer · strategies registry · import/call graph)
+  retrieval/          answer queries, no LLM (query · issue mode · bm25 · rerank)
+  providers/          model APIs (chat routing claude/openrouter · Claude SDK · embeddings)
+  frontends/          entry points (cli · mcp · http serve-api)
+  ask.py store.py     the walkthrough narrator · the SQLite index
 docs/                 ARCHITECTURE.md — full design, locked rules, measurements
 examples/             programmatic API · custom .sql chunker · chunk heatmap · web demo
 tests/                offline suite (no network/key/corpus) — run with `python3 -m pytest`

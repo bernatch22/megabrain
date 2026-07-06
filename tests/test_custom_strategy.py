@@ -6,8 +6,8 @@ examples/02_custom_chunker.py."""
 import re
 
 from megabrain import Chunk, ChunkStrategy, FileResult, Symbol, validate_partition
-from megabrain.indexer import index_repo
-from megabrain.query import search
+from megabrain.indexing.indexer import index_repo
+from megabrain.retrieval.query import search
 from megabrain.store import Store
 
 SQL = (

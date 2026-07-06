@@ -15,7 +15,7 @@ from pathlib import Path
 
 import numpy as np
 
-from . import providers
+from .. import providers
 
 MODEL = providers.EMBED_MODEL
 # 0 = infer the dimension from the model's own output (any OpenRouter embedding

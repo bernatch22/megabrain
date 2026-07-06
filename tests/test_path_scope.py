@@ -13,7 +13,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from megabrain.query import _apply_path_filter, _under_path, search
+from megabrain.retrieval.query import _apply_path_filter, _under_path, search
 from megabrain.store import resolve_root
 
 SDK = Path("~/pinecall/sdk").expanduser()

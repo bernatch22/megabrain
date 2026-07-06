@@ -12,7 +12,7 @@ import json
 import re
 from concurrent.futures import ThreadPoolExecutor
 
-from . import providers
+from .. import providers
 
 
 def _one_vote(key: str, query: str, lines: list[str], n: int) -> list[int] | None:

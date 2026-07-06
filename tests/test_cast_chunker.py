@@ -1,6 +1,6 @@
-"""Tests for the cAST chunker (megabrain.chunker). Run: python3 -m pytest tests/test_cast_chunker.py -q"""
+"""Tests for the cAST chunker (megabrain.chunkers). Run: python3 -m pytest tests/test_cast_chunker.py -q"""
 
-from megabrain.chunker import CastChunker, embed_text, validate_partition
+from megabrain.chunkers import CastChunker, embed_text, validate_partition
 
 
 def chunk(src: str, budget: int = 4000, repo: str = "test"):

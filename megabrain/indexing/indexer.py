@@ -10,10 +10,10 @@ import time
 from fnmatch import fnmatch
 from pathlib import Path
 
-from .chunkers import embed_text, validate_partition
-from .embeddings import MODEL as EMBED_MODEL
-from .embeddings import Embedder
-from .store import Store
+from ..chunkers import embed_text, validate_partition
+from ..providers.embeddings import MODEL as EMBED_MODEL
+from ..providers.embeddings import Embedder
+from ..store import Store
 from .strategies import all_exts, build_registry, strategy_for
 
 # Universal build/vendor/cache dirs only — anything project-specific belongs in
@@ -86,7 +86,7 @@ def maybe_reindex(root: Path, ttl: int = AUTO_REFRESH_TTL) -> bool:
     answers always match disk (CLI ask/query/chunks and the MCP server call
     this before retrieving). Fail-open: with no embedding credential or any
     index error, keep the existing index — a stale answer beats a crash."""
-    from .store import Store
+    from ..store import Store
     try:
         with Store(Path(root)) as s:
             meta = s.get_meta("last_index")

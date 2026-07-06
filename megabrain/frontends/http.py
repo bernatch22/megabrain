@@ -40,7 +40,7 @@ import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from .query import SearchState, load_state, search_with_state
+from ..retrieval.query import SearchState, load_state, search_with_state
 
 # ── docsearch adapter ─────────────────────────────────────────────────────
 # Section-level semantic hits shaped for a docs-site search box. Result groups
@@ -282,7 +282,7 @@ def _make_handler(repo: _Repo, cors: str | None, enable_llm: bool,
                     rel = (qs.get("file") or [""])[0]
                     if not rel:
                         return self._err(400, "missing file")
-                    from .query import get_code
+                    from ..retrieval.query import get_code
                     sym = (qs.get("symbol") or [None])[0]
                     return self._send(200, {"code": get_code(repo.root, rel, sym)})
                 if path == "/chunks":
@@ -290,7 +290,7 @@ def _make_handler(repo: _Repo, cors: str | None, enable_llm: bool,
                     q = (qs.get("q") or qs.get("query") or [""])[0].strip()
                     if not rel or not q:
                         return self._err(400, "missing file or q")
-                    from .query import chunks_for_file
+                    from ..retrieval.query import chunks_for_file
                     return self._send(200, repo.with_state(
                         lambda st: chunks_for_file(st, rel, q)))
                 return self._err(404, "not found")
@@ -320,14 +320,14 @@ def _make_handler(repo: _Repo, cors: str | None, enable_llm: bool,
                         return self._err(400, "missing question")
                     # ask() builds its own state/connection in this thread — no
                     # shared lock, so the slow LLM stream never blocks /search.
-                    from .ask import ask
+                    from ..ask import ask
                     out = ask(repo.root, q, docs_only=bool(body.get("docs")),
                               include_docs=bool(body.get("include_docs")))
                     for k in ("result", "cands", "file_syms"):
                         out.pop(k, None)
                     return self._send(200, out)
                 if path == "/index":
-                    from .indexer import index_repo
+                    from ..indexing.indexer import index_repo
                     return self._send(200, index_repo(repo.root, quiet=True,
                                                       force=bool(body.get("force"))))
                 return self._err(404, "not found")

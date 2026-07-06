@@ -181,7 +181,7 @@ def chat_text(model: str, prompt: str, max_tokens: int, temperature: float = 0.0
               key: str | None = None, retries: int = 5, timeout: int = 45) -> str:
     """One non-streamed chat completion -> assistant text (OpenAI schema)."""
     if chat_provider() == "claude":
-        from . import providers_claude
+        from . import claude as providers_claude
         return providers_claude.chat_text(model, prompt, max_tokens)
     body = {"model": model, "max_tokens": max_tokens, "temperature": temperature,
             "messages": [{"role": "user", "content": prompt}]}
@@ -202,7 +202,7 @@ def stream_chat(body: dict, key: str | None = None, retries: int = 4,
     MEGABRAIN_CHAT_PROVIDER=claude reroutes the same body through the Claude
     Agent SDK (Claude Code credits / ANTHROPIC_API_KEY) — same return contract."""
     if chat_provider() == "claude":
-        from . import providers_claude
+        from . import claude as providers_claude
         return providers_claude.stream_chat(body, on_delta=on_delta)
     key = key or find_chat_key()
     body = {**body, "stream": True}

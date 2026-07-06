@@ -6,8 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT))
-from megabrain.chunker import nws, validate_partition
-from megabrain.markdown import MarkdownChunker
+from megabrain.chunkers import MarkdownChunker, nws, validate_partition
 
 
 def chunk(src, budget=4000, name="doc.md"):
