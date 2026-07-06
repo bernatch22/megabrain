@@ -14,7 +14,6 @@ Also extracts a symbol table and a file skeleton (signatures + docstrings).
 from __future__ import annotations
 
 import ast
-import hashlib
 from dataclasses import dataclass, field, asdict
 
 DEFAULT_BUDGET = 4000  # non-whitespace chars per chunk
@@ -38,12 +37,9 @@ class Chunk:
     breadcrumb: str
     part: str | None = None  # "2/5" for split-function blocks
     nws_chars: int = 0
-    id: str = ""
 
     def finalize(self) -> "Chunk":
         self.nws_chars = nws(self.text)
-        h = hashlib.sha1(f"{self.file}:{self.start_line}-{self.end_line}".encode()).hexdigest()[:12]
-        self.id = h
         return self
 
     def to_dict(self) -> dict:

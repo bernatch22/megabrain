@@ -21,9 +21,7 @@ from __future__ import annotations
 
 import re
 
-from .chunker import Chunk, FileResult, Symbol, nws
-
-DEFAULT_BUDGET = 4000
+from .chunker import DEFAULT_BUDGET, Chunk, FileResult, Symbol, nws
 
 _HEADING = re.compile(r"^(#{1,6})\s+(.*?)\s*#*\s*$")
 _FENCE = re.compile(r"^\s*(```|~~~)")

@@ -194,12 +194,20 @@ class _Repo:
 
 # ── HTTP ──────────────────────────────────────────────────────────────────
 
-def _make_handler(repo: _Repo, cors: str | None, enable_llm: bool):
+def _make_handler(repo: _Repo, cors: str | None, enable_llm: bool,
+                  token: str | None = None):
     class Handler(BaseHTTPRequestHandler):
         protocol_version = "HTTP/1.1"
 
         def log_message(self, *a):       # silence default per-request stderr noise
             pass
+
+        def _authed(self, path: str) -> bool:
+            """When a token is configured, every route except /health requires
+            `Authorization: Bearer <token>`. No token -> open (localhost use)."""
+            if not token or path == "/health":
+                return True
+            return self.headers.get("Authorization") == f"Bearer {token}"
 
         def _send(self, code: int, payload) -> None:
             body = payload if isinstance(payload, bytes) else json.dumps(payload).encode()
@@ -236,6 +244,8 @@ def _make_handler(repo: _Repo, cors: str | None, enable_llm: bool):
             u = urllib.parse.urlparse(self.path)
             qs = urllib.parse.parse_qs(u.query)
             path = u.path.rstrip("/") or "/"
+            if not self._authed(path):
+                return self._err(401, "unauthorized")
             try:
                 if path == "/health":
                     return self._send(200, repo.with_state(lambda st: {
@@ -269,6 +279,8 @@ def _make_handler(repo: _Repo, cors: str | None, enable_llm: bool):
 
         def do_POST(self):
             path = (urllib.parse.urlparse(self.path).path).rstrip("/") or "/"
+            if not self._authed(path):
+                return self._err(401, "unauthorized")
             body = self._read_json()
             try:
                 if path == "/search":
@@ -305,17 +317,22 @@ def _make_handler(repo: _Repo, cors: str | None, enable_llm: bool):
 
 
 def serve(root, port: int = 2134, host: str = "127.0.0.1",
-          cors: str | None = None, enable_llm: bool = True) -> None:
+          cors: str | None = None, enable_llm: bool = True,
+          token: str | None = None) -> None:
     repo = _Repo(Path(root))
     chunks = repo.with_state(lambda st: len(st.metas))   # warm up + validate index
     if chunks == 0:
         print(f"⚠  index at {repo.root}/.megabrain is empty — POST /index or run "
               f"`megabrain index {repo.root}` first")
+    if not token and host not in ("127.0.0.1", "localhost", "::1"):
+        print("⚠  binding beyond localhost with no --token / MEGABRAIN_API_TOKEN — "
+              "every endpoint (including POST /index) is open to the network")
 
-    httpd = ThreadingHTTPServer((host, port), _make_handler(repo, cors, enable_llm))
+    httpd = ThreadingHTTPServer((host, port), _make_handler(repo, cors, enable_llm, token))
     httpd.daemon_threads = True
     print(f"megabrain serve-api → http://{host}:{port}  repo={repo.root.name} "
-          f"chunks={chunks} cors={cors or 'off'} llm={'on' if enable_llm else 'off'}")
+          f"chunks={chunks} cors={cors or 'off'} llm={'on' if enable_llm else 'off'} "
+          f"auth={'bearer' if token else 'off'}")
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:

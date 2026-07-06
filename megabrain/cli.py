@@ -14,6 +14,7 @@ sub-path. The repo root itself behaves exactly as before (no filter).
 """
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -34,7 +35,7 @@ def main(argv=None):
     p.add_argument("path")
     p.add_argument("task")
     p.add_argument("--compact", action="store_true")
-    p.add_argument("--best", action="store_true", help="Haiku order-rerank of candidates (+~2s, never drops files)")
+    p.add_argument("--best", action="store_true", help="LLM order-rerank of candidates (+~2s, never drops files)")
     p.add_argument("--json", action="store_true")
 
     p = sub.add_parser("ask")
@@ -60,8 +61,11 @@ def main(argv=None):
     p.add_argument("path", nargs="?", default=".")
     p.add_argument("--port", type=int, default=2134)
     p.add_argument("--host", default="127.0.0.1")
-    p.add_argument("--cors", help="allowed browser origin, e.g. https://docs.pinecall.io")
+    p.add_argument("--cors", help="allowed browser origin, e.g. https://docs.example.com")
     p.add_argument("--no-llm", action="store_true", help="disable the /ask endpoint")
+    p.add_argument("--token", default=os.environ.get("MEGABRAIN_API_TOKEN"),
+                   help="require `Authorization: Bearer <token>` on every request except "
+                        "/health (default: $MEGABRAIN_API_TOKEN; recommended off-localhost)")
 
     p = sub.add_parser("stats")
     p.add_argument("path", nargs="?", default=".")
@@ -73,6 +77,9 @@ def main(argv=None):
     # the sub-path used to scope retrieval to files under it.
     raw = [Path(p).resolve() for p in a.path.split(",")]
     root = raw[0]
+    if len(raw) > 1 and a.cmd not in ("index", "query"):
+        ap.error(f"`{a.cmd}` takes a single path — comma-separated multi-path "
+                 f"applies to `index` and `query` only")
 
     if a.cmd == "index":
         from .indexer import index_repo
@@ -118,7 +125,8 @@ def main(argv=None):
         print(_json.dumps(chunks_for_file_root(r0, rel, a.query, path_filter=sp or None), indent=1))
     elif a.cmd == "serve-api":
         from .serve import serve
-        serve(root, port=a.port, host=a.host, cors=a.cors, enable_llm=not a.no_llm)
+        serve(root, port=a.port, host=a.host, cors=a.cors, enable_llm=not a.no_llm,
+              token=a.token)
     elif a.cmd == "stats":
         from .store import Store
         s = Store(root)

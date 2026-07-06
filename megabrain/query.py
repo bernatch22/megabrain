@@ -240,15 +240,15 @@ def search_with_state(st: SearchState, query: str, rerank: bool = False,
     extras = sorted(neigh & set(file_rank), key=lambda f: -fbest[f])[:GRAPH_EXTRAS]
 
     if rerank and len(cands) > 1:
-        # optional Haiku ORDER rerank v2: code evidence + 3-vote merge (+~2-3s)
-        from .rerank2 import haiku_order2
+        # optional LLM ORDER rerank: code evidence + 3-vote merge (+~2-3s)
+        from .rerank import llm_order
         # deeper pool when reranking: the LLM can rescue rank 13-24
         deep = file_rank[:24]
         for f in deep:
             if f not in cands:
                 cands.append(f)
         ev = [{"file": f, "code": metas[file_chunks[f][0]]["text"]} for f in cands]
-        order = haiku_order2(query, ev)
+        order = llm_order(query, ev)
         cands = [cands[i] for i in order]
 
     tier1 = cands[:TIER1_MAX]
@@ -437,8 +437,11 @@ def render(res: dict, compact: bool = False) -> str:
 
 
 def get_code(root: Path, relpath: str, symbol: str | None = None) -> str:
-    p = Path(root) / relpath
-    if not p.exists():
+    root = Path(root).resolve()
+    p = (root / relpath).resolve()
+    # containment check: `relpath` is attacker-adjacent when served over HTTP
+    # (serve.py /get) or MCP — `../../etc/passwd` must never escape the repo.
+    if not p.is_relative_to(root) or not p.exists():
         return f"not found: {relpath}"
     src = p.read_text(errors="replace")
     if not symbol:
