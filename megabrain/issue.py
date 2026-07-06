@@ -14,7 +14,12 @@ from __future__ import annotations
 import re
 
 _FRAME = re.compile(r'File "([^"]+)", line (\d+)(?:, in (\w+))?')
-_PYPATH = re.compile(r"[\w/.\-]+\.py\b")
+# JS/TS stack frames: `at fn (src/x.ts:12:5)` / `at src/x.ts:12:5`
+_JSFRAME = re.compile(
+    r"\bat\s+(?:[\w$.<>\[\]* ]+?\s+)?\(?([\w./\-]+\.(?:ts|tsx|js|jsx|mjs|cjs))"
+    r":(\d+)(?::\d+)?\)?")
+_SRCPATH = re.compile(
+    r"[\w/.\-]+\.(?:py|ts|tsx|js|jsx|mjs|cjs|rb|go|rs|php)\b")
 _TICKED = re.compile(r"`([^`\n]{2,80})`")
 _DOTTED = re.compile(r"\b[A-Za-z_][\w]*(?:\.[A-Za-z_][\w]*)+\b")
 
@@ -94,19 +99,23 @@ def parse_issue(text: str, files: list[str], symbols: list[dict]) -> dict:
         if f and (f not in pin or tier < pin[f]):
             pin[f] = tier
 
-    for m in _FRAME.finditer(text):
-        f = _ground_path(m.group(1), files)
+    def pin_frame(path: str, line: int):
+        f = _ground_path(path, files)
         if not f:
-            continue
+            return
         add(f, 0)
-        line = int(m.group(2))
         encl = [s for s in by_file.get(f, [])
                 if s["line"] <= line <= s["end_line"]]
         if encl:
             s = min(encl, key=lambda s: s["end_line"] - s["line"])
             spans.append((f, s["line"], s["end_line"]))
 
-    for m in _PYPATH.finditer(text):
+    for m in _FRAME.finditer(text):
+        pin_frame(m.group(1), int(m.group(2)))
+    for m in _JSFRAME.finditer(text):
+        pin_frame(m.group(1), int(m.group(2)))
+
+    for m in _SRCPATH.finditer(text):
         f = _ground_path(m.group(0), files)
         if f:
             add(f, 1)

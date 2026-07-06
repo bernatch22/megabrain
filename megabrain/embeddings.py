@@ -51,7 +51,10 @@ class Embedder:
             idxs = missing[s:s + batch_size]
             vecs = self._request([texts[i] for i in idxs])
             for i, v in zip(idxs, vecs):
-                np.save(self._cpath(texts[i]), v)
+                p = self._cpath(texts[i])
+                tmp = p.with_name(f"{p.stem}.{os.getpid()}.tmp.npy")
+                np.save(tmp, v)
+                tmp.replace(p)   # atomic: concurrent readers never see a partial file
                 out[i] = v
         return np.stack(out) if out else np.zeros((0, DIMS or 1024))  # type: ignore[arg-type]
 

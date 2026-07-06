@@ -3,6 +3,9 @@
 Each file's document = its path + all symbol qualified names + signatures,
 tokenized identifier-aware (split camelCase/snake_case). Catches issues that
 mention a symbol descriptively when the dense embedding misses it.
+
+Scoring iterates postings (only the docs containing each query term), not the
+whole corpus — O(matching docs) per term instead of O(N).
 """
 
 from __future__ import annotations
@@ -28,25 +31,27 @@ class BM25:
     def __init__(self, docs: list[list[str]], k1: float = 1.2, b: float = 0.75):
         self.k1, self.b = k1, b
         self.N = len(docs)
-        self.tf = [Counter(d) for d in docs]
         self.dl = [len(d) for d in docs]
         self.avgdl = (sum(self.dl) / self.N) if self.N else 0.0
-        df: Counter = Counter()
-        for d in docs:
-            df.update(set(d))
-        self.idf = {t: math.log(1 + (self.N - n + 0.5) / (n + 0.5)) for t, n in df.items()}
+        self.postings: dict[str, list[tuple[int, int]]] = {}  # term -> [(doc, tf)]
+        for i, d in enumerate(docs):
+            for t, f in Counter(d).items():
+                self.postings.setdefault(t, []).append((i, f))
+        # df(t) == len(postings[t]); same Okapi idf as before
+        self.idf = {t: math.log(1 + (self.N - len(p) + 0.5) / (len(p) + 0.5))
+                    for t, p in self.postings.items()}
 
     def scores(self, query: str):
         import numpy as np
-        q = [t for t in set(tokenize(query)) if t in self.idf]
         s = np.zeros(self.N)
-        if not q or not self.avgdl:
+        if not self.avgdl:
             return s
-        for t in q:
+        for t in set(tokenize(query)):
+            plist = self.postings.get(t)
+            if not plist:
+                continue
             idf = self.idf[t]
-            for i in range(self.N):
-                f = self.tf[i].get(t, 0)
-                if f:
-                    s[i] += idf * f * (self.k1 + 1) / (
-                        f + self.k1 * (1 - self.b + self.b * self.dl[i] / self.avgdl))
+            for i, f in plist:
+                s[i] += idf * f * (self.k1 + 1) / (
+                    f + self.k1 * (1 - self.b + self.b * self.dl[i] / self.avgdl))
         return s
