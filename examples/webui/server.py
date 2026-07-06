@@ -26,6 +26,8 @@ run it only on repos you trust on your own machine.
 from __future__ import annotations
 
 import json
+import shutil
+import subprocess
 import sys
 import threading
 import urllib.parse
@@ -54,6 +56,39 @@ SUGGESTED = {
 
 _repos: dict[str, _Repo] = {}
 _lock = threading.Lock()
+
+
+def pick_folder() -> str | None:
+    """Open the OS-native folder picker ON THE SERVER machine (a browser can't
+    hand us an absolute path). This is a local demo — server and browser are
+    the same machine. Returns the chosen path, or None on cancel/unavailable."""
+    try:
+        if sys.platform == "darwin":
+            r = subprocess.run(
+                ["osascript", "-e",
+                 'POSIX path of (choose folder with prompt "megabrain — pick a repo to index")'],
+                capture_output=True, text=True, timeout=180)
+            return r.stdout.strip() or None
+        if sys.platform == "win32":
+            ps = ("Add-Type -AssemblyName System.Windows.Forms; "
+                  "$d = New-Object System.Windows.Forms.FolderBrowserDialog; "
+                  "if ($d.ShowDialog() -eq 'OK') { $d.SelectedPath }")
+            r = subprocess.run(["powershell", "-NoProfile", "-Command", ps],
+                               capture_output=True, text=True, timeout=180)
+            return r.stdout.strip() or None
+        if shutil.which("zenity"):
+            r = subprocess.run(["zenity", "--file-selection", "--directory"],
+                               capture_output=True, text=True, timeout=180)
+            return r.stdout.strip() or None
+        import tkinter
+        from tkinter import filedialog
+        tk = tkinter.Tk()
+        tk.withdraw()
+        p = filedialog.askdirectory()
+        tk.destroy()
+        return p or None
+    except Exception:
+        return None
 
 
 def add_repo(path_str: str) -> str:
@@ -131,6 +166,9 @@ def make_handler():
                     return self._send(200, ui, "text/html")
                 if u.path == "/api/meta":
                     return self._json(200, {"repos": [repo_meta(n) for n in _repos]})
+                if u.path == "/api/pick":
+                    p = pick_folder()
+                    return self._json(200, {"path": p or ""})
                 if u.path == "/api/add":
                     p = arg("path")
                     if not p:

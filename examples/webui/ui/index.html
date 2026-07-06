@@ -99,6 +99,7 @@
   <button id="go">Search</button>
 </header>
 <div id="pathrow">
+  <button id="browse" class="ghost">Browse…</button>
   <label class="fld">absolute repo path <input id="path" type="text" spellcheck="false" /></label>
   <button id="load" class="ghost">Load &amp; index</button>
 </div>
@@ -186,6 +187,20 @@ async function loadRepo() {
 }
 $("load").onclick = loadRepo;
 $("path").addEventListener("keydown", e => { if (e.key === "Enter") loadRepo(); });
+
+$("browse").onclick = async () => {
+  // native OS folder picker, opened by the local server (same machine)
+  $("browse").disabled = true;
+  $("status").innerHTML = `<span class="busy">● folder picker open</span> — check your desktop`;
+  try {
+    const r = await api("/api/pick", {});
+    if (r.path) { $("path").value = r.path; await loadRepo(); }
+    else $("status").textContent = "picker canceled — you can also type the path";
+  } catch (e) {
+    $("status").textContent = "error: " + e.message;
+  }
+  $("browse").disabled = false;
+};
 
 async function runSearch() {
   const q = $("query").value.trim();
