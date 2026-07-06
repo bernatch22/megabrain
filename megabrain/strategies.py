@@ -20,12 +20,11 @@ from __future__ import annotations
 
 import importlib.util
 
-from .chunker import CastChunker, FileResult
-from .chunker_ts import (GO_SPEC, PHP_SPEC, RUBY_SPEC, RUST_SPEC, TS_SPEC,
-                         LangSpec, TsChunker, TreeSitterChunker)
+from .chunkers import (GO_SPEC, PHP_SPEC, RUBY_SPEC, RUST_SPEC, TS_SPEC,
+                       CastChunker, FileResult, LangSpec, MarkdownChunker,
+                       TreeSitterChunker, TsChunker)
 from .graph import (extract_edges, php_class_index, php_edges,
                     python_package_index, ts_edges)
-from .markdown import MarkdownChunker
 
 
 class PythonStrategy:
@@ -117,7 +116,7 @@ class PhpStrategy(TreeSitterStrategy):
 
     def __init__(self, repo: str = ""):
         super().__init__(PHP_SPEC, (".php",), repo=repo)
-        from .chunker_php import PhpChunker
+        from .chunkers.php import PhpChunker
         self._chunker = PhpChunker(repo=repo)   # replaces the generic chunker
 
     def build_edge_ctx(self, sources: dict[str, str], repo_name: str):
