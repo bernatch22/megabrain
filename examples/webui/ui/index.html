@@ -18,13 +18,20 @@
   header h1 { font-size:15px; font-weight:650; letter-spacing:.2px; }
   header h1 b { color: var(--accent); }
   header .sub { color: var(--dim); font-size:12px; }
+  label.fld { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--dim); }
   select, input[type=text] { background:var(--panel2); color:var(--txt); border:1px solid var(--line);
-           border-radius:8px; padding:8px 10px; font-size:13px; outline:none; }
+           border-radius:8px; padding:8px 10px; font-size:13px; outline:none; font-family:var(--mono); }
+  select { font-family:inherit; }
   select:focus, input:focus { border-color: var(--accent); }
-  #query { flex:1; min-width:260px; }
+  #query { flex:1; min-width:260px; font-family:inherit; }
   button { background:var(--accent); color:#04231a; border:0; border-radius:8px; padding:8px 16px;
            font-weight:650; font-size:13px; cursor:pointer; }
   button:disabled { opacity:.4; cursor:default; }
+  button.ghost { background:var(--panel2); color:var(--txt); border:1px solid var(--line); }
+
+  #pathrow { display:none; gap:10px; align-items:center; padding:12px 20px 0; flex-wrap:wrap; }
+  #pathrow.show { display:flex; }
+  #path { flex:1; min-width:320px; }
 
   #pills { display:flex; gap:8px; padding:10px 20px 0; flex-wrap:wrap; }
   .pill { font-size:12px; color:var(--dim); border:1px solid var(--line); border-radius:99px;
@@ -82,15 +89,31 @@
 
   .legend { display:flex; gap:14px; font-size:11px; color:var(--dim); align-items:center; }
   .legend i { width:12px; height:12px; border-radius:3px; display:inline-block; margin-right:5px; vertical-align:-2px; }
+
+  .seg { display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+  .seg button { background:var(--panel2); color:var(--dim); border:0; border-radius:0; padding:8px 12px;
+                font-size:12px; font-weight:600; cursor:pointer; }
+  .seg button + button { border-left:1px solid var(--line); }
+  .seg button.on { background:var(--accent); color:#04231a; }
 </style>
 </head>
 <body>
 <header>
   <h1><b>megabrain</b> · live retrieval <span class="sub">— ask the code, watch the engine pick the signal</span></h1>
-  <select id="repo" title="repo"></select>
-  <input id="query" type="text" placeholder="how / where / why…? — ask the codebase" />
+  <label class="fld">repo <select id="repo"></select></label>
+  <input id="query" type="text" />
   <button id="go">Search</button>
+  <div class="seg" id="docmode" title="include documentation (.md) files in the bundle?">
+    <button data-mode="all" class="on">Code + Docs</button>
+    <button data-mode="code">Code only</button>
+    <button data-mode="docs">Docs only</button>
+  </div>
 </header>
+<div id="pathrow">
+  <button id="browse" class="ghost">Browse…</button>
+  <label class="fld">absolute repo path <input id="path" type="text" spellcheck="false" /></label>
+  <button id="load" class="ghost">Load &amp; index</button>
+</div>
 <div id="pills"></div>
 <div id="status">loading…</div>
 <main>
@@ -113,40 +136,110 @@
 </main>
 <script>
 const $ = id => document.getElementById(id);
-let META = null, curQuery = "", curFile = "";
+const OTHER = "__other__";
+let docMode = "all";   // all | code | docs — whether .md files count in the bundle
+
+$("docmode").onclick = e => {
+  const b = e.target.closest("button[data-mode]");
+  if (!b) return;
+  docMode = b.dataset.mode;
+  document.querySelectorAll("#docmode button").forEach(x =>
+    x.classList.toggle("on", x === b));
+  if ($("query").value.trim() && $("repo").value !== OTHER) runSearch();
+};
+let META = null, curQuery = "", curName = "";
 
 const esc = s => s.replace(/[&<>]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[ch]));
 const api = (path, params) => fetch(path + "?" + new URLSearchParams(params)).then(r => r.json());
 
+function repoByName(name) { return META.repos.find(r => r.name === name); }
+
+function fillRepoSelect(selected) {
+  const opts = META.repos.map(r =>
+    `<option value="${esc(r.name)}">${esc(r.name)} · ${r.chunks} chunks</option>`);
+  opts.push(`<option value="${OTHER}">Other… (load a repo by path)</option>`);
+  $("repo").innerHTML = opts.join("");
+  if (selected) $("repo").value = selected;
+}
+
 async function boot() {
   META = await api("/api/meta", {});
-  $("repo").innerHTML = META.repos.map(r =>
-    `<option value="${esc(r.name)}">${esc(r.name)} · ${r.chunks} chunks</option>`).join("");
+  fillRepoSelect(META.repos[0] && META.repos[0].name);
   renderPills();
   $("status").textContent = "ready — index warm, every query runs the real engine";
 }
-function repoMeta() { return META.repos.find(r => r.name === $("repo").value) || META.repos[0]; }
+
 function renderPills() {
-  $("pills").innerHTML = repoMeta().suggested.map(q =>
-    `<span class="pill">${esc(q)}</span>`).join("");
+  const r = repoByName($("repo").value);
+  const sug = (r && r.suggested) || [];
+  $("pills").innerHTML = sug.map(q => `<span class="pill">${esc(q)}</span>`).join("");
   document.querySelectorAll(".pill").forEach(p => p.onclick = () => {
     $("query").value = p.textContent; runSearch();
   });
 }
-$("repo").onchange = () => { renderPills(); $("files").innerHTML = ""; $("chunks").innerHTML = ""; };
+
+$("repo").onchange = () => {
+  const other = $("repo").value === OTHER;
+  $("pathrow").classList.toggle("show", other);
+  if (other) { $("path").focus(); $("pills").innerHTML = ""; }
+  else { renderPills(); $("files").innerHTML = ""; $("chunks").innerHTML = ""; }
+};
+
+async function loadRepo() {
+  const p = $("path").value.trim();
+  if (!p) return;
+  $("load").disabled = true;
+  $("status").innerHTML = `<span class="busy">● indexing</span> ${esc(p)} — first run can take a moment`;
+  try {
+    const meta = await api("/api/add", { path: p });
+    if (meta.error) throw new Error(meta.error);
+    const existing = repoByName(meta.name);
+    if (existing) Object.assign(existing, meta); else META.repos.push(meta);
+    fillRepoSelect(meta.name);
+    $("pathrow").classList.remove("show");
+    $("path").value = "";
+    renderPills();
+    $("files").innerHTML = ""; $("chunks").innerHTML = "";
+    $("status").innerHTML = `loaded <b>${esc(meta.name)}</b> · ${meta.chunks} chunks · type a query`;
+  } catch (e) {
+    $("status").textContent = "error: " + e.message;
+  }
+  $("load").disabled = false;
+}
+$("load").onclick = loadRepo;
+$("path").addEventListener("keydown", e => { if (e.key === "Enter") loadRepo(); });
+
+$("browse").onclick = async () => {
+  // native OS folder picker, opened by the local server (same machine)
+  $("browse").disabled = true;
+  $("status").innerHTML = `<span class="busy">● folder picker open</span> — check your desktop`;
+  try {
+    const r = await api("/api/pick", {});
+    if (r.path) { $("path").value = r.path; await loadRepo(); }
+    else $("status").textContent = "picker canceled — you can also type the path";
+  } catch (e) {
+    $("status").textContent = "error: " + e.message;
+  }
+  $("browse").disabled = false;
+};
 
 async function runSearch() {
   const q = $("query").value.trim();
-  if (!q) return;
-  curQuery = q;
+  const name = $("repo").value;
+  if (!q || name === OTHER) return;
+  curQuery = q; curName = name;
   $("go").disabled = true;
   $("status").innerHTML = `<span class="busy">● retrieving</span> “${esc(q)}”`;
   try {
-    const res = await api("/api/search", { repo: $("repo").value, q });
+    const res = await api("/api/search", { repo: name, q, docs: docMode });
     if (res.error) throw new Error(res.error);
     renderFiles(res);
-    $("status").innerHTML = `“${esc(q)}” → <b>${res.tier1.length}</b> CORE + ${res.tier2.length} related · ${res.ms}ms retrieval (no LLM)`;
+    const dm = docMode === "code" ? " · code only" : docMode === "docs" ? " · docs only" : "";
+    $("status").innerHTML = `“${esc(q)}” → <b>${res.tier1.length}</b> CORE + ${res.tier2.length} related · ${res.ms}ms retrieval (no LLM)${dm}`;
     if (res.tier1.length) loadChunks(res.tier1[0].file);
+    else { $("chunks").innerHTML = ""; $("filehead").textContent =
+      docMode === "code" ? "no code files matched — try Code + Docs"
+      : docMode === "docs" ? "no docs matched — try Code + Docs" : "no files matched"; }
   } catch (e) {
     $("status").textContent = "error: " + e.message;
   }
@@ -169,12 +262,11 @@ function renderFiles(res) {
 }
 
 async function loadChunks(file) {
-  curFile = file;
   document.querySelectorAll("#files .row").forEach(r =>
     r.classList.toggle("active", r.dataset.f === file));
   $("status").innerHTML = `<span class="busy">● scoring chunks</span> ${esc(file)}`;
   try {
-    const d = await api("/api/chunks", { repo: $("repo").value, file, q: curQuery });
+    const d = await api("/api/chunks", { repo: curName, file, q: curQuery });
     if (d.error) throw new Error(d.error);
     renderChunks(d);
   } catch (e) {
