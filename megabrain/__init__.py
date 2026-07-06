@@ -31,18 +31,18 @@ Validated configuration (experiments phases 0-5, June 2026):
 
 from importlib import import_module
 
-__version__ = "0.4.0"
+__version__ = "0.4.1"
 
 _EXPORTS = {
-    "index_repo": ".indexer",
-    "search": ".query",
-    "render": ".query",
-    "get_code": ".query",
-    "load_state": ".query",
-    "search_with_state": ".query",
+    "index_repo": ".indexing.indexer",
+    "search": ".retrieval.query",
+    "render": ".retrieval.query",
+    "get_code": ".retrieval.query",
+    "load_state": ".retrieval.query",
+    "search_with_state": ".retrieval.query",
     "Store": ".store",
     # custom-chunker surface (see examples/02_custom_chunker.py):
-    "ChunkStrategy": ".strategies",
+    "ChunkStrategy": ".indexing.strategies",
     "Chunk": ".chunkers",
     "Symbol": ".chunkers",
     "FileResult": ".chunkers",

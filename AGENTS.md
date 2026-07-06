@@ -65,7 +65,7 @@ publish to PyPI without explicit approval from the maintainer.**
 
 ## Module map
 
-`chunkers/` all chunking behind one `FileResult` contract — `base.py` data model + partition validator · `python.py` stdlib-ast cAST · `treesitter.py` generic `TreeSitterChunker` + `LangSpec` (TS/JS, Ruby, Go, Rust, PHP) · `php.py` legacy-PHP section chunker + shape router · `markdown.py` no-LLM QMD-style doc chunker (old top-level module names remain as deprecation shims) · `strategies.py` ext→strategy registry + `ChunkStrategy` protocol (custom strategies inject via `index_repo(strategies=[...])`, checked before built-ins — examples/02) · `providers.py` OpenRouter config + shared OpenAI-compat chat/embed clients · `embeddings.py` pplx (int8, L2-norm) via OpenRouter · `store.py` SQLite · `graph.py` import/call edges (Python, TS/JS, PHP) · `indexer.py` registry-driven incremental walk (built-in excludes + `.megabrainignore`/`--exclude`) · `query.py` fusion + bundle + render (split into `load_state` / `search_with_state` so a server can keep the matrix warm) · `issue.py` deterministic issue parsing (Python + JS/TS traceback grounding, variant ensemble) · `bm25.py` sparse entity lane (postings) · `rerank.py` optional listwise LLM reorder (`llm_order`, `--best`) · `ask.py` explanation with spliced code · `serve.py` warm-state HTTP API (`serve-api`: `/search` `/docsearch` `/chunks` `/ask` `/get` `/index` `/health`; optional Bearer `--token`) · `cli.py` · `mcp_server.py`.
+The tree mirrors the pipeline (full detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) §6): `chunkers/` content→chunks behind one `FileResult` contract (`base` model+partition validator · `python` stdlib-ast cAST · `treesitter` generic chunker + `LangSpec`: TS/JS, Ruby, Go, Rust, PHP · `php` legacy-PHP section chunker + shape router · `markdown` no-LLM QMD doc chunker) · `indexing/` build the index (`indexer` registry-driven incremental walk + `maybe_reindex` 60s TTL · `strategies` ext→registry + `ChunkStrategy` protocol, custom via `index_repo(strategies=[...])` — examples/02 · `graph` py/ts/php edges) · `retrieval/` answer queries, no LLM (`query` fusion + bundle + RELATED-map render + `load_state`/`search_with_state` warm split · `issue` py+js/ts traceback grounding · `bm25` postings lane · `rerank` `llm_order`, `--best`) · `providers/` model APIs (`__init__` chat routing + OpenAI-compat clients · `claude` Agent SDK transport · `embeddings` int8+L2, atomic cache) · `frontends/` entry points (`cli` · `mcp` stdio · `http` serve-api: `/search` `/docsearch` `/chunks` `/ask` `/get` `/index` `/health`, Bearer `--token`) · root: `ask.py` spliced walkthrough · `store.py` SQLite · `mcp_server.py` launcher shim (keeps `python3 -m megabrain.mcp_server` working).
 
 ## What's next
 
@@ -78,7 +78,7 @@ content type is now a registry entry, not a branch in the indexer.
 
 **Packaging done**: published to PyPI (`pip install megabrain`, MIT) — `pyproject.toml`,
 console entry point, version single-sourced from `megabrain/__init__.py`. **serve-api done**:
-`serve.py` exposes warm-state retrieval over HTTP; it powers semantic search on
+`frontends/http.py` exposes warm-state retrieval over HTTP (serve-api); it powers semantic search on
 docs.pinecall.io (a megabrain daemon behind nginx). **Provider abstraction done**: all
 LLM/embedding traffic goes through `providers.py` (OpenRouter, OpenAI-compatible) — any model
 is selectable by env. Remaining Priority 2: `.tsx` arrow-component symbols, SWE-bench eval.

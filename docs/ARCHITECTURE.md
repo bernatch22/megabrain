@@ -109,7 +109,7 @@ auto-triggers a full re-embed on the next `index` so vectors never silently mism
   side-effect imports. PHP: `use` statements resolved against a namespace+declaration
   FQCN index (PSR-4-agnostic). Edges feed **candidates and annotations only** (rule 3).
 
-### 2.4 Storage, incrementality, freshness (`store.py`, `indexer.py`)
+### 2.4 Storage, incrementality, freshness (`store.py`, `indexing/indexer.py`)
 
 One SQLite file per repo at `<repo>/.megabrain/db.sqlite` (`chunks`, `files`,
 `symbols`, `edges`, `meta`). Indexing is incremental by SHA-256; orphans are pruned
@@ -125,7 +125,7 @@ indexing is deliberately deferred.
 
 ## 3. Query time — retrieval (no LLM)
 
-`query.py`. `load_state()` loads matrices once (servers keep it warm and reload on
+`retrieval/query.py`. `load_state()` loads matrices once (servers keep it warm and reload on
 db-mtime change); `search_with_state()` runs per query, all vectorized.
 
 ### 3.1 Scoring
@@ -235,7 +235,7 @@ independent by design (hybrid local-embed + Claude-narrate works).
   `include_docs`, `scope_path`), `megabrain_query` (`compact`, `full`,
   `scope_path`), `megabrain_get`, `megabrain_chunks`, `megabrain_index`.
   Auto-refreshes stale indexes before answering.
-- **HTTP** (`serve.py`, stdlib `http.server`, warm state, db-mtime auto-reload):
+- **HTTP** (`frontends/http.py`, stdlib `http.server`, warm state, db-mtime auto-reload):
   `/search` `/docsearch` `/chunks` `/ask` `/get` `/index` `/health`. Optional Bearer
   auth (`--token` / `MEGABRAIN_API_TOKEN`) on everything but `/health`; `get_code`
   enforces repo-root containment (path-traversal hardened). `/docsearch` groups are
@@ -253,22 +253,30 @@ independent by design (hybrid local-embed + Claude-narrate works).
 
 ## 6. Layout
 
+The tree mirrors the pipeline — content → index → retrieval → narration → surfaces:
+
 ```
 megabrain/
-  chunkers/          base (contract) · python · treesitter+LangSpec · php · markdown
-  strategies.py      ext → strategy registry + ChunkStrategy protocol (custom via index_repo)
-  providers.py       provider config: chat routing (auto claude/openrouter) + OpenAI-compat clients
-  providers_claude.py  Claude Agent SDK transport (subscription credits / ANTHROPIC_API_KEY)
-  embeddings.py      embed client (int8 decode, L2 norm, atomic disk cache)
-  store.py           SQLite schema + loads (close/context-manager)
-  graph.py           import/call edges (py · ts/js · php)
-  indexer.py         registry-driven incremental walk + maybe_reindex (60s TTL)
-  query.py           scoring, issue mode, bundle, render (RELATED map), chunks_for_file, multi-repo
-  issue.py           deterministic issue parsing (py + js/ts frames, variants)
-  bm25.py            sparse entity-ID lane (postings)
-  rerank.py          optional listwise LLM reorder (permute-only)
+  __init__.py        public API (lazy, typed)
   ask.py             narrated walkthrough with verbatim splice (code/docs/code+docs modes)
-  serve.py  cli.py  mcp_server.py
+  store.py           SQLite schema + loads (close/context-manager)
+  chunkers/          CONTENT → CHUNKS: base (contract) · python · treesitter+LangSpec · php · markdown
+  indexing/          BUILD the index
+    indexer.py         registry-driven incremental walk + maybe_reindex (60s TTL)
+    strategies.py      ext → strategy registry + ChunkStrategy protocol (custom via index_repo)
+    graph.py           import/call edges (py · ts/js · php)
+  retrieval/         ANSWER queries (no LLM in this package — rule 1)
+    query.py           scoring, issue mode, bundle, render (RELATED map), chunks_for_file, multi-repo
+    issue.py           deterministic issue parsing (py + js/ts frames, variants)
+    bm25.py            sparse entity-ID lane (postings)
+    rerank.py          optional listwise LLM reorder (permute-only, --best)
+  providers/         everything that talks to a model API
+    __init__.py        chat routing (auto claude/openrouter) + OpenAI-compat clients + keys
+    claude.py          Claude Agent SDK transport (subscription credits / ANTHROPIC_API_KEY)
+    embeddings.py      embed client (int8 decode, L2 norm, atomic disk cache)
+  frontends/         entry points over the same engine
+    cli.py · mcp.py · http.py   (megabrain CLI · stdio MCP · serve-api)
+  mcp_server.py      launcher shim — keeps `python3 -m megabrain.mcp_server` registrations working
 examples/            programmatic API · custom .sql chunker · chunk heatmap · web demo
 ```
 

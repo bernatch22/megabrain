@@ -17,8 +17,8 @@ from pathlib import Path
 
 import numpy as np
 
-from .embeddings import Embedder
-from .store import Store
+from ..providers.embeddings import Embedder
+from ..store import Store
 
 FILE_FUSION_W = 0.5     # phase 3 winner
 TIER1_MAX = 4

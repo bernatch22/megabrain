@@ -49,8 +49,8 @@ class FakeEmbedder:
 @pytest.fixture
 def fake_embedder(monkeypatch):
     """Patch the engine to use FakeEmbedder everywhere (indexer + query)."""
-    import megabrain.indexer as indexer
-    import megabrain.query as query
+    import megabrain.indexing.indexer as indexer
+    import megabrain.retrieval.query as query
     monkeypatch.setattr(indexer, "Embedder", FakeEmbedder)
     monkeypatch.setattr(query, "Embedder", FakeEmbedder)
     return FakeEmbedder
@@ -76,6 +76,6 @@ def tiny_repo(tmp_path, fake_embedder):
         'def flatten(xs):\n'
         '    """Flatten a nested list one level."""\n'
         '    return [y for x in xs for y in x]\n')
-    from megabrain.indexer import index_repo
+    from megabrain.indexing.indexer import index_repo
     index_repo(tmp_path, quiet=True)
     return tmp_path

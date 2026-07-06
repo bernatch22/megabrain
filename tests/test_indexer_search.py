@@ -1,8 +1,8 @@
 """End-to-end indexer + store + search on a tmp repo with the fake embedder.
 No network, no corpus — this is what contributors/CI can always run."""
 
-from megabrain.indexer import index_repo
-from megabrain.query import search
+from megabrain.indexing.indexer import index_repo
+from megabrain.retrieval.query import search
 from megabrain.store import Store
 
 
@@ -26,7 +26,7 @@ def test_force_reembeds_everything(tiny_repo):
 
 
 def test_embed_model_change_triggers_full_reembed(tiny_repo, monkeypatch):
-    import megabrain.indexer as indexer
+    import megabrain.indexing.indexer as indexer
     monkeypatch.setattr(indexer, "EMBED_MODEL", "other/model")
     r = index_repo(tiny_repo, quiet=True)        # no force asked — auto-detected
     assert r["changed"] == 3
@@ -94,7 +94,7 @@ def test_reindex_preserves_incoming_edges(tiny_repo):
 # ---------------------------------------------------------------- exclude / ignore
 
 def test_split_and_match_patterns():
-    from megabrain.indexer import _excluded, _split_patterns
+    from megabrain.indexing.indexer import _excluded, _split_patterns
     names, globs = _split_patterns(["migrations", "src/generated/", "*.pb.go", ""])
     assert names == {"migrations"} and set(globs) == {"src/generated", "*.pb.go"}
     assert _excluded("app/migrations/001.py", names, globs)        # bare name, any segment
@@ -106,7 +106,7 @@ def test_split_and_match_patterns():
 
 
 def test_load_ignore_file(tmp_path):
-    from megabrain.indexer import load_ignore
+    from megabrain.indexing.indexer import load_ignore
     (tmp_path / ".megabrainignore").write_text(
         "# comment\nvendor\n\nsrc/generated  # trailing note\n*.min.js\n")
     assert load_ignore(tmp_path) == ["vendor", "src/generated", "*.min.js"]
@@ -120,7 +120,7 @@ def test_discover_honors_exclude_and_ignorefile(tmp_path, fake_embedder):
     (tmp_path / "vendor").mkdir()
     (tmp_path / "vendor" / "lib.py").write_text("def v():\n    return 3\n")
     (tmp_path / ".megabrainignore").write_text("vendor\n")
-    from megabrain.indexer import discover, index_repo
+    from megabrain.indexing.indexer import discover, index_repo
     from megabrain.store import Store
     # discover() applies the patterns it's handed (+ built-ins):
     found = {p.relative_to(tmp_path).as_posix()

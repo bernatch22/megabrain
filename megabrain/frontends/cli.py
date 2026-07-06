@@ -90,16 +90,16 @@ def main(argv=None):
                  f"applies to `index` and `query` only")
 
     if a.cmd == "index":
-        from .indexer import index_repo
+        from ..indexing.indexer import index_repo
         exclude = [x for item in a.exclude for x in item.split(",") if x.strip()]
         for r in raw:
             index_repo(r, force=a.force, exclude=exclude)
     elif a.cmd == "query":
         import json as _json
 
-        from .indexer import maybe_reindex
-        from .query import render, search, search_multi
-        from .store import resolve_root
+        from ..indexing.indexer import maybe_reindex
+        from ..retrieval.query import render, search, search_multi
+        from ..store import resolve_root
         scoped = [resolve_root(p) for p in raw]           # [(root, subpath), …]
         roots = [r for r, _ in scoped]
         pfs = [sp or None for _, sp in scoped]
@@ -110,17 +110,17 @@ def main(argv=None):
         print(_json.dumps(res, indent=1) if a.json
               else render(res, compact=a.compact, related_code=a.full))
     elif a.cmd == "ask":
-        from .ask import stream_ask
-        from .indexer import maybe_reindex
-        from .store import resolve_root
+        from ..ask import stream_ask
+        from ..indexing.indexer import maybe_reindex
+        from ..store import resolve_root
         r0, sp = resolve_root(root)
         maybe_reindex(r0)                  # answers match disk (60s TTL, fail-open)
         stream_ask(r0, a.question, rerank=a.best, show_map=not a.no_map,
                    docs_only=a.docs, path_filter=sp or None,
                    include_docs=a.with_docs)
     elif a.cmd == "get":
-        from .query import get_code
-        from .store import resolve_root
+        from ..retrieval.query import get_code
+        from ..store import resolve_root
         r0, sp = resolve_root(root)
         # a bare file arg under a sub-path is joined onto the sub-path so
         # `megabrain get ~/repo/src dispatch.ts` finds src/dispatch.ts.
@@ -131,9 +131,9 @@ def main(argv=None):
     elif a.cmd == "chunks":
         import json as _json
 
-        from .indexer import maybe_reindex
-        from .query import chunks_for_file_root
-        from .store import resolve_root
+        from ..indexing.indexer import maybe_reindex
+        from ..retrieval.query import chunks_for_file_root
+        from ..store import resolve_root
         r0, sp = resolve_root(root)
         maybe_reindex(r0)
         rel = a.file
@@ -141,11 +141,11 @@ def main(argv=None):
             rel = (Path(sp) / rel).as_posix()
         print(_json.dumps(chunks_for_file_root(r0, rel, a.query, path_filter=sp or None), indent=1))
     elif a.cmd == "serve-api":
-        from .serve import serve
+        from .http import serve
         serve(root, port=a.port, host=a.host, cors=a.cors, enable_llm=not a.no_llm,
               token=a.token)
     elif a.cmd == "stats":
-        from .store import Store
+        from ..store import Store
         s = Store(root)
         n_chunks = s.db.execute("SELECT COUNT(*) FROM chunks").fetchone()[0]
         n_files = s.db.execute("SELECT COUNT(*) FROM files").fetchone()[0]

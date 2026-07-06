@@ -6,7 +6,7 @@ import base64
 import numpy as np
 import pytest
 
-import megabrain.embeddings as E
+import megabrain.providers.embeddings as E
 from megabrain import providers
 
 

@@ -3,7 +3,7 @@ DATA keeps best_chunk untouched (ask/serve depend on it); only render() slims.
 `related_code=True` restores the inline-code view. Motivated by real agent
 sessions: RELATED code bodies were ~16K of a ~22K-token bundle at ~5% gold."""
 
-from megabrain.query import render
+from megabrain.retrieval.query import render
 
 RES = {
     "query": "q", "repo": "r", "ms": 1,
