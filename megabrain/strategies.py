@@ -3,7 +3,7 @@ edge extractor, so adding a language or content type is a config entry rather
 than a branch in the indexer. Every strategy emits the same content-agnostic
 FileResult, so the embed/store/query/ask pipeline never changes.
 
-A strategy has three parts:
+A strategy (see the ChunkStrategy protocol) has three parts:
   - exts:            extensions it claims
   - chunk_file:      relpath, source -> FileResult   (the per-file chunker)
   - build_edge_ctx:  whole-repo prepass for the graph (or None if no graph)
@@ -14,11 +14,16 @@ A strategy has three parts:
 Language strategies whose tree-sitter grammar isn't installed are dropped from
 the active registry (build_registry), so a new language is "config + pip install
 tree_sitter_<lang>": the entry is always here; it activates when the grammar is.
+
+CUSTOM strategies plug in WITHOUT forking: `index_repo(root,
+strategies=[MyStrategy()])`. They are checked FIRST, so a custom strategy can
+also override a built-in extension. See examples/02_custom_chunker.py.
 """
 
 from __future__ import annotations
 
 import importlib.util
+from typing import Protocol, Sequence, runtime_checkable
 
 from .chunkers import (
     GO_SPEC,
@@ -33,6 +38,24 @@ from .chunkers import (
     TsChunker,
 )
 from .graph import extract_edges, php_class_index, php_edges, python_package_index, ts_edges
+
+
+@runtime_checkable
+class ChunkStrategy(Protocol):
+    """Contract every chunking strategy satisfies (built-in or custom).
+
+    chunk_file MUST return a FileResult whose chunks are an exact line
+    partition of the file (validate_partition(result) == []) — that is the
+    one hard engine invariant. Strategies with no dependency graph return
+    None from both edge hooks."""
+
+    exts: tuple[str, ...]
+
+    def chunk_file(self, relpath: str, source: str) -> FileResult: ...
+
+    def build_edge_ctx(self, sources: dict[str, str], repo_name: str): ...
+
+    def extract_edges(self, relpath: str, source: str, ctx): ...
 
 
 class PythonStrategy:
@@ -146,10 +169,13 @@ def _grammar_available(module: str) -> bool:
     return importlib.util.find_spec(module) is not None
 
 
-def build_registry(repo: str = "") -> list:
+def build_registry(repo: str = "", extra: Sequence[ChunkStrategy] = ()) -> list:
     """Active strategies for this index. Always-on: Python, TS/JS, Markdown.
-    Optional languages are included only if their grammar is installed."""
-    reg = [PythonStrategy(repo), TsJsStrategy(repo), MarkdownStrategy(repo)]
+    Optional languages are included only if their grammar is installed.
+    `extra` (caller-supplied custom strategies) go FIRST: strategy_for picks
+    the first extension match, so a custom strategy can claim a new content
+    type or override a built-in one."""
+    reg: list = [*extra, PythonStrategy(repo), TsJsStrategy(repo), MarkdownStrategy(repo)]
     for spec, exts, module in _TREE_SITTER_LANGS:
         if _grammar_available(module):
             reg.append(TreeSitterStrategy(spec, exts, repo))

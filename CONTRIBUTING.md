@@ -54,6 +54,10 @@ Optional level 2: an import-edge extractor in `graph.py` + a strategy
 `build_edge_ctx`/`extract_edges` (see `PhpStrategy`). Retrieval works without
 it; edges only add graph candidates.
 
+Private formats or DSLs that don't belong in core don't need a PR at all:
+implement the `ChunkStrategy` protocol and pass it to
+`index_repo(root, strategies=[...])` — see `examples/02_custom_chunker.py`.
+
 ## Style
 
 `ruff check .` must pass (config in `pyproject.toml`). Match the codebase's
