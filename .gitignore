@@ -10,9 +10,6 @@ __pycache__/
 build/
 dist/
 
-# local-only design doc (kept in the working tree, never committed)
-ARCHITECTURE.md
-
 # proprietary golden eval set + corpus-dependent benchmarks (private corpus — never committed)
 evals/golden.json
 evals/README.md

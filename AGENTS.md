@@ -4,7 +4,7 @@
 
 megabrain is a local **code-intelligence engine**. One call returns all the code related to a question, explained with the real code spliced in. It exists to replace minutes of file-by-file crawling (grep + Read + explore agents) with one grounded answer. Overview: [README.md](README.md).
 
-Pipeline: `index` (cAST chunk → OpenRouter embed (`pplx-embed-v1-0.6b`) → SQLite, incremental by sha256) → `query` (no-LLM retrieval: dense chunk + file-skeleton fusion + graph candidates) → `ask` (one OpenRouter chat call, qwen3-coder by default, narrates and cites `[[k]]`; the engine replaces each citation with verbatim code — the model cannot rewrite code; streamed live to the terminal; **code-only by default**, `--docs` for a docs-only walkthrough, `--with-docs` for code+docs). CLI ask/query/chunks auto-refresh a stale index (60s TTL) like the MCP server.
+Pipeline: `index` (cAST chunk → embed via OpenRouter/local (`pplx-embed-v1-0.6b`) → SQLite, incremental by sha256) → `query` (no-LLM retrieval: dense chunk + file-skeleton fusion + graph candidates; CORE full code + RELATED as a map — `--full` for RELATED code bodies) → `ask` (one chat call — Claude via the Agent SDK when installed, else OpenRouter qwen3-coder — narrates and cites `[[k]]`; the engine replaces each citation with verbatim code — the model cannot rewrite code; streamed live to the terminal; **code-only by default**, `--docs` for a docs-only walkthrough, `--with-docs` for code+docs). CLI ask/query/chunks auto-refresh a stale index (60s TTL) like the MCP server. Full design: [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Using it (dogfood — prefer this over crawling files)
 

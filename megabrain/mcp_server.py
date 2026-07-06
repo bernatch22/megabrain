@@ -1,9 +1,11 @@
 """Minimal MCP stdio server for megabrain (no external deps).
 
 Tools:
-  megabrain_ask(repo_path, question, scope_path?, docs?)  -> explained answer, real code
-                                                spliced (docs=true -> explain docs instead)
-  megabrain_query(repo_path, task, scope_path?, compact?) -> full unfiltered code bundle
+  megabrain_ask(repo_path, question, scope_path?, docs?, include_docs?)
+      -> explained answer, real code spliced (docs=true -> docs-only walkthrough;
+         include_docs=true -> code + docs)
+  megabrain_query(repo_path, task, scope_path?, compact?, full?)
+      -> complete bundle: CORE full code + RELATED map (full=true adds RELATED code bodies)
   megabrain_get(repo_path, file, symbol?)     -> one file or symbol
   megabrain_chunks(repo_path, file, query)    -> every chunk of one file, scored + selected flags
   megabrain_index(repo_path)                  -> incremental index
