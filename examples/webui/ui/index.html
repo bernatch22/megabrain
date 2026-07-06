@@ -89,6 +89,12 @@
 
   .legend { display:flex; gap:14px; font-size:11px; color:var(--dim); align-items:center; }
   .legend i { width:12px; height:12px; border-radius:3px; display:inline-block; margin-right:5px; vertical-align:-2px; }
+
+  .seg { display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+  .seg button { background:var(--panel2); color:var(--dim); border:0; border-radius:0; padding:8px 12px;
+                font-size:12px; font-weight:600; cursor:pointer; }
+  .seg button + button { border-left:1px solid var(--line); }
+  .seg button.on { background:var(--accent); color:#04231a; }
 </style>
 </head>
 <body>
@@ -97,6 +103,11 @@
   <label class="fld">repo <select id="repo"></select></label>
   <input id="query" type="text" />
   <button id="go">Search</button>
+  <div class="seg" id="docmode" title="include documentation (.md) files in the bundle?">
+    <button data-mode="all" class="on">Code + Docs</button>
+    <button data-mode="code">Code only</button>
+    <button data-mode="docs">Docs only</button>
+  </div>
 </header>
 <div id="pathrow">
   <button id="browse" class="ghost">Browse…</button>
@@ -126,6 +137,16 @@
 <script>
 const $ = id => document.getElementById(id);
 const OTHER = "__other__";
+let docMode = "all";   // all | code | docs — whether .md files count in the bundle
+
+$("docmode").onclick = e => {
+  const b = e.target.closest("button[data-mode]");
+  if (!b) return;
+  docMode = b.dataset.mode;
+  document.querySelectorAll("#docmode button").forEach(x =>
+    x.classList.toggle("on", x === b));
+  if ($("query").value.trim() && $("repo").value !== OTHER) runSearch();
+};
 let META = null, curQuery = "", curName = "";
 
 const esc = s => s.replace(/[&<>]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[ch]));
@@ -210,11 +231,15 @@ async function runSearch() {
   $("go").disabled = true;
   $("status").innerHTML = `<span class="busy">● retrieving</span> “${esc(q)}”`;
   try {
-    const res = await api("/api/search", { repo: name, q });
+    const res = await api("/api/search", { repo: name, q, docs: docMode });
     if (res.error) throw new Error(res.error);
     renderFiles(res);
-    $("status").innerHTML = `“${esc(q)}” → <b>${res.tier1.length}</b> CORE + ${res.tier2.length} related · ${res.ms}ms retrieval (no LLM)`;
+    const dm = docMode === "code" ? " · code only" : docMode === "docs" ? " · docs only" : "";
+    $("status").innerHTML = `“${esc(q)}” → <b>${res.tier1.length}</b> CORE + ${res.tier2.length} related · ${res.ms}ms retrieval (no LLM)${dm}`;
     if (res.tier1.length) loadChunks(res.tier1[0].file);
+    else { $("chunks").innerHTML = ""; $("filehead").textContent =
+      docMode === "code" ? "no code files matched — try Code + Docs"
+      : docMode === "docs" ? "no docs matched — try Code + Docs" : "no files matched"; }
   } catch (e) {
     $("status").textContent = "error: " + e.message;
   }

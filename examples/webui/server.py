@@ -34,6 +34,7 @@ import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
+from megabrain.ask import DOC_EXTS
 from megabrain.indexer import index_repo
 from megabrain.query import chunks_for_file, search_with_state
 from megabrain.serve import _Repo
@@ -124,6 +125,20 @@ def repo_meta(name: str) -> dict:
     }
 
 
+def _apply_doc_mode(res: dict, mode: str) -> dict:
+    """Filter the bundle by content type — mirrors ask's code/docs/code+docs
+    modes for the retrieval view. mode: 'all' (default) | 'code' (drop .md) |
+    'docs' (only .md)."""
+    if mode not in ("code", "docs"):
+        return res
+    def keep(f: str) -> bool:
+        is_doc = f.endswith(DOC_EXTS)
+        return is_doc if mode == "docs" else not is_doc
+    return {**res,
+            "tier1": [t for t in res["tier1"] if keep(t["file"])],
+            "tier2": [t for t in res["tier2"] if keep(t["file"])]}
+
+
 def _slim_search(res: dict) -> dict:
     """The file-ranking view only needs names/scores — chunk text stays in /api/chunks."""
     return {
@@ -186,7 +201,7 @@ def make_handler():
                     if not q:
                         return self._json(400, {"error": "missing q"})
                     res = repo.with_state(lambda st: search_with_state(st, q))
-                    return self._json(200, _slim_search(res))
+                    return self._json(200, _slim_search(_apply_doc_mode(res, arg("docs"))))
                 if u.path == "/api/chunks":
                     f, q = arg("file"), arg("q")
                     if not f or not q:
