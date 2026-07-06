@@ -7,7 +7,7 @@ Runnable, self-contained scripts showing megabrain as a **library** — not just
 | [`01_programmatic.py`](01_programmatic.py) | index → search → render → warm state → `ask`, all from Python | yes¹ |
 | [`02_custom_chunker.py`](02_custom_chunker.py) | teach megabrain a **new content type** (`.sql`) with a custom `ChunkStrategy` — no fork needed | chunking: **no** · search step: yes¹ |
 | [`03_chunk_map.py`](03_chunk_map.py) | terminal heatmap of every chunk in one file, scored against a query (the signal-vs-noise view) | yes¹ |
-| [`webui/`](webui/) | **live web demo** — ask a question, watch the engine rank files and light up the selected chunks; ships with a 2003-style legacy-PHP sample app, works on any repo | yes¹ |
+| [`webui/`](webui/) | **live web demo** — ask a question, watch the engine rank files and light up the selected chunks, then hit **Explain ⚡** for the LLM walkthrough with a **Claude vs OpenRouter** A/B toggle; ships a 2003-style legacy-PHP sample, works on any repo | yes¹ |
 
 ¹ "key" = `OPENROUTER_API_KEY`, **or** a keyless local endpoint
 (`MEGABRAIN_EMBED_BASE_URL=http://localhost:11434/v1` + a local embed model —
