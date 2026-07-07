@@ -1,10 +1,14 @@
 name: Release
 
-# Publish to PyPI on a version tag (v0.4.0, …) via Trusted Publishing:
-# configure this repo + workflow as a trusted publisher on pypi.org first.
+# DISABLED as an automatic tag trigger — releases are published manually with
+# `python -m build && twine upload dist/*` for now, because PyPI Trusted
+# Publishing isn't configured for this repo yet (the OIDC exchange fails).
+# Pushing a version tag no longer runs this workflow, so no failing run / email.
+# To re-enable: set up the trusted publisher on pypi.org, then restore
+#   on:\n    push:\n      tags: ["v*"]
+# Until then this only runs on manual dispatch.
 on:
-  push:
-    tags: ["v*"]
+  workflow_dispatch:
 
 jobs:
   build:

@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.5.0 — 2026-07-06
+
+- **`ask v2` — adaptive multi-agent synthesis** (`megabrain/ask_agents.py`).
+  When a question is broad and single-shot retrieval isn't confident, `ask`
+  fans out: a no-LLM classifier reads the bundle shape, a planner splits it
+  into ≤4 scoped slices, parallel sub-agents (each with the repo map + no-LLM
+  retrieval tools `search_more`/`get_file`/`get_symbol`) explain their slice,
+  and a parent synthesizes with the same global `[[k]]` citation-splice — code
+  stays verbatim. Every stage fails open to single-agent `ask`. Surfaces: CLI
+  `ask --agents/--no-agents` (default AUTO), MCP `agents` param, serve-api
+  `POST /ask/stream` (SSE live view). Scoped questions never pay for it, and no
+  LLM ever enters the retrieval path (rule 1 holds). Gates green: full suite +
+  golden (bundle_full 1.00, R@1 0.86) + multi + scale.
+- Provider tool-calling: `stream_chat(with_tools=True)` parses OpenAI
+  `tool_calls`; the Claude path registers the retrieval tools as an in-process
+  SDK MCP server.
+
 ## 0.4.1 — 2026-07-06
 
 - **Internal package reorg** — the tree now mirrors the pipeline: `chunkers/` ·
