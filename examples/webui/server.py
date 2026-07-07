@@ -37,6 +37,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from megabrain.ask import DOC_EXTS, ask, render_ask
+from megabrain.ask_agents import stream_events
 from megabrain.frontends.http import _Repo
 from megabrain.indexing.indexer import index_repo
 from megabrain.providers import chat_provider
@@ -60,7 +61,18 @@ SUGGESTED = {
 
 _repos: dict[str, _Repo] = {}
 _lock = threading.Lock()
-_ask_lock = threading.Lock()   # serializes ask + the MEGABRAIN_CHAT_PROVIDER swap
+_ask_lock = threading.Lock()   # guards the MEGABRAIN_CHAT_PROVIDER env write
+
+
+def _set_provider(provider: str) -> str:
+    """Point the engine at the demo's selected provider. Set-and-leave (the
+    last selection wins) under a brief lock — holding a lock for a whole
+    multi-agent stream serialized retries behind zombie streams and looked
+    like a hang. Single-user local demo: a global provider switch is fine."""
+    provider = provider if provider in ("claude", "openrouter") else chat_provider()
+    with _ask_lock:
+        os.environ["MEGABRAIN_CHAT_PROVIDER"] = provider
+    return provider
 
 
 def claude_available() -> bool:
@@ -70,22 +82,21 @@ def claude_available() -> bool:
 def run_ask(repo: _Repo, q: str, provider: str) -> dict:
     """Run the LLM walkthrough for the demo's provider A/B. ask() builds its
     own SQLite connection (like serve-api /ask), so it never races the warm
-    search state. The provider is swapped via env under a lock — fine for a
-    single-user local demo. Returns rendered markdown + per-stage timings."""
-    provider = provider if provider in ("claude", "openrouter") else chat_provider()
-    with _ask_lock:
-        prev = os.environ.get("MEGABRAIN_CHAT_PROVIDER")
-        os.environ["MEGABRAIN_CHAT_PROVIDER"] = provider
-        try:
-            out = ask(repo.root, q)
-        finally:
-            if prev is None:
-                os.environ.pop("MEGABRAIN_CHAT_PROVIDER", None)
-            else:
-                os.environ["MEGABRAIN_CHAT_PROVIDER"] = prev
+    search state. Returns rendered markdown + per-stage timings."""
+    provider = _set_provider(provider)
+    out = ask(repo.root, q)
     return {"text": render_ask(out), "provider": provider,
             "retrieval_ms": out["retrieval_ms"], "llm_ms": out["llm_ms"],
             "grounded": bool(out["text"])}
+
+
+def run_ask_stream(repo: _Repo, q: str, provider: str, agents, on_event) -> None:
+    """SSE variant of run_ask (ask v2): same provider A/B, but the whole
+    multi-agent event stream (plan, per-agent deltas/tools, spliced synthesis)
+    flows to the browser as it happens. No lock held during the stream — a
+    zombie stream (closed tab / retry) must never queue the next request."""
+    _set_provider(provider)
+    stream_events(repo.root, q, on_event, agents=agents)
 
 
 def pick_folder() -> str | None:
@@ -245,6 +256,35 @@ def make_handler():
                     if not q:
                         return self._json(400, {"error": "missing q"})
                     return self._json(200, run_ask(repo, q, arg("provider")))
+                if u.path == "/api/ask/stream":
+                    q = arg("q")
+                    if not q:
+                        return self._json(400, {"error": "missing q"})
+                    ag = arg("agents")            # "" | "auto" | "true" | "false"
+                    agents = None if ag in ("", "auto") else ag == "true"
+                    self.send_response(200)
+                    self.send_header("Content-Type",
+                                     "text/event-stream; charset=utf-8")
+                    self.send_header("Cache-Control", "no-cache")
+                    self.send_header("Connection", "close")
+                    self.end_headers()
+                    self.close_connection = True
+
+                    def sse(ev: dict):
+                        self.wfile.write(f'event: {ev["type"]}\ndata: '
+                                         f'{json.dumps(ev)}\n\n'.encode())
+                        self.wfile.flush()
+
+                    try:
+                        run_ask_stream(repo, q, arg("provider"), agents, sse)
+                    except (BrokenPipeError, ConnectionResetError):
+                        pass              # browser closed the EventSource
+                    except Exception as e:  # noqa: BLE001 — headers already sent
+                        try:
+                            sse({"type": "error", "stage": "fatal", "msg": str(e)})
+                        except OSError:
+                            pass
+                    return
                 return self._json(404, {"error": "not found"})
             except Exception as e:              # surface engine errors to the UI
                 return self._json(500, {"error": str(e)})

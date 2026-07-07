@@ -113,10 +113,34 @@
   .ask h2 { font-size:15px; margin:18px 0 8px; color:var(--accent); }
   .ask code { background:var(--panel2); padding:1px 5px; border-radius:4px; font-family:var(--mono); font-size:12.5px; }
   .ask pre { background:#0b0e14; border:1px solid var(--line); border-radius:8px; padding:12px 14px;
-             overflow-x:auto; margin:8px 0; }
+             max-height:340px; overflow:auto; margin:8px 0; }   /* cap cited blocks — scroll inside */
   .ask pre code { background:none; padding:0; font-size:12px; line-height:1.45; }
   .ask p { margin:8px 0; }
   .ask .fileref { color:var(--accent); font-family:var(--mono); font-size:12px; font-weight:600; }
+
+  /* ask v2 — one card per sub-agent, streaming live, minimized when done */
+  #agents { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+            gap:10px; padding:14px 18px 0; }
+  #agents:empty { display:none; }
+  .agent { background:var(--panel2); border:1px solid var(--line); border-radius:10px;
+           overflow:hidden; transition:opacity .3s; }
+  .agent .ahead { display:flex; gap:8px; align-items:center; padding:8px 12px;
+                  border-bottom:1px solid var(--line); font-family:var(--mono); font-size:11px; }
+  .agent .ahead .lbl { color:var(--accent); font-weight:700; }
+  .agent .ahead .st { margin-left:auto; color:var(--dim); }
+  .agent .sq { padding:6px 12px; font-size:11.5px; color:var(--dim);
+               border-bottom:1px solid var(--line); }
+  .agent .chl { padding:4px 12px; font-family:var(--mono); font-size:10.5px;
+                color:var(--dim); border-bottom:1px solid var(--line);
+                max-height:72px; overflow-y:auto; }
+  .agent .out { padding:8px 12px; font-family:var(--mono); font-size:11px; line-height:1.5;
+                max-height:180px; overflow-y:auto; white-space:pre-wrap; color:var(--txt); }
+  .agent .out:empty { display:none; }
+  .agent .out .tool { color:var(--accent2); }
+  .agent.min .sq, .agent.min .chl, .agent.min .out { display:none; }
+  .agent.min { opacity:.7; cursor:pointer; }
+  .agent.done .ahead .lbl::after { content:" ✓"; color:var(--accent); }
+  .agent.fail .ahead .lbl::after { content:" ✗"; color:var(--accent2); }
 </style>
 </head>
 <body>
@@ -140,9 +164,15 @@
         <button data-p="claude" class="on">Claude</button>
         <button data-p="openrouter">OpenRouter</button>
       </div>
+      <div class="seg" id="agmode" title="multi-agent fan-out: auto (broad questions only), always, never">
+        <button data-a="auto" class="on">Auto</button>
+        <button data-a="true">Multi</button>
+        <button data-a="false">Single</button>
+      </div>
       <span class="sub" id="asktime"></span>
       <button class="x" id="closeask">Close</button>
     </div>
+    <div id="agents"></div>
     <div class="ask" id="askbody"></div>
   </div>
 </div>
@@ -233,26 +263,96 @@ $("explain").onclick = () => { if ($("query").value.trim()) runAsk(); };
 $("closeask").onclick = () => $("overlay").classList.remove("show");
 $("overlay").onclick = e => { if (e.target === $("overlay")) $("overlay").classList.remove("show"); };
 
-async function runAsk() {
+let agMode = "auto";      // auto | true (always fan out) | false (never)
+$("agmode").onclick = e => {
+  const b = e.target.closest("button[data-a]");
+  if (!b) return;
+  agMode = b.dataset.a;
+  document.querySelectorAll("#agmode button").forEach(x => x.classList.toggle("on", x === b));
+  runAsk();
+};
+
+let es = null;            // the live EventSource — one ask at a time
+
+function runAsk() {
   const q = $("query").value.trim();
   const name = $("repo").value;
   if (!q || name === OTHER) return;
+  if (es) { es.close(); es = null; }
   $("overlay").classList.add("show");
+  $("agents").innerHTML = "";
   const label = askProvider === "claude" ? "Claude (Claude Code)" : "OpenRouter";
   $("asktime").textContent = "";
-  $("askbody").innerHTML = `<p style="color:var(--dim)">● narrating on <b>${label}</b> — one LLM call, real code spliced in…</p>`;
+  $("askbody").innerHTML = `<p style="color:var(--dim)">● connecting — ${label}…</p>`;
   const t0 = performance.now();
-  try {
-    const d = await api("/api/ask", { repo: name, q, provider: askProvider });
-    if (d.error) throw new Error(d.error);
+  let synth = "", synthStarted = false;
+
+  es = new EventSource("/api/ask/stream?" + new URLSearchParams(
+    { repo: name, q, provider: askProvider, agents: agMode }));
+  const QUIET = new Set(["agent_delta", "synthesis_delta"]);   // too chatty to log
+  const on = (t, fn) => es.addEventListener(t, e => {
+    const d = JSON.parse(e.data);
+    if (!QUIET.has(t)) console.log("[megabrain]", t, d);
+    fn(d);
+  });
+  const agEl = id => document.getElementById("ag" + id);
+  const finish = () => { if (es) { es.close(); es = null; } };
+
+  on("retrieval", d => { $("askbody").innerHTML =
+    `<p style="color:var(--dim)">● ${d.ms}ms retrieval · streaming ${esc(d.model)}…</p>`; });
+  on("classified", d => { if (d.broad || d.forced) $("askbody").innerHTML =
+    `<p style="color:var(--dim)">● broad question (${esc(d.reasons.join("; ") || "forced")}) — planning the fan-out…</p>`; });
+  on("planning", d => { $("askbody").innerHTML =
+    `<p style="color:var(--dim)">● planner running on <b>${esc(d.model)}</b> — falls back to dir clustering after ${d.timeout_s}s…</p>`; });
+  on("plan", d => {                       // one card per sub-agent, live
+    $("agents").innerHTML = d.agents.map(a => `
+      <div class="agent" id="ag${a.id}">
+        <div class="ahead"><span class="lbl">agent ${a.id + 1} · ${esc(a.label)}</span><span class="st">planned</span></div>
+        <div class="sq">${esc(a.sub_query)}</div>
+        <div class="chl">${a.chunks.map(c => `[${c.k}] ${esc(c.file)}:L${c.start_line}-${c.end_line}`).join("<br>")}</div>
+        <div class="out"></div>
+      </div>`).join("");
+    $("askbody").innerHTML = "";
+  });
+  on("agent_start", d => { const el = agEl(d.id); if (el) el.querySelector(".st").textContent = "running…"; });
+  on("agent_delta", d => { const el = agEl(d.id); if (!el) return;
+    const o = el.querySelector(".out"); o.append(d.text); o.scrollTop = o.scrollHeight; });
+  on("agent_tool", d => { const el = agEl(d.id); if (!el) return;
+    const o = el.querySelector(".out"), s = document.createElement("div");
+    s.className = "tool"; s.textContent = `⌕ ${d.tool} ${JSON.stringify(d.args).slice(0, 70)}`;
+    o.appendChild(s); o.scrollTop = o.scrollHeight; });
+  on("agent_done", d => { const el = agEl(d.id); if (!el) return;    // minimize
+    el.classList.add("done", "min");
+    el.querySelector(".st").textContent = (d.ms / 1000).toFixed(1) + "s";
+    el.onclick = () => el.classList.toggle("min"); });
+  on("agent_error", d => { const el = agEl(d.id); if (!el) return;
+    el.classList.add("fail", "min"); el.querySelector(".st").textContent = "failed";
+    el.onclick = () => el.classList.toggle("min"); });
+  on("synthesis_start", d => { if (d.agents) {
+    document.querySelectorAll("#agents .agent").forEach(x => x.classList.add("min"));
+    $("askbody").innerHTML = `<p style="color:var(--dim)">● synthesizing ${d.agents} answers…</p>`; } });
+  on("synthesis_delta", d => {
+    if (!synthStarted) { synthStarted = true; $("askbody").innerHTML = ""; }
+    synth += d.text;
+    $("askbody").innerHTML = renderMarkdown(synth);
+  });
+  on("length", () => { synth += "\n\n(truncated — ask a narrower question for the rest)"; });
+  on("bundle", d => { $("askbody").innerHTML =
+    (d.note ? `<p style="color:var(--accent2)">(${esc(d.note)} — full bundle shown)</p>` : "") +
+    renderMarkdown(d.text); finish(); });
+  on("error", d => {
+    $("askbody").insertAdjacentHTML("afterbegin",
+      `<p style="color:var(--accent2)">${esc(d.msg)}</p>`);
+    if (d.stage === "fatal") finish();
+  });
+  on("done", d => {
     const wall = Math.round(performance.now() - t0);
     $("asktime").textContent =
-      `${d.provider} · ${d.retrieval_ms}ms retrieval + ${d.llm_ms}ms explain · ${wall}ms wall`;
-    $("askbody").innerHTML = renderMarkdown(d.text) +
-      (d.grounded ? "" : `<p style="color:var(--accent2)">(no code cited — full bundle shown)</p>`);
-  } catch (e) {
-    $("askbody").innerHTML = `<p style="color:var(--accent2)">error: ${esc(e.message)}</p>`;
-  }
+      `${askProvider} · ${d.retrieval_ms}ms retrieval + ${d.llm_ms}ms explain · ${wall}ms wall` +
+      (d.agents ? ` · ${d.agents.length} agents` : "");
+    finish();
+  });
+  es.onerror = e => { console.log("[megabrain] eventsource closed/error", e); finish(); };
 }
 
 // minimal markdown → HTML (headings, fenced code, inline code/bold, file refs)

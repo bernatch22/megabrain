@@ -216,30 +216,67 @@ lower cost, since retrieval already guarantees completeness).
 - **`claude`** (`providers_claude.py`, extra `megabrain[claude]`) — the Claude Agent
   SDK drives the Claude Code CLI: a logged-in **subscription** narrates on Claude
   Code credits with zero keys; `ANTHROPIC_API_KEY` bills the API instead. The
-  transport pins pure narration (no tools + an explicit disallow list + a no-tools
-  preamble; without it the agent runtime sometimes tried to "search the codebase"
-  and burned the turn). Streaming via partial-message events — same
-  `(text, finish_reason)` contract as the SSE path.
+  narration transport pins pure narration (no tools + an explicit disallow list + a
+  no-tools preamble; without it the agent runtime sometimes tried to "search the
+  codebase" and burned the turn). Streaming via partial-message events — same
+  `(text, finish_reason)` contract as the SSE path. ask v2 sub-agents use a second
+  transport (`agent_stream`): megabrain's retrieval tools register as an in-process
+  MCP server and the SDK runs the tool loop itself — builtins stay disallowed.
 - **`openrouter`** (`providers.py`, urllib-only) — any OpenAI-compatible endpoint;
-  `MEGABRAIN_CHAT_BASE_URL` points it at native APIs or local servers.
+  `MEGABRAIN_CHAT_BASE_URL` points it at native APIs or local servers. For ask v2,
+  `stream_chat(with_tools=True)` also accumulates fragmented `delta.tool_calls`
+  and the loop runs in `ask_agents`.
 
 **Embeddings never use this switch** — Anthropic has no embeddings API, so
 index/query always need OpenRouter or a local embed endpoint. The two lanes are
 independent by design (hybrid local-embed + Claude-narrate works).
+
+### 4.2 ask v2 — adaptive multi-agent synthesis (`ask_agents.py`)
+
+Broad questions dilute a single narrator, so `ask` branches on **retrieval shape**
+(no LLM, ~0ms — `classify_bundle`): several CORE files inside the tier1 gap,
+candidates spread across ≥3 top-level dirs, ≥4 RELATED files near score parity, or
+an issue-length query → **broad**. Scoped questions never pay the fan-out.
+
+The fan-out (`run_agents`, gated to ≤4 sub-agents, ≤3 tool rounds each):
+
+1. **Repo map** — every indexed path + its skeleton docline (from the file matrix
+   already in `SearchState`), budget-capped; goes in EVERY agent's prompt.
+2. **Plan** — one cheap LLM call (`rerank_model`) splits the question into scoped
+   sub-queries and assigns each agent a slice of the shared candidate list
+   (fail-open → deterministic top-level-dir clustering → single-agent ask).
+3. **Parallel sub-agents** (ThreadPool, the `rerank.llm_order` pattern) — each
+   knows it is "sub-agent k of n" whose answer will be synthesized, sees the repo
+   map + its chunks with **GLOBAL `[[k]]` numbering**, and may call retrieval
+   **tools** (`search_more` / `get_file` / `get_symbol` — the backends are
+   `search_with_state`/`get_code`, so rule 1 holds: no LLM in retrieval).
+4. **Synthesis** — a streamed parent call merges the partials into one walkthrough,
+   preserving the global citations, so the UNCHANGED splice pipeline grounds every
+   block verbatim and dedupes repeated spans.
+
+Everything emits JSON events (`plan`, `agent_start/delta/tool/done`,
+`synthesis_delta` with spliced markdown, `done`) through `stream_events` — the CLI
+prints status lines, `/ask/stream` forwards them as SSE, buffered callers (MCP,
+`POST /ask`) just take the final dict. Fail-open chain end to end: fan-out error →
+single-agent ask → full bundle.
 
 ---
 
 ## 5. Serving surfaces
 
 - **MCP** (`mcp_server.py`, stdio, no deps): `megabrain_ask` (primary; `docs`,
-  `include_docs`, `scope_path`), `megabrain_query` (`compact`, `full`,
-  `scope_path`), `megabrain_get`, `megabrain_chunks`, `megabrain_index`.
-  Auto-refreshes stale indexes before answering.
+  `include_docs`, `scope_path`, `agents` — omit for auto fan-out on broad
+  questions; MCP is request/response, so the fan-out runs buffered and the trace
+  lands as a footer), `megabrain_query` (`compact`, `full`, `scope_path`),
+  `megabrain_get`, `megabrain_chunks`, `megabrain_index`. Auto-refreshes stale
+  indexes before answering.
 - **HTTP** (`frontends/http.py`, stdlib `http.server`, warm state, db-mtime auto-reload):
-  `/search` `/docsearch` `/chunks` `/ask` `/get` `/index` `/health`. Optional Bearer
-  auth (`--token` / `MEGABRAIN_API_TOKEN`) on everything but `/health`; `get_code`
-  enforces repo-root containment (path-traversal hardened). `/docsearch` groups are
-  per-deployment config (`.megabrain/docsearch.json` or env), not engine knowledge.
+  `/search` `/docsearch` `/chunks` `/ask` `/ask/stream` (SSE: the ask v2 event
+  stream — plan, per-agent deltas/tools, spliced synthesis) `/get` `/index`
+  `/health`. Optional Bearer auth (`--token` / `MEGABRAIN_API_TOKEN`) on everything
+  but `/health`; `get_code` enforces repo-root containment (path-traversal
+  hardened). `/docsearch` groups are per-deployment config
+  (`.megabrain/docsearch.json` or env), not engine knowledge.
 - **PATH-SCOPE** everywhere: pass a sub-path (`~/repo/src/auth`) and retrieval is
   confined to files under it; the repo root is auto-detected from `.megabrain` up
   the tree. Multi-repo: comma-separated roots, searched concurrently, merged by
@@ -247,7 +284,10 @@ independent by design (hybrid local-embed + Claude-narrate works).
 - **Web demo** (`examples/webui/`, stdlib, one port): live file ranking → per-chunk
   heatmap (`chunks_for_file` — span, score, *selected by the real cross-file
   retrieval* flag), native folder picker, doc-mode toggle, and an **Explain** overlay
-  that A/Bs the same question on Claude vs OpenRouter with per-stage timings.
+  that A/Bs the same question on Claude vs OpenRouter with per-stage timings —
+  streamed over `/api/ask/stream` (SSE): one card per sub-agent appears at `plan`,
+  streams its prose and tool calls live, minimizes on `agent_done`, and the
+  synthesis renders below with the real code spliced in.
 
 ---
 
@@ -259,6 +299,8 @@ The tree mirrors the pipeline — content → index → retrieval → narration 
 megabrain/
   __init__.py        public API (lazy, typed)
   ask.py             narrated walkthrough with verbatim splice (code/docs/code+docs modes)
+  ask_agents.py      ask v2: broad-query classifier · planner · parallel tool-enabled
+                     sub-agents · synthesizer · the stream_events event driver
   store.py           SQLite schema + loads (close/context-manager)
   chunkers/          CONTENT → CHUNKS: base (contract) · python · treesitter+LangSpec · php · markdown
   indexing/          BUILD the index

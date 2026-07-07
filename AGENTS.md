@@ -4,7 +4,7 @@
 
 megabrain is a local **code-intelligence engine**. One call returns all the code related to a question, explained with the real code spliced in. It exists to replace minutes of file-by-file crawling (grep + Read + explore agents) with one grounded answer. Overview: [README.md](README.md).
 
-Pipeline: `index` (cAST chunk → embed via OpenRouter/local (`pplx-embed-v1-0.6b`) → SQLite, incremental by sha256) → `query` (no-LLM retrieval: dense chunk + file-skeleton fusion + graph candidates; CORE full code + RELATED as a map — `--full` for RELATED code bodies) → `ask` (one chat call — Claude via the Agent SDK when installed, else OpenRouter qwen3-coder — narrates and cites `[[k]]`; the engine replaces each citation with verbatim code — the model cannot rewrite code; streamed live to the terminal; **code-only by default**, `--docs` for a docs-only walkthrough, `--with-docs` for code+docs). CLI ask/query/chunks auto-refresh a stale index (60s TTL) like the MCP server. Full design: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Pipeline: `index` (cAST chunk → embed via OpenRouter/local (`pplx-embed-v1-0.6b`) → SQLite, incremental by sha256) → `query` (no-LLM retrieval: dense chunk + file-skeleton fusion + graph candidates; CORE full code + RELATED as a map — `--full` for RELATED code bodies) → `ask` (one chat call — Claude via the Agent SDK when installed, else OpenRouter qwen3-coder — narrates and cites `[[k]]`; the engine replaces each citation with verbatim code — the model cannot rewrite code; streamed live to the terminal; **code-only by default**, `--docs` for a docs-only walkthrough, `--with-docs` for code+docs). **ask v2 (`ask_agents.py`)**: BROAD questions auto fan out — a no-LLM classifier reads the bundle shape, a planner (rerank_model) splits it into ≤4 slices, parallel sub-agents (repo map + no-LLM retrieval tools `search_more`/`get_file`/`get_symbol`) explain their slice, a synthesizer merges with the same global `[[k]]` splice; every stage fails open to single-agent ask; CLI `--agents`/`--no-agents`, MCP `agents`, HTTP `POST /ask/stream` (SSE live view). CLI ask/query/chunks auto-refresh a stale index (60s TTL) like the MCP server. Full design: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Using it (dogfood — prefer this over crawling files)
 
@@ -65,9 +65,21 @@ publish to PyPI without explicit approval from the maintainer.**
 
 ## Module map
 
-The tree mirrors the pipeline (full detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) §6): `chunkers/` content→chunks behind one `FileResult` contract (`base` model+partition validator · `python` stdlib-ast cAST · `treesitter` generic chunker + `LangSpec`: TS/JS, Ruby, Go, Rust, PHP · `php` legacy-PHP section chunker + shape router · `markdown` no-LLM QMD doc chunker) · `indexing/` build the index (`indexer` registry-driven incremental walk + `maybe_reindex` 60s TTL · `strategies` ext→registry + `ChunkStrategy` protocol, custom via `index_repo(strategies=[...])` — examples/02 · `graph` py/ts/php edges) · `retrieval/` answer queries, no LLM (`query` fusion + bundle + RELATED-map render + `load_state`/`search_with_state` warm split · `issue` py+js/ts traceback grounding · `bm25` postings lane · `rerank` `llm_order`, `--best`) · `providers/` model APIs (`__init__` chat routing + OpenAI-compat clients · `claude` Agent SDK transport · `embeddings` int8+L2, atomic cache) · `frontends/` entry points (`cli` · `mcp` stdio · `http` serve-api: `/search` `/docsearch` `/chunks` `/ask` `/get` `/index` `/health`, Bearer `--token`) · root: `ask.py` spliced walkthrough · `store.py` SQLite · `mcp_server.py` launcher shim (keeps `python3 -m megabrain.mcp_server` working).
+The tree mirrors the pipeline (full detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) §6): `chunkers/` content→chunks behind one `FileResult` contract (`base` model+partition validator · `python` stdlib-ast cAST · `treesitter` generic chunker + `LangSpec`: TS/JS, Ruby, Go, Rust, PHP · `php` legacy-PHP section chunker + shape router · `markdown` no-LLM QMD doc chunker) · `indexing/` build the index (`indexer` registry-driven incremental walk + `maybe_reindex` 60s TTL · `strategies` ext→registry + `ChunkStrategy` protocol, custom via `index_repo(strategies=[...])` — examples/02 · `graph` py/ts/php edges) · `retrieval/` answer queries, no LLM (`query` fusion + bundle + RELATED-map render + `load_state`/`search_with_state` warm split · `issue` py+js/ts traceback grounding · `bm25` postings lane · `rerank` `llm_order`, `--best`) · `providers/` model APIs (`__init__` chat routing + OpenAI-compat clients · `claude` Agent SDK transport · `embeddings` int8+L2, atomic cache) · `frontends/` entry points (`cli` · `mcp` stdio · `http` serve-api: `/search` `/docsearch` `/chunks` `/ask` `/ask/stream` (SSE) `/get` `/index` `/health`, Bearer `--token`) · root: `ask.py` spliced walkthrough (+ `_Splicer`) · `ask_agents.py` ask v2 (classifier · planner · parallel tool-enabled sub-agents · synthesizer · `stream_events` event driver) · `store.py` SQLite · `mcp_server.py` launcher shim (keeps `python3 -m megabrain.mcp_server` working).
 
 ## What's next
+
+**`ask v2` (adaptive multi-agent synthesis) is SHIPPED** — `ask_agents.py`: no-LLM
+broad/scoped classifier → planner → ≤4 parallel sub-agents with retrieval tools →
+synthesizer with the same global `[[k]]` splice, streamed as events (CLI status lines,
+`POST /ask/stream` SSE, the webui agent-card live view). Remaining ask v2 follow-ups in
+[NEXT.md](NEXT.md): port the multi-agent view to the bernardocastro.dev demo, and an
+eval to tune the classifier thresholds on real broad/scoped query pairs.
+
+**Live demo** (`bernardocastro.dev/megabrain`): the retrieval engine over 7 pre-indexed
+public repos, built on `examples/webui/`. Backend + frontend live in the
+`bernardocastro.dev` repo (`services/megabrain/` + `src/components/Megabrain.astro`), not
+here — see the global `~/.claude/CLAUDE.md` "bernardocastro.dev" section.
 
 Priority 1 (chunking-strategy registry) is
 **done**: a `strategies.py` maps extension → chunk strategy, so the indexer is content-
