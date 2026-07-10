@@ -63,6 +63,7 @@ megabrain index  ~/repo                          # build / update the index
 megabrain ask    ~/repo "how does X work"        # narrated walkthrough + real code
 megabrain query  ~/repo "retry logic"            # raw code map, no LLM (~200 ms)
 megabrain get    ~/repo src/x.py --symbol Foo    # one file or symbol
+megabrain forge  ~/repo                          # teach it your repo's file types (below)
 megabrain serve-api ~/repo                       # long-running HTTP API (warm state)
 ```
 
@@ -94,6 +95,34 @@ embeddings API). The full provider matrix — native APIs, hybrid, fully-local G
 
 Languages: **Python · JS/TS · Markdown** built in; **Ruby · Go · Rust · PHP** with
 `pip install 'megabrain[languages]'`.
+
+## forge — megabrain writes its own chunkers
+
+Repos carry more than code: `.toml`, `.yaml`, `.astro`, `.proto`, private DSLs…
+Anything outside the registry is invisible to retrieval. `megabrain forge` fixes
+that per repo:
+
+```bash
+megabrain forge ~/repo --list        # census: which text file types aren't indexed (free)
+megabrain forge ~/repo               # LLM-write a chunking strategy per type, validate, install
+megabrain forge ~/repo --dry-run     # show the generated code without installing
+```
+
+For each uncovered extension, an LLM (same provider stack as `ask`) writes a
+`ChunkStrategy` from the contract source + real sample files, and it is only
+accepted after chunking **every** matching file in the repo with a clean
+exact-line partition (`validate_partition` — failures feed a repair loop, and
+nothing unvetted ever installs). The vetted module lands in
+`.megabrain/strategies/<ext>.py`, sha-recorded in a user-level trust store
+(`~/.megabrain/trust.json`), and from then on every index — including the 60 s
+auto-refresh — loads it automatically. Hand-written strategies work the same
+way: drop the file in `.megabrain/strategies/` and approve it with
+`megabrain trust ~/repo`.
+
+Real run on [pallets/click](https://github.com/pallets/click): forge detected
+`.toml` (11 files) and `.yaml` (8 workflows), generated both strategies on the
+first attempt (~28 s total), and *"which workflow runs the test suite?"* went
+from missing entirely to ranking `.github/workflows/tests.yaml` #1.
 
 ## See it live
 

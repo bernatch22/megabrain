@@ -9,6 +9,9 @@ Tools:
   megabrain_get(repo_path, file, symbol?)     -> one file or symbol
   megabrain_chunks(repo_path, file, query)    -> every chunk of one file, scored + selected flags
   megabrain_index(repo_path)                  -> incremental index
+  megabrain_forge(repo_path, ext?, list_only?, dry_run?)
+      -> detect uncovered file types; LLM-generate + partition-validate + install
+         a chunking strategy per type (repo-local, trust-gated)
 
 Run: python3 -m megabrain.mcp_server
 Register (claude code):
@@ -123,6 +126,33 @@ TOOLS = [
             "required": ["repo_path"],
         },
     },
+    {
+        "name": "megabrain_forge",
+        "description": (
+            "Make megabrain index file types it currently can't. Detects the repo's "
+            "uncovered text extensions (e.g. .toml, .yaml, .astro, .proto), then for "
+            "each one an LLM writes a chunking strategy from real sample files, which "
+            "is only accepted after chunking EVERY matching file with a clean "
+            "exact-line-partition (repair loop on failure, nothing unvetted is ever "
+            "installed). The vetted strategy lands in .megabrain/strategies/ and is "
+            "trusted, so every future index/auto-refresh loads it automatically. Use "
+            "when queries miss content because its file type isn't indexed. "
+            "list_only=true for the free census; dry_run=true to inspect the generated "
+            "code without installing. ~10-60s per extension when generating."),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "repo_path": {"type": "string", "description": "path to the repo root"},
+                "ext": {"type": "string",
+                        "description": "forge one extension only, e.g. '.toml'; omit to forge every detected candidate"},
+                "list_only": {"type": "boolean",
+                              "description": "just return the uncovered-extension census (no LLM call)"},
+                "dry_run": {"type": "boolean",
+                            "description": "generate + validate but do not install or reindex; the report includes the generated code"},
+            },
+            "required": ["repo_path"],
+        },
+    },
 ]
 
 
@@ -192,6 +222,18 @@ def call_tool(name: str, args: dict) -> str:
         from ..indexing.indexer import index_repo
         root = Path(args["repo_path"]).expanduser().resolve()
         return json.dumps(index_repo(root, quiet=True))
+    if name == "megabrain_forge":
+        from ..forge import detect, forge, render_report
+        root = Path(args["repo_path"]).expanduser().resolve()
+        if args.get("list_only"):
+            return json.dumps(detect(root), indent=1)
+        report = forge(root, ext=args.get("ext"),
+                       dry_run=bool(args.get("dry_run")), quiet=True)
+        text = render_report(report)
+        for e in report.get("forged", []):
+            if e.get("code"):                # dry-run: show what would install
+                text += f"\n\n--- generated {e['ext']} strategy ---\n{e['code']}"
+        return text
     raise ValueError(f"unknown tool {name}")
 
 

@@ -1,5 +1,24 @@
 # Changelog
 
+## Unreleased
+
+- **`forge` — megabrain writes its own chunkers** (`megabrain/forge.py`). CLI
+  `megabrain forge [--list|--dry-run|--ext .x]`, MCP `megabrain_forge`. Detects
+  the repo's uncovered text extensions (deterministic census), LLM-generates a
+  `ChunkStrategy` per type from the contract source + real samples (the `ask`
+  provider stack; `MEGABRAIN_FORGE_MODEL` to pin), and installs it only after it
+  chunks EVERY matching file with a clean `validate_partition` (repair loop ≤3
+  attempts — unvetted code can never install). Verified on pallets/click: `.toml`
+  + `.yaml` forged first-attempt in ~28 s; "which workflow runs the tests" went
+  from a full miss to `.github/workflows/tests.yaml` #1.
+- **Repo-local strategies, trust-gated** (`indexing/strategies.py`). Vetted
+  modules in `<repo>/.megabrain/strategies/*.py` load automatically on every
+  `index_repo` — including the 60 s auto-refresh, which previously pruned
+  custom-extension files as orphans. Loading only happens when the module's
+  sha256 matches `~/.megabrain/trust.json` (user-level — a cloned repo cannot
+  self-approve); `megabrain trust <repo>` approves hand-written modules, and any
+  edit un-trusts the file until re-approved.
+
 ## 0.5.0 — 2026-07-06
 
 - **`ask v2` — adaptive multi-agent synthesis** (`megabrain/ask_agents.py`).

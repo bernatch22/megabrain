@@ -22,7 +22,11 @@ also override a built-in extension. See examples/02_custom_chunker.py.
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
+import json
+import logging
+from pathlib import Path
 from typing import Protocol, Sequence, runtime_checkable
 
 from ..chunkers import (
@@ -199,3 +203,87 @@ def strategy_for(registry: list, relpath: str):
 def all_exts(registry: list) -> tuple[str, ...]:
     """Every extension the active registry can index — drives discover()."""
     return tuple(e for s in registry for e in s.exts)
+
+
+# ------------------------------------------------- repo-local strategies (forge)
+# A repo can carry its own vetted strategies in `.megabrain/strategies/*.py`
+# (written by `megabrain forge`, or by hand + `megabrain trust`). index_repo
+# loads them automatically — including on the 60s auto-refresh — so custom
+# extensions never fall out of the index. Loading executes repo-provided code,
+# so it is TRUST-GATED: a module only loads when its sha256 matches the entry
+# in the USER-level trust store (~/.megabrain/trust.json), which a repo cannot
+# write. forge records the sha on install; `megabrain trust <repo>` records it
+# for hand-written modules; any later edit un-trusts the file until re-approved.
+
+STRATEGY_DIR = ".megabrain/strategies"
+TRUST_STORE = Path.home() / ".megabrain" / "trust.json"
+
+log = logging.getLogger(__name__)
+
+
+def _sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _read_trust() -> dict:
+    try:
+        return json.loads(TRUST_STORE.read_text())
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def trust_file(path: Path) -> None:
+    """Record `path`'s current sha in the user trust store (approve it)."""
+    trust = _read_trust()
+    trust[Path(path).resolve().as_posix()] = _sha256(Path(path))
+    TRUST_STORE.parent.mkdir(parents=True, exist_ok=True)
+    TRUST_STORE.write_text(json.dumps(trust, indent=1, sort_keys=True))
+
+
+def is_trusted(path: Path) -> bool:
+    p = Path(path).resolve()
+    return _read_trust().get(p.as_posix()) == _sha256(p)
+
+
+def instantiate_strategies(code: str, repo: str, origin: str) -> list:
+    """Exec a strategy module and instantiate every ChunkStrategy defined in it
+    (classes with an `exts` tuple + the three hooks). Raises on any error —
+    callers decide whether that is fatal (forge) or a skip (loader)."""
+    ns: dict = {"__name__": f"megabrain_repo_strategies:{origin}"}
+    exec(compile(code, origin, "exec"), ns)      # noqa: S102 — trust-gated by caller
+    out = []
+    for obj in ns.values():
+        if not (isinstance(obj, type) and isinstance(getattr(obj, "exts", None), tuple)):
+            continue
+        if not all(callable(getattr(obj, m, None))
+                   for m in ("chunk_file", "build_edge_ctx", "extract_edges")):
+            continue
+        try:
+            out.append(obj(repo=repo))
+        except TypeError:
+            out.append(obj())
+    if not out:
+        raise ValueError(f"{origin}: no ChunkStrategy class found")
+    return out
+
+
+def load_repo_strategies(root: Path, repo: str = "") -> list:
+    """Trusted strategies from `<root>/.megabrain/strategies/*.py`. Untrusted
+    or broken modules are skipped WITH a warning (never silently): a skipped
+    module means its extensions stop being discovered, and warning is what
+    keeps that visible."""
+    sdir = Path(root) / STRATEGY_DIR
+    if not sdir.is_dir():
+        return []
+    out = []
+    for f in sorted(sdir.glob("*.py")):
+        if not is_trusted(f):
+            log.warning("%s is not trusted — skipped (its extensions will drop "
+                        "from the index). Review it, then run: megabrain trust %s",
+                        f, Path(root))
+            continue
+        try:
+            out.extend(instantiate_strategies(f.read_text(), repo, f.as_posix()))
+        except Exception:                                   # noqa: BLE001
+            log.warning("repo strategy %s failed to load — skipped", f, exc_info=True)
+    return out

@@ -65,7 +65,7 @@ publish to PyPI without explicit approval from the maintainer.**
 
 ## Module map
 
-The tree mirrors the pipeline (full detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) §6): `chunkers/` content→chunks behind one `FileResult` contract (`base` model+partition validator · `python` stdlib-ast cAST · `treesitter` generic chunker + `LangSpec`: TS/JS, Ruby, Go, Rust, PHP · `php` legacy-PHP section chunker + shape router · `markdown` no-LLM QMD doc chunker) · `indexing/` build the index (`indexer` registry-driven incremental walk + `maybe_reindex` 60s TTL · `strategies` ext→registry + `ChunkStrategy` protocol, custom via `index_repo(strategies=[...])` — examples/02 · `graph` py/ts/php edges) · `retrieval/` answer queries, no LLM (`query` fusion + bundle + RELATED-map render + `load_state`/`search_with_state` warm split · `issue` py+js/ts traceback grounding · `bm25` postings lane · `rerank` `llm_order`, `--best`) · `providers/` model APIs (`__init__` chat routing + OpenAI-compat clients · `claude` Agent SDK transport · `embeddings` int8+L2, atomic cache) · `frontends/` entry points (`cli` · `mcp` stdio · `http` serve-api: `/search` `/docsearch` `/chunks` `/ask` `/ask/stream` (SSE) `/get` `/index` `/health`, Bearer `--token`) · root: `ask.py` spliced walkthrough (+ `_Splicer`) · `ask_agents.py` ask v2 (classifier · planner · parallel tool-enabled sub-agents · synthesizer · `stream_events` event driver) · `store.py` SQLite · `mcp_server.py` launcher shim (keeps `python3 -m megabrain.mcp_server` working).
+The tree mirrors the pipeline (full detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) §6): `chunkers/` content→chunks behind one `FileResult` contract (`base` model+partition validator · `python` stdlib-ast cAST · `treesitter` generic chunker + `LangSpec`: TS/JS, Ruby, Go, Rust, PHP · `php` legacy-PHP section chunker + shape router · `markdown` no-LLM QMD doc chunker) · `indexing/` build the index (`indexer` registry-driven incremental walk + `maybe_reindex` 60s TTL · `strategies` ext→registry + `ChunkStrategy` protocol, custom via `index_repo(strategies=[...])` — examples/02 · `graph` py/ts/php edges) · `retrieval/` answer queries, no LLM (`query` fusion + bundle + RELATED-map render + `load_state`/`search_with_state` warm split · `issue` py+js/ts traceback grounding · `bm25` postings lane · `rerank` `llm_order`, `--best`) · root `forge.py` self-authored chunkers (uncovered-ext census → LLM-generate a ChunkStrategy → partition-oracle validate w/ repair loop → trust-gated install to `<repo>/.megabrain/strategies/`, auto-loaded by every index incl. the 60s refresh; CLI `forge`/`trust`, MCP `megabrain_forge`) · `providers/` model APIs (`__init__` chat routing + OpenAI-compat clients · `claude` Agent SDK transport · `embeddings` int8+L2, atomic cache) · `frontends/` entry points (`cli` · `mcp` stdio · `http` serve-api: `/search` `/docsearch` `/chunks` `/ask` `/ask/stream` (SSE) `/get` `/index` `/health`, Bearer `--token`) · root: `ask.py` spliced walkthrough (+ `_Splicer`) · `ask_agents.py` ask v2 (classifier · planner · parallel tool-enabled sub-agents · synthesizer · `stream_events` event driver) · `store.py` SQLite · `mcp_server.py` launcher shim (keeps `python3 -m megabrain.mcp_server` working).
 
 ## What's next
 
@@ -80,6 +80,13 @@ eval to tune the classifier thresholds on real broad/scoped query pairs.
 public repos, built on `examples/webui/`. Backend + frontend live in the
 `bernardocastro.dev` repo (`services/megabrain/` + `src/components/Megabrain.astro`), not
 here — see the global `~/.claude/CLAUDE.md` "bernardocastro.dev" section.
+
+**`forge` is SHIPPED** (`forge.py`): `megabrain forge <repo>` detects uncovered text
+extensions, LLM-writes a ChunkStrategy per type (the `ask` provider stack), accepts it
+only after a clean `validate_partition` over EVERY matching repo file (repair loop),
+and installs it trust-gated in `<repo>/.megabrain/strategies/` — loaded by every
+index/auto-refresh from then on. Verified on pallets/click (.toml + .yaml,
+first-attempt). Tests: `tests/test_forge.py` (offline, fake LLM).
 
 Priority 1 (chunking-strategy registry) is
 **done**: a `strategies.py` maps extension → chunk strategy, so the indexer is content-

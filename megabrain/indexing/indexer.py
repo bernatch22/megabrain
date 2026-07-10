@@ -14,7 +14,7 @@ from ..chunkers import embed_text, validate_partition
 from ..providers.embeddings import MODEL as EMBED_MODEL
 from ..providers.embeddings import Embedder
 from ..store import Store
-from .strategies import all_exts, build_registry, strategy_for
+from .strategies import all_exts, build_registry, load_repo_strategies, strategy_for
 
 # Universal build/vendor/cache dirs only — anything project-specific belongs in
 # the repo's own `.megabrainignore` (or `--exclude`), never baked in here.
@@ -103,13 +103,17 @@ def index_repo(root: Path, repo_name: str | None = None, quiet: bool = False,
                force: bool = False, exclude=(), strategies=()) -> dict:
     """Index/update a repo. `strategies` injects custom ChunkStrategy instances
     (checked before the built-ins, so they can claim new extensions or override
-    existing ones) — see examples/02_custom_chunker.py."""
+    existing ones) — see examples/02_custom_chunker.py. Trusted repo-local
+    strategies (`.megabrain/strategies/*.py`, installed by `megabrain forge` or
+    approved with `megabrain trust`) load automatically after them, so custom
+    extensions survive every reindex including the 60s auto-refresh."""
     root = Path(root).resolve()
     name = repo_name or root.name
     t0 = time.time()
     store = Store(root)
     emb = Embedder()
-    registry = build_registry(name, extra=strategies)
+    registry = build_registry(name, extra=(*strategies,
+                                           *load_repo_strategies(root, name)))
     # exclude = built-in dirs + `.megabrainignore` (persistent) + caller-supplied.
     excludes = [*load_ignore(root), *exclude]
 

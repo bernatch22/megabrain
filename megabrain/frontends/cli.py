@@ -83,6 +83,22 @@ def main(argv=None):
     p = sub.add_parser("stats")
     p.add_argument("path", nargs="?", default=".")
 
+    p = sub.add_parser("forge",
+                       help="detect uncovered file types and LLM-generate a chunking "
+                            "strategy for each, validated against every matching file "
+                            "(exact line partition) before install")
+    p.add_argument("path", nargs="?", default=".")
+    p.add_argument("--ext", help="forge one extension only, e.g. --ext .toml")
+    p.add_argument("--list", action="store_true", dest="list_only",
+                   help="detection census only — no LLM call")
+    p.add_argument("--dry-run", action="store_true",
+                   help="generate + validate but do not install or reindex")
+
+    p = sub.add_parser("trust",
+                       help="approve this repo's .megabrain/strategies/*.py (records "
+                            "their sha in ~/.megabrain/trust.json so indexing loads them)")
+    p.add_argument("path", nargs="?", default=".")
+
     a = ap.parse_args(argv)
     # index/serve-api/stats take repo roots verbatim (index may have no db yet).
     # query/ask/get support PATH-SCOPE: each comma-separated token may be a repo
@@ -150,6 +166,25 @@ def main(argv=None):
         from .http import serve
         serve(root, port=a.port, host=a.host, cors=a.cors, enable_llm=not a.no_llm,
               token=a.token)
+    elif a.cmd == "forge":
+        import json as _json
+
+        from ..forge import detect, forge, render_report
+        if a.list_only:
+            cands = detect(root)
+            print(_json.dumps(cands, indent=1) if cands
+                  else "no uncovered text extensions found")
+        else:
+            print(render_report(forge(root, ext=a.ext, dry_run=a.dry_run)))
+    elif a.cmd == "trust":
+        from ..indexing.strategies import STRATEGY_DIR, trust_file
+        sdir = root / STRATEGY_DIR
+        files = sorted(sdir.glob("*.py")) if sdir.is_dir() else []
+        if not files:
+            print(f"nothing to trust: no {STRATEGY_DIR}/*.py in {root}")
+        for f in files:
+            trust_file(f)
+            print(f"trusted {f}")
     elif a.cmd == "stats":
         from ..store import Store
         s = Store(root)

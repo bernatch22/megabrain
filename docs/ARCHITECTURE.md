@@ -121,6 +121,35 @@ fail-open without a key)** before answering, so results always match disk. Vecto
 load into one NumPy matrix; brute-force cosine is <2 ms up to ~50 K chunks, so ANN
 indexing is deliberately deferred.
 
+### 2.5 forge — self-authored chunkers (`forge.py`, repo-local strategies)
+
+`megabrain forge <repo>` closes the custom-strategy loop: the engine detects the
+repo's uncovered text extensions (deterministic census — no LLM), has an LLM
+(the `ask` provider stack; `MEGABRAIN_FORGE_MODEL` to pin) write a
+`ChunkStrategy` from the contract source (`chunkers/base.py`, verbatim) plus
+real sample files, and accepts it **only** after it chunks every matching file
+in the repo with a clean `validate_partition` — failures feed a repair loop
+(≤3 attempts), so unvetted code can never install. This keeps the hard rules
+intact: the LLM writes code once, at forge time, gated by the partition oracle;
+retrieval stays LLM-free.
+
+Vetted modules live in `<repo>/.megabrain/strategies/<ext>.py` and load
+automatically on every `index_repo` — including the 60 s auto-refresh — so
+forged extensions never fall out of the index. Loading executes repo-provided
+code, so it is **trust-gated**: a module only loads when its sha256 matches the
+entry in the *user-level* store `~/.megabrain/trust.json` (which a cloned repo
+cannot write). forge records the sha on install; `megabrain trust <repo>`
+approves hand-written modules; any edit un-trusts the file (skipped with a loud
+warning) until re-approved. The oracle guarantees the *current* corpus — a
+future file that breaks a forged strategy surfaces in the index stats'
+`partition_violations`, never silently.
+
+Surfaces: CLI `megabrain forge [--list|--dry-run|--ext .x]` / `megabrain trust`,
+MCP `megabrain_forge` (`list_only`, `dry_run`, `ext`). Real run on pallets/click:
+`.toml` (11 files) + `.yaml` (8 CI workflows) both forged first-attempt in ~28 s;
+"which workflow runs the test suite" went from a total miss to
+`.github/workflows/tests.yaml` at #1.
+
 ---
 
 ## 3. Query time — retrieval (no LLM)
@@ -298,6 +327,8 @@ The tree mirrors the pipeline — content → index → retrieval → narration 
 ```
 megabrain/
   __init__.py        public API (lazy, typed)
+  forge.py           self-authored chunkers: uncovered-ext census · LLM generate ·
+                     partition-oracle validate (repair loop) · trust-gated install
   ask.py             narrated walkthrough with verbatim splice (code/docs/code+docs modes)
   ask_agents.py      ask v2: broad-query classifier · planner · parallel tool-enabled
                      sub-agents · synthesizer · the stream_events event driver
@@ -305,7 +336,8 @@ megabrain/
   chunkers/          CONTENT → CHUNKS: base (contract) · python · treesitter+LangSpec · php · markdown
   indexing/          BUILD the index
     indexer.py         registry-driven incremental walk + maybe_reindex (60s TTL)
-    strategies.py      ext → strategy registry + ChunkStrategy protocol (custom via index_repo)
+    strategies.py      ext → strategy registry + ChunkStrategy protocol (custom via
+                       index_repo) + trust-gated repo-local loading (.megabrain/strategies)
     graph.py           import/call edges (py · ts/js · php)
   retrieval/         ANSWER queries (no LLM in this package — rule 1)
     query.py           scoring, issue mode, bundle, render (RELATED map), chunks_for_file, multi-repo
