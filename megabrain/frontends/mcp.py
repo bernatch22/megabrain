@@ -14,6 +14,8 @@ Tools:
          + install a chunker per type (repo-local, trust-gated). specialize=true
          only lists poorly-chunked covered files (LLM specialization was removed;
          hand-write + gate via forge_specialize.gate_strategy)
+  megabrain_flows(repo_path, action?, n?)   -> manage the opt-in flow cache
+      -> action list|warm|refresh|enable|disable (warm pre-caches N workflows)
 
 Run: python3 -m megabrain.mcp_server
 Register (claude code):
@@ -161,6 +163,30 @@ TOOLS = [
             "required": ["repo_path"],
         },
     },
+    {
+        "name": "megabrain_flows",
+        "description": (
+            "Manage the self-caching workflow retrieval for a repo (OPT-IN, off by "
+            "default). When on, every megabrain_ask caches its cross-file walkthrough "
+            "and the next related question retrieves the whole workflow at once — no "
+            "extra call, it rides megabrain_ask/megabrain_query. Actions: 'warm' "
+            "discovers the repo's main workflows and pre-caches them with N research "
+            "asks (also enables the mode); 'refresh' re-asks stale flows against the "
+            "current code (UPDATE, not just expire); 'enable'/'disable' toggle the "
+            "mode; 'list' shows what's cached. Use 'warm' once on a repo an agent team "
+            "will work in, so its workflows are searchable from the first question."),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "repo_path": {"type": "string", "description": "path to the repo root"},
+                "action": {"type": "string", "enum": ["list", "warm", "refresh", "enable", "disable"],
+                           "description": "default 'list'"},
+                "n": {"type": "integer",
+                      "description": "for action='warm': how many top workflows to discover + cache (default 6)"},
+            },
+            "required": ["repo_path"],
+        },
+    },
 ]
 
 
@@ -250,6 +276,25 @@ def call_tool(name: str, args: dict) -> str:
             if e.get("code"):                # dry-run: show what would install
                 text += f"\n\n--- generated {e['ext']} strategy ---\n{e['code']}"
         return text
+    if name == "megabrain_flows":
+        from .. import flows as _flows
+        from ..store import Store
+        root = Path(args["repo_path"]).expanduser().resolve()
+        action = args.get("action", "list")
+        if action == "warm":
+            return json.dumps(_flows.warm_flows(root, limit=int(args.get("n", 6))), indent=1)
+        if action == "refresh":
+            from ..indexing.indexer import index_repo
+            index_repo(root, quiet=True, prune_flows=False)
+            return json.dumps(_flows.refresh_stale(root), indent=1)
+        if action in ("enable", "disable"):
+            _flows.set_enabled(root, action == "enable")
+            return json.dumps({"flow_cache": action == "enable", "repo": root.as_posix()})
+        with Store(Path(root)) as s:
+            metas, _ = s.load_flows()
+        return json.dumps({"enabled": _flows.enabled(root),
+                           "flows": [{"question": m["question"],
+                                      "files": sorted(m["files"])} for m in metas]}, indent=1)
     raise ValueError(f"unknown tool {name}")
 
 

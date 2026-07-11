@@ -35,6 +35,22 @@ That's it. Defaults reproduce the validated stack:
 
 Override either by env: `MEGABRAIN_EMBED_MODEL`, `MEGABRAIN_ASK_MODEL`.
 
+### ask model — speed vs price (measured, OpenRouter, July 2026)
+
+| model | one `ask` | price /M (in / out) | ≈ cost/ask | notes |
+|---|---|---|---|---|
+| `qwen/qwen3-coder` *(default)* | ~14 s | **$0.22 / $1.80** | **~$0.0035** | cheapest; broader citations (6-7 files) |
+| `google/gemini-3-flash-preview` | **~6-7 s (2×)** | $0.50 / $3.00 | ~$0.007 | **fastest**; tighter citations (3 files); preview slug |
+
+Both hit the same gold file on the barge-in test (1/2 — neither cites a file
+sitting at bundle rank #12; that's a *retrieval* limit, not the model's). Pick
+**qwen for cost**, **gemini-3-flash for speed** — ~2× faster for ~2× the price,
+still fractions of a cent per call. The **flow cache doesn't change this**: a
+repeat `ask` still narrates (it just narrates *better*, with the cached workflow
+as context), so caching buys retrieval quality, not a cheaper call. (A future
+"serve a near-exact cached flow verbatim, skip the LLM" mode would be the actual
+cost-saver — not built yet.)
+
 ### Options
 
 | you want | how |
@@ -96,6 +112,7 @@ before answering.
 | `megabrain_chunks` | every chunk of one file, scored + a "selected" flag — signal-vs-noise inside a file. |
 | `megabrain_index` | index/refresh a repo the agent hasn't seen. |
 | `megabrain_forge` | make a file type the engine can't read yet (`.toml`, `.astro`) searchable. |
+| `megabrain_flows` | manage the opt-in flow cache: `action: "warm"` pre-caches the repo's workflows, `"refresh"` updates stale ones, `"list"` / `"enable"`. |
 
 `scope_path` on `ask`/`query` confines the answer to a sub-folder
 (`src/auth`); pass comma-separated roots to search several repos at once.
