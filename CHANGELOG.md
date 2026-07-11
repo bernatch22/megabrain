@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.7.0 — 2026-07-11
 
 - **Serve-from-cache: a repeated `ask` costs $0 and ~0 ms.** Flows now store the
   RENDERED answer (prose + real code spliced from disk) and TWO vectors —
