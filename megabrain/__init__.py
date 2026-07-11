@@ -31,12 +31,15 @@ Validated configuration (experiments phases 0-5, June 2026):
 
 from importlib import import_module
 
-__version__ = "0.7.1"
+__version__ = "0.7.2"
 
 _EXPORTS = {
     "index_repo": ".indexing.indexer",
     "search": ".retrieval.query",
     "render": ".retrieval.query",
+    "prune_search": ".retrieval.query",
+    "prune_search_root": ".retrieval.query",
+    "render_pruned": ".retrieval.query",
     "get_code": ".retrieval.query",
     "load_state": ".retrieval.query",
     "search_with_state": ".retrieval.query",

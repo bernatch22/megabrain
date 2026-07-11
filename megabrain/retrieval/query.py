@@ -416,6 +416,90 @@ def chunks_for_file_root(root: Path, relpath: str, query: str,
     return chunks_for_file(load_state(Path(root)), relpath, query, path_filter)
 
 
+def prune_search(st: SearchState, query: str, path_filter: str | None = None,
+                 with_text: bool = True, include_pruned: bool = False) -> dict:
+    """NO-LLM noise pruning. Runs the full retrieval, then returns ONLY the
+    SELECTED (signal) chunks as a FLAT list ordered by relevance — the exact
+    chunk ids/spans an agent should read, with the rest (noise) dropped. Same
+    selection the demo's signal/noise map uses: a tier-1 chunk that survives the
+    CHUNK_KEEP_RATIO cut, or a related file's best chunk. Deterministic and
+    cheap — the lean alternative to `ask` when the caller just needs the right
+    code, not a narration (a modern LLM needs no pre-filtered prose).
+
+    `include_pruned` also returns the dropped chunks (the bundle files' non-signal
+    chunks, relevance-ordered) under "noise" — for a signal-vs-noise diff view."""
+    metas, fused = _score_chunks(st, query, path_filter)
+    res = search_with_state(st, query, path_filter=path_filter, scored=(metas, fused))
+    kept: list[dict] = []
+    seen: set = set()
+
+    def rec(c: dict, score: float) -> dict:
+        item = {"id": c["id"], "file": c["file"],
+                "start_line": c["start_line"], "end_line": c["end_line"],
+                "kind": c["kind"], "name": c["name"], "score": round(float(score), 4)}
+        if with_text:
+            item["text"] = c["text"]
+        return item
+
+    def add(c: dict, score: float) -> None:
+        if c["id"] in seen:
+            return
+        seen.add(c["id"])
+        kept.append(rec(c, score))
+
+    for t in res["tier1"]:
+        for c in t["chunks"]:
+            add(c, c["score"])
+    for t in res["tier2"]:
+        bc = t.get("best_chunk")
+        if bc:
+            add(bc, t["score"])
+    kept.sort(key=lambda c: -c["score"])
+    # honest noise count: chunks living in the bundle's files that we dropped.
+    bundle_files = {t["file"] for t in res["tier1"]} | {t["file"] for t in res["tier2"]}
+    noise: list[dict] = []
+    in_bundle = 0
+    for i, m in enumerate(metas):
+        if m["file"] not in bundle_files:
+            continue
+        in_bundle += 1
+        if include_pruned and m["id"] not in seen:
+            noise.append(rec(m, fused[i]))
+    noise.sort(key=lambda c: -c["score"])
+    out = {"query": query, "repo": st.repo, "chunks": kept,
+           "kept": len(kept), "pruned": max(0, in_bundle - len(kept)),
+           "scanned": in_bundle, "ms": res["ms"]}
+    if include_pruned:
+        out["noise"] = noise
+    return out
+
+
+def prune_search_root(root: Path, query: str, path_filter: str | None = None,
+                      with_text: bool = True, include_pruned: bool = False) -> dict:
+    """CLI/MCP one-shot entry for prune_search (builds state then queries)."""
+    return prune_search(load_state(Path(root)), query, path_filter, with_text,
+                        include_pruned)
+
+
+def render_pruned(res: dict, with_text: bool = True) -> str:
+    """Pruned result -> ranked markdown list: `[id] file L… (name) · score`,
+    each with its code (unless with_text=False). Noise dropped, signal only."""
+    L: list[str] = []
+    L.append(f'# megabrain prune — "{res["query"]}"')
+    L.append(f'repo `{res["repo"]}` · {res["kept"]} signal chunks '
+             f'({res["pruned"]} pruned as noise) · {res["ms"]}ms\n')
+    for rank, c in enumerate(res["chunks"], 1):
+        label = c["name"] or c["kind"]
+        L.append(f'### {rank}. [{c["id"]}] {c["file"]} '
+                 f'L{c["start_line"]}-{c["end_line"]} · {label} · `{c["score"]:.3f}`')
+        if with_text and c.get("text"):
+            L.append(f'```{lang_of(c["file"])}')
+            L.append(c["text"].rstrip("\n"))
+            L.append("```")
+        L.append("")
+    return "\n".join(L)
+
+
 def search_multi(roots: list[Path], query: str,
                  path_filters: list[str | None] | None = None) -> dict:
     """Search several repos, merge by score (same embedder -> comparable).

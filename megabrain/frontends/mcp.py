@@ -86,6 +86,13 @@ TOOLS = [
                          "description": "include RELATED best-chunk code bodies (default false: "
                                         "RELATED renders as a map — file, match span, symbols — "
                                         "so the bundle stays context-friendly)"},
+                "prune_noise": {"type": "boolean",
+                                "description": "NO-LLM noise pruning: instead of the file-grouped "
+                                               "bundle, return ONLY the signal chunks as a flat list "
+                                               "ranked by relevance ([id] file:lines · score + code), "
+                                               "noise dropped. The lean alternative to megabrain_ask "
+                                               "when you just need the exact code to read, not a "
+                                               "narration — deterministic, no LLM, no tokens."},
             },
             "required": ["repo_path", "task"],
         },
@@ -213,6 +220,12 @@ def call_tool(name: str, args: dict) -> str:
         from ..retrieval.query import render, search
         root, pf = _scope(args)
         _maybe_reindex(root)
+        if args.get("prune_noise"):
+            from ..retrieval.query import prune_search_root, render_pruned
+            with_text = not bool(args.get("compact"))
+            res = prune_search_root(root, args["task"], path_filter=pf,
+                                    with_text=with_text)
+            return render_pruned(res, with_text=with_text)
         return render(search(root, args["task"], path_filter=pf),
                       compact=bool(args.get("compact")),
                       related_code=bool(args.get("full")))

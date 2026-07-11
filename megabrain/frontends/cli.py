@@ -43,6 +43,9 @@ def main(argv=None):
     p.add_argument("path")
     p.add_argument("task")
     p.add_argument("--compact", action="store_true")
+    p.add_argument("--prune", action="store_true",
+                   help="no-LLM noise pruning: a flat relevance-ranked list of only "
+                        "the signal chunks ([id] file:lines · score + code), noise dropped")
     p.add_argument("--full", action="store_true",
                    help="include RELATED best-chunk code bodies (default renders "
                         "RELATED as a map: file, match span, symbols — ~60%% fewer tokens)")
@@ -157,10 +160,17 @@ def main(argv=None):
         pfs = [sp or None for _, sp in scoped]
         for r in dict.fromkeys(roots):     # answers match disk (60s TTL, fail-open)
             maybe_reindex(r)
-        res = (search_multi(roots, a.task, path_filters=pfs) if len(roots) > 1
-               else search(roots[0], a.task, rerank=a.best, path_filter=pfs[0]))
-        print(_json.dumps(res, indent=1) if a.json
-              else render(res, compact=a.compact, related_code=a.full))
+        if getattr(a, "prune", False):
+            from ..retrieval.query import prune_search_root, render_pruned
+            res = prune_search_root(roots[0], a.task, path_filter=pfs[0],
+                                    with_text=not a.compact)
+            print(_json.dumps(res, indent=1) if a.json
+                  else render_pruned(res, with_text=not a.compact))
+        else:
+            res = (search_multi(roots, a.task, path_filters=pfs) if len(roots) > 1
+                   else search(roots[0], a.task, rerank=a.best, path_filter=pfs[0]))
+            print(_json.dumps(res, indent=1) if a.json
+                  else render(res, compact=a.compact, related_code=a.full))
     elif a.cmd == "ask":
         from ..ask import stream_ask
         from ..indexing.indexer import maybe_reindex

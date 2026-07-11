@@ -53,7 +53,8 @@ claude mcp add megabrain -- python3 -m megabrain.mcp_server
 
 Then use `megabrain_ask` / `megabrain_query` instead of grep + Read chains — one call
 replaces minutes of file-crawling. Tools: **`megabrain_ask`** (narrated walkthrough),
-**`megabrain_query`** (raw code map, no LLM), `megabrain_get`, `megabrain_chunks`,
+**`megabrain_query`** (raw code map, no LLM — pass `prune_noise: true` for just the
+signal chunks worth reading, ranked flat), `megabrain_get`, `megabrain_chunks`,
 `megabrain_index`.
 
 ## Commands
@@ -62,6 +63,7 @@ replaces minutes of file-crawling. Tools: **`megabrain_ask`** (narrated walkthro
 megabrain index  ~/repo                          # build / update the index
 megabrain ask    ~/repo "how does X work"        # narrated walkthrough + real code
 megabrain query  ~/repo "retry logic"            # raw code map, no LLM (~200 ms)
+megabrain query  ~/repo "retry logic" --prune    # flat signal-only chunks, no LLM (drops the noise)
 megabrain get    ~/repo src/x.py --symbol Foo    # one file or symbol
 megabrain forge  ~/repo                          # teach it your repo's file types (below)
 megabrain serve-api ~/repo                       # long-running HTTP API (warm state)

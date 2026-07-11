@@ -45,6 +45,7 @@ Entry points share one retrieval core: CLI (`megabrain …`), MCP stdio server
 | command | LLM? | latency | use |
 |---------|------|---------|-----|
 | `query` | no | ~10–200 ms | complete bundle: CORE full code + RELATED map (`--full` for RELATED bodies) |
+| `query --prune` | no | ~10–200 ms | flat, relevance-ranked **signal** chunks only (noise dropped) — the existing selection, projected flat |
 | `ask`   | 1 chat call | ~6–25 s | narrated walkthrough, verbatim code spliced at each citation |
 | `get` / `chunks` | no | <10 ms | one file/symbol · per-chunk scores for one file |
 
@@ -246,6 +247,17 @@ Optional `--best`: listwise LLM reorder (`rerank.llm_order` — 3 parallel votes
 mean-rank merge, a file can rise freely but fall ≤1 place). Permute-only, so recall
 is untouched by construction. Off by default.
 
+**Noise pruning (`prune_search`, opt-in, no LLM).** The bundle already marks which
+chunks are *signal* — a tier-1 chunk that survives the `CHUNK_KEEP_RATIO` cut, or a
+related file's best chunk. `prune_search` (CLI `query --prune`, MCP
+`prune_noise: true`) simply **projects that existing selection into a flat list
+ranked by relevance** — each `[id] file:Lstart-end · score` with its code, the noise
+chunks dropped. No new scoring, no LLM, no token cost: it reuses the same
+signal/noise call the full bundle makes, just rendering the signal alone (with
+`include_pruned` it also returns the dropped `noise` for a signal-vs-noise diff). It
+is the lean read-path answer for a coding agent that wants only the code worth
+reading, not a narration; a plain `query` still returns the full CORE+RELATED bundle.
+
 ### 3.4 Flow cache — self-caching workflow retrieval (`flows.py`, opt-in)
 
 **OFF by default** — a mode a dev enables per repo (`megabrain flows --enable`,
@@ -364,7 +376,8 @@ single-agent ask → full bundle.
 - **MCP** (`mcp_server.py`, stdio, no deps): `megabrain_ask` (primary; `docs`,
   `include_docs`, `scope_path`, `agents` — omit for auto fan-out on broad
   questions; MCP is request/response, so the fan-out runs buffered and the trace
-  lands as a footer), `megabrain_query` (`compact`, `full`, `scope_path`),
+  lands as a footer), `megabrain_query` (`compact`, `full`, `scope_path`,
+  `prune_noise` — flat signal-only chunks, no LLM),
   `megabrain_get`, `megabrain_chunks`, `megabrain_index`. Auto-refreshes stale
   indexes before answering.
 - **HTTP** (`frontends/http.py`, stdlib `http.server`, warm state, db-mtime auto-reload):
@@ -432,9 +445,14 @@ examples/            programmatic API · custom .sql chunker · chunk heatmap ·
 ```
 
 Public API (lazy, typed): `megabrain.{index_repo, search, render, get_code,
-load_state, search_with_state, Store, ChunkStrategy, Chunk, Symbol, FileResult,
-validate_partition}`; the walkthrough via `from megabrain.ask import ask,
-render_ask, stream_ask`.
+load_state, search_with_state, prune_search, prune_search_root, render_pruned,
+Store, ChunkStrategy, Chunk, Symbol, FileResult, validate_partition}`; the
+walkthrough via `from megabrain.ask import ask, render_ask, stream_ask`.
+`prune_search(state, query, path_filter=None, with_text=True,
+include_pruned=False)` returns `{query, repo, chunks:[{id, file, start_line,
+end_line, kind, name, score, text}], kept, pruned, scanned, ms}` (with
+`include_pruned=True`, also `noise:[...]`); `prune_search_root(root, query, …)` is
+the one-shot entry.
 
 ---
 

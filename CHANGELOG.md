@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.7.2 — 2026-07-11
+
+- **`prune_noise` — NO-LLM noise pruning on the query path.** A new option
+  (`megabrain query --prune`, MCP `megabrain_query` `prune_noise: true`,
+  `prune_search()` / `render_pruned()` in the library) that runs the normal
+  retrieval and then returns ONLY the SELECTED (signal) chunks as a FLAT list
+  ranked by relevance — `[id] file:lines · score` + code — with the noise
+  dropped. It reuses the exact signal/noise selection the engine already
+  computes (a tier-1 chunk surviving the CHUNK_KEEP_RATIO cut, or a related
+  file's best chunk), so it's deterministic, has no LLM and no token cost. It is
+  the lean alternative to `ask` when the caller just needs the right code to
+  read, not a narration — a modern LLM needs no pre-filtered prose, so `ask` is
+  deliberately left as-is (no pre-filter: that would be double work). Opt-in:
+  default `megabrain_query` still returns the full file-grouped bundle.
+  `prune_search(..., include_pruned=True)` also returns the dropped chunks under
+  `"noise"` for a signal-vs-noise diff view (powers the demo's prune view).
+
 ## 0.7.1 — 2026-07-11
 
 - **Fix: CommonJS/prototype methods (`obj.prop = function(){}`) were invisible

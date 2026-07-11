@@ -65,6 +65,32 @@ def test_search_finds_the_relevant_file(tiny_repo):
     assert _bundle_files(res)[0] == "auth/login.py"
 
 
+def test_prune_search_returns_flat_ranked_signal(tiny_repo):
+    """pruneNoise: a flat list of only the SELECTED chunks, relevance-ordered,
+    each with a stable id + span + code; noise counted, not returned."""
+    from megabrain.retrieval.query import prune_search_root, render_pruned
+    res = prune_search_root(tiny_repo, "authenticate user login password")
+    ch = res["chunks"]
+    assert ch, "must return signal chunks"
+    # relevance-ordered, descending
+    scores = [c["score"] for c in ch]
+    assert scores == sorted(scores, reverse=True)
+    # every item is a real chunk record with a stable id + span + code
+    assert all({"id", "file", "start_line", "end_line", "score", "text"} <= c.keys()
+               for c in ch)
+    # ids are unique (dedup across tier1/tier2)
+    assert len({c["id"] for c in ch}) == len(ch)
+    # the top signal file is the relevant one, and counts are coherent
+    assert ch[0]["file"] == "auth/login.py"
+    assert res["kept"] == len(ch) and res["pruned"] >= 0
+    assert res["scanned"] == res["kept"] + res["pruned"]
+    # compact mode drops the code bodies
+    lean = prune_search_root(tiny_repo, "authenticate user login password",
+                             with_text=False)
+    assert all("text" not in c for c in lean["chunks"])
+    assert "signal chunks" in render_pruned(res)
+
+
 def test_search_path_filter_scopes_bundle(tiny_repo):
     res = search(tiny_repo, "create invoice amount", path_filter="billing")
     files = _bundle_files(res)
