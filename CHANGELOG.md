@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.6.0 — 2026-07-11
 
 - **`forge` — megabrain writes its own chunkers** (`megabrain/forge.py`). CLI
   `megabrain forge [--list|--dry-run|--ext .x]`, MCP `megabrain_forge`. Detects
