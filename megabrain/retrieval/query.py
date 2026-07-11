@@ -94,6 +94,12 @@ class SearchState:
     bm25: object | None = None
     issue_files: list | None = None
     issue_syms: list | None = None
+    # flow cache (flows.py): cached ask syntheses + their matrix, and the last
+    # query vector (_score_chunks stashes it so the flow lane re-uses the one
+    # embed call — retrieval never embeds twice, never calls an LLM).
+    flows: list | None = None
+    FL: np.ndarray | None = None
+    qv: np.ndarray | None = None
 
 
 def load_state(root: Path, check_same_thread: bool = True) -> SearchState:
@@ -103,7 +109,13 @@ def load_state(root: Path, check_same_thread: bool = True) -> SearchState:
     metas, M = store.load_matrix()
     fpaths, fskels, F = store.load_file_matrix()
     repo = store.get_meta("repo_name") or Path(root).name
-    return SearchState(store, Embedder(), metas, M, fpaths, fskels, F, repo)
+    # flow cache is opt-in and OFF by default: unless the mode is on for this
+    # repo, flows stay empty and the read path below is a pure no-op — plain
+    # query/ask behave exactly as before, at zero cost.
+    from ..flows import enabled as _flows_on
+    flows, FL = store.load_flows() if _flows_on(root) else ([], None)
+    return SearchState(store, Embedder(), metas, M, fpaths, fskels, F, repo,
+                       flows=flows, FL=FL)
 
 
 def _score_chunks(st: SearchState, query: str,
@@ -121,6 +133,7 @@ def _score_chunks(st: SearchState, query: str,
     # so CORE/RELATED/graph-neighbors all stay within it. No filter -> unchanged.
     metas, M = _apply_path_filter(metas, M, path_filter)
     qv = emb.embed([query])[0]
+    st.qv = qv                     # re-used by the flow lane (no second embed)
 
     dense = (M @ qv + 1) / 2
     fscore = (F @ qv + 1) / 2
@@ -298,7 +311,33 @@ def search_with_state(st: SearchState, query: str, rerank: bool = False,
             "best_chunk": best_chunk,
             "symbols": [s for s in syms if s["kind"] in OUTLINE_KINDS][:12],
         })
+    # FLOW LANE (flows.py): cached ask syntheses matching this query — cosine
+    # only against the already-computed query vector. Flows ATTACH; they never
+    # rank or displace files. Their source files append to the RELATED tail
+    # only when missing entirely — pure additions, bundle_full can only rise.
+    flows_out = []
+    if st.flows and st.qv is not None:
+        from ..flows import FLOW_FILE_ADDS, match_flows
+        flows_out = match_flows(st.flows, st.FL, st.qv)
+        have = {t["file"] for t in out_t1} | {t["file"] for t in out_t2}
+        adds = 0
+        for fl in flows_out:
+            for f in fl["files"]:
+                if f in have or adds >= FLOW_FILE_ADDS or not _under_path(f, path_filter or ""):
+                    continue
+                syms = store.symbols_for(f)
+                out_t2.append({
+                    "file": f, "score": float(fbest.get(f, 0)),
+                    "via_graph": False, "via_flow": True,
+                    "matched": [], "doc": next((s["doc"] for s in syms if s["doc"]), None),
+                    "best_chunk": metas[file_chunks[f][0]] if file_chunks.get(f) else None,
+                    "symbols": [s for s in syms if s["kind"] in OUTLINE_KINDS][:12],
+                })
+                have.add(f)
+                adds += 1
+
     return {"query": query, "tier1": out_t1, "tier2": out_t2,
+            "flows": flows_out,
             "repo": st.repo,
             "ms": int((time.time() - t0) * 1000)}
 
@@ -420,6 +459,16 @@ def render(res: dict, compact: bool = False, related_code: bool = False) -> str:
     L.append(f'# megabrain — "{res["query"]}"')
     L.append(f'repo `{res["repo"]}` · {n1} core files (full code) · {n2} related (mapped) · {res["ms"]}ms\n')
 
+    # cached flows first: a previously-synthesized walkthrough of this very
+    # workflow is the highest-density context in the bundle. Clearly labeled as
+    # a cached synthesis — the code truth stays in CORE/RELATED below.
+    for fl in res.get("flows", []):
+        L.append(f'## KNOWN FLOW (cached ask) — "{fl["question"]}"  `{fl["score"]:.2f}`')
+        L.append(f'sources: {", ".join(fl["files"])}\n')
+        if not compact:
+            L.append(fl["text"].rstrip())
+        L.append("")
+
     L.append("## CORE\n")
     for i, t in enumerate(res["tier1"], 1):
         L.append(f'### {i}. {t["file"]}  `{t["score"]:.2f}`')
@@ -449,7 +498,8 @@ def render(res: dict, compact: bool = False, related_code: bool = False) -> str:
         L.append("## RELATED — best match + symbols per file · expand with "
                  f"`megabrain get <file> [--symbol NAME]`{hint}\n")
         for t in res["tier2"]:
-            via = " ·via-graph" if t["via_graph"] else ""
+            via = " ·via-graph" if t["via_graph"] else (
+                " ·via-flow" if t.get("via_flow") else "")
             match = f' · matched: {", ".join(t["matched"])}' if t["matched"] else ""
             doc = f' — {t["doc"]}' if t["doc"] else ""
             L.append(f'### {t["file"]}  `{t["score"]:.2f}`{via}{match}{doc}')

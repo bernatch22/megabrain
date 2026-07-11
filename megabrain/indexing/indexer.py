@@ -174,6 +174,11 @@ def index_repo(root: Path, repo_name: str | None = None, quiet: bool = False,
         store.delete_file(gone, drop_incoming=True)
         removed += 1
 
+    # flow invalidation: a cached ask synthesis dies with the code it cites —
+    # any cited file whose sha changed (or vanished) drops the whole flow.
+    from ..flows import prune_stale
+    stale_flows = prune_stale(store)
+
     store.set_meta("repo_name", name)
     store.set_meta("embed_model", EMBED_MODEL)
     store.set_meta("last_index", {"t": time.time(), "files": len(paths)})
@@ -181,6 +186,7 @@ def index_repo(root: Path, repo_name: str | None = None, quiet: bool = False,
     result = {"files": len(paths), "changed": changed, "unchanged": unchanged,
               "removed": removed, "new_chunks": stats["chunks"],
               "partition_violations": stats["violations"],
+              "stale_flows_pruned": stale_flows,
               "embed_tokens": emb.tokens, "embed_cost_usd": round(emb.cost, 6),
               "seconds": round(time.time() - t0, 2)}
     if not quiet:

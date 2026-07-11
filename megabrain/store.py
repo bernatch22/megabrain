@@ -64,6 +64,13 @@ CREATE TABLE IF NOT EXISTS edges (
     PRIMARY KEY (src, dst, kind)
 );
 CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT);
+CREATE TABLE IF NOT EXISTS flows (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    question TEXT NOT NULL,               -- the ask that produced this flow
+    text TEXT NOT NULL,                   -- the synthesized walkthrough (prose)
+    files TEXT NOT NULL,                  -- JSON {relpath: sha} of cited sources
+    vec BLOB                              -- embedding of question + prose
+);
 """
 
 
@@ -180,3 +187,25 @@ class Store:
     def get_meta(self, k: str):
         r = self.db.execute("SELECT v FROM meta WHERE k=?", (k,)).fetchone()
         return json.loads(r[0]) if r else None
+
+    # ---- flow cache (self-caching workflow retrieval — see flows.py)
+
+    def insert_flow(self, question: str, text: str, files: dict, vec: np.ndarray) -> int:
+        cur = self.db.execute(
+            "INSERT INTO flows(question,text,files,vec) VALUES (?,?,?,?)",
+            (question, text, json.dumps(files, sort_keys=True),
+             vec.astype(np.float32).tobytes()))
+        return cur.lastrowid
+
+    def delete_flow(self, flow_id: int):
+        self.db.execute("DELETE FROM flows WHERE id=?", (flow_id,))
+
+    def load_flows(self) -> tuple[list[dict], np.ndarray]:
+        rows = self.db.execute(
+            "SELECT id,question,text,files,vec FROM flows WHERE vec IS NOT NULL "
+            "ORDER BY id").fetchall()
+        metas = [{"id": r[0], "question": r[1], "text": r[2],
+                  "files": json.loads(r[3])} for r in rows]
+        M = np.stack([np.frombuffer(r[4], dtype=np.float32) for r in rows]) if rows \
+            else np.zeros((0, 1))
+        return metas, M

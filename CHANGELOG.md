@@ -2,6 +2,36 @@
 
 ## Unreleased
 
+- **Flow cache — self-caching workflow retrieval** (`megabrain/flows.py`).
+  **Opt-in, OFF by default** — a mode a dev turns on per repo
+  (`megabrain flows --enable`, implied by `--warm-flows`; env
+  `MEGABRAIN_FLOW_CACHE` forces on/off globally). When off, `query`/`ask`
+  behave exactly as before at zero cost (load_state skips flows entirely).
+  When on: every successful `ask` synthesizes a cross-file walkthrough (a workflow:
+  "VAD detects speech → TurnController.on_vad_start → cancel TTS") that the
+  engine used to throw away. Now it is cached in the index (`flows` table:
+  question + prose + {cited file: sha} + embedding) and the NEXT related
+  question retrieves the whole flow at once — validated: a barge-in flow
+  cached from one question was retrieved by a fully re-worded paraphrase.
+  Design keeps every hard rule intact: the LLM and the one embed call happen
+  at ASK time (write path); the read path is pure cosine against the flow
+  matrix, reusing the query vector already computed (no second embed, no LLM).
+  Flows ATTACH to the bundle (a "KNOWN FLOW" section + non-citable context for
+  the narrator) and never rank or displace files — their source files append
+  to RELATED only when missing, pure additions, so bundle_full can only rise.
+  Invalidation: index_repo prunes any flow whose cited files changed sha, so a
+  stale walkthrough cannot outlive the code it describes (and `ask` splices
+  real code from disk regardless — a stale flow can mis-prioritize, never
+  fabricate). Near-duplicate flows replace instead of piling up. **Warmup**
+  (opt-in): `megabrain index --warm-flows N` / `flows --warm N` — right after
+  the first index, an index-time LLM planner reads the graph's hub files and
+  writes N research questions covering the system's main workflows, then runs
+  one `ask` each, so the cache starts full instead of building up lazily. CLI:
+  `megabrain flows <repo> [--enable|--disable|--warm N|--clear]`; kill switch
+  `MEGABRAIN_FLOW_CACHE=0`. Related literature: Knowledge Compression via
+  Question Generation (arxiv 2506.13778) — indexing synthesized knowledge lifts
+  multi-hop retrieval.
+
 - **Removed LLM-generated specialization strategies.** Across four repos
   (sinatra, requests, sdk-server, the engine itself) an LLM asked to write a
   specialization chunker consistently LOST — to a five-line deterministic

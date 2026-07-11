@@ -247,6 +247,41 @@ Optional `--best`: listwise LLM reorder (`rerank.llm_order` — 3 parallel votes
 mean-rank merge, a file can rise freely but fall ≤1 place). Permute-only, so recall
 is untouched by construction. Off by default.
 
+### 3.4 Flow cache — self-caching workflow retrieval (`flows.py`, opt-in)
+
+**OFF by default** — a mode a dev enables per repo (`megabrain flows --enable`,
+or implied by `--warm-flows`; env `MEGABRAIN_FLOW_CACHE` forces on/off). When
+off, `load_state` skips flows entirely and `query`/`ask` are byte-for-byte the
+prior behavior at zero cost. When on:
+
+Every successful `ask` synthesizes a cross-file WORKFLOW ("VAD detects speech →
+`TurnController.on_vad_start` → cancel TTS") that used to be thrown away. It is
+now cached in the index and the next related question retrieves the whole flow
+at once — validated: a barge-in flow cached from one question was retrieved by a
+fully re-worded paraphrase. The hard rules stay intact by construction:
+
+- **Write path (ask time)** — prose (citations stripped) + question embedded in
+  ONE call, stored in the `flows` table with `{cited file: sha}`. Near-dupes
+  (cos > 0.92) replace the old row. Fail-open: a cache error never breaks ask.
+- **Read path (query time, rule 1 intact)** — cosine of the ALREADY-computed
+  query vector against the flow matrix; matches ≥ 0.62, top 2. Flows ATTACH
+  ("KNOWN FLOW" bundle section + non-citable context for the narrator); they
+  never rank or displace files (rule-3 analog) — their source files append to
+  RELATED only when missing, pure additions, so bundle_full can only rise.
+- **Invalidation (index time)** — `index_repo` prunes any flow whose cited
+  files changed sha, so a stale walkthrough cannot outlive the code it
+  describes. And `ask` splices real code from disk regardless: a stale flow
+  could only mis-prioritize, never fabricate (rule 5 untouched).
+
+**Warmup (opt-in):** `megabrain index --warm-flows N` / `flows --warm N` — right
+after the first index, an index-time LLM planner reads the graph's hub files (top
+edge-degree) + their doclines and writes N research questions covering the main
+workflows, then runs one `ask` each, so the cache starts full on day one instead
+of building up lazily. Fail-open to deterministic template questions if the
+planner errors. CLI `megabrain flows <repo> [--enable|--disable|--warm N|--clear]`
+· kill switch `MEGABRAIN_FLOW_CACHE=0`. Related: Knowledge Compression via
+Question Generation (arxiv 2506.13778).
+
 ---
 
 ## 4. `ask` — narration with verbatim code (`ask.py`)
@@ -361,6 +396,9 @@ The tree mirrors the pipeline — content → index → retrieval → narration 
 ```
 megabrain/
   __init__.py        public API (lazy, typed)
+  flows.py           self-caching workflow retrieval: ask syntheses cached in the
+                     index (write: LLM+embed at ask time · read: cosine only ·
+                     invalidation: sha of every cited file · dedup by cosine)
   forge.py           self-authored chunkers (coverage): uncovered-ext census · LLM
                      generate · partition-oracle validate (repair loop) · trust install
   forge_specialize.py  specialization: diagnose poorly-chunked covered files (table/

@@ -33,6 +33,11 @@ def main(argv=None):
     p.add_argument("--exclude", action="append", default=[], metavar="PATTERN",
                    help="skip a dir name or a glob/path (repeatable, or comma-separated); "
                         "merged with built-ins and .megabrainignore")
+    p.add_argument("--warm-flows", nargs="?", const=6, default=None, type=int,
+                   metavar="N",
+                   help="OPT-IN: after indexing, discover the system's main workflows "
+                        "and pre-cache them as flows — N research asks (default 6), "
+                        "so the flow cache starts full instead of building up lazily")
 
     p = sub.add_parser("query")
     p.add_argument("path")
@@ -101,6 +106,17 @@ def main(argv=None):
                         "hand and gate it with the Python API forge_specialize."
                         "gate_strategy(). This flag now only lists opportunities.")
 
+    p = sub.add_parser("flows",
+                       help="list this repo's cached ask flows (self-caching workflow "
+                            "retrieval); --clear drops them all; --warm N pre-caches "
+                            "the system's main workflows via research asks")
+    p.add_argument("path", nargs="?", default=".")
+    p.add_argument("--clear", action="store_true")
+    p.add_argument("--warm", nargs="?", const=6, default=None, type=int, metavar="N")
+    p.add_argument("--enable", action="store_true",
+                   help="turn the flow-cache mode ON for this repo (off by default)")
+    p.add_argument("--disable", action="store_true", help="turn the mode OFF")
+
     p = sub.add_parser("trust",
                        help="approve this repo's .megabrain/strategies/*.py (records "
                             "their sha in ~/.megabrain/trust.json so indexing loads them)")
@@ -122,6 +138,11 @@ def main(argv=None):
         exclude = [x for item in a.exclude for x in item.split(",") if x.strip()]
         for r in raw:
             index_repo(r, force=a.force, exclude=exclude)
+            if a.warm_flows:
+                import json as _json
+
+                from ..flows import warm_flows
+                print(_json.dumps(warm_flows(r, limit=a.warm_flows), indent=1))
     elif a.cmd == "query":
         import json as _json
 
@@ -193,6 +214,37 @@ def main(argv=None):
         else:
             from ..forge import forge, render_report
             print(render_report(forge(root, ext=a.ext, dry_run=a.dry_run)))
+    elif a.cmd == "flows":
+        from ..flows import enabled as _flows_on
+        from ..flows import set_enabled
+        from ..store import Store
+        if a.enable or a.disable:
+            set_enabled(root, a.enable)
+            print(f"flow cache {'ENABLED' if a.enable else 'disabled'} for {root}")
+            return
+        if a.warm:
+            import json as _json
+
+            from ..flows import warm_flows
+            print(_json.dumps(warm_flows(root, limit=a.warm), indent=1))
+            return
+        if not _flows_on(root):
+            print("flow cache is OFF for this repo (opt-in). Enable with: "
+                  "megabrain flows --enable   ·   or pre-fill: megabrain flows --warm")
+            return
+        with Store(root) as s:
+            metas, _ = s.load_flows()
+            if a.clear:
+                for m in metas:
+                    s.delete_flow(m["id"])
+                s.commit()
+                print(f"cleared {len(metas)} cached flow(s)")
+            elif not metas:
+                print("no cached flows — they accumulate as you `megabrain ask`")
+            else:
+                for m in metas:
+                    print(f'[{m["id"]}] "{m["question"]}"  '
+                          f'({len(m["files"])} files: {", ".join(sorted(m["files"])[:4])}…)')
     elif a.cmd == "trust":
         from ..indexing.strategies import STRATEGY_DIR, trust_file
         sdir = root / STRATEGY_DIR

@@ -69,7 +69,21 @@ _RULES = """- NEVER paste or quote code. Cite it with DOUBLE brackets: [[3]] (wh
 - Finish the thought: end with a short "## Summary" of the flow in 2-3 sentences. Never end mid-sentence."""
 
 
-def _build_body(question: str, cands: list[dict]) -> dict:
+def _flow_ctx(res: dict) -> str:
+    """Cached-flow context for the narrator: a previously synthesized walkthrough
+    of a matching workflow. Explicitly non-citable — the model can only cite the
+    numbered code chunks, so a stale flow can mis-prioritize but never fabricate."""
+    flows = res.get("flows") or []
+    if not flows:
+        return ""
+    parts = [f'(cached from: "{f["question"]}")\n{f["text"]}' for f in flows]
+    return ("\nKNOWN FLOW — a walkthrough of this workflow synthesized by a "
+            "previous ask over the SAME code (context only; do NOT cite it — "
+            "cite only the numbered chunks below):\n\n"
+            + "\n\n---\n\n".join(parts) + "\n")
+
+
+def _build_body(question: str, cands: list[dict], flow_ctx: str = "") -> dict:
     """Chat request body (OpenAI schema): the cite-only walkthrough prompt over numbered chunks."""
     blocks, used = [], 0
     for i, c in enumerate(cands):
@@ -86,7 +100,7 @@ STRICT RULES:
 {_RULES}
 
 QUERY: {question}
-
+{flow_ctx}
 RETRIEVED CHUNKS:
 
 {chr(10).join(blocks)}"""
@@ -94,9 +108,10 @@ RETRIEVED CHUNKS:
             "stream": True, "messages": [{"role": "user", "content": prompt}]}
 
 
-def _explain_stream(question: str, cands: list[dict], key: str) -> str:
+def _explain_stream(question: str, cands: list[dict], key: str,
+                    flow_ctx: str = "") -> str:
     """ONE streamed chat call -> explanation text with [[k]]/[[k:lo-hi]] citations."""
-    text, stop = providers.stream_chat(_build_body(question, cands), key)
+    text, stop = providers.stream_chat(_build_body(question, cands, flow_ctx), key)
     if stop == "length":
         cut = max(text.rfind("\n\n"), text.rfind(". "))
         if cut > 0:
@@ -223,16 +238,23 @@ def ask(root: Path, question: str, rerank: bool = False,
                           exc_info=True)
         if not text:
             try:
-                text = _explain_stream(question, cands, key)
+                text = _explain_stream(question, cands, key, _flow_ctx(res))
             except Exception:
                 log.debug("ask explanation failed (falling back to full bundle)",
                           exc_info=True)
                 text = ""
         llm_ms = int((time.time() - t1) * 1000)
     file_syms = {f: st.store.symbols_for(f) for f in {c["file"] for c in cands}}
-    return {"result": res, "cands": cands, "text": text, "file_syms": file_syms,
-            "retrieval_ms": retrieval_ms, "llm_ms": llm_ms,
-            "query": question, "repo": res["repo"], "agents": trace}
+    out = {"result": res, "cands": cands, "text": text, "file_syms": file_syms,
+           "retrieval_ms": retrieval_ms, "llm_ms": llm_ms,
+           "query": question, "repo": res["repo"], "agents": trace}
+    # WRITE PATH of the flow cache: a successful cited walkthrough is a
+    # workflow worth remembering. Fail-open by construction (flows.cache_flow
+    # swallows every error) and reuses st.emb — no provider surprises.
+    if text:
+        from .flows import cache_flow
+        cache_flow(Path(root), question, text, cited_files(out), emb=st.emb)
+    return out
 
 
 def cited_files(out: dict) -> list[str]:
