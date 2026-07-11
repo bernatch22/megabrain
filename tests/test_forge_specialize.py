@@ -1,11 +1,11 @@
-"""forge --specialize: opportunity detection, the changed-files A/B gate, and
-the install-only-on-measured-win rule. Offline: canned LLM over
-providers.chat_text + conftest's FakeEmbedder (token-hash → deterministic)."""
+"""specialize toolkit (NO LLM): opportunity detection, the changed-files A/B
+gate, and gate_strategy's install-only-on-measured-win rule over a hand-written
+strategy. Offline via conftest's FakeEmbedder (token-hash → deterministic)."""
 
 import pytest
 
 from megabrain.forge_eval import ab_gate, changed_files, probe_spans
-from megabrain.forge_specialize import detect_specialization, specialize
+from megabrain.forge_specialize import detect_specialization, gate_strategy
 from megabrain.indexing import strategies as strat_mod
 
 # A data-table module: >120 lines, one dict dominating the file. Entry values
@@ -160,23 +160,17 @@ class PySpecialStrategy:
 '''
 
 
-def test_specialize_installs_only_on_win(repo, monkeypatch, fake_embedder):
-    monkeypatch.setattr("megabrain.providers.chat_text",
-                        lambda *a, **k: f"```python\n{_code_for(10)}```")
-    rep = specialize(repo, ext=".py", quiet=True)
-    e = rep["specialized"][0]
-    assert e["ok"] and e["gate"]["win"]
-    assert (repo / ".megabrain/strategies/py.py").exists()
+def test_gate_strategy_installs_a_winning_handwritten_strategy(repo, fake_embedder):
+    # NO LLM — the strategy source is written by hand and gated deterministically.
+    rep = gate_strategy(repo, _code_for(10), ".py")
+    assert rep["gate"]["win"]
+    assert rep.get("installed") and (repo / ".megabrain/strategies/py.py").exists()
     # installed → trusted → auto-loaded
     assert [s for s in strat_mod.load_repo_strategies(repo, "r") if ".py" in s.exts]
 
 
-def test_specialize_rejects_and_does_not_install_a_coarse_one(repo, monkeypatch,
-                                                              fake_embedder):
-    monkeypatch.setattr("megabrain.providers.chat_text",
-                        lambda *a, **k: f"```python\n{_code_for(1000)}```")
-    rep = specialize(repo, ext=".py", quiet=True)
-    e = rep["specialized"][0]
-    assert e["ok"] and not e["gate"]["win"]
+def test_gate_strategy_rejects_and_does_not_install_a_coarse_one(repo, fake_embedder):
+    rep = gate_strategy(repo, _code_for(1000), ".py")
+    assert not rep["gate"]["win"]
+    assert "installed" not in rep
     assert not (repo / ".megabrain/strategies/py.py").exists()
-    assert "index" not in rep

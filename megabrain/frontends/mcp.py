@@ -233,21 +233,20 @@ def call_tool(name: str, args: dict) -> str:
     if name == "megabrain_forge":
         root = Path(args["repo_path"]).expanduser().resolve()
         if args.get("specialize"):
-            from ..forge_specialize import detect_specialization, render_report, specialize
-            if args.get("list_only"):
-                return json.dumps(detect_specialization(root), indent=1)
-            report = specialize(root, ext=args.get("ext"),
-                                dry_run=bool(args.get("dry_run")), quiet=True)
-            entries = report.get("specialized", [])
-        else:
-            from ..forge import detect, forge, render_report
-            if args.get("list_only"):
-                return json.dumps(detect(root), indent=1)
-            report = forge(root, ext=args.get("ext"),
-                           dry_run=bool(args.get("dry_run")), quiet=True)
-            entries = report.get("forged", [])
+            # LLM specialization was removed (it lost to a deterministic recipe).
+            # Report opportunities; strategies are hand-written + gate_strategy().
+            from ..forge_specialize import detect_specialization
+            return json.dumps({"opportunities": detect_specialization(root),
+                               "note": "LLM specialization removed; write the "
+                               "strategy into .megabrain/strategies/ and gate it "
+                               "with forge_specialize.gate_strategy()"}, indent=1)
+        from ..forge import detect, forge, render_report
+        if args.get("list_only"):
+            return json.dumps(detect(root), indent=1)
+        report = forge(root, ext=args.get("ext"),
+                       dry_run=bool(args.get("dry_run")), quiet=True)
         text = render_report(report)
-        for e in entries:
+        for e in report.get("forged", []):
             if e.get("code"):                # dry-run: show what would install
                 text += f"\n\n--- generated {e['ext']} strategy ---\n{e['code']}"
         return text

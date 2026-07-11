@@ -94,10 +94,12 @@ def main(argv=None):
     p.add_argument("--dry-run", action="store_true",
                    help="generate + validate but do not install or reindex")
     p.add_argument("--specialize", action="store_true",
-                   help="specialize ALREADY-covered file types the built-in chunks "
-                        "poorly (data tables, blobs): generate a shape-router and "
-                        "install it only if it WINS a measured retrieval A/B "
-                        "(span-IoU gate) against the built-in")
+                   help="census of ALREADY-covered file types the built-in chunks "
+                        "poorly (data tables, blobs). NOTE: LLM-generated "
+                        "specialization was removed (it lost to a deterministic "
+                        "recipe); write the strategy into .megabrain/strategies/ by "
+                        "hand and gate it with the Python API forge_specialize."
+                        "gate_strategy(). This flag now only lists opportunities.")
 
     p = sub.add_parser("trust",
                        help="approve this repo's .megabrain/strategies/*.py (records "
@@ -174,13 +176,15 @@ def main(argv=None):
     elif a.cmd == "forge":
         import json as _json
         if a.specialize:
-            from ..forge_specialize import detect_specialization, render_report, specialize
-            if a.list_only:
-                opps = detect_specialization(root)
-                print(_json.dumps(opps, indent=1) if opps
-                      else "no specialization opportunities found")
-            else:
-                print(render_report(specialize(root, ext=a.ext, dry_run=a.dry_run)))
+            from ..forge_specialize import detect_specialization
+            opps = detect_specialization(root)
+            print(_json.dumps(opps, indent=1) if opps
+                  else "no specialization opportunities found")
+            if opps:
+                print("\n# LLM generation was removed. Write a strategy into "
+                      ".megabrain/strategies/ and gate it:\n"
+                      "#   from megabrain.forge_specialize import gate_strategy\n"
+                      "#   gate_strategy(root, open('strat.py').read(), '.py')")
         elif a.list_only:
             from ..forge import detect
             cands = detect(root)

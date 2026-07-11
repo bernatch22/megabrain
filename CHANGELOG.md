@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+- **Removed LLM-generated specialization strategies.** Across four repos
+  (sinatra, requests, sdk-server, the engine itself) an LLM asked to write a
+  specialization chunker consistently LOST — to a five-line deterministic
+  recipe (`lit_baseline`: the AST chunker re-budgeted to 2000) and to the plain
+  4000 default. `forge_specialize` no longer calls a model; it is now a
+  measurement toolkit for HAND-WRITTEN strategies: `detect_specialization`
+  (where the built-in chunks poorly), `lit_baseline` (the reference to beat),
+  and `gate_strategy(root, source, ext)` — measure a hand-written chunker with
+  `forge_eval.ab_gate` and install it trust-gated only if it wins. CLI
+  `forge --specialize` now only lists opportunities; the MCP `specialize` mode
+  returns opportunities + a note. (Coverage `forge` for UNCOVERED extensions is
+  unchanged.)
+- **Documented the sacred-bar finding.** On the sdk-server golden set (the one
+  corpus with human-verified queries), no chunk budget beats 4000: R@1 4000=0.86,
+  2000=0.82, surgical blob-splitting=0.77. Tighter chunks improve span-IoU
+  (navigation — less to read) but LOWER retrieval ranking, because the 4000 merge
+  concentrates a file's evidence and that is what wins R@1. `DEFAULT_BUDGET`
+  stays 4000; specialization is an honest win only for its navigation objective.
+
 - **`forge --specialize` — chunkers tuned to a repo's own conventions**
   (`megabrain/forge_specialize.py` + `megabrain/forge_eval.py`; CLI
   `megabrain forge --specialize [--list|--dry-run|--ext .x]`, MCP
