@@ -41,7 +41,7 @@ Override either by env: `MEGABRAIN_EMBED_MODEL`, `MEGABRAIN_ASK_MODEL`.
 |---|---|
 | **Claude to narrate** (subscription credits, zero keys) | `pip install 'megabrain[claude]'` + be logged into Claude Code → auto-detected. Or `ANTHROPIC_API_KEY=…` to bill the API. Embeddings still need OpenRouter/local (Anthropic has no embeddings API). |
 | **A specific model** | `MEGABRAIN_ASK_MODEL=anthropic/claude-haiku-4.5` (any OpenRouter slug) |
-| **Gemini Flash for ask** | `MEGABRAIN_ASK_MODEL=google/gemini-2.5-flash` — works, comparable quality. Measured: ~13 s vs qwen3-coder's ~14 s on a real walkthrough — *marginally* faster, not dramatically, because `ask` is output-bound (a long walkthrough dominates, not model latency). Flash shines more on the short internal calls (the ask-v2 planner, rerank, warmup planner). |
+| **Gemini 3 Flash for ask (fast)** | `MEGABRAIN_ASK_MODEL=google/gemini-3-flash-preview` — **measured ~2× faster**: a real walkthrough in ~6-7 s vs qwen3-coder's ~14 s, clean and correct (cites a bit more tersely — ~3 files vs 7). Great default when you want snappy `ask`. Caveat: it's a *preview* slug (may change); `google/gemini-2.5-flash` is the stable fallback but only marginally faster than qwen (~13 s) since `ask` is output-bound. |
 | **Fully local, no keys** (Ollama/LM Studio/vLLM) | `MEGABRAIN_EMBED_BASE_URL=http://localhost:11434/v1 MEGABRAIN_EMBED_MODEL=embeddinggemma` + `MEGABRAIN_CHAT_BASE_URL=…`. Localhost needs no key. ⚠️ measured caveat: small general embedders (embeddinggemma) are noticeably weaker on code than pplx — good for offline, not for best recall. |
 | **Perplexity direct** (not via OpenRouter) | `MEGABRAIN_EMBED_BASE_URL=https://api.perplexity.ai` + `PERPLEXITY_API_KEY=…` (auto-picked) |
 
