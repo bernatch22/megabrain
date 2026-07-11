@@ -95,7 +95,7 @@ def test_key_sentinel_and_model_defaults(monkeypatch):
     assert providers.ask_model() == "claude-sonnet-4-5"
     monkeypatch.setenv("MEGABRAIN_CHAT_PROVIDER", "openrouter")
     monkeypatch.delenv("MEGABRAIN_ASK_MODEL", raising=False)
-    assert providers.ask_model() == "qwen/qwen3-coder"
+    assert providers.ask_model() == "google/gemini-3-flash-preview"
 
 
 def test_missing_sdk_error_is_actionable(monkeypatch):

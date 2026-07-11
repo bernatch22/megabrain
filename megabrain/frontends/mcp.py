@@ -291,7 +291,7 @@ def call_tool(name: str, args: dict) -> str:
             _flows.set_enabled(root, action == "enable")
             return json.dumps({"flow_cache": action == "enable", "repo": root.as_posix()})
         with Store(Path(root)) as s:
-            metas, _ = s.load_flows()
+            metas, _, _ = s.load_flows()
         return json.dumps({"enabled": _flows.enabled(root),
                            "flows": [{"question": m["question"],
                                       "files": sorted(m["files"])} for m in metas]}, indent=1)

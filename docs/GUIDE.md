@@ -29,9 +29,8 @@ export OPENROUTER_API_KEY=sk-or-...        # env, or an `export …` line in ~/.
 That's it. Defaults reproduce the validated stack:
 - embeddings: `perplexity/pplx-embed-v1-0.6b` (1024-d int8) — **the measured
   best for code recall**; a bakeoff beat pplx-4b, codestral, openai-3-large, bge-m3.
-- ask/narration: `qwen/qwen3-coder` — on par with claude-haiku on citation
-  selection at ~5× lower cost (retrieval already guarantees completeness, so
-  the model only points at code).
+- ask/narration: `google/gemini-3-flash-preview` — **measured ~2× faster** than
+  qwen3-coder on a real walkthrough at comparable quality.
 
 Override either by env: `MEGABRAIN_EMBED_MODEL`, `MEGABRAIN_ASK_MODEL`.
 
@@ -39,17 +38,14 @@ Override either by env: `MEGABRAIN_EMBED_MODEL`, `MEGABRAIN_ASK_MODEL`.
 
 | model | one `ask` | price /M (in / out) | ≈ cost/ask | notes |
 |---|---|---|---|---|
-| `qwen/qwen3-coder` *(default)* | ~14 s | **$0.22 / $1.80** | **~$0.0035** | cheapest; broader citations (6-7 files) |
-| `google/gemini-3-flash-preview` | **~6-7 s (2×)** | $0.50 / $3.00 | ~$0.007 | **fastest**; tighter citations (3 files); preview slug |
+| `google/gemini-3-flash-preview` *(default)* | **~6-7 s** | $0.50 / $3.00 | ~$0.007 | **2× faster**; tighter citations (~3 files); preview slug — if it 404s, set qwen below |
+| `qwen/qwen3-coder` | ~14 s | **$0.22 / $1.80** | **~$0.0035** | cheapest; broader citations (6-7 files) |
 
-Both hit the same gold file on the barge-in test (1/2 — neither cites a file
-sitting at bundle rank #12; that's a *retrieval* limit, not the model's). Pick
-**qwen for cost**, **gemini-3-flash for speed** — ~2× faster for ~2× the price,
-still fractions of a cent per call. The **flow cache doesn't change this**: a
-repeat `ask` still narrates (it just narrates *better*, with the cached workflow
-as context), so caching buys retrieval quality, not a cheaper call. (A future
-"serve a near-exact cached flow verbatim, skip the LLM" mode would be the actual
-cost-saver — not built yet.)
+Both hit the same gold file on the barge-in test (neither cites a file sitting
+at bundle rank #12 — a *retrieval* limit, not the model's). Default is **gemini
+for speed**; set `MEGABRAIN_ASK_MODEL=qwen/qwen3-coder` for lowest cost /
+broader citations. Either way it's fractions of a cent per call — and with the
+flow cache on, a **repeated question costs $0 and ~0 ms** (next up).
 
 ### Options
 
@@ -70,13 +66,27 @@ megabrain query ~/repo "retry logic"         # raw code map, NO LLM, ~200 ms
 megabrain get   ~/repo src/x.py --symbol Foo # pull one file/symbol to expand
 ```
 
-- **`query`** = pure retrieval, no LLM: your question is embedded, matched by
-  vector similarity, and it returns every related file (CORE full code + RELATED
-  map). Fast, cheap, deterministic.
-- **`ask`** = one LLM call on top: it narrates the answer and cites code as
-  `[[k]]`; the engine replaces each citation with the **verbatim block from
-  disk**, so nothing is hallucinated. Broad questions fan out into parallel
-  sub-agents, then a parent synthesizes.
+### query vs ask — when to use which (especially if the caller is an LLM)
+
+- **`query`** = pure retrieval, no LLM (~200 ms, free): returns every related
+  file (CORE full code + RELATED map), nothing interpreted.
+- **`ask`** = `query` + one LLM narration: a walkthrough that traces the flow,
+  citing code as `[[k]]`; the engine splices each citation with the **verbatim
+  block from disk**, so nothing is hallucinated. Broad questions fan out into
+  parallel sub-agents.
+
+The decision rule — for a human OR an LLM agent calling megabrain:
+
+| your question is… | use | why |
+|---|---|---|
+| "**how/why** does X work" — a flow, a mechanism, cross-file behavior | **ask** | you want the *connected* story; retrieval alone gives you the pieces, ask assembles them (and with flows on, the assembly gets cached) |
+| "**where** is Y" — locate a symbol/handler/config when you'll read the code yourself | **query** | free, instant, complete; an LLM agent that will reason over raw code anyway doesn't need a second LLM to pre-chew it |
+| you're an agent about to **edit** code | **query → get** | you need exact current bytes and spans, not prose |
+| the same how/why might be asked again (team repo, agents) | **ask with flows on** | first ask pays once; repeats are served free |
+
+Rule of thumb for an agent: **ask for understanding, query for locating.**
+Never chain `query` + your own summarization to imitate `ask` — ask's splice
+guarantees the code shown is verbatim; your own summary doesn't.
 
 ---
 
@@ -235,15 +245,24 @@ megabrain flows ~/repo --clear           # wipe · MEGABRAIN_FLOW_CACHE=0 kills 
 
 ### How it works — and why it's safe
 
-- **Write** (at `ask` time): the walkthrough prose + the question are embedded in
-  one call and stored with `{cited file: sha}`. The LLM and the embed run here,
+- **Write** (at `ask` time): the RENDERED answer (prose + real code from disk)
+  is stored with `{cited file: sha}` and two vectors — question+prose (semantic
+  matching) and question-only (near-exact detection). LLM + embeds run here,
   off the query path.
-- **Read** (at query time): pure cosine of the query against the flow matrix —
-  **no LLM in retrieval**, ever. A matching flow ATTACHES to the bundle as a
-  "KNOWN FLOW" section and adds its source files only when they're missing —
-  it never displaces real files, so bundle completeness can only rise.
-- **The narrator** gets the cached flow as *non-citable* context: it still cites
-  and splices **real code from disk**, so a cached flow can only ever
+- **Read** (at query time): pure cosine — **no LLM in retrieval**, ever. Three
+  tiers by similarity:
+
+  | match | behavior | cost |
+  |---|---|---|
+  | **near-exact question** (≥ 0.88, code unchanged) | **served verbatim — no LLM.** Measured: 6.9 s → **0.02 s** on a repeat ask (345×), $0 | free |
+  | **same workflow, different words** (0.62–0.88) | flow ATTACHES ("KNOWN FLOW" in the bundle + context for the narrator); narrates fresh | one LLM call |
+  | below 0.62 | plain retrieval | — |
+
+  A flow never displaces real files (its sources only *add* when missing), and
+  serving re-checks every cited file's sha at that instant — **stale code is
+  never served**, even inside the 60 s window before an index would prune it.
+- **The narrator** gets an attached flow as *non-citable* context: it still
+  cites and splices **real code from disk**, so a cached flow can only ever
   mis-prioritize, never fabricate.
 
 ### `--warm-flows` — the initial-index expander (your intuition, yes)

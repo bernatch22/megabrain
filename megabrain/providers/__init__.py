@@ -74,10 +74,13 @@ def chat_provider() -> str:
 
 def ask_model() -> str:
     """ask narrator model — per-provider default when MEGABRAIN_ASK_MODEL is
-    unset: Claude alias 'haiku' on the claude provider, qwen3-coder on
-    OpenRouter (the validated bakeoff pick)."""
+    unset: Claude alias 'haiku' on the claude provider, else
+    google/gemini-3-flash-preview on OpenRouter (~2× faster than qwen3-coder on
+    a walkthrough at comparable quality — measured; see docs/GUIDE.md). Set
+    MEGABRAIN_ASK_MODEL=qwen/qwen3-coder for the cheapest/broadest-citation
+    option, or any OpenRouter slug."""
     return os.environ.get("MEGABRAIN_ASK_MODEL") or \
-        ("haiku" if chat_provider() == "claude" else "qwen/qwen3-coder")
+        ("haiku" if chat_provider() == "claude" else "google/gemini-3-flash-preview")
 
 
 def rerank_model() -> str:

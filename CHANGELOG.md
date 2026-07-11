@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+- **Serve-from-cache: a repeated `ask` costs $0 and ~0 ms.** Flows now store the
+  RENDERED answer (prose + real code spliced from disk) and TWO vectors —
+  question+prose (the attach lane) and question-only (the serve lane, so prose
+  length can't dilute an identical question). When a question near-exactly
+  matches a cached flow (qscore ≥ 0.88) AND every cited file is still
+  byte-identical (sha recheck at serve time — stale code is never served), the
+  cached answer returns verbatim with no LLM call: measured 6.9 s → **0.02 s**
+  (345×) on a repeat ask; a re-worded near-exact variant also serves. Wired in
+  `ask()` (MCP/library) and `stream_ask` (CLI); `render_ask` shows "⚡ served
+  from flow cache". Dedup now keys on the question lane (two narrations of one
+  question replace, not accumulate). Paraphrases in the 0.62–0.88 band attach
+  as context and narrate fresh, as before.
+- **Default ask model → `google/gemini-3-flash-preview`** — measured ~2× faster
+  than qwen3-coder on a real walkthrough (~6-7 s vs ~14 s) at comparable
+  quality ($0.50/$3.00 vs $0.22/$1.80 per M). `MEGABRAIN_ASK_MODEL=qwen/
+  qwen3-coder` for the cheapest/broadest-citation option; Claude provider
+  default unchanged (haiku).
+- **docs/GUIDE**: query-vs-ask decision table (aimed at LLM agents calling the
+  MCP), the three flow-cache tiers with the measured numbers, updated model
+  table.
+
 - **Flow cache — self-caching workflow retrieval** (`megabrain/flows.py`).
   **Opt-in, OFF by default** — a mode a dev turns on per repo
   (`megabrain flows --enable`, implied by `--warm-flows`; env

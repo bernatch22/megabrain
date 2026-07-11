@@ -76,7 +76,8 @@ def _flow_ctx(res: dict) -> str:
     flows = res.get("flows") or []
     if not flows:
         return ""
-    parts = [f'(cached from: "{f["question"]}")\n{f["text"]}' for f in flows]
+    from .flows import strip_code
+    parts = [f'(cached from: "{f["question"]}")\n{strip_code(f["text"])}' for f in flows]
     return ("\nKNOWN FLOW — a walkthrough of this workflow synthesized by a "
             "previous ask over the SAME code (context only; do NOT cite it — "
             "cite only the numbered chunks below):\n\n"
@@ -224,6 +225,19 @@ def ask(root: Path, question: str, rerank: bool = False,
     cands = _candidates(res, docs_only, include_docs)
     key = providers.find_chat_key(required=False)
     text, llm_ms, trace = "", 0, None
+
+    # SERVE-FROM-CACHE: a near-exact cached flow whose code is still current is
+    # returned verbatim — no LLM, instant, zero cost. (Only when not docs-mode;
+    # the sha recheck in serve_verbatim keeps it from ever serving stale code.)
+    if not docs_only and not include_docs:
+        from .flows import serve_verbatim
+        served = serve_verbatim(root, res.get("flows") or [])
+        if served:
+            return {"result": res, "cands": cands, "text": served["text"],
+                    "file_syms": {}, "retrieval_ms": retrieval_ms, "llm_ms": 0,
+                    "served_from_cache": True, "query": question,
+                    "repo": res["repo"], "agents": None}
+
     if key and cands:
         t1 = time.time()
         if agents is not False:
@@ -248,12 +262,14 @@ def ask(root: Path, question: str, rerank: bool = False,
     out = {"result": res, "cands": cands, "text": text, "file_syms": file_syms,
            "retrieval_ms": retrieval_ms, "llm_ms": llm_ms,
            "query": question, "repo": res["repo"], "agents": trace}
-    # WRITE PATH of the flow cache: a successful cited walkthrough is a
-    # workflow worth remembering. Fail-open by construction (flows.cache_flow
-    # swallows every error) and reuses st.emb — no provider surprises.
-    if text:
+    # WRITE PATH of the flow cache: a successful cited walkthrough is a workflow
+    # worth remembering. We cache the SPLICED BODY (prose + real code from disk,
+    # no header/footer) so a near-exact later question can be served verbatim
+    # without an LLM. Fail-open by construction; reuses st.emb.
+    if text and _SEL.search(text):
         from .flows import cache_flow
-        cache_flow(Path(root), question, text, cited_files(out), emb=st.emb)
+        body, _, _ = _splice(out)
+        cache_flow(Path(root), question, body, cited_files(out), emb=st.emb)
     return out
 
 
@@ -270,10 +286,11 @@ def cited_files(out: dict) -> list[str]:
     return files
 
 
-def render_ask(out: dict) -> str:
+def _splice(out: dict) -> tuple[str, set, set]:
+    """Replace every [[k]]/[[k:lo-hi]] citation in out["text"] with its verbatim
+    code block. Returns (body, seen spans, cited candidate indices). The body is
+    also what the flow cache stores — prose + real code, no header/footer."""
     cands, text = out["cands"], out["text"]
-    if not text or not _SEL.search(text):
-        return render(out["result"])  # fail-open: unfiltered bundle
     seen: set = set()
     cited: set = set()
 
@@ -286,7 +303,21 @@ def render_ask(out: dict) -> str:
         hi = int(m.group(3)) if m.group(3) else None
         return _code_block(cands[k], lo, hi, seen, out.get("file_syms", {}))
 
-    body = _SEL.sub(sub, text).strip()
+    return _SEL.sub(sub, text).strip(), seen, cited
+
+
+def render_ask(out: dict) -> str:
+    text = out["text"]
+    if out.get("served_from_cache"):
+        # already a fully rendered body (cached from a previous splice) — wrap
+        # it in a fresh header; never fall through to the citation path.
+        return (f'# megabrain — "{out["query"]}"\n'
+                f'repo `{out["repo"]}` · ⚡ served from flow cache · '
+                f'{out["retrieval_ms"]}ms retrieval + 0ms explain\n\n{text}')
+    if not text or not _SEL.search(text):
+        return render(out["result"])  # fail-open: unfiltered bundle
+    cands = out["cands"]
+    body, seen, cited = _splice(out)
     n_files = len({cands[k]["file"] for k in cited})
     L = [f'# megabrain — "{out["query"]}"',
          f'repo `{out["repo"]}` · {len(seen)} code spans · {n_files} files · '
@@ -321,6 +352,27 @@ def stream_ask(root: Path, question: str, out=None, rerank: bool = False,
     def write(s: str):
         out.write(s)
         out.flush()
+
+    # SERVE-FROM-CACHE (flow mode only — a no-op when off, the default): a
+    # near-exact cached flow whose code is still byte-identical prints instantly
+    # with no LLM. Costs one retrieval; on a miss, stream_events re-retrieves
+    # (accepted: the mode is opt-in and the hit saves a whole LLM call).
+    from .flows import enabled as _flows_on
+    if not docs_only and not include_docs and _flows_on(root):
+        try:
+            from .flows import serve_verbatim
+            from .retrieval.query import load_state, search_with_state
+            _st = load_state(Path(root))
+            _res = search_with_state(_st, question, path_filter=path_filter)
+            served = serve_verbatim(root, _res.get("flows") or [])
+            if served:
+                write(f'# megabrain — "{question}"\n')
+                write(f'repo `{_res["repo"]}` · ⚡ served from flow cache '
+                      f'(cached ask: "{served["question"][:70]}") · 0ms explain\n\n')
+                write(served["text"].rstrip() + "\n")
+                return
+        except Exception:
+            log.debug("flow serve check failed; streaming normally", exc_info=True)
 
     def sink(ev: dict):
         t = ev["type"]

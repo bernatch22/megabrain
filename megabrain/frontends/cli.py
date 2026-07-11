@@ -244,7 +244,7 @@ def main(argv=None):
                   "megabrain flows --enable   ·   or pre-fill: megabrain flows --warm")
             return
         with Store(root) as s:
-            metas, _ = s.load_flows()
+            metas, _, _ = s.load_flows()
             if a.clear:
                 for m in metas:
                     s.delete_flow(m["id"])

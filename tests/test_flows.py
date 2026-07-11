@@ -18,9 +18,13 @@ TURN = ('def on_vad_start(state):\n    """barge in: interrupt the speaking bot."
 OTHER = "def unrelated_billing(x):\n    return x * 42\n"
 
 FLOW_Q = "where is barge in handled when the user interrupts the bot"
-FLOW_TEXT = ("## Barge-in flow\nVoice activity detection detect_voice accumulates "
-             "energy [[0]] then on_vad_start interrupts the speaking bot and "
-             "cancels tts [[1]].")
+# a RENDERED answer: prose + real code blocks (what render_ask produces and what
+# cache_flow now stores, so a near-exact question can be served verbatim).
+FLOW_TEXT = (
+    "## Barge-in flow\nVoice activity detection accumulates energy then interrupts "
+    "the speaking bot and cancels tts.\n\n"
+    "**`vad.py` L1-3**\n```python\n" + VAD + "```\n\n"
+    "**`turn.py` L1-3**\n```python\n" + TURN + "```\n")
 
 
 @pytest.fixture
@@ -49,9 +53,45 @@ def test_cache_and_paraphrase_retrieval(repo):
     fl = res["flows"][0]
     assert fl["question"] == FLOW_Q
     assert fl["files"] == ["turn.py", "vad.py"]
-    assert "[[" not in fl["text"], "citation markers are stripped before caching"
+    assert "```" in fl["text"], "the rendered answer (with code) is stored for serving"
     # and it renders as a labeled section, never silently
     assert "KNOWN FLOW" in render(res)
+
+
+def _matched_flow(repo, score):
+    """A match_flows-shaped entry with REAL shas of the repo's current files.
+    qscore constructed (FakeEmbedder can't reproduce pplx): serve reads the
+    QUESTION-ONLY lane — identical question ≈ 1.0, a paraphrased question sits
+    well under FLOW_SERVE_SIM=0.88, so prose length can't dilute the signal."""
+    import hashlib
+    sha = {f: hashlib.sha256((repo / f).read_text().encode()).hexdigest()
+           for f in ("vad.py", "turn.py")}
+    return [{"question": FLOW_Q, "text": FLOW_TEXT,
+             "files": ["turn.py", "vad.py"], "sha": sha,
+             "score": score, "qscore": score}]
+
+
+def test_near_exact_question_is_served_without_llm(repo):
+    """score >= FLOW_SERVE_SIM + unchanged code -> served verbatim, no LLM."""
+    from megabrain.flows import serve_verbatim
+    served = serve_verbatim(repo, _matched_flow(repo, 0.93))
+    assert served is not None and "```" in served["text"]
+
+
+def test_paraphrase_attaches_but_is_not_served(repo):
+    """score in the attach band (0.62-0.88) must NOT serve — it narrates fresh
+    with the flow as context."""
+    from megabrain.flows import serve_verbatim
+    assert serve_verbatim(repo, _matched_flow(repo, 0.70)) is None
+
+
+def test_serve_refuses_when_code_changed(repo):
+    """The sha recheck: even at serve-level similarity, a cited file that
+    changed since caching means NO verbatim serve — never stale code."""
+    from megabrain.flows import serve_verbatim
+    flows = _matched_flow(repo, 0.93)
+    (repo / "turn.py").write_text(TURN + "\n    x = 1\n")   # code moved on
+    assert serve_verbatim(repo, flows) is None
 
 
 def test_flow_files_are_pure_additions(repo):
@@ -86,7 +126,7 @@ def test_refresh_updates_instead_of_expiring(repo, monkeypatch):
     assert rep["refreshed"] == 1 and rep["dropped"] == 0
     assert asked == [FLOW_Q]                       # re-asked the ORIGINAL question
     with Store(repo) as s:
-        metas, _ = s.load_flows()
+        metas, _, _ = s.load_flows()
     assert len(metas) == 1 and "Updated" in metas[0]["text"]
 
 
@@ -96,7 +136,7 @@ def test_sha_invalidation_on_reindex(repo):
     stats = index_repo(repo, quiet=True)
     assert stats["stale_flows_pruned"] == 1
     with Store(repo) as s:
-        metas, _ = s.load_flows()
+        metas, _, _ = s.load_flows()
     assert metas == [], "a flow must die with the code it cites"
 
 
@@ -104,7 +144,7 @@ def test_near_duplicate_replaces(repo):
     _cache(repo)
     _cache(repo)                       # identical -> replaces, not accumulates
     with Store(repo) as s:
-        metas, _ = s.load_flows()
+        metas, _, _ = s.load_flows()
     assert len(metas) == 1
 
 

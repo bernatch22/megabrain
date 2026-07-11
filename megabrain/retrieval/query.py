@@ -99,6 +99,7 @@ class SearchState:
     # embed call — retrieval never embeds twice, never calls an LLM).
     flows: list | None = None
     FL: np.ndarray | None = None
+    FLQ: np.ndarray | None = None
     qv: np.ndarray | None = None
 
 
@@ -113,9 +114,9 @@ def load_state(root: Path, check_same_thread: bool = True) -> SearchState:
     # repo, flows stay empty and the read path below is a pure no-op — plain
     # query/ask behave exactly as before, at zero cost.
     from ..flows import enabled as _flows_on
-    flows, FL = store.load_flows() if _flows_on(root) else ([], None)
+    flows, FL, FLQ = store.load_flows() if _flows_on(root) else ([], None, None)
     return SearchState(store, Embedder(), metas, M, fpaths, fskels, F, repo,
-                       flows=flows, FL=FL)
+                       flows=flows, FL=FL, FLQ=FLQ)
 
 
 def _score_chunks(st: SearchState, query: str,
@@ -318,7 +319,7 @@ def search_with_state(st: SearchState, query: str, rerank: bool = False,
     flows_out = []
     if st.flows and st.qv is not None:
         from ..flows import FLOW_FILE_ADDS, match_flows
-        flows_out = match_flows(st.flows, st.FL, st.qv)
+        flows_out = match_flows(st.flows, st.FL, st.qv, st.FLQ)
         have = {t["file"] for t in out_t1} | {t["file"] for t in out_t2}
         adds = 0
         for fl in flows_out:
