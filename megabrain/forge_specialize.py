@@ -234,21 +234,66 @@ HARD REQUIREMENTS — validation rejects any violation:
    derived mechanically) — never compute end_lines independently, that is how
    gaps happen. Chunk text is ALWAYS the verbatim slice
    `"".join(lines[s-1:e])`. Empty file -> FileResult(relpath, [], [], "", True, 0).
-2. For the data-table shape: emit ~one chunk per SMALL GROUP of entries — aim
-   for ~300-600 non-whitespace chars per chunk via `nws` (roughly 3-8 entries),
-   NOT the full 4000 budget: tight chunks are the whole point, they are what
-   lifts span precision. Plus a header chunk (text before the table) and a tail
-   chunk (after it) if present. Name each chunk after what it contains;
-   breadcrumb `repo > path > name`. One Symbol per named entry.
-3. `_is_special` MUST be precise: it returns False for the normal files so they
+2. CHUNK-SIZE PRIORS (empirical — arxiv 2605.04763): ~2000 non-whitespace chars
+   per chunk (via `nws`) is the measured retrieval optimum for ordinary code;
+   both much bigger (4000 blobs) and much smaller lose. Go tighter (~500-800)
+   ONLY for genuine data-table shapes (one chunk per small group of entries),
+   never for normal functions/methods. Test/spec/docs files should DELEGATE —
+   their tiny blocks fragment badly under small budgets.
+3. YOUR BAR IS HIGH: you compete against a literature-tuned baseline (the same
+   AST chunker at budget 2000 with tests delegated), not against the naive
+   default. Generic re-budgeting is already taken — win by exploiting what is
+   SPECIFIC to these files (their shape, their sections, their naming), and by
+   delegating precisely where the baseline hurts. Name each chunk after what it
+   contains; breadcrumb `repo > path > name`; one Symbol per named entity.
+4. `_is_special` MUST be precise: it returns False for the normal files so they
    delegate. When in doubt, delegate.
-4. Only stdlib + the three imports shown. Deterministic. `.finalize()` every Chunk.
+5. Only stdlib + the three imports shown. Deterministic. `.finalize()` every Chunk.
 {fb}
 SAMPLE FILES (the shape to specialize):
 
 {shown}
 
 Reply with ONE ```python code block: the complete module. Nothing else."""
+
+
+def lit_baseline(ext: str, repo: str = ""):
+    """The literature-tuned reference the LLM must beat: the built-in chunker
+    for `ext` re-budgeted to 2000 nws (the measured retrieval optimum, arxiv
+    2605.04763) on library code, with test/spec/docs files delegating to the
+    4000 default. Free, deterministic, repo-agnostic — so an LLM strategy that
+    can't beat it adds nothing and must not install. Returns None when the
+    ext's chunker can't be re-budgeted (the gate then falls back to built-in)."""
+    from .indexing.strategies import builtin_strategy_for
+
+    lit = builtin_strategy_for(ext, repo)
+    fallback = builtin_strategy_for(ext, repo)
+    if lit is None:
+        return None
+    try:                                    # re-budget the inner chunker
+        c = lit._chunker
+        spec = getattr(c, "spec", None)
+        lit._chunker = (type(c)(spec, budget=2000, repo=repo) if spec is not None
+                        else type(c)(budget=2000, repo=repo))
+    except Exception:                                       # noqa: BLE001
+        return None
+
+    class _LitBaseline:
+        exts = (ext,)
+
+        def chunk_file(self, relpath, source):
+            low = relpath.lower()
+            if "test" in low or "spec" in low or "/docs/" in low:
+                return fallback.chunk_file(relpath, source)
+            return lit.chunk_file(relpath, source)
+
+        def build_edge_ctx(self, sources, repo_name):
+            return None
+
+        def extract_edges(self, relpath, source, ctx):
+            return None
+
+    return _LitBaseline()
 
 
 def _ext_files(root: Path, ext: str, exclude=()) -> list[str]:
@@ -319,15 +364,19 @@ def specialize(root, ext: str | None = None, dry_run: bool = False,
     with ThreadPoolExecutor(max_workers=min(4, len(opps) or 1)) as pool:
         gens = list(pool.map(lambda o: _generate_one(root, o, root.name, mdl, attempts), opps))
 
-    # GATE + install sequentially (each gate re-indexes; keep it serial). A
-    # partition-valid candidate that LOSES the gate gets ONE regeneration with
-    # the measured result as feedback — the metric closes the loop.
+    # GATE + install sequentially (each gate re-indexes; keep it serial). The
+    # reference is the literature-tuned baseline when available — the LLM must
+    # beat the free recipe, not the naive default. A partition-valid candidate
+    # that LOSES gets ONE regeneration with the measured result as feedback.
     kw = {} if margin is None else {"margin": margin}
     for opp, gen in zip(opps, gens):
         e = {k: gen[k] for k in ("ext", "count", "target", "attempts", "ok", "validation")}
         if not gen["ok"]:
             report["specialized"].append(e)
             continue
+        base = lit_baseline(gen["ext"], root.name)
+        kw["baseline"] = base
+        e["baseline"] = "lit-2000" if base else "builtin"
         gate = ab_gate(root, _load(gen["code"], root.name, gen["ext"]), **kw)
         if not gate["win"] and "delta_iou" in gate:
             fb = (f"Your previous strategy was VALID but the retrieval gate rejected "
@@ -338,7 +387,8 @@ def specialize(root, ext: str | None = None, dry_run: bool = False,
                   f"contains — tight chunks are what lifts span precision.")
             regen = _generate_one(root, opp, root.name, mdl, attempts, feedback=fb)
             if regen["ok"]:
-                gate2 = ab_gate(root, _load(regen["code"], root.name, regen["ext"]), **kw)
+                gate2 = ab_gate(root, _load(regen["code"], root.name, regen["ext"]),
+                                **kw)
                 if gate2.get("win"):
                     gen, gate = regen, gate2
                     e.update(attempts=gen["attempts"] + attempts,

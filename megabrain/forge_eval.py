@@ -162,16 +162,17 @@ def _measure(root: Path, target: str, probes) -> dict:
             **{f"hit@{k}": round(hits[k] / n, 4) for k in TOPK}, "n": len(probes)}
 
 
-def changed_files(root: Path, candidate) -> list[str]:
-    """Files whose chunk spans the candidate changes vs the built-in — exactly
-    the files whose retrieval could move, so exactly what the gate must measure
-    (a shape-router touches a family, not just the one target)."""
+def changed_files(root: Path, candidate, baseline=None) -> list[str]:
+    """Files whose chunk spans the candidate changes vs the reference chunking
+    (`baseline` strategy, default the built-in) — exactly the files whose
+    retrieval could move, so exactly what the gate must measure (a shape-router
+    touches a family, not just the one target)."""
     from .indexing.strategies import builtin_strategy_for
     root = Path(root).resolve()
     names = {".git", "node_modules", "__pycache__", ".megabrain", "dist", "build"}
     out = []
     for ext in candidate.exts:
-        builtin = builtin_strategy_for(ext, root.name)
+        builtin = baseline or builtin_strategy_for(ext, root.name)
         for p in sorted(root.rglob(f"*{ext}")):
             if not p.is_file() or set(p.relative_to(root).parts) & names:
                 continue
@@ -201,31 +202,49 @@ MIN_MEDIAN_NWS = 100       # degenerate-granularity floor for changed files
 
 
 def _granularity_violation(root: Path, candidate, files: list[str]) -> str | None:
-    """Reject micro-chunking outright: on every file the candidate changes, the
-    median chunk must carry >= MIN_MEDIAN_NWS non-whitespace chars. 1-line
-    chunks can win span geometry while embedding as noise — this floor makes
-    that whole family of metric-gaming un-installable, before any indexing."""
+    """Reject micro-chunking outright: 1-line chunks can win span geometry
+    while embedding as noise. A file violates when the candidate's median
+    chunk is under MIN_MEDIAN_NWS non-whitespace chars AND substantially finer
+    than the BUILT-IN's median on the same file — a small file whose chunks
+    are naturally small is not the candidate's doing and must not veto the
+    whole strategy. Checked before any indexing (cheap)."""
     from .chunkers.base import nws
+    from .indexing.strategies import builtin_strategy_for
+
+    def median_nws(strat, f, src):
+        r = strat.chunk_file(f, src)
+        if not r.chunks:
+            return None
+        sizes = sorted(nws(c.text) for c in r.chunks)
+        return sizes[len(sizes) // 2]
+
+    builtins = {ext: builtin_strategy_for(ext, root.name) for ext in candidate.exts}
     for f in files:
+        src = (root / f).read_text(errors="replace")
         try:
-            r = candidate.chunk_file(f, (root / f).read_text(errors="replace"))
+            med = median_nws(candidate, f, src)
         except Exception as e:                              # noqa: BLE001
             return f"{f}: chunk_file raised {type(e).__name__}: {e}"
-        if not r.chunks:
+        if med is None or med >= MIN_MEDIAN_NWS:
             continue
-        sizes = sorted(nws(c.text) for c in r.chunks)
-        med = sizes[len(sizes) // 2]
-        if med < MIN_MEDIAN_NWS:
+        ext = "." + f.rsplit(".", 1)[-1]
+        base = builtins.get(ext)
+        base_med = median_nws(base, f, src) if base else None
+        if base_med and med < 0.5 * base_med:
             return (f"{f}: median chunk is {med} non-whitespace chars "
-                    f"(< {MIN_MEDIAN_NWS}) — chunks this small embed poorly; "
-                    f"group more content per chunk")
+                    f"(< {MIN_MEDIAN_NWS}, and <50% of the built-in's "
+                    f"{base_med}) — chunks this small embed poorly; group "
+                    f"more content per chunk")
     return None
 
 
 def ab_gate(root: Path, candidate, targets=None, margin: float = IOU_MARGIN,
-            regress_tol: float = 0.01) -> dict:
-    """Measure the candidate against the built-in on EVERY file it changes (not
-    just one target), against the real index. WIN requires ALL of:
+            regress_tol: float = 0.01, baseline=None) -> dict:
+    """Measure the candidate against a reference chunking on EVERY file it
+    changes (not just one target), against the real index. The reference is the
+    built-in by default; pass `baseline` (e.g. the literature-tuned budget-2000
+    strategy) to raise the bar — a candidate that can't beat the free recipe
+    adds nothing and must not install. WIN requires ALL of:
 
       1. pooled top-chunk IoU lifts by >= margin,
       2. pooled hit@1 does not regress (the tight chunks must still WIN the
@@ -235,7 +254,7 @@ def ab_gate(root: Path, candidate, targets=None, margin: float = IOU_MARGIN,
 
     2 and 4 exist because span-IoU alone is gameable by 1-line chunks."""
     root = Path(root).resolve()
-    files = targets if targets is not None else changed_files(root, candidate)
+    files = targets if targets is not None else changed_files(root, candidate, baseline)
     if not files:
         return {"win": False, "reason": "candidate changes no files", "files": []}
     gran = _granularity_violation(root, candidate, files)
@@ -247,7 +266,7 @@ def ab_gate(root: Path, candidate, targets=None, margin: float = IOU_MARGIN,
     if not probes:
         return {"win": False, "reason": "no probe spans on changed files", "files": files}
 
-    base_tmp, base_dst = _index_copy(root, None)
+    base_tmp, base_dst = _index_copy(root, baseline)
     cand_tmp, cand_dst = _index_copy(root, candidate)
     try:
         per_file, pooled_b, pooled_c, hit_b, hit_c = {}, [], [], [], []
