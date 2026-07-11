@@ -93,11 +93,15 @@ COVERED types the built-in chunks poorly (dominant data table / blob / line-wind
 fallback), parallel LLMs write shape-routers (special shape → tight chunks, everything
 else delegates to `builtin_strategy_for` byte-identically). Partition is necessary but
 not sufficient here, so installs are gated by a measured retrieval A/B: neutral probe
-spans from the file's own structure, span-IoU + hit@k on every changed file, win =
-pooled IoU lift ≥0.01 with no per-file regression; a losing candidate gets one
-regeneration seeded with the measured result. Validated on psf/requests
-status_codes.py: IoU 0.009→0.132 (14×), beat the hand-written reference. Tests:
-`tests/test_forge_specialize.py` (offline: fake LLM + FakeEmbedder drive the real gate).
+spans from the file's own structure; **rank-aware span-IoU** (the file's TOP-ranked
+chunk vs the true span — NOT best-over-all-chunks, which micro-chunking games) + global
+hit@k on every changed file. Win = pooled IoU lift ≥0.01 AND hit@1 held AND no per-file
+regression AND median chunk ≥100 nws (granularity floor); a losing candidate gets one
+regeneration seeded with the measured result. Strict-gate results: requests
+status_codes.py IoU 0.010→0.076 / hit@1 0.23→0.47; sinatra .rb 0.037→0.115; an express
+micro-chunk candidate (old metric's "0.55 win") measures Δ-0.001 with hit@1 regressing
+and is REJECTED. Tests: `tests/test_forge_specialize.py` (offline: fake LLM +
+FakeEmbedder drive the real gate, incl. the micro-chunking rejection).
 
 Priority 1 (chunking-strategy registry) is
 **done**: a `strategies.py` maps extension → chunk strategy, so the indexer is content-

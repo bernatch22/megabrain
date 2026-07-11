@@ -3,12 +3,13 @@
 # specialization generates; NOT hand-edited (the leftover scaffold comments
 # below and the simplified _extract_symbol end_line are the model's own).
 #
-# It installed only after WINNING the measured A/B gate (forge_eval.ab_gate):
-# pooled span-IoU 0.049 -> 0.171 (3.5x) across the 15 .rb files it changed,
-# every one improved, worst-file +0.064. Diagnosis: Ruby classes with many
-# short methods get merged to the 4000-char budget into one blob, so a query
-# for one method retrieves the whole class. This router cuts per-method (~500
-# nws, snapping to `def`) and delegates every other file to the built-in.
+# It installed only after WINNING the measured A/B gate (forge_eval.ab_gate),
+# re-verified under the STRICT gate (rank-aware IoU + hit@1 + granularity
+# floor): pooled top-chunk span-IoU 0.037 -> 0.115 (3x), hit@1 0.29 -> 0.35,
+# worst touched file still +0.013. Diagnosis: Ruby classes with many short
+# methods get merged to the 4000-char budget into one blob, so a query for one
+# method retrieves the whole class. This router cuts per-method (~500 nws,
+# snapping to `def`) and delegates every other file to the built-in.
 #
 # See examples/forged/README.md for the full run + a qualitative query.
 

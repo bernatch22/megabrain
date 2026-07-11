@@ -16,12 +16,18 @@
   partition-valid chunker can still be *worse* than the built-in, installs are
   gated by a **measured retrieval A/B** (`forge_eval.ab_gate`): neutral probe
   spans derived from the file's own structure (no labels, no LLM), both
-  variants indexed for real, span-IoU + hit@k scored on every file the
-  candidate changes; win = pooled IoU lift ≥ 0.01 with no per-file regression,
-  and a losing candidate gets one regeneration seeded with the measured
-  result. Validated on psf/requests `status_codes.py`: IoU 0.009 → 0.132
-  (14×), hit@1 0.50 → 0.71, every other `.py` byte-identical — the forged
-  router beat the hand-written reference (0.098) under the same gate.
+  variants indexed for real, and **rank-aware span-IoU** — the file's
+  top-ranked chunk vs the true span, what retrieval actually surfaces — plus
+  global hit@k scored on every file the candidate changes. Win requires the
+  pooled IoU lift ≥ 0.01 AND hit@1 held AND no per-file regression AND no
+  micro-chunking (median chunk ≥ 100 nws, rejected before any indexing); a
+  losing candidate gets one regeneration seeded with the measured result. The
+  strict gate earned its clauses in the wild: a candidate that scored a fake
+  "0.55 IoU win" via median 1-line chunks measures Δ-0.001 with hit@1
+  regressing under it, and is rejected. Wins that survive: psf/requests
+  `status_codes.py` IoU 0.010 → 0.076 / hit@1 0.23 → 0.47 (2×); sinatra `.rb`
+  IoU 0.037 → 0.115 with zero per-file regressions — all other files
+  byte-identical in both.
 
 ## 0.6.0 — 2026-07-11
 

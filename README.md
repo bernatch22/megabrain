@@ -141,14 +141,24 @@ tight, named chunks and *delegates every normal file to the built-in chunker
 unchanged*. And because a valid-but-worse chunker is a real risk here, partition
 alone isn't enough — the candidate must also **win a measured retrieval A/B**:
 neutral probe spans are derived from the file's own structure (no labels, no
-LLM), both variants are indexed for real, and the candidate installs only if it
-lifts span-IoU without regressing any file it touches. If it loses, the measured
-result feeds back into one regeneration; if it still loses, nothing installs.
+LLM), both variants are indexed for real, and the candidate installs only if
+the file's *top-ranked* chunk gets tighter (span-IoU) **and** hit@1 holds
+**and** no touched file regresses **and** nothing is micro-chunked. If it
+loses, the measured result feeds back into one regeneration; if it still
+loses, nothing installs.
 
-Real run on [psf/requests](https://github.com/psf/requests): the built-in left
-`status_codes.py` (a 68-entry HTTP-status dict) as one blob — span-IoU 0.009.
-The forged shape-router hit **0.132 (14×)** with every other `.py` file chunked
-byte-identically, and was installed after winning the gate in ~21 s.
+Real runs, strict gate:
+- [psf/requests](https://github.com/psf/requests) — the built-in left
+  `status_codes.py` (a 68-entry HTTP-status dict) as one blob. Forged router:
+  top-chunk IoU **0.010 → 0.076**, hit@1 **0.23 → 0.47 (2×)**, every other
+  `.py` file byte-identical.
+- [sinatra](https://github.com/sinatra/sinatra) — Ruby classes of many short
+  methods blob the same way. Forged per-method router: IoU **0.037 → 0.115
+  (3×)**, hit@1 0.29 → 0.35, worst touched file still +0.013.
+- expressjs/express — **honestly rejected**: the candidate didn't lift IoU and
+  *regressed* hit@1, so nothing installed. (An earlier metric let a 1-line
+  micro-chunker "win" on geometry; the rank-aware IoU + granularity floor now
+  make that whole family of metric-gaming un-installable.)
 
 ## See it live
 

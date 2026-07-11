@@ -81,7 +81,7 @@ def test_probe_spans_are_the_dict_entries(repo):
 
 
 def test_changed_files_is_exactly_the_special_file(repo):
-    strat = _mk_strategy(group=3)(repo="r")
+    strat = _mk_strategy(group=10)(repo="r")
     assert changed_files(repo, strat) == ["table.py"]
 
 
@@ -108,13 +108,21 @@ def test_gate_rejects_a_noop_candidate(repo, fake_embedder):
 
 
 def test_gate_accepts_tight_and_rejects_coarse(repo, fake_embedder):
-    tight = ab_gate(repo, _mk_strategy(group=3)(repo="r"))
+    tight = ab_gate(repo, _mk_strategy(group=10)(repo="r"))
     assert tight["win"] and tight["delta_iou"] > 0
     assert tight["changed_files"] == ["table.py"]
     # a barely-different candidate (2 giant chunks) must not clear the margin
     coarse = ab_gate(repo, _mk_strategy(group=1000)(repo="r"))
     assert not coarse["win"]
     assert coarse["delta_iou"] < tight["delta_iou"]
+
+
+def test_gate_rejects_micro_chunking_outright(repo, fake_embedder):
+    """1-line chunks have perfect span geometry but embed as noise — the
+    granularity floor must reject them BEFORE any indexing happens."""
+    res = ab_gate(repo, _mk_strategy(group=1)(repo="r"))
+    assert not res["win"]
+    assert "degenerate granularity" in res["reason"]
 
 
 def _code_for(group: int) -> str:
@@ -154,7 +162,7 @@ class PySpecialStrategy:
 
 def test_specialize_installs_only_on_win(repo, monkeypatch, fake_embedder):
     monkeypatch.setattr("megabrain.providers.chat_text",
-                        lambda *a, **k: f"```python\n{_code_for(3)}```")
+                        lambda *a, **k: f"```python\n{_code_for(10)}```")
     rep = specialize(repo, ext=".py", quiet=True)
     e = rep["specialized"][0]
     assert e["ok"] and e["gate"]["win"]

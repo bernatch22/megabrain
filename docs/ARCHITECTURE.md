@@ -164,16 +164,25 @@ chunker can be worse than the built-in), so there is a second, empirical gate:
   from the file's own structure (python ast dict-entries/defs; generic
   blank-line blocks otherwise) — no human labels, no LLM, chunker-independent.
 - `forge_eval.ab_gate` indexes built-in vs candidate for real (temp copies,
-  real embeddings) and measures **span-IoU** (overlap of the best retrieved
-  chunk with the true span) + hit@k on EVERY file the candidate changes
-  (`changed_files`), not just the diagnosed target. WIN = pooled IoU lifts ≥
-  0.01 AND no changed file regresses. A losing-but-valid candidate gets ONE
-  regeneration seeded with the measured result; still losing → nothing installs.
+  real embeddings) and measures **rank-aware span-IoU** — the overlap of the
+  file's *top-ranked* chunk with the true span, i.e. what a user actually gets
+  when the file is retrieved — plus global hit@k, on EVERY file the candidate
+  changes (`changed_files`), not just the diagnosed target. WIN needs all of:
+  pooled IoU lift ≥ 0.01 · pooled hit@1 held · no per-file regression · no
+  micro-chunking (median chunk ≥ 100 nws chars, checked before any indexing).
+  A losing-but-valid candidate gets ONE regeneration seeded with the measured
+  result; still losing → nothing installs.
 
-Measured on psf/requests `status_codes.py` (68-entry dict, one blob under the
-built-in): IoU 0.009 → 0.132 (14×), hit@1 0.50 → 0.71 at probe scale, all other
-`.py` files byte-identical. The LLM-forged router beat the hand-written
-reference (0.098) under the same gate.
+The gate's teeth are empirical: an early best-IoU-over-all-chunks variant let
+an LLM candidate "win" express with median 1-LINE chunks (perfect geometry,
+useless embeddings, pooled 0.55). Rank-aware IoU + the hit@1 clause + the
+granularity floor make that family of metric-gaming un-installable — re-run
+under the strict gate, that candidate measures IoU Δ-0.001 with hit@1
+*regressing* 0.13 → 0.07 and is rejected. Wins that survive: psf/requests
+`status_codes.py` (68-entry dict, one blob under the built-in) IoU 0.010 →
+0.076 with hit@1 0.23 → 0.47 (2×); sinatra `.rb` (many-short-method classes)
+IoU 0.037 → 0.115 with hit@1 held and the worst touched file still +0.013 —
+all other files byte-identical in both cases.
 
 ---
 
