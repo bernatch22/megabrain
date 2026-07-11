@@ -10,9 +10,10 @@ Tools:
   megabrain_chunks(repo_path, file, query)    -> every chunk of one file, scored + selected flags
   megabrain_index(repo_path)                  -> incremental index
   megabrain_forge(repo_path, ext?, list_only?, dry_run?, specialize?)
-      -> detect uncovered file types; LLM-generate + partition-validate + install
-         a chunking strategy per type (repo-local, trust-gated). specialize=true
-         re-chunks poorly-chunked COVERED types, gated by a measured A/B win
+      -> COVERAGE: detect uncovered file types; LLM-generate + partition-validate
+         + install a chunker per type (repo-local, trust-gated). specialize=true
+         only lists poorly-chunked covered files (LLM specialization was removed;
+         hand-write + gate via forge_specialize.gate_strategy)
 
 Run: python3 -m megabrain.mcp_server
 Register (claude code):
@@ -130,21 +131,20 @@ TOOLS = [
     {
         "name": "megabrain_forge",
         "description": (
-            "Make megabrain index file types it currently can't. Detects the repo's "
-            "uncovered text extensions (e.g. .toml, .yaml, .astro, .proto), then for "
-            "each one an LLM writes a chunking strategy from real sample files, which "
-            "is only accepted after chunking EVERY matching file with a clean "
-            "exact-line-partition (repair loop on failure, nothing unvetted is ever "
-            "installed). The vetted strategy lands in .megabrain/strategies/ and is "
-            "trusted, so every future index/auto-refresh loads it automatically. Use "
-            "when queries miss content because its file type isn't indexed. "
-            "list_only=true for the free census; dry_run=true to inspect the generated "
-            "code without installing. specialize=true switches to SPECIALIZATION mode: "
-            "instead of uncovered types, it targets ALREADY-covered files the built-in "
-            "chunks poorly (giant data tables, blobs) and installs a shape-router "
-            "strategy only if it WINS a measured retrieval A/B (span-IoU) against the "
-            "built-in — normal files keep chunking identically. ~10-60s per extension "
-            "when generating (specialize adds ~30-60s for the measured gate)."),
+            "Make megabrain index file types it currently can't (COVERAGE forge). "
+            "Detects the repo's uncovered text extensions (e.g. .toml, .yaml, .astro, "
+            ".proto), then for each one an LLM writes a chunking strategy from real "
+            "sample files, only accepted after chunking EVERY matching file with a "
+            "clean exact-line partition (repair loop on failure — nothing unvetted "
+            "installs). The vetted strategy lands in .megabrain/strategies/, trusted, "
+            "and loads on every future index. Use when queries miss content because "
+            "its file type isn't indexed. list_only=true = free census; dry_run=true = "
+            "inspect the generated code without installing. specialize=true returns "
+            "the census of poorly-chunked ALREADY-covered files (NOTE: the LLM path "
+            "for specialization was removed — it lost to a deterministic recipe; "
+            "hand-write a strategy into .megabrain/strategies/ and gate it with the "
+            "Python API forge_specialize.gate_strategy, which installs it only on a "
+            "measured retrieval win). ~10-60s per extension when generating."),
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -152,11 +152,11 @@ TOOLS = [
                 "ext": {"type": "string",
                         "description": "forge one extension only, e.g. '.toml'; omit to forge every detected candidate"},
                 "list_only": {"type": "boolean",
-                              "description": "just return the census (no LLM call): uncovered extensions, or poorly-chunked files with specialize=true"},
+                              "description": "just return the census (no LLM call)"},
                 "dry_run": {"type": "boolean",
                             "description": "generate + validate but do not install or reindex; the report includes the generated code"},
                 "specialize": {"type": "boolean",
-                               "description": "specialization mode: re-chunk poorly-chunked COVERED file types, gated by a measured retrieval A/B win"},
+                               "description": "return the census of poorly-chunked COVERED files (no LLM; strategies are hand-written + gated via gate_strategy)"},
             },
             "required": ["repo_path"],
         },

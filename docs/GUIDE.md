@@ -41,6 +41,7 @@ Override either by env: `MEGABRAIN_EMBED_MODEL`, `MEGABRAIN_ASK_MODEL`.
 |---|---|
 | **Claude to narrate** (subscription credits, zero keys) | `pip install 'megabrain[claude]'` + be logged into Claude Code → auto-detected. Or `ANTHROPIC_API_KEY=…` to bill the API. Embeddings still need OpenRouter/local (Anthropic has no embeddings API). |
 | **A specific model** | `MEGABRAIN_ASK_MODEL=anthropic/claude-haiku-4.5` (any OpenRouter slug) |
+| **Gemini Flash for ask** | `MEGABRAIN_ASK_MODEL=google/gemini-2.5-flash` — works, comparable quality. Measured: ~13 s vs qwen3-coder's ~14 s on a real walkthrough — *marginally* faster, not dramatically, because `ask` is output-bound (a long walkthrough dominates, not model latency). Flash shines more on the short internal calls (the ask-v2 planner, rerank, warmup planner). |
 | **Fully local, no keys** (Ollama/LM Studio/vLLM) | `MEGABRAIN_EMBED_BASE_URL=http://localhost:11434/v1 MEGABRAIN_EMBED_MODEL=embeddinggemma` + `MEGABRAIN_CHAT_BASE_URL=…`. Localhost needs no key. ⚠️ measured caveat: small general embedders (embeddinggemma) are noticeably weaker on code than pplx — good for offline, not for best recall. |
 | **Perplexity direct** (not via OpenRouter) | `MEGABRAIN_EMBED_BASE_URL=https://api.perplexity.ai` + `PERPLEXITY_API_KEY=…` (auto-picked) |
 
@@ -61,11 +62,67 @@ megabrain get   ~/repo src/x.py --symbol Foo # pull one file/symbol to expand
   disk**, so nothing is hallucinated. Broad questions fan out into parallel
   sub-agents, then a parent synthesizes.
 
-MCP (Claude Code / Cursor): `claude mcp add megabrain -- python3 -m megabrain.mcp_server`.
+---
+
+## 4. Use it from a coding agent (MCP) — the main way
+
+This is what megabrain is *for*: give a coding agent (Claude Code, Cursor,
+Windsurf, any MCP client) one tool that replaces a dozen `grep`/`read`/explore
+turns with a single grounded answer.
+
+### Register the server
+
+```bash
+# Claude Code
+claude mcp add megabrain -- python3 -m megabrain.mcp_server
+
+# Cursor / Windsurf / generic MCP — add to the client's mcp config:
+{ "mcpServers": { "megabrain": { "command": "python3",
+                                 "args": ["-m", "megabrain.mcp_server"] } } }
+```
+
+The server is stdio, no daemon, no extra deps. It reads the same
+`OPENROUTER_API_KEY` / model env as the CLI. Index the repos you want it to see
+once (`megabrain index ~/repo`); after that the tools auto-refresh a stale index
+before answering.
+
+### The tools an agent gets
+
+| tool | when the agent should reach for it |
+|---|---|
+| **`megabrain_ask`** | **the default.** Any "how/where/why does X work" — returns a senior-engineer walkthrough with the REAL code spliced in, tracing the whole cross-file flow. One call instead of crawling files. |
+| `megabrain_query` | the raw bundle, no LLM (~200 ms) — when the agent wants every related file fast, or to feed its own reasoning. |
+| `megabrain_get` | pull one full file or symbol to expand a citation. |
+| `megabrain_chunks` | every chunk of one file, scored + a "selected" flag — signal-vs-noise inside a file. |
+| `megabrain_index` | index/refresh a repo the agent hasn't seen. |
+| `megabrain_forge` | make a file type the engine can't read yet (`.toml`, `.astro`) searchable. |
+
+`scope_path` on `ask`/`query` confines the answer to a sub-folder
+(`src/auth`); pass comma-separated roots to search several repos at once.
+
+### The one rule that makes it pay off
+
+Put this in your agent's system prompt / rules / a skill:
+
+> **For any question about how the code works — a flow, where something is
+> handled, why a value is what it is — call `megabrain_ask` FIRST, before
+> grepping or reading files. One call returns the whole flow with the real code;
+> only fall back to file-by-file reading if it misses.**
+
+That single instruction is the difference between an agent that burns 15 turns
+reconstructing a flow and one that gets it in a single grounded call — the code
+is spliced verbatim from disk, so nothing it reads is hallucinated.
+
+### With the flow cache on (§7), it compounds
+
+If you `--enable` the flow cache on a team repo, each agent's `ask` leaves its
+synthesized workflow in the index; the next agent (or the next question, worded
+differently) retrieves that whole workflow at once — no extra tool, it rides the
+same `megabrain_ask`/`megabrain_query` calls.
 
 ---
 
-## 4. Chunk budget — 2000 vs 4000, per project
+## 5. Chunk budget — 2000 vs 4000, per project
 
 megabrain chunks code over its syntax tree and **merges small units up to a
 budget** (default **4000 non-whitespace chars**). This is the single most
@@ -88,9 +145,9 @@ guess — you measure it (next section).
 
 ---
 
-## 5. Custom chunkers — how the engine measures a strategy
+## 6. Custom chunkers — how the engine measures a strategy
 
-### 5a. `forge` — index file types the engine can't read yet
+### 6a. `forge` — index file types the engine can't read yet
 
 `.toml`, `.astro`, `.proto`, a private DSL — anything outside the built-in
 languages is invisible to retrieval. `forge` fixes that per repo:
@@ -107,9 +164,9 @@ machine-checkable oracle, so a broken chunker can't corrupt the index. The
 vetted module lands in `.megabrain/strategies/<ext>.py`, sha-recorded in
 `~/.megabrain/trust.json`, and loads automatically on every index thereafter.
 
-### 5b. `--specialize` — a hand-written chunker, *measured* before it installs
+### 6b. `--specialize` — a hand-written chunker, *measured* before it installs
 
-For a covered type chunked poorly (5b's blob/table case), you write the strategy
+For a covered type chunked poorly (the pathological file from §5 — a blob or many-tiny-methods class), you write the strategy
 and the engine decides whether it earns a place. **No LLM writes it** — we tried
 that and it lost to a five-line recipe four times.
 
@@ -141,7 +198,7 @@ doesn't install.
 
 ---
 
-## 6. Flow cache — self-caching workflow retrieval (opt-in)
+## 7. Flow cache — self-caching workflow retrieval (opt-in)
 
 **Off by default.** Plain `query`/`ask` never touch it. Turn it on when a repo
 has several devs and you want megabrain to *accumulate the team's understanding*
@@ -203,7 +260,7 @@ outlive its code. Two behaviors:
 
 ---
 
-## 7. Cheat sheet
+## 8. Cheat sheet
 
 ```bash
 # everyday (nothing opt-in — the tuned default)
