@@ -72,6 +72,9 @@ ignore = ["E501", "B905"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["E402"]   # tests insert the repo root on sys.path before importing
+# examples/forged/* is VERBATIM LLM output kept as an authentic artifact —
+# don't lint the model's import order / unused-import style.
+"examples/forged/*" = ["I001", "F401", "E741", "B007"]
 
 [tool.setuptools.dynamic]
 version = { attr = "megabrain.__version__" }
