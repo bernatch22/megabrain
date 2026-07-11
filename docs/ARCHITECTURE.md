@@ -150,39 +150,38 @@ MCP `megabrain_forge` (`list_only`, `dry_run`, `ext`). Real run on pallets/click
 "which workflow runs the test suite" went from a total miss to
 `.github/workflows/tests.yaml` at #1.
 
-**Specialization (`--specialize`, `forge_specialize.py` + `forge_eval.py`)** is
-the second half: covered file types that the generic chunker splits poorly —
-the detector (`detect_specialization`) diagnoses three shapes: a dominant
-dict/list **table** (proven highest-yield), a **blob** (>55% of a file in one
-chunk), and the **line-window** fallback. Generation fans out in parallel (one
-LLM per extension-opportunity) and must produce a **shape-router**: handle the
-diagnosed shape, `builtin_strategy_for(ext)` for everything else — normal files
-chunk byte-identically. Partition is necessary but NOT sufficient here (a legal
-chunker can be worse than the built-in), so there is a second, empirical gate:
+**Specialization (`--specialize`, `forge_specialize.py` + `forge_eval.py`) is a
+measure-only toolkit — NO LLM.** For a covered file type the generic chunker
+splits poorly, a human writes a `ChunkStrategy` and the engine decides whether
+it earns a place. `detect_specialization` diagnoses three shapes (dominant
+dict/list **table**, **blob** >55% of a file in one chunk, **line-window**
+fallback); `gate_strategy(root, source, ext)` measures the hand-written
+candidate against a literature-tuned baseline (`lit_baseline`: the AST chunker
+re-budgeted to 2000, arxiv 2605.04763) and installs it trust-gated only on a
+measured win. The gate (`forge_eval`):
 
-- `forge_eval.probe_spans` derives neutral ground-truth (query, span) pairs
-  from the file's own structure (python ast dict-entries/defs; generic
-  blank-line blocks otherwise) — no human labels, no LLM, chunker-independent.
-- `forge_eval.ab_gate` indexes built-in vs candidate for real (temp copies,
-  real embeddings) and measures **rank-aware span-IoU** — the overlap of the
-  file's *top-ranked* chunk with the true span, i.e. what a user actually gets
-  when the file is retrieved — plus global hit@k, on EVERY file the candidate
-  changes (`changed_files`), not just the diagnosed target. WIN needs all of:
-  pooled IoU lift ≥ 0.01 · pooled hit@1 held · no per-file regression · no
-  micro-chunking (median chunk ≥ 100 nws chars, checked before any indexing).
-  A losing-but-valid candidate gets ONE regeneration seeded with the measured
-  result; still losing → nothing installs.
+- `probe_spans` derives neutral (query, span) pairs from the file's own
+  structure (python ast dict-entries/defs; generic blank-line blocks otherwise)
+  — no labels, no LLM, chunker-independent.
+- `ab_gate` indexes baseline vs candidate for real and measures **rank-aware
+  span-IoU** (the file's *top-ranked* chunk vs the true span — what retrieval
+  actually surfaces) + global hit@k on EVERY file the candidate changes. WIN
+  needs pooled IoU lift ≥ 0.01 · hit@1 held · no per-file regression · no
+  micro-chunking (median chunk ≥ 100 nws, checked before indexing). The
+  granularity floor + rank-aware IoU exist because an early best-IoU-over-all-
+  chunks metric let a median-1-line micro-chunker score a fake pooled 0.55.
 
-The gate's teeth are empirical: an early best-IoU-over-all-chunks variant let
-an LLM candidate "win" express with median 1-LINE chunks (perfect geometry,
-useless embeddings, pooled 0.55). Rank-aware IoU + the hit@1 clause + the
-granularity floor make that family of metric-gaming un-installable — re-run
-under the strict gate, that candidate measures IoU Δ-0.001 with hit@1
-*regressing* 0.13 → 0.07 and is rejected. Wins that survive: psf/requests
-`status_codes.py` (68-entry dict, one blob under the built-in) IoU 0.010 →
-0.076 with hit@1 0.23 → 0.47 (2×); sinatra `.rb` (many-short-method classes)
-IoU 0.037 → 0.115 with hit@1 held and the worst touched file still +0.013 —
-all other files byte-identical in both cases.
+**Why no LLM.** It used to generate these; across sinatra, requests, sdk-server
+and the engine itself the generated chunkers LOST to the deterministic
+lit-2000 recipe and to the default, so the path was removed. The deeper,
+load-bearing finding: on the sdk-server golden (the only human-verified query
+set) **no chunk budget beats 4000** — R@1 4000=0.86 · 2000=0.82 · surgical
+blob-split=0.77. Tighter chunks lift span-IoU (navigation — less to read) but
+LOWER retrieval ranking, because the 4000 merge concentrates a file's evidence
+and that is what wins R@1. So `DEFAULT_BUDGET=4000` is a genuine optimum;
+specialization is an honest win only for its navigation objective, on the rare
+pathological file (a lit-2000 chunker on sinatra's many-method classes lifted
+span-IoU 0.037 → 0.115 with hit@1 held). Do not chase it on ordinary code.
 
 ---
 
@@ -401,11 +400,12 @@ megabrain/
                      invalidation: sha of every cited file · dedup by cosine)
   forge.py           self-authored chunkers (coverage): uncovered-ext census · LLM
                      generate · partition-oracle validate (repair loop) · trust install
-  forge_specialize.py  specialization: diagnose poorly-chunked covered files (table/
-                     blob/window) · parallel LLM shape-routers · install only on a
-                     measured A/B win (gate feedback drives one regeneration)
+  forge_specialize.py  specialization TOOLKIT (no LLM): diagnose poorly-chunked
+                     covered files (table/blob/window) · lit_baseline (the recipe to
+                     beat) · gate_strategy installs a HAND-WRITTEN chunker only on a
+                     measured A/B win over the baseline
   forge_eval.py      the empirical gate: neutral probe spans from file structure ·
-                     span-IoU/hit@k on every changed file · ab_gate win/lose
+                     rank-aware span-IoU/hit@k on every changed file · ab_gate win/lose
   ask.py             narrated walkthrough with verbatim splice (code/docs/code+docs modes)
   ask_agents.py      ask v2: broad-query classifier · planner · parallel tool-enabled
                      sub-agents · synthesizer · the stream_events event driver

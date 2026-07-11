@@ -65,7 +65,7 @@ publish to PyPI without explicit approval from the maintainer.**
 
 ## Module map
 
-The tree mirrors the pipeline (full detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) §6): `chunkers/` content→chunks behind one `FileResult` contract (`base` model+partition validator · `python` stdlib-ast cAST · `treesitter` generic chunker + `LangSpec`: TS/JS, Ruby, Go, Rust, PHP · `php` legacy-PHP section chunker + shape router · `markdown` no-LLM QMD doc chunker) · `indexing/` build the index (`indexer` registry-driven incremental walk + `maybe_reindex` 60s TTL · `strategies` ext→registry + `ChunkStrategy` protocol, custom via `index_repo(strategies=[...])` — examples/02 · `graph` py/ts/php edges) · `retrieval/` answer queries, no LLM (`query` fusion + bundle + RELATED-map render + `load_state`/`search_with_state` warm split · `issue` py+js/ts traceback grounding · `bm25` postings lane · `rerank` `llm_order`, `--best`) · root `forge.py` self-authored chunkers (uncovered-ext census → LLM-generate a ChunkStrategy → partition-oracle validate w/ repair loop → trust-gated install to `<repo>/.megabrain/strategies/`, auto-loaded by every index incl. the 60s refresh; CLI `forge`/`trust`, MCP `megabrain_forge`) · `providers/` model APIs (`__init__` chat routing + OpenAI-compat clients · `claude` Agent SDK transport · `embeddings` int8+L2, atomic cache) · `frontends/` entry points (`cli` · `mcp` stdio · `http` serve-api: `/search` `/docsearch` `/chunks` `/ask` `/ask/stream` (SSE) `/get` `/index` `/health`, Bearer `--token`) · root: `ask.py` spliced walkthrough (+ `_Splicer`) · `ask_agents.py` ask v2 (classifier · planner · parallel tool-enabled sub-agents · synthesizer · `stream_events` event driver) · `store.py` SQLite · `mcp_server.py` launcher shim (keeps `python3 -m megabrain.mcp_server` working).
+The tree mirrors the pipeline (full detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) §6): `chunkers/` content→chunks behind one `FileResult` contract (`base` model+partition validator · `python` stdlib-ast cAST · `treesitter` generic chunker + `LangSpec`: TS/JS, Ruby, Go, Rust, PHP · `php` legacy-PHP section chunker + shape router · `markdown` no-LLM QMD doc chunker) · `indexing/` build the index (`indexer` registry-driven incremental walk + `maybe_reindex` 60s TTL · `strategies` ext→registry + `ChunkStrategy` protocol, custom via `index_repo(strategies=[...])` — examples/02 · `graph` py/ts/php edges) · `retrieval/` answer queries, no LLM (`query` fusion + bundle + RELATED-map render + `load_state`/`search_with_state` warm split · `issue` py+js/ts traceback grounding · `bm25` postings lane · `rerank` `llm_order`, `--best`) · root `forge.py` COVERAGE chunkers (uncovered-ext census → LLM-generate a ChunkStrategy → partition-oracle validate w/ repair loop → trust-gated install, auto-loaded by every index; CLI `forge`/`trust`, MCP `megabrain_forge`) · `forge_specialize.py`+`forge_eval.py` specialization TOOLKIT, no LLM (`detect_specialization`/`lit_baseline`/`gate_strategy` measures a HAND-WRITTEN chunker vs the lit-2000 baseline, installs only on a measured win) · `flows.py` self-caching workflow retrieval (opt-in, off by default: ask caches its cross-file walkthrough, next paraphrase retrieves the whole flow; `flows` table + sha invalidation; CLI `flows [--enable|--warm N|--clear]`) · `providers/` model APIs (`__init__` chat routing + OpenAI-compat clients · `claude` Agent SDK transport · `embeddings` int8+L2, atomic cache) · `frontends/` entry points (`cli` · `mcp` stdio · `http` serve-api: `/search` `/docsearch` `/chunks` `/ask` `/ask/stream` (SSE) `/get` `/index` `/health`, Bearer `--token`) · root: `ask.py` spliced walkthrough (+ `_Splicer`) · `ask_agents.py` ask v2 (classifier · planner · parallel tool-enabled sub-agents · synthesizer · `stream_events` event driver) · `store.py` SQLite · `mcp_server.py` launcher shim (keeps `python3 -m megabrain.mcp_server` working).
 
 ## What's next
 
@@ -88,20 +88,31 @@ and installs it trust-gated in `<repo>/.megabrain/strategies/` — loaded by eve
 index/auto-refresh from then on. Verified on pallets/click (.toml + .yaml,
 first-attempt). Tests: `tests/test_forge.py` (offline, fake LLM).
 
-**`forge --specialize` is SHIPPED** (`forge_specialize.py` + `forge_eval.py`): for
-COVERED types the built-in chunks poorly (dominant data table / blob / line-window
-fallback), parallel LLMs write shape-routers (special shape → tight chunks, everything
-else delegates to `builtin_strategy_for` byte-identically). Partition is necessary but
-not sufficient here, so installs are gated by a measured retrieval A/B: neutral probe
-spans from the file's own structure; **rank-aware span-IoU** (the file's TOP-ranked
-chunk vs the true span — NOT best-over-all-chunks, which micro-chunking games) + global
-hit@k on every changed file. Win = pooled IoU lift ≥0.01 AND hit@1 held AND no per-file
-regression AND median chunk ≥100 nws (granularity floor); a losing candidate gets one
-regeneration seeded with the measured result. Strict-gate results: requests
-status_codes.py IoU 0.010→0.076 / hit@1 0.23→0.47; sinatra .rb 0.037→0.115; an express
-micro-chunk candidate (old metric's "0.55 win") measures Δ-0.001 with hit@1 regressing
-and is REJECTED. Tests: `tests/test_forge_specialize.py` (offline: fake LLM +
-FakeEmbedder drive the real gate, incl. the micro-chunking rejection).
+**Specialization is a measure-only toolkit — NO LLM** (`forge_specialize.py` +
+`forge_eval.py`). The LLM-generation path was REMOVED: across sinatra, requests,
+sdk-server and this engine, LLM-written chunkers lost to a five-line deterministic
+recipe (`lit_baseline`, AST at budget 2000) and to the default. What stays:
+`detect_specialization` (diagnose table/blob/window), `lit_baseline` (the bar to beat),
+and `gate_strategy(root, source, ext)` — measure a HAND-WRITTEN chunker with
+`ab_gate` (rank-aware span-IoU + hit@1 + granularity floor on every changed file) and
+install trust-gated only on a measured win over the baseline. **LOAD-BEARING FINDING,
+do not re-litigate:** on the sdk-server golden (only human-verified query set) no budget
+beats 4000 — R@1 4000=0.86 · 2000=0.82 · blob-split=0.77. Tighter chunks help span-IoU
+(navigation) but LOWER retrieval ranking; the 4000 merge concentrates a file's evidence
+= wins R@1. `DEFAULT_BUDGET=4000` is a real optimum; specialize only the rare
+pathological file. Tests: `tests/test_forge_specialize.py` (offline, FakeEmbedder).
+
+**`flows` — self-caching workflow retrieval is SHIPPED, OPT-IN, OFF by default**
+(`flows.py`). When a dev enables it (`megabrain flows --enable`, or `--warm-flows N`;
+env `MEGABRAIN_FLOW_CACHE`), every `ask` caches its cross-file walkthrough (`flows`
+table: question + prose + {cited file: sha} + embedding) and the next related question
+retrieves the whole workflow — validated: a barge-in flow was retrieved by a re-worded
+paraphrase. Rules intact: LLM+embed at ASK time (write), read path is pure cosine
+reusing the query vector; flows ATTACH (never rank/displace files → bundle_full only
+rises); sha-invalidated on reindex; `ask` splices real code regardless (stale flow can
+mis-prioritize, never fabricate). OFF = load_state skips flows, query/ask byte-for-byte
+unchanged. `--warm-flows N` = index-time LLM planner over graph hubs seeds N research
+asks so the cache starts full. Tests: `tests/test_flows.py` (9, offline).
 
 Priority 1 (chunking-strategy registry) is
 **done**: a `strategies.py` maps extension → chunk strategy, so the indexer is content-
