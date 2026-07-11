@@ -113,6 +113,9 @@ def main(argv=None):
     p.add_argument("path", nargs="?", default=".")
     p.add_argument("--clear", action="store_true")
     p.add_argument("--warm", nargs="?", const=6, default=None, type=int, metavar="N")
+    p.add_argument("--refresh", action="store_true",
+                   help="re-ask stale flows against the current code (UPDATE, not just "
+                        "expire) — reindex first so sha changes are seen")
     p.add_argument("--enable", action="store_true",
                    help="turn the flow-cache mode ON for this repo (off by default)")
     p.add_argument("--disable", action="store_true", help="turn the mode OFF")
@@ -227,6 +230,14 @@ def main(argv=None):
 
             from ..flows import warm_flows
             print(_json.dumps(warm_flows(root, limit=a.warm), indent=1))
+            return
+        if a.refresh:
+            import json as _json
+
+            from ..flows import refresh_stale
+            from ..indexing.indexer import index_repo
+            index_repo(root, quiet=True, prune_flows=False)   # update shas, keep flows
+            print(_json.dumps(refresh_stale(root), indent=1))
             return
         if not _flows_on(root):
             print("flow cache is OFF for this repo (opt-in). Enable with: "

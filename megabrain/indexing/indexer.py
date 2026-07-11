@@ -100,7 +100,8 @@ def maybe_reindex(root: Path, ttl: int = AUTO_REFRESH_TTL) -> bool:
 
 
 def index_repo(root: Path, repo_name: str | None = None, quiet: bool = False,
-               force: bool = False, exclude=(), strategies=()) -> dict:
+               force: bool = False, exclude=(), strategies=(),
+               prune_flows: bool = True) -> dict:
     """Index/update a repo. `strategies` injects custom ChunkStrategy instances
     (checked before the built-ins, so they can claim new extensions or override
     existing ones) — see examples/02_custom_chunker.py. Trusted repo-local
@@ -176,8 +177,10 @@ def index_repo(root: Path, repo_name: str | None = None, quiet: bool = False,
 
     # flow invalidation: a cached ask synthesis dies with the code it cites —
     # any cited file whose sha changed (or vanished) drops the whole flow.
+    # `prune_flows=False` keeps stale flows so `flows --refresh` can re-ask them
+    # (it reindexes first to update shas, then regenerates instead of dropping).
     from ..flows import prune_stale
-    stale_flows = prune_stale(store)
+    stale_flows = prune_stale(store) if prune_flows else 0
 
     store.set_meta("repo_name", name)
     store.set_meta("embed_model", EMBED_MODEL)

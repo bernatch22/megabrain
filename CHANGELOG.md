@@ -28,9 +28,17 @@
   writes N research questions covering the system's main workflows, then runs
   one `ask` each, so the cache starts full instead of building up lazily. CLI:
   `megabrain flows <repo> [--enable|--disable|--warm N|--clear]`; kill switch
-  `MEGABRAIN_FLOW_CACHE=0`. Related literature: Knowledge Compression via
-  Question Generation (arxiv 2506.13778) — indexing synthesized knowledge lifts
-  multi-hop retrieval.
+  `MEGABRAIN_FLOW_CACHE=0`. **Refresh, not just expire** — `megabrain flows
+  --refresh` re-asks each stale flow's ORIGINAL question against the current
+  code and regenerates the walkthrough (opt-in: one `ask` per changed flow),
+  so the cache stays *current* rather than only *not-wrong*; `index_repo`
+  gained `prune_flows=False` so refresh can reindex-then-regenerate without the
+  default prune dropping the flows first. Related literature: Knowledge
+  Compression via Question Generation (arxiv 2506.13778) — indexing synthesized
+  knowledge lifts multi-hop retrieval.
+- **New: [docs/GUIDE.md](docs/GUIDE.md)** — a step-by-step usage guide
+  (providers with options, indexing, the 2000-vs-4000 budget choice, how the
+  engine measures a strategy, the flow cache).
 
 - **Removed LLM-generated specialization strategies.** Across four repos
   (sinatra, requests, sdk-server, the engine itself) an LLM asked to write a

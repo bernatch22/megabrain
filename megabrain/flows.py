@@ -205,14 +205,53 @@ def warm_flows(root: Path, limit: int = 6, ask_fn=None, quiet: bool = False) -> 
             "questions": warmed}
 
 
-def prune_stale(store: Store) -> int:
-    """Drop flows whose cited files changed sha or left the index. Called by
-    index_repo after every (re)index, so flows always describe current code."""
+def _stale_flows(store: Store) -> tuple[list[dict], set[str]]:
+    """(flows whose cited files changed sha or vanished, current path set)."""
     metas, _ = store.load_flows()
     current = {r[0]: r[1] for r in store.db.execute("SELECT path, sha FROM files")}
-    dropped = 0
-    for m in metas:
-        if any(current.get(f) != sha for f, sha in m["files"].items()):
-            store.delete_flow(m["id"])
-            dropped += 1
-    return dropped
+    stale = [m for m in metas
+             if any(current.get(f) != sha for f, sha in m["files"].items())]
+    return stale, set(current)
+
+
+def prune_stale(store: Store) -> int:
+    """Drop flows whose cited files changed sha or left the index. Called by
+    index_repo after every (re)index, so flows always describe current code —
+    the cheap, no-LLM default (a stale walkthrough simply disappears)."""
+    stale, _ = _stale_flows(store)
+    for m in stale:
+        store.delete_flow(m["id"])
+    return len(stale)
+
+
+def refresh_stale(root, ask_fn=None, quiet: bool = False) -> dict:
+    """UPDATE instead of expire: for each stale flow, re-run its ORIGINAL
+    question against the current code so the cached walkthrough is regenerated
+    fresh (via ask's write path). Flows whose cited files all vanished can't be
+    re-asked and are dropped. Opt-in (`megabrain flows --refresh`) because it
+    costs one `ask` per changed flow — the plain 60s auto-refresh only prunes."""
+    if not enabled(root):
+        return {"refreshed": 0, "dropped": 0, "skipped": "flow cache off"}
+    root = Path(root)
+    if ask_fn is None:
+        from .ask import ask as ask_fn
+    with Store(root) as store:
+        stale, current = _stale_flows(store)
+        to_reask, dropped = [], 0
+        for m in stale:
+            store.delete_flow(m["id"])                     # clear the stale row first
+            if any(f in current for f in m["files"]):      # some source still exists
+                to_reask.append(m["question"])
+            else:
+                dropped += 1
+        store.commit()
+    refreshed = 0
+    for q in to_reask:
+        try:
+            if ask_fn(root, q).get("text"):                # re-caches via write path
+                refreshed += 1
+        except Exception:                                  # noqa: BLE001
+            log.debug("flow refresh ask failed for %r", q, exc_info=True)
+        if not quiet:
+            log.info("refresh-flows ↻ %r", q[:80])
+    return {"refreshed": refreshed, "dropped": dropped, "stale": len(stale)}

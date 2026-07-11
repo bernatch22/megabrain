@@ -64,6 +64,32 @@ def test_flow_files_are_pure_additions(repo):
     assert {"vad.py", "turn.py"} <= set(bundle)
 
 
+def test_refresh_updates_instead_of_expiring(repo, monkeypatch):
+    """A changed file: --refresh re-asks the flow's ORIGINAL question against the
+    new code and re-caches it, rather than just dropping it."""
+    from megabrain.flows import refresh_stale
+    _cache(repo)
+    (repo / "turn.py").write_text(TURN + "\n    state.log('changed')\n")
+    index_repo(repo, quiet=True, prune_flows=False)  # update shas, keep the stale flow
+
+    asked = []
+
+    def fake_ask(root, q):
+        asked.append(q)
+        # a fresh synthesis over the current code (write path re-caches it)
+        cache_flow(root, q, "## Updated barge-in flow [[0]] [[1]]",
+                   ["vad.py", "turn.py"], emb=FakeEmbedder())
+        return {"text": "## Updated barge-in flow"}
+
+    from tests.conftest import FakeEmbedder
+    rep = refresh_stale(repo, ask_fn=fake_ask)
+    assert rep["refreshed"] == 1 and rep["dropped"] == 0
+    assert asked == [FLOW_Q]                       # re-asked the ORIGINAL question
+    with Store(repo) as s:
+        metas, _ = s.load_flows()
+    assert len(metas) == 1 and "Updated" in metas[0]["text"]
+
+
 def test_sha_invalidation_on_reindex(repo):
     _cache(repo)
     (repo / "turn.py").write_text(TURN + "\n# changed\n")
