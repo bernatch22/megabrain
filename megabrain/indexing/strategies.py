@@ -188,6 +188,17 @@ def build_registry(repo: str = "", extra: Sequence[ChunkStrategy] = ()) -> list:
     return reg
 
 
+def builtin_strategy_for(ext: str, repo: str = ""):
+    """The BUILT-IN strategy instance that handles `ext` (no custom/repo-local
+    strategies). A specialization strategy delegates its common case to this —
+    the shape-router pattern: handle the special shape, hand everything else to
+    the engine's own chunker so normal files are chunked identically."""
+    for s in build_registry(repo):
+        if ext in s.exts:
+            return s
+    return None
+
+
 def strategy_for(registry: list, relpath: str):
     """First strategy whose ext matches, or None (file is skipped)."""
     dot = relpath.rfind(".")

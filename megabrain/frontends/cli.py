@@ -93,6 +93,11 @@ def main(argv=None):
                    help="detection census only — no LLM call")
     p.add_argument("--dry-run", action="store_true",
                    help="generate + validate but do not install or reindex")
+    p.add_argument("--specialize", action="store_true",
+                   help="specialize ALREADY-covered file types the built-in chunks "
+                        "poorly (data tables, blobs): generate a shape-router and "
+                        "install it only if it WINS a measured retrieval A/B "
+                        "(span-IoU gate) against the built-in")
 
     p = sub.add_parser("trust",
                        help="approve this repo's .megabrain/strategies/*.py (records "
@@ -168,13 +173,21 @@ def main(argv=None):
               token=a.token)
     elif a.cmd == "forge":
         import json as _json
-
-        from ..forge import detect, forge, render_report
-        if a.list_only:
+        if a.specialize:
+            from ..forge_specialize import detect_specialization, render_report, specialize
+            if a.list_only:
+                opps = detect_specialization(root)
+                print(_json.dumps(opps, indent=1) if opps
+                      else "no specialization opportunities found")
+            else:
+                print(render_report(specialize(root, ext=a.ext, dry_run=a.dry_run)))
+        elif a.list_only:
+            from ..forge import detect
             cands = detect(root)
             print(_json.dumps(cands, indent=1) if cands
                   else "no uncovered text extensions found")
         else:
+            from ..forge import forge, render_report
             print(render_report(forge(root, ext=a.ext, dry_run=a.dry_run)))
     elif a.cmd == "trust":
         from ..indexing.strategies import STRATEGY_DIR, trust_file

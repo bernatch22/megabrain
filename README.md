@@ -92,9 +92,10 @@ embeddings API). The full provider matrix — native APIs, hybrid, fully-local G
 | **index** | code is split over its syntax tree (whole functions / classes, never arbitrary line windows), embedded once, stored in SQLite. Incremental by hash. |
 | **query** | **no LLM** — your question is embedded and matched by vector similarity. Returns every related file in ~200 ms; nothing is dropped. |
 | **ask** | one LLM call narrates the answer and cites code as `[[k]]`; the engine replaces each citation with the verbatim block from disk. The model can only *point* at code, never rewrite it — so nothing is hallucinated. Broad questions fan out into parallel sub-agents, then a parent synthesizes. |
+| **forge** | an LLM writes a chunking strategy for your repo — for a file type the engine doesn't cover yet, or (`--specialize`) for covered files the generic chunker splits poorly. Nothing installs unvetted: every candidate must partition *every* matching file exactly, and a specialization must additionally **win a measured retrieval A/B** against the built-in. The LLM writes code once, gated by machine-checked oracles; the query path stays LLM-free. |
 
 Languages: **Python · JS/TS · Markdown** built in; **Ruby · Go · Rust · PHP** with
-`pip install 'megabrain[languages]'`.
+`pip install 'megabrain[languages]'`; **anything else** via `megabrain forge` (below).
 
 ## forge — megabrain writes its own chunkers
 
@@ -123,6 +124,31 @@ Real run on [pallets/click](https://github.com/pallets/click): forge detected
 `.toml` (11 files) and `.yaml` (8 workflows), generated both strategies on the
 first attempt (~28 s total), and *"which workflow runs the test suite?"* went
 from missing entirely to ranking `.github/workflows/tests.yaml` #1.
+
+### `--specialize` — tune covered types to *this* repo
+
+Some files the engine already reads are still chunked poorly: a module that is
+one giant lookup table becomes a single blob, so a query about one entry
+retrieves the whole file. Specialization targets exactly those:
+
+```bash
+megabrain forge ~/repo --specialize --list   # census: covered files the built-in chunks poorly (free)
+megabrain forge ~/repo --specialize          # generate shape-routers; install only measured WINs
+```
+
+The generated strategy is a **shape-router**: it splits the diagnosed shape into
+tight, named chunks and *delegates every normal file to the built-in chunker
+unchanged*. And because a valid-but-worse chunker is a real risk here, partition
+alone isn't enough — the candidate must also **win a measured retrieval A/B**:
+neutral probe spans are derived from the file's own structure (no labels, no
+LLM), both variants are indexed for real, and the candidate installs only if it
+lifts span-IoU without regressing any file it touches. If it loses, the measured
+result feeds back into one regeneration; if it still loses, nothing installs.
+
+Real run on [psf/requests](https://github.com/psf/requests): the built-in left
+`status_codes.py` (a 68-entry HTTP-status dict) as one blob — span-IoU 0.009.
+The forged shape-router hit **0.132 (14×)** with every other `.py` file chunked
+byte-identically, and was installed after winning the gate in ~21 s.
 
 ## See it live
 

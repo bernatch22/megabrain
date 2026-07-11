@@ -1,5 +1,28 @@
 # Changelog
 
+## Unreleased
+
+- **`forge --specialize` — chunkers tuned to a repo's own conventions**
+  (`megabrain/forge_specialize.py` + `megabrain/forge_eval.py`; CLI
+  `megabrain forge --specialize [--list|--dry-run|--ext .x]`, MCP
+  `megabrain_forge` `specialize` param). Coverage forge teaches the engine file
+  types it can't read; specialization re-chunks types it ALREADY reads where
+  the generic chunker fits poorly — a module that is one giant lookup table
+  becomes a blob, so a query about one entry retrieves the whole file. The
+  detector diagnoses three shapes (dominant dict/list table, blob, line-window
+  fallback); parallel LLMs write **shape-routers** (split the diagnosed shape
+  into tight named chunks, delegate every normal file to the built-in
+  byte-identically via the new `builtin_strategy_for`). Because a
+  partition-valid chunker can still be *worse* than the built-in, installs are
+  gated by a **measured retrieval A/B** (`forge_eval.ab_gate`): neutral probe
+  spans derived from the file's own structure (no labels, no LLM), both
+  variants indexed for real, span-IoU + hit@k scored on every file the
+  candidate changes; win = pooled IoU lift ≥ 0.01 with no per-file regression,
+  and a losing candidate gets one regeneration seeded with the measured
+  result. Validated on psf/requests `status_codes.py`: IoU 0.009 → 0.132
+  (14×), hit@1 0.50 → 0.71, every other `.py` byte-identical — the forged
+  router beat the hand-written reference (0.098) under the same gate.
+
 ## 0.6.0 — 2026-07-11
 
 - **`forge` — megabrain writes its own chunkers** (`megabrain/forge.py`). CLI

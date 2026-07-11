@@ -150,6 +150,31 @@ MCP `megabrain_forge` (`list_only`, `dry_run`, `ext`). Real run on pallets/click
 "which workflow runs the test suite" went from a total miss to
 `.github/workflows/tests.yaml` at #1.
 
+**Specialization (`--specialize`, `forge_specialize.py` + `forge_eval.py`)** is
+the second half: covered file types that the generic chunker splits poorly —
+the detector (`detect_specialization`) diagnoses three shapes: a dominant
+dict/list **table** (proven highest-yield), a **blob** (>55% of a file in one
+chunk), and the **line-window** fallback. Generation fans out in parallel (one
+LLM per extension-opportunity) and must produce a **shape-router**: handle the
+diagnosed shape, `builtin_strategy_for(ext)` for everything else — normal files
+chunk byte-identically. Partition is necessary but NOT sufficient here (a legal
+chunker can be worse than the built-in), so there is a second, empirical gate:
+
+- `forge_eval.probe_spans` derives neutral ground-truth (query, span) pairs
+  from the file's own structure (python ast dict-entries/defs; generic
+  blank-line blocks otherwise) — no human labels, no LLM, chunker-independent.
+- `forge_eval.ab_gate` indexes built-in vs candidate for real (temp copies,
+  real embeddings) and measures **span-IoU** (overlap of the best retrieved
+  chunk with the true span) + hit@k on EVERY file the candidate changes
+  (`changed_files`), not just the diagnosed target. WIN = pooled IoU lifts ≥
+  0.01 AND no changed file regresses. A losing-but-valid candidate gets ONE
+  regeneration seeded with the measured result; still losing → nothing installs.
+
+Measured on psf/requests `status_codes.py` (68-entry dict, one blob under the
+built-in): IoU 0.009 → 0.132 (14×), hit@1 0.50 → 0.71 at probe scale, all other
+`.py` files byte-identical. The LLM-forged router beat the hand-written
+reference (0.098) under the same gate.
+
 ---
 
 ## 3. Query time — retrieval (no LLM)
@@ -327,8 +352,13 @@ The tree mirrors the pipeline — content → index → retrieval → narration 
 ```
 megabrain/
   __init__.py        public API (lazy, typed)
-  forge.py           self-authored chunkers: uncovered-ext census · LLM generate ·
-                     partition-oracle validate (repair loop) · trust-gated install
+  forge.py           self-authored chunkers (coverage): uncovered-ext census · LLM
+                     generate · partition-oracle validate (repair loop) · trust install
+  forge_specialize.py  specialization: diagnose poorly-chunked covered files (table/
+                     blob/window) · parallel LLM shape-routers · install only on a
+                     measured A/B win (gate feedback drives one regeneration)
+  forge_eval.py      the empirical gate: neutral probe spans from file structure ·
+                     span-IoU/hit@k on every changed file · ab_gate win/lose
   ask.py             narrated walkthrough with verbatim splice (code/docs/code+docs modes)
   ask_agents.py      ask v2: broad-query classifier · planner · parallel tool-enabled
                      sub-agents · synthesizer · the stream_events event driver

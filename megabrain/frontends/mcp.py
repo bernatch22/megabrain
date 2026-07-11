@@ -9,9 +9,10 @@ Tools:
   megabrain_get(repo_path, file, symbol?)     -> one file or symbol
   megabrain_chunks(repo_path, file, query)    -> every chunk of one file, scored + selected flags
   megabrain_index(repo_path)                  -> incremental index
-  megabrain_forge(repo_path, ext?, list_only?, dry_run?)
+  megabrain_forge(repo_path, ext?, list_only?, dry_run?, specialize?)
       -> detect uncovered file types; LLM-generate + partition-validate + install
-         a chunking strategy per type (repo-local, trust-gated)
+         a chunking strategy per type (repo-local, trust-gated). specialize=true
+         re-chunks poorly-chunked COVERED types, gated by a measured A/B win
 
 Run: python3 -m megabrain.mcp_server
 Register (claude code):
@@ -138,7 +139,12 @@ TOOLS = [
             "trusted, so every future index/auto-refresh loads it automatically. Use "
             "when queries miss content because its file type isn't indexed. "
             "list_only=true for the free census; dry_run=true to inspect the generated "
-            "code without installing. ~10-60s per extension when generating."),
+            "code without installing. specialize=true switches to SPECIALIZATION mode: "
+            "instead of uncovered types, it targets ALREADY-covered files the built-in "
+            "chunks poorly (giant data tables, blobs) and installs a shape-router "
+            "strategy only if it WINS a measured retrieval A/B (span-IoU) against the "
+            "built-in — normal files keep chunking identically. ~10-60s per extension "
+            "when generating (specialize adds ~30-60s for the measured gate)."),
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -146,9 +152,11 @@ TOOLS = [
                 "ext": {"type": "string",
                         "description": "forge one extension only, e.g. '.toml'; omit to forge every detected candidate"},
                 "list_only": {"type": "boolean",
-                              "description": "just return the uncovered-extension census (no LLM call)"},
+                              "description": "just return the census (no LLM call): uncovered extensions, or poorly-chunked files with specialize=true"},
                 "dry_run": {"type": "boolean",
                             "description": "generate + validate but do not install or reindex; the report includes the generated code"},
+                "specialize": {"type": "boolean",
+                               "description": "specialization mode: re-chunk poorly-chunked COVERED file types, gated by a measured retrieval A/B win"},
             },
             "required": ["repo_path"],
         },
@@ -223,14 +231,23 @@ def call_tool(name: str, args: dict) -> str:
         root = Path(args["repo_path"]).expanduser().resolve()
         return json.dumps(index_repo(root, quiet=True))
     if name == "megabrain_forge":
-        from ..forge import detect, forge, render_report
         root = Path(args["repo_path"]).expanduser().resolve()
-        if args.get("list_only"):
-            return json.dumps(detect(root), indent=1)
-        report = forge(root, ext=args.get("ext"),
-                       dry_run=bool(args.get("dry_run")), quiet=True)
+        if args.get("specialize"):
+            from ..forge_specialize import detect_specialization, render_report, specialize
+            if args.get("list_only"):
+                return json.dumps(detect_specialization(root), indent=1)
+            report = specialize(root, ext=args.get("ext"),
+                                dry_run=bool(args.get("dry_run")), quiet=True)
+            entries = report.get("specialized", [])
+        else:
+            from ..forge import detect, forge, render_report
+            if args.get("list_only"):
+                return json.dumps(detect(root), indent=1)
+            report = forge(root, ext=args.get("ext"),
+                           dry_run=bool(args.get("dry_run")), quiet=True)
+            entries = report.get("forged", [])
         text = render_report(report)
-        for e in report.get("forged", []):
+        for e in entries:
             if e.get("code"):                # dry-run: show what would install
                 text += f"\n\n--- generated {e['ext']} strategy ---\n{e['code']}"
         return text

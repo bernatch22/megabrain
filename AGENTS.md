@@ -88,6 +88,17 @@ and installs it trust-gated in `<repo>/.megabrain/strategies/` — loaded by eve
 index/auto-refresh from then on. Verified on pallets/click (.toml + .yaml,
 first-attempt). Tests: `tests/test_forge.py` (offline, fake LLM).
 
+**`forge --specialize` is SHIPPED** (`forge_specialize.py` + `forge_eval.py`): for
+COVERED types the built-in chunks poorly (dominant data table / blob / line-window
+fallback), parallel LLMs write shape-routers (special shape → tight chunks, everything
+else delegates to `builtin_strategy_for` byte-identically). Partition is necessary but
+not sufficient here, so installs are gated by a measured retrieval A/B: neutral probe
+spans from the file's own structure, span-IoU + hit@k on every changed file, win =
+pooled IoU lift ≥0.01 with no per-file regression; a losing candidate gets one
+regeneration seeded with the measured result. Validated on psf/requests
+status_codes.py: IoU 0.009→0.132 (14×), beat the hand-written reference. Tests:
+`tests/test_forge_specialize.py` (offline: fake LLM + FakeEmbedder drive the real gate).
+
 Priority 1 (chunking-strategy registry) is
 **done**: a `strategies.py` maps extension → chunk strategy, so the indexer is content-
 agnostic. Indexed today: `.py` · `.ts/.tsx/.js/.jsx/.mjs/.cjs` (TS grammar, JS-superset) ·
