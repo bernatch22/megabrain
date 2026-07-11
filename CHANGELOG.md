@@ -1,5 +1,49 @@
 # Changelog
 
+## 0.7.1 — 2026-07-11
+
+- **Fix: CommonJS/prototype methods (`obj.prop = function(){}`) were invisible
+  to the JS chunker.** The TS/JS spec captured only `function_declaration` /
+  `method_definition` / `lexical_declaration`, so express's entire router API —
+  `proto.use`, `proto.handle`, `Route.prototype.dispatch`, … — produced NO
+  symbols: unlabelable in `ask` (citations fell back to listing the file's
+  `require()` consts, e.g. "appendMethods, getPathname, gettype"), and absent
+  from the file skeleton used in scoring. New `assign_defs` spec flag (on for
+  TS/JS) captures `member = function/arrow` assignments as method symbols named
+  by their full LHS (`Route.prototype.dispatch`). Verified on express: the
+  `next()` walkthrough now labels every citation correctly
+  (`proto.handle`, `Layer.prototype.handle_request`) — line partition
+  unchanged, all chunker tests green.
+- **Fix: `ask` sub-range citations landed a few lines off, cutting functions
+  mid-body.** The prompt showed each chunk's text RAW with only a header line
+  range, so the model had to count lines itself to cite `[[k:lo-hi]]` — cites
+  started on a neighbor's trailing lines and stopped mid-method. Chunk text in
+  the prompt is now prefixed with absolute file line numbers (`1234| code`,
+  prompt-only — splicing still uses the clean text from disk) and the rules
+  require reading lo/hi off those prefixes and citing complete units (signature
+  → closing line). Verified on sinatra's routing walkthrough: 8/8 citations now
+  open at `def` and close at its `end` (before: mid-method cuts and orphan
+  tails).
+- **Fix: Ruby `class << self` regions chunked blind.** `singleton_class` was
+  missing from `RUBY_SPEC` (not a container, not a def type), so the whole
+  region — sinatra's entire `get/post/route/compile!` DSL — became anonymous
+  size-packed `block` chunks with NO symbols: unnamed in rankings, unlabelable
+  and unsnappable in `ask` citations. Now a named container (`self`, via the
+  node's `value` field): methods inside become real symbols
+  (`Sinatra.Base.self.get`), merged chunks carry names, and citation
+  snap-to-symbol works there.
+
+- **Fix: the test-file down-weight missed `test/` (singular) and `spec/`
+  directories.** The detector checked only the SECOND path component for the
+  substring "test" plus `tests/` (plural), so repos laid out as `test/…`
+  (express, ky) or `spec/…` (Ruby) never received `TEST_PENALTY` — test files
+  outranked the core they exercise ("how are retries and timeouts implemented?"
+  on ky returned `test/retry.ts` above `source/core/Ky.ts`). New `_is_test_path`:
+  any path segment named `test/tests/spec/specs/__tests__/testing`
+  (segment-exact, never substring) or a token-ish `test`/`spec` in the filename
+  (`foo_test.go`, `test_foo.py`, `foo.spec.ts` — but not `inspect.py`).
+  Golden set unchanged: R@1 0.864, bundle_full 0.955.
+
 ## 0.7.0 — 2026-07-11
 
 - **Serve-from-cache: a repeated `ask` costs $0 and ~0 ms.** Flows now store the

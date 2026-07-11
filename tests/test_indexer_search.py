@@ -129,3 +129,24 @@ def test_discover_honors_exclude_and_ignorefile(tmp_path, fake_embedder):
     # index_repo() merges .megabrainignore (vendor) with the --exclude flag (generated):
     index_repo(tmp_path, quiet=True, exclude=["generated"])
     assert Store(tmp_path).all_paths() == {"src/keep.py"}
+
+
+def test_is_test_path_detects_all_layouts():
+    """Regression: the old detector checked only the SECOND path component and
+    `tests/` plural, so `test/retry.ts` (ky, express) and `spec/…` (Ruby) never
+    received TEST_PENALTY and outranked the core they exercise."""
+    from megabrain.retrieval.query import _is_test_path
+
+    assert _is_test_path("test/retry.ts")              # singular test/ dir
+    assert _is_test_path("tests/foo.py")
+    assert _is_test_path("spec/routing_spec.rb")       # ruby spec dir
+    assert _is_test_path("pkg/__tests__/x.tsx")
+    assert _is_test_path("a/b/testing/util.go")        # nested segment
+    assert _is_test_path("lib/foo_test.go")            # filename token
+    assert _is_test_path("test_client.py")
+    assert _is_test_path("api.spec.ts")
+    # never substring matches:
+    assert not _is_test_path("src/contest/rank.py")
+    assert not _is_test_path("lib/inspect.py")
+    assert not _is_test_path("src/latest.js")
+    assert not _is_test_path("protests/march.py")

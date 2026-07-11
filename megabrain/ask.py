@@ -63,6 +63,8 @@ def _candidates(res: dict, docs_only: bool = False,
 
 
 _RULES = """- NEVER paste or quote code. Cite it with DOUBLE brackets: [[3]] (whole chunk) or [[3:705-731]] (file lines 705-731 of chunk 3). Each such citation is REPLACED by the real code block in your answer, so explain AROUND the code, not the code itself. (If you ever need to mention the citation syntax itself in prose, use single brackets — only [[...]] gets replaced.)
+- Every chunk line is prefixed with its ABSOLUTE file line number ("1234| code"). For a [[k:lo-hi]] sub-range, read lo and hi OFF those prefixes — never count or estimate lines yourself.
+- A sub-range must be a COMPLETE unit: lo = the line of the enclosing def/function/method signature (include a comment block directly above it), hi = its final closing line. Never start or stop mid-function, and never begin a citation on another function's trailing lines.
 - Put each [[...]] citation on its own line, right after the sentence that introduces it.
 - Show GENEROUS, COMPLETE code: cite whole [[k]] chunks (a full function/class/block) by default so the reader sees the complete implementation, not a fragment. Only use a [[k:lo-hi]] sub-range when a chunk is very large and only one section is relevant — and then take the WHOLE enclosing function, not a few lines. Never cite the same span twice.
 - Structure it: use ## section headings for each phase of the flow, 1-3 sentences of explanation per citation. Be thorough — the reader must understand everything perfectly from the code shown, without opening any file.
@@ -84,13 +86,23 @@ def _flow_ctx(res: dict) -> str:
             + "\n\n---\n\n".join(parts) + "\n")
 
 
+def _numbered(c: dict) -> str:
+    """Chunk text with each line prefixed by its ABSOLUTE file line number —
+    the model reads sub-range bounds off these instead of counting lines
+    itself (unnumbered text made [[k:lo-hi]] cites land a few lines off,
+    cutting functions mid-body). Prompt-only: splicing uses the clean text."""
+    s = c["start_line"]
+    return "".join(f"{s + i}| {ln}"
+                   for i, ln in enumerate(c["text"].splitlines(keepends=True)))
+
+
 def _build_body(question: str, cands: list[dict], flow_ctx: str = "") -> dict:
     """Chat request body (OpenAI schema): the cite-only walkthrough prompt over numbered chunks."""
     blocks, used = [], 0
     for i, c in enumerate(cands):
         head = f'[{i}] {c["file"]} L{c["start_line"]}-{c["end_line"]}' + \
                (f' ({c["name"]})' if c["name"] else "")
-        body = c["text"]
+        body = _numbered(c)
         if used + len(body) > MAX_CTX_CHARS:
             body = body[:2000] + "\n# ...truncated...\n"
         used += len(body)

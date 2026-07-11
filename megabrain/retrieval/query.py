@@ -30,6 +30,22 @@ GRAPH_EXTRAS = 7        # graph neighbors of top files pulled into tier2 (recall
                         # (+35% edges) has more neighbors competing for the slots.
 CHUNK_KEEP_RATIO = 0.8  # within a tier-1 file, keep chunks >= ratio * best chunk
 TEST_PENALTY = 0.85     # soft down-weight for test files in ranking
+
+# directory names that mark a file as test/spec code wherever they appear in
+# the path. Segment-exact (never substring: "src/contest/" is not a test dir).
+TEST_DIR_SEGS = frozenset({"test", "tests", "spec", "specs", "__tests__", "testing"})
+
+
+def _is_test_path(relpath: str) -> bool:
+    """Test-file detector for the ranking down-weight. Two signals:
+    any directory segment named test/tests/spec/… (repos use both singular
+    and plural), or "test"/"spec" in the FILENAME as a token-ish match
+    (foo_test.go, test_foo.py, foo.spec.ts — but not inspect.py/protest.py)."""
+    parts = relpath.lower().split("/")
+    if any(p in TEST_DIR_SEGS for p in parts[:-1]):
+        return True
+    return bool(re.search(r"(^|[._-])(test|spec)s?([._-]|$)",
+                          parts[-1].rsplit(".", 1)[0]))
 FILE_BOOST_W = 0.05     # per matched filename token (capped at 2; grid-tuned p6)
 SYM_BOOST_W = 0.03      # per matched symbol-name token (capped at 2; grid-tuned p6)
 
@@ -142,9 +158,7 @@ def _score_chunks(st: SearchState, query: str,
     cfi = np.array([f2i.get(m["file"], -1) for m in metas])
     fused = dense + FILE_FUSION_W * np.where(cfi >= 0, fscore[cfi], 0.5)
     # soft down-weight for test files: keep them reachable, stop them crowding
-    is_test = np.array([("test" in m["file"].split("/")[0:2][-1].lower()
-                         or "/tests/" in m["file"] or m["file"].startswith("tests/"))
-                        for m in metas])
+    is_test = np.array([_is_test_path(m["file"]) for m in metas])
     fused = np.where(is_test, fused * TEST_PENALTY, fused)
 
     # issue mode (long queries, e.g. bug reports): deterministic grounding —

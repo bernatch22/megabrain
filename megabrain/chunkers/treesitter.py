@@ -42,6 +42,9 @@ class LangSpec:
     # node types whose name is nested: type -> (child_type, child_name_field)
     body_field: str = "body"
     unwrap_exports: bool = False          # peel `export ...` wrappers (TS/JS only)
+    assign_defs: bool = False             # capture `obj.prop = function/arrow` as a
+    #   method symbol (CommonJS/prototype style: express's `proto.use = function
+    #   use(){}`, `Route.prototype.dispatch = function(){}` — else unlabelable)
 
 
 def _ts_grammar(ext: str):
@@ -90,6 +93,7 @@ TS_SPEC = LangSpec(
         "variable_declaration": ("variable_declarator", "name"),
     },
     unwrap_exports=True,
+    assign_defs=True,
 )
 
 RUBY_SPEC = LangSpec(
@@ -100,8 +104,13 @@ RUBY_SPEC = LangSpec(
         "singleton_method": "method",
         "class": "class",
         "module": "module",
+        # `class << self … end`: without this the whole region became anonymous
+        # size-packed `block` chunks (sinatra's get/post/route DSL lived there,
+        # unnamed and unciteable). Named via the `value` field → "self".
+        "singleton_class": "class",
     },
-    container_types=frozenset({"class", "module"}),
+    container_types=frozenset({"class", "module", "singleton_class"}),
+    extra_name_fields=("value",),
 )
 
 GO_SPEC = LangSpec(
@@ -404,25 +413,53 @@ class TreeSitterChunker:
 
     # ---- symbols & skeleton
 
+    def _assign_symbol(self, node):
+        """CommonJS/prototype method definition: `a.b = function(){}` /
+        `a.b = () => {}`. Returns (full_lhs_name, kind) or None — the name is
+        the LHS member text ("proto.use", "Route.prototype.dispatch") so the
+        ask can label and cite these; else they're invisible (express uses this
+        pattern for its entire router API)."""
+        if not self.spec.assign_defs:
+            return None
+        n = node
+        if n.type == "expression_statement" and n.named_child_count:
+            n = n.named_children[0]
+        if n.type != "assignment_expression":
+            return None
+        left = n.child_by_field_name("left")
+        right = n.child_by_field_name("right")
+        if left is None or right is None:
+            return None
+        if left.type not in ("member_expression", "subscript_expression"):
+            return None
+        if right.type not in ("function", "function_expression",
+                              "generator_function", "arrow_function"):
+            return None
+        return left.text.decode(), "method"
+
     def _symbols(self, relpath, root, src) -> list[Symbol]:
         out: list[Symbol] = []
 
         def visit(node, prefix):
             for ch in node.named_children:
                 d = self._unwrap(ch)
-                if d.type not in self.spec.def_types:
+                if d.type in self.spec.def_types and self._name_of(d):
+                    name = self._name_of(d)
+                    kind = self.spec.def_types[d.type]
+                    out.append(Symbol(relpath, f"{prefix}{name}", kind,
+                                      d.start_point[0] + 1, d.end_point[0] + 1,
+                                      _signature(d, src)))
+                    if d.type in self.spec.container_types:
+                        body = d.child_by_field_name(self.spec.body_field)
+                        if body is not None:
+                            visit(body, f"{prefix}{name}.")
                     continue
-                name = self._name_of(d)
-                if not name:
-                    continue
-                kind = self.spec.def_types[d.type]
-                out.append(Symbol(relpath, f"{prefix}{name}", kind,
-                                  d.start_point[0] + 1, d.end_point[0] + 1,
-                                  _signature(d, src)))
-                if d.type in self.spec.container_types:
-                    body = d.child_by_field_name(self.spec.body_field)
-                    if body is not None:
-                        visit(body, f"{prefix}{name}.")
+                asg = self._assign_symbol(ch)
+                if asg:
+                    name, kind = asg
+                    out.append(Symbol(relpath, f"{prefix}{name}", kind,
+                                      ch.start_point[0] + 1, ch.end_point[0] + 1,
+                                      _signature(ch, src)))
 
         visit(root, "")
         return out

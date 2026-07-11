@@ -317,13 +317,14 @@ def _sub_rules() -> str:
 
 def _subagent_prompt(question: str, agent: dict, cands: list[dict], rmap: str,
                      repo: str, n: int) -> str:
+    from .ask import _numbered
     ids = ", ".join(f"[[{k}]]" for k in agent["chunks"])
     blocks = []
     for k in agent["chunks"]:
         c = cands[k]
         head = f'[{k}] {c["file"]} L{c["start_line"]}-{c["end_line"]}' + \
                (f' ({c["name"]})' if c["name"] else "")
-        blocks.append(f'{head}\n{c["text"]}')
+        blocks.append(f'{head}\n{_numbered(c)}')
     return f"""You are sub-agent {agent["id"] + 1} of {n} ("{agent["label"]}") in a team explaining the repo `{repo}`. A synthesizer will MERGE your answer with the other agents' answers, so cover ONLY your assigned slice — no introduction, no overall summary, no repeating the question; go straight into your part of the flow.
 
 REPO MAP (the whole repository, for orientation — your slice is only part of it):
