@@ -1,0 +1,27 @@
+__pycache__/
+*.pyc
+.megabrain/
+.claude/
+*.sqlite
+.pytest_cache/
+
+# packaging build artifacts (from `pip install -e .`)
+*.egg-info/
+build/
+dist/
+
+# proprietary golden eval set + corpus-dependent benchmarks (private corpus — never committed)
+evals/golden.json
+evals/README.md
+tests/test_engine_golden.py
+tests/test_multi_repo.py
+
+# swebench eval fixtures — cloned/generated locally, never committed
+evals/swebench/clones/
+evals/swebench/wt/
+evals/swebench/wt_best/
+evals/swebench/wt_ask/
+evals/swebench/out/
+
+# benchmarks / evals — kept local, never committed
+evals/
