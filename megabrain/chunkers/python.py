@@ -17,6 +17,7 @@ import ast
 from dataclasses import dataclass
 
 from .base import DEFAULT_BUDGET, Chunk, FileResult, Symbol, nws
+from .cast import greedy_pack, merge_units, pack_lines
 
 # ---------------------------------------------------------------- helpers
 
@@ -146,32 +147,17 @@ class CastChunker:
 
     def _merge_units(self, units: list[_Unit], lines: list[str], relpath: str,
                      crumb_base: str, parent: ast.ClassDef | None) -> list[Chunk]:
-        chunks: list[Chunk] = []
-        buf: list[_Unit] = []
-        buf_size = 0
-
-        def flush():
-            nonlocal buf, buf_size
-            if not buf:
-                return
+        # the shared split-then-merge driver (cast.merge_units); flush and the
+        # oversized-unit split are the Python-specific callbacks.
+        def emit_merged(buf: list[_Unit]) -> list[Chunk]:
             start, end = buf[0].start, buf[-1].end
             kind, name, crumb = self._describe(buf, crumb_base, parent)
-            chunks.append(Chunk(relpath, kind, name, start, end,
-                                _text(lines, start, end), crumb).finalize())
-            buf, buf_size = [], 0
+            return [Chunk(relpath, kind, name, start, end,
+                          _text(lines, start, end), crumb).finalize()]
 
-        for u in units:
-            if u.size > self.budget:
-                flush()
-                chunks.extend(self._split_unit(u, lines, relpath, crumb_base, parent))
-            elif buf_size + u.size > self.budget:
-                flush()
-                buf, buf_size = [u], u.size
-            else:
-                buf.append(u)
-                buf_size += u.size
-        flush()
-        return chunks
+        return merge_units(
+            units, lambda u: u.size, self.budget, emit_merged,
+            lambda u: self._split_unit(u, lines, relpath, crumb_base, parent))
 
     def _describe(self, buf: list[_Unit], crumb_base: str,
                   parent: ast.ClassDef | None) -> tuple[str, str | None, str]:
@@ -230,27 +216,10 @@ class CastChunker:
         crumb = f"{crumb_base} > {_signature(parent)} > {_signature(fn)}" if parent \
             else f"{crumb_base} > {_signature(fn)}"
         body_units = _segment(fn.body, u.start, u.end, lines)
-        # greedy block packing
-        blocks: list[tuple[int, int]] = []
-        bstart, bsize = None, 0
-        bend = None
-        for bu in body_units:
-            if bu.size > self.budget:
-                if bstart is not None:
-                    blocks.append((bstart, bend))
-                    bstart, bsize = None, 0
-                # giant single statement inside a function: line-split
-                blocks.extend(self._pack_lines(bu.start, bu.end, lines))
-                continue
-            if bstart is None:
-                bstart, bend, bsize = bu.start, bu.end, bu.size
-            elif bsize + bu.size > self.budget:
-                blocks.append((bstart, bend))
-                bstart, bend, bsize = bu.start, bu.end, bu.size
-            else:
-                bend, bsize = bu.end, bsize + bu.size
-        if bstart is not None:
-            blocks.append((bstart, bend))
+        # greedy block packing (shared cast.greedy_pack; oversized units are
+        # line-windowed inside it)
+        blocks = greedy_pack([(bu.start, bu.end, bu.size) for bu in body_units],
+                             lines, self.budget)
         n = len(blocks)
         kind = "method" if parent else "function"
         out = []
@@ -260,24 +229,9 @@ class CastChunker:
                              _text(lines, s, e), crumb, part=part).finalize())
         return out
 
-    def _pack_lines(self, start: int, end: int, lines: list[str]) -> list[tuple[int, int]]:
-        """Split [start, end] into line-windows each within budget."""
-        out = []
-        s = start
-        size = 0
-        for ln in range(start, end + 1):
-            lsize = nws(lines[ln - 1])
-            if size + lsize > self.budget and ln > s:
-                out.append((s, ln - 1))
-                s, size = ln, lsize
-            else:
-                size += lsize
-        out.append((s, end))
-        return out
-
     def _split_lines(self, start: int, end: int, lines: list[str], relpath: str,
                      crumb: str, kind: str) -> list[Chunk]:
-        wins = self._pack_lines(start, end, lines)
+        wins = pack_lines(lines, start, end, self.budget)
         n = len(wins)
         return [Chunk(relpath, kind if n == 1 else "block", None, s, e,
                       _text(lines, s, e), crumb,

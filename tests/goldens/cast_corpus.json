@@ -1,0 +1,5252 @@
+{
+ "python": {
+  "megabrain/__init__.py": {
+   "chunks": [
+    [
+     "module",
+     "__getattr__, __dir__",
+     null,
+     1,
+     72,
+     "megabrain > megabrain/__init__.py > [__getattr__, __dir__]",
+     "5df55647561f2353468ad918ebefd560652b436b"
+    ]
+   ],
+   "skeleton_sha": "a9b4439b7bc5a6313580fd667748af0d4e29e768",
+   "symbols": [
+    [
+     "__version__",
+     "constant",
+     34,
+     34,
+     "__version__ = '0.7.2'"
+    ],
+    [
+     "_EXPORTS",
+     "constant",
+     36,
+     60,
+     "_EXPORTS = {'index_repo': '.indexing.indexer', 'search': '.retrieval.query', 'render': '.retrieval.query', 'prune_search"
+    ],
+    [
+     "__all__",
+     "constant",
+     61,
+     61,
+     "__all__ = [*_EXPORTS, '__version__']"
+    ],
+    [
+     "__getattr__",
+     "function",
+     64,
+     68,
+     "def __getattr__(name: str)"
+    ],
+    [
+     "__dir__",
+     "function",
+     71,
+     72,
+     "def __dir__()"
+    ]
+   ]
+  },
+  "megabrain/app.py": {
+   "chunks": [
+    [
+     "module",
+     "resolve_scope, rel_join, normalize_agents, _maybe_reindex, query, query_multi, prune, ask, get",
+     null,
+     1,
+     106,
+     "megabrain > megabrain/app.py > [resolve_scope, rel_join, normalize_agents, _maybe_reindex, query, query_multi, prune, ask, get]",
+     "15c0b1cabbca0e744829d45f9bfbb967cdb7778e"
+    ],
+    [
+     "module",
+     "chunks, index, stats",
+     null,
+     107,
+     128,
+     "megabrain > megabrain/app.py > [chunks, index, stats]",
+     "bcc7208b94bc5b3a5982b0007a262fb47a27076e"
+    ]
+   ],
+   "skeleton_sha": "d3a3e2d7ed25b847786d1c8f45f0c8675c5cc889",
+   "symbols": [
+    [
+     "resolve_scope",
+     "function",
+     20,
+     30,
+     "def resolve_scope(path: str | Path, scope_path: str | None=None) -> tuple[Path, str | None]"
+    ],
+    [
+     "rel_join",
+     "function",
+     33,
+     40,
+     "def rel_join(root: Path, sub: str | None, rel: str) -> str"
+    ],
+    [
+     "normalize_agents",
+     "function",
+     43,
+     49,
+     "def normalize_agents(value: Any) -> bool | None"
+    ],
+    [
+     "_maybe_reindex",
+     "function",
+     52,
+     55,
+     "def _maybe_reindex(root: Path, reindex: bool) -> None"
+    ],
+    [
+     "query",
+     "function",
+     60,
+     65,
+     "def query(root: Path, task: str, path_filter: str | None=None, rerank: bool=False, reindex: bool=True) -> dict"
+    ],
+    [
+     "query_multi",
+     "function",
+     68,
+     76,
+     "def query_multi(roots: list[Path], task: str, path_filters: list[str | None] | None=None, reindex: bool=True) -> dict"
+    ],
+    [
+     "prune",
+     "function",
+     79,
+     86,
+     "def prune(root: Path, task: str, path_filter: str | None=None, with_text: bool=True, include_pruned: bool=False, reindex: bool=True) -> dict"
+    ],
+    [
+     "ask",
+     "function",
+     89,
+     98,
+     "def ask(root: Path, question: str, path_filter: str | None=None, docs_only: bool=False, include_docs: bool=False, agents: Any=None, rerank: bool=False, reindex: bool=True) -> dict"
+    ],
+    [
+     "get",
+     "function",
+     101,
+     106,
+     "def get(root: Path, sub: str | None, file: str, symbol: str | None=None) -> str"
+    ],
+    [
+     "chunks",
+     "function",
+     109,
+     115,
+     "def chunks(root: Path, sub: str | None, file: str, query_str: str, path_filter: str | None=None, reindex: bool=True) -> dict"
+    ],
+    [
+     "index",
+     "function",
+     118,
+     121,
+     "def index(root: Path, force: bool=False, exclude=()) -> dict"
+    ],
+    [
+     "stats",
+     "function",
+     124,
+     128,
+     "def stats(root: Path) -> dict"
+    ]
+   ]
+  },
+  "megabrain/ask.py": {
+   "chunks": [
+    [
+     "module",
+     "_candidates, _flow_ctx",
+     null,
+     1,
+     82,
+     "megabrain > megabrain/ask.py > [_candidates, _flow_ctx]",
+     "865e778f5308155f11aab606a841cc5076126513"
+    ],
+    [
+     "module",
+     "_numbered, _build_body, _code_block",
+     null,
+     83,
+     164,
+     "megabrain > megabrain/ask.py > [_numbered, _build_body, _code_block]",
+     "5e02c5b734c8a5144c7b4d776d080c2041b88f06"
+    ],
+    [
+     "module",
+     "_Splicer, ask, cited_files, _splice",
+     null,
+     165,
+     266,
+     "megabrain > megabrain/ask.py > [_Splicer, ask, cited_files, _splice]",
+     "5960b3adabd3124f465963f6ccc10293521803ef"
+    ],
+    [
+     "module",
+     "render_ask, stream_ask",
+     null,
+     267,
+     369,
+     "megabrain > megabrain/ask.py > [render_ask, stream_ask]",
+     "77dc9057a351321a1ffbf2131e0853eda5a1536b"
+    ]
+   ],
+   "skeleton_sha": "f46919598a135d08528fe9d6edd4aeff45a16a98",
+   "symbols": [
+    [
+     "DOC_EXTS",
+     "constant",
+     23,
+     23,
+     "DOC_EXTS = MarkdownStrategy.exts"
+    ],
+    [
+     "MAX_CTX_CHARS",
+     "constant",
+     25,
+     25,
+     "MAX_CTX_CHARS = 200000"
+    ],
+    [
+     "_SEL",
+     "constant",
+     30,
+     30,
+     "_SEL = re.compile('\\\\[\\\\[(\\\\d+)(?::\\\\s*[Ll]?(\\\\d+)\\\\s*-\\\\s*[Ll]?(\\\\d+))?\\\\s*\\\\]\\\\]')"
+    ],
+    [
+     "_candidates",
+     "function",
+     33,
+     58,
+     "def _candidates(res: dict, docs_only: bool=False, include_docs: bool=False) -> list[dict]"
+    ],
+    [
+     "_RULES",
+     "constant",
+     61,
+     67,
+     "_RULES = '- NEVER paste or quote code. Cite it with DOUBLE brackets: [[3]] (whole chunk) or [[3:705-731]] (file lines 70"
+    ],
+    [
+     "_flow_ctx",
+     "function",
+     70,
+     82,
+     "def _flow_ctx(res: dict) -> str"
+    ],
+    [
+     "_numbered",
+     "function",
+     85,
+     92,
+     "def _numbered(c: dict) -> str"
+    ],
+    [
+     "_build_body",
+     "function",
+     95,
+     117,
+     "def _build_body(question: str, cands: list[dict], flow_ctx: str='') -> dict"
+    ],
+    [
+     "_code_block",
+     "function",
+     120,
+     157,
+     "def _code_block(c: dict, lo: int | None, hi: int | None, seen: set, file_syms: dict[str, list[dict]]) -> str"
+    ],
+    [
+     "_PARTIAL",
+     "constant",
+     164,
+     164,
+     "_PARTIAL = re.compile('\\\\[(?:\\\\[(?:\\\\d+(?::\\\\s*[Ll]?\\\\d*(?:-\\\\s*[Ll]?\\\\d*)?)?\\\\]?)?)?$')"
+    ],
+    [
+     "_Splicer",
+     "class",
+     167,
+     205,
+     "class _Splicer"
+    ],
+    [
+     "_Splicer.__init__",
+     "method",
+     175,
+     179,
+     "def __init__(self, cands: list[dict], file_syms: dict[str, list[dict]])"
+    ],
+    [
+     "_Splicer._sub",
+     "method",
+     181,
+     188,
+     "def _sub(self, m)"
+    ],
+    [
+     "_Splicer.feed",
+     "method",
+     190,
+     197,
+     "def feed(self, d: str) -> str"
+    ],
+    [
+     "_Splicer.flush",
+     "method",
+     199,
+     201,
+     "def flush(self) -> str"
+    ],
+    [
+     "_Splicer.files",
+     "method",
+     203,
+     205,
+     "def files(self) -> int"
+    ],
+    [
+     "ask",
+     "function",
+     208,
+     233,
+     "def ask(root: Path, question: str, rerank: bool=False, docs_only: bool=False, path_filter: str | None=None, state: SearchState | None=None, include_docs: bool=False, agents: bool | None=False) -> dict"
+    ],
+    [
+     "cited_files",
+     "function",
+     236,
+     246,
+     "def cited_files(out: dict) -> list[str]"
+    ],
+    [
+     "_splice",
+     "function",
+     249,
+     266,
+     "def _splice(out: dict) -> tuple[str, set, set]"
+    ],
+    [
+     "render_ask",
+     "function",
+     269,
+     292,
+     "def render_ask(out: dict) -> str"
+    ],
+    [
+     "stream_ask",
+     "function",
+     295,
+     369,
+     "def stream_ask(root: Path, question: str, out=None, rerank: bool=False, show_map: bool=True, docs_only: bool=False, path_filter: str | None=None, include_docs: bool=False, agents: bool | None=None) -> None"
+    ]
+   ]
+  },
+  "megabrain/ask_agents.py": {
+   "chunks": [
+    [
+     "module",
+     "_top_dir, classify_bundle, repo_map, _chunk_lines",
+     null,
+     1,
+     112,
+     "megabrain > megabrain/ask_agents.py > [_top_dir, classify_bundle, repo_map, _chunk_lines]",
+     "cc24eff1f5a5f23a5ccf35106e3319ff05750c72"
+    ],
+    [
+     "module",
+     "_plan_llm, _plan_cluster, _plan, _tools",
+     null,
+     113,
+     236,
+     "megabrain > megabrain/ask_agents.py > [_plan_llm, _plan_cluster, _plan, _tools]",
+     "0607f75a489f585cee8d585b7a469f9170d65148"
+    ],
+    [
+     "module",
+     "_wrap_tools, _openrouter_agent, _agent_llm, _sub_rules, _subagent_prompt",
+     null,
+     237,
+     343,
+     "megabrain > megabrain/ask_agents.py > [_wrap_tools, _openrouter_agent, _agent_llm, _sub_rules, _subagent_prompt]",
+     "b444961a7bdbf3446be62fa2e1537a0038f5b785"
+    ],
+    [
+     "module",
+     "_synth_body, run_agents",
+     null,
+     344,
+     455,
+     "megabrain > megabrain/ask_agents.py > [_synth_body, run_agents]",
+     "30b2276809ad03a3343a60dc6090f2badc6c211b"
+    ],
+    [
+     "block",
+     "stream_events",
+     "1/2",
+     456,
+     562,
+     "megabrain > megabrain/ask_agents.py > def stream_events(root, question: str, on_event, *, agents: bool | None=None, rerank: bool=False, show_map: bool=True, docs_only: bool=False, include_docs: bool=False, path_filter: str | None=None, state=None) -> dict",
+     "be2057cad076f4435c4770c2d391445a29ac717c"
+    ],
+    [
+     "block",
+     "stream_events",
+     "2/2",
+     563,
+     574,
+     "megabrain > megabrain/ask_agents.py > def stream_events(root, question: str, on_event, *, agents: bool | None=None, rerank: bool=False, show_map: bool=True, docs_only: bool=False, include_docs: bool=False, path_filter: str | None=None, state=None) -> dict",
+     "1e147ac631bf0e8ee3aee9987d036778604c43ec"
+    ]
+   ],
+   "skeleton_sha": "9e7eeb0813bd55d8d2ebc2e642f4fb683d3bf582",
+   "symbols": [
+    [
+     "log",
+     "constant",
+     38,
+     38,
+     "log = logging.getLogger(__name__)"
+    ],
+    [
+     "MAX_AGENTS",
+     "constant",
+     40,
+     40,
+     "MAX_AGENTS = 4"
+    ],
+    [
+     "TOOL_ROUNDS",
+     "constant",
+     41,
+     41,
+     "TOOL_ROUNDS = 3"
+    ],
+    [
+     "TOOL_CAP",
+     "constant",
+     42,
+     42,
+     "TOOL_CAP = 8000"
+    ],
+    [
+     "MAP_CHARS",
+     "constant",
+     43,
+     43,
+     "MAP_CHARS = 6000"
+    ],
+    [
+     "SUB_MAX_TOKENS",
+     "constant",
+     44,
+     44,
+     "SUB_MAX_TOKENS = 1400"
+    ],
+    [
+     "SYNTH_MAX_TOKENS",
+     "constant",
+     45,
+     45,
+     "SYNTH_MAX_TOKENS = 2400"
+    ],
+    [
+     "PLAN_TIMEOUT",
+     "constant",
+     46,
+     46,
+     "PLAN_TIMEOUT = 30"
+    ],
+    [
+     "AGENT_TIMEOUT",
+     "constant",
+     48,
+     48,
+     "AGENT_TIMEOUT = 300"
+    ],
+    [
+     "_top_dir",
+     "function",
+     51,
+     52,
+     "def _top_dir(f: str) -> str"
+    ],
+    [
+     "classify_bundle",
+     "function",
+     55,
+     80,
+     "def classify_bundle(res: dict, question: str='') -> dict"
+    ],
+    [
+     "repo_map",
+     "function",
+     83,
+     106,
+     "def repo_map(st, max_chars: int=MAP_CHARS) -> str"
+    ],
+    [
+     "_chunk_lines",
+     "function",
+     109,
+     112,
+     "def _chunk_lines(cands: list[dict]) -> list[str]"
+    ],
+    [
+     "_plan_llm",
+     "function",
+     117,
+     157,
+     "def _plan_llm(question: str, cands: list[dict], rmap: str, max_agents: int) -> list[dict] | None"
+    ],
+    [
+     "_plan_cluster",
+     "function",
+     160,
+     176,
+     "def _plan_cluster(question: str, cands: list[dict], max_agents: int) -> list[dict] | None"
+    ],
+    [
+     "_plan",
+     "function",
+     179,
+     182,
+     "def _plan(question: str, cands: list[dict], rmap: str, key: str | None, max_agents: int=MAX_AGENTS) -> list[dict] | None"
+    ],
+    [
+     "_tools",
+     "function",
+     187,
+     236,
+     "def _tools(root: Path) -> list[dict]"
+    ],
+    [
+     "_wrap_tools",
+     "function",
+     239,
+     254,
+     "def _wrap_tools(tools: list[dict], emit, aid: int) -> list[dict]"
+    ],
+    [
+     "_openrouter_agent",
+     "function",
+     259,
+     294,
+     "def _openrouter_agent(prompt: str, tools: list[dict], key: str | None, on_delta, max_tokens: int) -> str"
+    ],
+    [
+     "_agent_llm",
+     "function",
+     297,
+     307,
+     "def _agent_llm(prompt: str, tools: list[dict], key: str | None, on_delta, max_tokens: int) -> str"
+    ],
+    [
+     "_sub_rules",
+     "function",
+     312,
+     315,
+     "def _sub_rules() -> str"
+    ],
+    [
+     "_subagent_prompt",
+     "function",
+     318,
+     343,
+     "def _subagent_prompt(question: str, agent: dict, cands: list[dict], rmap: str, repo: str, n: int) -> str"
+    ],
+    [
+     "_synth_body",
+     "function",
+     346,
+     369,
+     "def _synth_body(question: str, partials: list[tuple[dict, str]], cands: list[dict]) -> dict"
+    ],
+    [
+     "run_agents",
+     "function",
+     374,
+     455,
+     "def run_agents(root, question: str, *, res: dict, cands: list[dict], st, key: str | None, emit=None, splicer=None, max_agents: int=MAX_AGENTS) -> dict"
+    ],
+    [
+     "stream_events",
+     "function",
+     460,
+     574,
+     "def stream_events(root, question: str, on_event, *, agents: bool | None=None, rerank: bool=False, show_map: bool=True, docs_only: bool=False, include_docs: bool=False, path_filter: str | None=None, state=None) -> dict"
+    ]
+   ]
+  },
+  "megabrain/chunkers/__init__.py": {
+   "chunks": [
+    [
+     "module",
+     null,
+     null,
+     1,
+     26,
+     "megabrain > megabrain/chunkers/__init__.py (module level)",
+     "5cc68e7045895810e4c6eb43d389a2d8407b137e"
+    ]
+   ],
+   "skeleton_sha": "d3e46aa550103c5a46c4f388b9f0e294aa4eb9a1",
+   "symbols": [
+    [
+     "__all__",
+     "constant",
+     21,
+     26,
+     "__all__ = ['DEFAULT_BUDGET', 'Chunk', 'FileResult', 'Symbol', 'embed_text', 'nws', 'validate_partition', 'CastChunker', "
+    ]
+   ]
+  },
+  "megabrain/chunkers/base.py": {
+   "chunks": [
+    [
+     "module",
+     "nws, Chunk, Symbol, FileResult, validate_partition, embed_text",
+     null,
+     1,
+     91,
+     "megabrain > megabrain/chunkers/base.py > [nws, Chunk, Symbol, FileResult, validate_partition, embed_text]",
+     "220a60e1f4e5484f464ec237075f89563cd188e6"
+    ]
+   ],
+   "skeleton_sha": "fd80d0118d5db9abb5180895d4887b1f7a25c36e",
+   "symbols": [
+    [
+     "DEFAULT_BUDGET",
+     "constant",
+     16,
+     16,
+     "DEFAULT_BUDGET = 4000"
+    ],
+    [
+     "nws",
+     "function",
+     19,
+     20,
+     "def nws(text: str) -> int"
+    ],
+    [
+     "Chunk",
+     "class",
+     23,
+     40,
+     "class Chunk"
+    ],
+    [
+     "Chunk.file",
+     "class_attr",
+     25,
+     25,
+     "file: str"
+    ],
+    [
+     "Chunk.kind",
+     "class_attr",
+     26,
+     26,
+     "kind: str"
+    ],
+    [
+     "Chunk.name",
+     "class_attr",
+     27,
+     27,
+     "name: str | None"
+    ],
+    [
+     "Chunk.start_line",
+     "class_attr",
+     28,
+     28,
+     "start_line: int"
+    ],
+    [
+     "Chunk.end_line",
+     "class_attr",
+     29,
+     29,
+     "end_line: int"
+    ],
+    [
+     "Chunk.text",
+     "class_attr",
+     30,
+     30,
+     "text: str"
+    ],
+    [
+     "Chunk.breadcrumb",
+     "class_attr",
+     31,
+     31,
+     "breadcrumb: str"
+    ],
+    [
+     "Chunk.part",
+     "class_attr",
+     32,
+     32,
+     "part: str | None = None"
+    ],
+    [
+     "Chunk.nws_chars",
+     "class_attr",
+     33,
+     33,
+     "nws_chars: int = 0"
+    ],
+    [
+     "Chunk.finalize",
+     "method",
+     35,
+     37,
+     "def finalize(self) -> 'Chunk'"
+    ],
+    [
+     "Chunk.to_dict",
+     "method",
+     39,
+     40,
+     "def to_dict(self) -> dict"
+    ],
+    [
+     "Symbol",
+     "class",
+     43,
+     55,
+     "class Symbol"
+    ],
+    [
+     "Symbol.file",
+     "class_attr",
+     45,
+     45,
+     "file: str"
+    ],
+    [
+     "Symbol.name",
+     "class_attr",
+     46,
+     46,
+     "name: str"
+    ],
+    [
+     "Symbol.kind",
+     "class_attr",
+     47,
+     47,
+     "kind: str"
+    ],
+    [
+     "Symbol.line",
+     "class_attr",
+     48,
+     48,
+     "line: int"
+    ],
+    [
+     "Symbol.end_line",
+     "class_attr",
+     49,
+     49,
+     "end_line: int"
+    ],
+    [
+     "Symbol.signature",
+     "class_attr",
+     50,
+     50,
+     "signature: str"
+    ],
+    [
+     "Symbol.decorators",
+     "class_attr",
+     51,
+     51,
+     "decorators: list[str] = field(default_factory=list)"
+    ],
+    [
+     "Symbol.doc",
+     "class_attr",
+     52,
+     52,
+     "doc: str | None = None"
+    ],
+    [
+     "Symbol.to_dict",
+     "method",
+     54,
+     55,
+     "def to_dict(self) -> dict"
+    ],
+    [
+     "FileResult",
+     "class",
+     58,
+     65,
+     "class FileResult"
+    ],
+    [
+     "FileResult.file",
+     "class_attr",
+     60,
+     60,
+     "file: str"
+    ],
+    [
+     "FileResult.chunks",
+     "class_attr",
+     61,
+     61,
+     "chunks: list[Chunk]"
+    ],
+    [
+     "FileResult.symbols",
+     "class_attr",
+     62,
+     62,
+     "symbols: list[Symbol]"
+    ],
+    [
+     "FileResult.skeleton",
+     "class_attr",
+     63,
+     63,
+     "skeleton: str"
+    ],
+    [
+     "FileResult.parse_ok",
+     "class_attr",
+     64,
+     64,
+     "parse_ok: bool"
+    ],
+    [
+     "FileResult.total_lines",
+     "class_attr",
+     65,
+     65,
+     "total_lines: int"
+    ],
+    [
+     "validate_partition",
+     "function",
+     68,
+     83,
+     "def validate_partition(result: FileResult) -> list[str]"
+    ],
+    [
+     "embed_text",
+     "function",
+     86,
+     91,
+     "def embed_text(chunk: Chunk) -> str"
+    ]
+   ]
+  },
+  "megabrain/chunkers/cast.py": {
+   "chunks": [
+    [
+     "module",
+     "pack_lines, greedy_pack, merge_units",
+     null,
+     1,
+     107,
+     "megabrain > megabrain/chunkers/cast.py > [pack_lines, greedy_pack, merge_units]",
+     "52e04842c9c780ee87ab5254d1c615186c0a8682"
+    ]
+   ],
+   "skeleton_sha": "2f7460cf178e287884a65f5af93098c460c8a4fd",
+   "symbols": [
+    [
+     "pack_lines",
+     "function",
+     30,
+     46,
+     "def pack_lines(lines: list[str], start: int, end: int, budget: int) -> list[tuple[int, int]]"
+    ],
+    [
+     "greedy_pack",
+     "function",
+     49,
+     74,
+     "def greedy_pack(triples: list[tuple[int, int, int]], lines: list[str], budget: int) -> list[tuple[int, int]]"
+    ],
+    [
+     "merge_units",
+     "function",
+     77,
+     107,
+     "def merge_units(units: list, size_of: Callable[[object], int], budget: int, emit_merged: Callable[[list], list], emit_split: Callable[[object], list]) -> list"
+    ]
+   ]
+  },
+  "megabrain/chunkers/markdown.py": {
+   "chunks": [
+    [
+     "function",
+     "qmd_cut",
+     null,
+     1,
+     77,
+     "megabrain > megabrain/chunkers/markdown.py > def qmd_cut(lines, start: int, end: int, score, forbidden, budget: int)",
+     "57b8f843bc8d242fb16e8c3147004f2648a352eb"
+    ],
+    [
+     "class",
+     "MarkdownChunker",
+     null,
+     78,
+     224,
+     "megabrain > megabrain/chunkers/markdown.py > class MarkdownChunker",
+     "0fcce8390d60b17edf4bc86ae06122e19cc452f9"
+    ]
+   ],
+   "skeleton_sha": "8be39df839d500f5c2ca82f40d0368370e884dad",
+   "symbols": [
+    [
+     "_HEADING",
+     "constant",
+     26,
+     26,
+     "_HEADING = re.compile('^(#{1,6})\\\\s+(.*?)\\\\s*#*\\\\s*$')"
+    ],
+    [
+     "_FENCE",
+     "constant",
+     27,
+     27,
+     "_FENCE = re.compile('^\\\\s*(```|~~~)')"
+    ],
+    [
+     "qmd_cut",
+     "function",
+     30,
+     77,
+     "def qmd_cut(lines, start: int, end: int, score, forbidden, budget: int)"
+    ],
+    [
+     "MarkdownChunker",
+     "class",
+     80,
+     224,
+     "class MarkdownChunker"
+    ],
+    [
+     "MarkdownChunker.__init__",
+     "method",
+     81,
+     83,
+     "def __init__(self, budget: int=DEFAULT_BUDGET, repo: str='')"
+    ],
+    [
+     "MarkdownChunker.chunk_file",
+     "method",
+     85,
+     111,
+     "def chunk_file(self, relpath: str, source: str) -> FileResult"
+    ],
+    [
+     "MarkdownChunker._frontmatter",
+     "method",
+     115,
+     129,
+     "def _frontmatter(self, lines) -> tuple[int, str | None]"
+    ],
+    [
+     "MarkdownChunker._scan",
+     "method",
+     133,
+     171,
+     "def _scan(self, lines, total, fm_end)"
+    ],
+    [
+     "MarkdownChunker._cut",
+     "method",
+     175,
+     176,
+     "def _cut(self, lines, total, score, forbidden)"
+    ],
+    [
+     "MarkdownChunker._stack_at",
+     "method",
+     180,
+     190,
+     "def _stack_at(self, heading, s) -> list[tuple[int, str]]"
+    ],
+    [
+     "MarkdownChunker._crumb",
+     "method",
+     192,
+     197,
+     "def _crumb(self, base, title, stack) -> str"
+    ],
+    [
+     "MarkdownChunker._symbols",
+     "method",
+     201,
+     215,
+     "def _symbols(self, relpath, heading, total) -> list[Symbol]"
+    ],
+    [
+     "MarkdownChunker._skeleton",
+     "method",
+     217,
+     224,
+     "def _skeleton(self, relpath, heading, total) -> str"
+    ]
+   ]
+  },
+  "megabrain/chunkers/php.py": {
+   "chunks": [
+    [
+     "function",
+     "looks_legacy",
+     null,
+     1,
+     71,
+     "megabrain > megabrain/chunkers/php.py > def looks_legacy(root) -> bool",
+     "b2f77a5f234a9617482b2bfa58d074fecb69fe94"
+    ],
+    [
+     "method",
+     "LegacyPhpChunker.__init__, LegacyPhpChunker.chunk_file, LegacyPhpChunker._banner_lines, LegacyPhpChunker._section_title, LegacyPhpChunker._build, LegacyPhpChunker._usize, LegacyPhpChunker._def_chunks",
+     null,
+     72,
+     194,
+     "megabrain > megabrain/chunkers/php.py > class LegacyPhpChunker > [LegacyPhpChunker.__init__, LegacyPhpChunker.chunk_file, LegacyPhpChunker._banner_lines, LegacyPhpChunker._section_title, LegacyPhpChunker._build, LegacyPhpChunker._usize, LegacyPhpChunker._def_chunks]",
+     "59b97c0fdbc6533fe0bd10bd6fce5f19e909cb19"
+    ],
+    [
+     "method",
+     "LegacyPhpChunker._flow_chunks, LegacyPhpChunker._skeleton",
+     null,
+     195,
+     245,
+     "megabrain > megabrain/chunkers/php.py > class LegacyPhpChunker > [LegacyPhpChunker._flow_chunks, LegacyPhpChunker._skeleton]",
+     "00522804992ab126e79d0ac095dae6ba201e422e"
+    ],
+    [
+     "class",
+     "PhpChunker",
+     null,
+     246,
+     264,
+     "megabrain > megabrain/chunkers/php.py > class PhpChunker",
+     "4c6939e3dc70c4a76ca84632a6957595a29fb4ef"
+    ]
+   ],
+   "skeleton_sha": "832f0a549b0655d3be48c479001ae8d349861a60",
+   "symbols": [
+    [
+     "BANNER_MIN_FLUSH",
+     "constant",
+     39,
+     39,
+     "BANNER_MIN_FLUSH = 400"
+    ],
+    [
+     "_PROTECTED",
+     "constant",
+     44,
+     46,
+     "_PROTECTED = frozenset({'function_definition', 'class_declaration', 'interface_declaration', 'trait_declaration', 'enum_"
+    ],
+    [
+     "_BANNER",
+     "constant",
+     49,
+     49,
+     "_BANNER = re.compile('^\\\\s*(?://|#|/\\\\*+)\\\\s*[-=*#~_\u2500\u2550]{8,}')"
+    ],
+    [
+     "_TITLE",
+     "constant",
+     51,
+     51,
+     "_TITLE = re.compile('^\\\\s*(?://|#|\\\\*)\\\\s*([A-Za-z0-9(\\\\[].{2,70}?)\\\\s*(?:\\\\*/)?\\\\s*$')"
+    ],
+    [
+     "looks_legacy",
+     "function",
+     54,
+     71,
+     "def looks_legacy(root) -> bool"
+    ],
+    [
+     "LegacyPhpChunker",
+     "class",
+     74,
+     245,
+     "class LegacyPhpChunker"
+    ],
+    [
+     "LegacyPhpChunker.__init__",
+     "method",
+     75,
+     82,
+     "def __init__(self, budget: int=DEFAULT_BUDGET, repo: str='')"
+    ],
+    [
+     "LegacyPhpChunker.chunk_file",
+     "method",
+     86,
+     115,
+     "def chunk_file(self, relpath: str, source: str, root=None) -> FileResult"
+    ],
+    [
+     "LegacyPhpChunker._banner_lines",
+     "method",
+     119,
+     124,
+     "def _banner_lines(self, lines, total) -> list[bool]"
+    ],
+    [
+     "LegacyPhpChunker._section_title",
+     "method",
+     126,
+     133,
+     "def _section_title(self, lines, s, e) -> str | None"
+    ],
+    [
+     "LegacyPhpChunker._build",
+     "method",
+     137,
+     180,
+     "def _build(self, units, lines, relpath, crumb, src, banner)"
+    ],
+    [
+     "LegacyPhpChunker._usize",
+     "method",
+     182,
+     183,
+     "def _usize(self, lines, s, e) -> int"
+    ],
+    [
+     "LegacyPhpChunker._def_chunks",
+     "method",
+     185,
+     194,
+     "def _def_chunks(self, node, s, e, lines, relpath, crumb, src) -> list[Chunk]"
+    ],
+    [
+     "LegacyPhpChunker._flow_chunks",
+     "method",
+     196,
+     233,
+     "def _flow_chunks(self, units, s, e, lines, relpath, crumb, banner)"
+    ],
+    [
+     "LegacyPhpChunker._skeleton",
+     "method",
+     237,
+     245,
+     "def _skeleton(self, relpath, symbols) -> str"
+    ],
+    [
+     "PhpChunker",
+     "class",
+     248,
+     264,
+     "class PhpChunker"
+    ],
+    [
+     "PhpChunker.__init__",
+     "method",
+     253,
+     255,
+     "def __init__(self, budget: int=DEFAULT_BUDGET, repo: str='')"
+    ],
+    [
+     "PhpChunker.chunk_file",
+     "method",
+     257,
+     264,
+     "def chunk_file(self, relpath: str, source: str) -> FileResult"
+    ]
+   ]
+  },
+  "megabrain/chunkers/python.py": {
+   "chunks": [
+    [
+     "module",
+     "_node_start, _signature, _docline, _Unit, _segment, _text",
+     null,
+     1,
+     110,
+     "megabrain > megabrain/chunkers/python.py > [_node_start, _signature, _docline, _Unit, _segment, _text]",
+     "721029da1b82ab4fe4b27a8bf49af49efd9e2355"
+    ],
+    [
+     "method",
+     "CastChunker.__init__, CastChunker.chunk_file, CastChunker._merge_units, CastChunker._describe, CastChunker._split_unit, CastChunker._split_class",
+     null,
+     111,
+     209,
+     "megabrain > megabrain/chunkers/python.py > class CastChunker > [CastChunker.__init__, CastChunker.chunk_file, CastChunker._merge_units, CastChunker._describe, CastChunker._split_unit, CastChunker._split_class]",
+     "b4cac1da319622bc83f58f38b1e758032161a512"
+    ],
+    [
+     "method",
+     "CastChunker._split_function, CastChunker._split_lines, CastChunker._fallback_chunks, CastChunker._extract_symbols, CastChunker._skeleton",
+     null,
+     210,
+     317,
+     "megabrain > megabrain/chunkers/python.py > class CastChunker > [CastChunker._split_function, CastChunker._split_lines, CastChunker._fallback_chunks, CastChunker._extract_symbols, CastChunker._skeleton]",
+     "9328f01ea0fe857924bd4378d1d01c872b144f18"
+    ]
+   ],
+   "skeleton_sha": "4e157a1997483cc69249f8d1bdadfcc5c91b97a2",
+   "symbols": [
+    [
+     "_node_start",
+     "function",
+     25,
+     30,
+     "def _node_start(node: ast.stmt) -> int"
+    ],
+    [
+     "_signature",
+     "function",
+     33,
+     55,
+     "def _signature(node: ast.AST) -> str"
+    ],
+    [
+     "_docline",
+     "function",
+     58,
+     66,
+     "def _docline(node: ast.AST) -> str | None"
+    ],
+    [
+     "_Unit",
+     "class",
+     69,
+     75,
+     "class _Unit"
+    ],
+    [
+     "_Unit.node",
+     "class_attr",
+     72,
+     72,
+     "node: ast.stmt | None"
+    ],
+    [
+     "_Unit.start",
+     "class_attr",
+     73,
+     73,
+     "start: int"
+    ],
+    [
+     "_Unit.end",
+     "class_attr",
+     74,
+     74,
+     "end: int"
+    ],
+    [
+     "_Unit.size",
+     "class_attr",
+     75,
+     75,
+     "size: int = 0"
+    ],
+    [
+     "_segment",
+     "function",
+     78,
+     106,
+     "def _segment(body: list[ast.stmt], region_start: int, region_end: int, lines: list[str]) -> list[_Unit]"
+    ],
+    [
+     "_text",
+     "function",
+     109,
+     110,
+     "def _text(lines: list[str], start: int, end: int) -> str"
+    ],
+    [
+     "CastChunker",
+     "class",
+     116,
+     317,
+     "class CastChunker"
+    ],
+    [
+     "CastChunker.__init__",
+     "method",
+     117,
+     119,
+     "def __init__(self, budget: int=DEFAULT_BUDGET, repo: str='')"
+    ],
+    [
+     "CastChunker.chunk_file",
+     "method",
+     123,
+     144,
+     "def chunk_file(self, relpath: str, source: str) -> FileResult"
+    ],
+    [
+     "CastChunker._merge_units",
+     "method",
+     148,
+     160,
+     "def _merge_units(self, units: list[_Unit], lines: list[str], relpath: str, crumb_base: str, parent: ast.ClassDef | None) -> list[Chunk]"
+    ],
+    [
+     "CastChunker._describe",
+     "method",
+     162,
+     190,
+     "def _describe(self, buf: list[_Unit], crumb_base: str, parent: ast.ClassDef | None) -> tuple[str, str | None, str]"
+    ],
+    [
+     "CastChunker._split_unit",
+     "method",
+     192,
+     201,
+     "def _split_unit(self, u: _Unit, lines: list[str], relpath: str, crumb_base: str, parent: ast.ClassDef | None) -> list[Chunk]"
+    ],
+    [
+     "CastChunker._split_class",
+     "method",
+     203,
+     209,
+     "def _split_class(self, u: _Unit, lines: list[str], relpath: str, crumb_base: str) -> list[Chunk]"
+    ],
+    [
+     "CastChunker._split_function",
+     "method",
+     211,
+     230,
+     "def _split_function(self, u: _Unit, lines: list[str], relpath: str, crumb_base: str, parent: ast.ClassDef | None) -> list[Chunk]"
+    ],
+    [
+     "CastChunker._split_lines",
+     "method",
+     232,
+     239,
+     "def _split_lines(self, start: int, end: int, lines: list[str], relpath: str, crumb: str, kind: str) -> list[Chunk]"
+    ],
+    [
+     "CastChunker._fallback_chunks",
+     "method",
+     241,
+     243,
+     "def _fallback_chunks(self, relpath: str, lines: list[str], crumb: str) -> list[Chunk]"
+    ],
+    [
+     "CastChunker._extract_symbols",
+     "method",
+     247,
+     286,
+     "def _extract_symbols(self, relpath: str, tree: ast.Module) -> list[Symbol]"
+    ],
+    [
+     "CastChunker._skeleton",
+     "method",
+     290,
+     317,
+     "def _skeleton(self, relpath: str, tree: ast.Module) -> str"
+    ]
+   ]
+  },
+  "megabrain/chunkers/treesitter.py": {
+   "chunks": [
+    [
+     "module",
+     "LangSpec, _ts_grammar, _ruby_grammar, _go_grammar, _rust_grammar, _php_grammar",
+     null,
+     1,
+     132,
+     "megabrain > megabrain/chunkers/treesitter.py > [LangSpec, _ts_grammar, _ruby_grammar, _go_grammar, _rust_grammar, _php_grammar]",
+     "961d6dbb82c3c78c53de76e799128f39db41074c"
+    ],
+    [
+     "module",
+     "parser_for, first_line_signature, TreeChunkerOps",
+     null,
+     133,
+     229,
+     "megabrain > megabrain/chunkers/treesitter.py > [parser_for, first_line_signature, TreeChunkerOps]",
+     "3d10e6f2a479ce90d59c7aace4259c18457fb031"
+    ],
+    [
+     "method",
+     "TreeSitterChunker.__init__, TreeSitterChunker.name_of, TreeSitterChunker._unwrap, TreeSitterChunker.chunk_file, TreeSitterChunker.segment, TreeSitterChunker._usize, TreeSitterChunker._merge, TreeSitterChunker._describe",
+     null,
+     230,
+     361,
+     "megabrain > megabrain/chunkers/treesitter.py > class TreeSitterChunker > [TreeSitterChunker.__init__, TreeSitterChunker.name_of, TreeSitterChunker._unwrap, TreeSitterChunker.chunk_file, TreeSitterChunker.segment, TreeSitterChunker._usize, TreeSitterChunker._merge, TreeSitterChunker._describe]",
+     "dff8b9a9d2563cd25e1a09663f39745300e6dcd4"
+    ],
+    [
+     "method",
+     "TreeSitterChunker.split_unit, TreeSitterChunker._pack, TreeSitterChunker.lines_fallback, TreeSitterChunker._assign_symbol, TreeSitterChunker.symbols_of, TreeSitterChunker._skeleton",
+     null,
+     362,
+     461,
+     "megabrain > megabrain/chunkers/treesitter.py > class TreeSitterChunker > [TreeSitterChunker.split_unit, TreeSitterChunker._pack, TreeSitterChunker.lines_fallback, TreeSitterChunker._assign_symbol, TreeSitterChunker.symbols_of, TreeSitterChunker._skeleton]",
+     "fddd96f86e37c48cb34ddeccaaaa8754857f7bad"
+    ],
+    [
+     "class",
+     "TsChunker",
+     null,
+     462,
+     468,
+     "megabrain > megabrain/chunkers/treesitter.py > class TsChunker(TreeSitterChunker)",
+     "8d7d58a119177df50e931e84db7ffadbeabdd5d2"
+    ]
+   ],
+   "skeleton_sha": "125ec058dd167845c41e7784ceb5ae5941702164",
+   "symbols": [
+    [
+     "LangSpec",
+     "class",
+     32,
+     46,
+     "class LangSpec"
+    ],
+    [
+     "LangSpec.name",
+     "class_attr",
+     35,
+     35,
+     "name: str"
+    ],
+    [
+     "LangSpec.grammar",
+     "class_attr",
+     36,
+     36,
+     "grammar: Callable[[str], object]"
+    ],
+    [
+     "LangSpec.def_types",
+     "class_attr",
+     37,
+     37,
+     "def_types: dict[str, str]"
+    ],
+    [
+     "LangSpec.container_types",
+     "class_attr",
+     38,
+     38,
+     "container_types: frozenset[str] = frozenset()"
+    ],
+    [
+     "LangSpec.name_field",
+     "class_attr",
+     39,
+     39,
+     "name_field: str = 'name'"
+    ],
+    [
+     "LangSpec.extra_name_fields",
+     "class_attr",
+     40,
+     40,
+     "extra_name_fields: tuple[str, ...] = ()"
+    ],
+    [
+     "LangSpec.name_via",
+     "class_attr",
+     42,
+     42,
+     "name_via: dict[str, tuple[str, str]] = field(default_factory=dict)"
+    ],
+    [
+     "LangSpec.body_field",
+     "class_attr",
+     44,
+     44,
+     "body_field: str = 'body'"
+    ],
+    [
+     "LangSpec.unwrap_exports",
+     "class_attr",
+     45,
+     45,
+     "unwrap_exports: bool = False"
+    ],
+    [
+     "LangSpec.assign_defs",
+     "class_attr",
+     46,
+     46,
+     "assign_defs: bool = False"
+    ],
+    [
+     "_ts_grammar",
+     "function",
+     51,
+     53,
+     "def _ts_grammar(ext: str)"
+    ],
+    [
+     "_ruby_grammar",
+     "function",
+     56,
+     58,
+     "def _ruby_grammar(ext: str)"
+    ],
+    [
+     "_go_grammar",
+     "function",
+     61,
+     63,
+     "def _go_grammar(ext: str)"
+    ],
+    [
+     "_rust_grammar",
+     "function",
+     66,
+     68,
+     "def _rust_grammar(ext: str)"
+    ],
+    [
+     "_php_grammar",
+     "function",
+     71,
+     73,
+     "def _php_grammar(ext: str)"
+    ],
+    [
+     "TS_SPEC",
+     "constant",
+     76,
+     98,
+     "TS_SPEC = LangSpec(name='ts', grammar=_ts_grammar, def_types={'function_declaration': 'function', 'generator_function_de"
+    ],
+    [
+     "RUBY_SPEC",
+     "constant",
+     100,
+     115,
+     "RUBY_SPEC = LangSpec(name='ruby', grammar=_ruby_grammar, def_types={'method': 'method', 'singleton_method': 'method', 'c"
+    ],
+    [
+     "GO_SPEC",
+     "constant",
+     117,
+     132,
+     "GO_SPEC = LangSpec(name='go', grammar=_go_grammar, def_types={'function_declaration': 'function', 'method_declaration': "
+    ],
+    [
+     "RUST_SPEC",
+     "constant",
+     134,
+     156,
+     "RUST_SPEC = LangSpec(name='rust', grammar=_rust_grammar, def_types={'function_item': 'function', 'function_signature_ite"
+    ],
+    [
+     "PHP_SPEC",
+     "constant",
+     158,
+     176,
+     "PHP_SPEC = LangSpec(name='php', grammar=_php_grammar, def_types={'function_definition': 'function', 'method_declaration'"
+    ],
+    [
+     "_parsers",
+     "constant",
+     179,
+     179,
+     "_parsers: dict[tuple[str, str], Parser] = {}"
+    ],
+    [
+     "parser_for",
+     "function",
+     182,
+     186,
+     "def parser_for(spec: LangSpec, ext: str) -> Parser"
+    ],
+    [
+     "first_line_signature",
+     "function",
+     189,
+     192,
+     "def first_line_signature(node, source: bytes) -> str"
+    ],
+    [
+     "TreeChunkerOps",
+     "class",
+     198,
+     229,
+     "class TreeChunkerOps(Protocol)"
+    ],
+    [
+     "TreeChunkerOps.spec",
+     "class_attr",
+     209,
+     209,
+     "spec: LangSpec"
+    ],
+    [
+     "TreeChunkerOps.segment",
+     "method",
+     211,
+     213,
+     "def segment(self, nodes, region_start: int, region_end: int)"
+    ],
+    [
+     "TreeChunkerOps.split_unit",
+     "method",
+     215,
+     217,
+     "def split_unit(self, u, lines, relpath, crumb, src)"
+    ],
+    [
+     "TreeChunkerOps.symbols_of",
+     "method",
+     219,
+     221,
+     "def symbols_of(self, relpath, root, src) -> list"
+    ],
+    [
+     "TreeChunkerOps.lines_fallback",
+     "method",
+     223,
+     225,
+     "def lines_fallback(self, relpath, lines, crumb, start=1, end=None)"
+    ],
+    [
+     "TreeChunkerOps.name_of",
+     "method",
+     227,
+     229,
+     "def name_of(self, node) -> str | None"
+    ],
+    [
+     "TreeSitterChunker",
+     "class",
+     235,
+     461,
+     "class TreeSitterChunker"
+    ],
+    [
+     "TreeSitterChunker.__init__",
+     "method",
+     236,
+     239,
+     "def __init__(self, spec: LangSpec, budget: int=DEFAULT_BUDGET, repo: str='')"
+    ],
+    [
+     "TreeSitterChunker.name_of",
+     "method",
+     243,
+     263,
+     "def name_of(self, node) -> str | None"
+    ],
+    [
+     "TreeSitterChunker._unwrap",
+     "method",
+     265,
+     276,
+     "def _unwrap(self, node)"
+    ],
+    [
+     "TreeSitterChunker.chunk_file",
+     "method",
+     280,
+     302,
+     "def chunk_file(self, relpath: str, source: str) -> FileResult"
+    ],
+    [
+     "TreeSitterChunker.segment",
+     "method",
+     306,
+     321,
+     "def segment(self, nodes, region_start: int, region_end: int)"
+    ],
+    [
+     "TreeSitterChunker._usize",
+     "method",
+     323,
+     324,
+     "def _usize(self, lines, s, e)"
+    ],
+    [
+     "TreeSitterChunker._merge",
+     "method",
+     326,
+     337,
+     "def _merge(self, units, lines, relpath, crumb, parent, src)"
+    ],
+    [
+     "TreeSitterChunker._describe",
+     "method",
+     339,
+     361,
+     "def _describe(self, buf, crumb, parent, src)"
+    ],
+    [
+     "TreeSitterChunker.split_unit",
+     "method",
+     363,
+     384,
+     "def split_unit(self, u, lines, relpath, crumb, src)"
+    ],
+    [
+     "TreeSitterChunker._pack",
+     "method",
+     386,
+     390,
+     "def _pack(self, units, lines)"
+    ],
+    [
+     "TreeSitterChunker.lines_fallback",
+     "method",
+     392,
+     401,
+     "def lines_fallback(self, relpath, lines, crumb, start=1, end=None)"
+    ],
+    [
+     "TreeSitterChunker._assign_symbol",
+     "method",
+     405,
+     427,
+     "def _assign_symbol(self, node)"
+    ],
+    [
+     "TreeSitterChunker.symbols_of",
+     "method",
+     429,
+     454,
+     "def symbols_of(self, relpath, root, src) -> list[Symbol]"
+    ],
+    [
+     "TreeSitterChunker._skeleton",
+     "method",
+     456,
+     461,
+     "def _skeleton(self, relpath, root, src) -> str"
+    ],
+    [
+     "TsChunker",
+     "class",
+     464,
+     468,
+     "class TsChunker(TreeSitterChunker)"
+    ],
+    [
+     "TsChunker.__init__",
+     "method",
+     467,
+     468,
+     "def __init__(self, budget: int=DEFAULT_BUDGET, repo: str='')"
+    ]
+   ]
+  },
+  "megabrain/docsearch.py": {
+   "chunks": [
+    [
+     "module",
+     "load_groups, _strip_fm, _clean_inline, _snippet, _context, _group, _slug, _title",
+     null,
+     1,
+     119,
+     "megabrain > megabrain/docsearch.py > [load_groups, _strip_fm, _clean_inline, _snippet, _context, _group, _slug, _title]",
+     "ddef64bd34ccc7d1eeac760c48a866d5c0f8ba42"
+    ],
+    [
+     "function",
+     "docsearch",
+     null,
+     120,
+     153,
+     "megabrain > megabrain/docsearch.py > def docsearch(state: SearchState, q: str, limit: int=15, groups: tuple[tuple[str, str], ...]=()) -> list[dict]",
+     "7a624ae943482fff806821b650e9febea0a97bd8"
+    ]
+   ],
+   "skeleton_sha": "fc8afa17140943b983d0734dd7f35a1e20555fd8",
+   "symbols": [
+    [
+     "load_groups",
+     "function",
+     26,
+     39,
+     "def load_groups(root: Path) -> tuple[tuple[str, str], ...]"
+    ],
+    [
+     "_FM",
+     "constant",
+     44,
+     44,
+     "_FM = re.compile('\\\\A\\ufeff?---[ \\\\t]*\\\\n.*?\\\\n---[ \\\\t]*\\\\n+', re.S)"
+    ],
+    [
+     "_strip_fm",
+     "function",
+     47,
+     48,
+     "def _strip_fm(text: str) -> str"
+    ],
+    [
+     "_clean_inline",
+     "function",
+     51,
+     55,
+     "def _clean_inline(t: str) -> str"
+    ],
+    [
+     "_snippet",
+     "function",
+     58,
+     67,
+     "def _snippet(text: str, n: int=160) -> str"
+    ],
+    [
+     "_context",
+     "function",
+     70,
+     75,
+     "def _context(text: str, n: int=2000) -> str"
+    ],
+    [
+     "_group",
+     "function",
+     78,
+     83,
+     "def _group(slug: str, groups: tuple[tuple[str, str], ...]) -> str"
+    ],
+    [
+     "_slug",
+     "function",
+     86,
+     97,
+     "def _slug(relpath: str) -> str"
+    ],
+    [
+     "_title",
+     "function",
+     100,
+     119,
+     "def _title(relpath: str, chunk: dict) -> str"
+    ],
+    [
+     "docsearch",
+     "function",
+     122,
+     153,
+     "def docsearch(state: SearchState, q: str, limit: int=15, groups: tuple[tuple[str, str], ...]=()) -> list[dict]"
+    ]
+   ]
+  },
+  "megabrain/errors.py": {
+   "chunks": [
+    [
+     "module",
+     "MegabrainError, IndexNotFound, EmptyIndex, MissingAPIKey, ProviderError, UnknownTool",
+     null,
+     1,
+     77,
+     "megabrain > megabrain/errors.py > [MegabrainError, IndexNotFound, EmptyIndex, MissingAPIKey, ProviderError, UnknownTool]",
+     "a1231a31e6093b9f10b30e11c6066c87891a8517"
+    ]
+   ],
+   "skeleton_sha": "0fd7b57730e0b373854b878e9a521cbe29f72617",
+   "symbols": [
+    [
+     "MegabrainError",
+     "class",
+     18,
+     23,
+     "class MegabrainError(Exception)"
+    ],
+    [
+     "MegabrainError.code",
+     "class_attr",
+     22,
+     22,
+     "code = 'error'"
+    ],
+    [
+     "MegabrainError.http_status",
+     "class_attr",
+     23,
+     23,
+     "http_status = 500"
+    ],
+    [
+     "IndexNotFound",
+     "class",
+     26,
+     36,
+     "class IndexNotFound(MegabrainError, ValueError)"
+    ],
+    [
+     "IndexNotFound.code",
+     "class_attr",
+     29,
+     29,
+     "code = 'index_not_found'"
+    ],
+    [
+     "IndexNotFound.http_status",
+     "class_attr",
+     30,
+     30,
+     "http_status = 404"
+    ],
+    [
+     "IndexNotFound.at",
+     "method",
+     32,
+     36,
+     "def at(cls, path) -> 'IndexNotFound'"
+    ],
+    [
+     "EmptyIndex",
+     "class",
+     39,
+     48,
+     "class EmptyIndex(MegabrainError, RuntimeError)"
+    ],
+    [
+     "EmptyIndex.code",
+     "class_attr",
+     42,
+     42,
+     "code = 'empty_index'"
+    ],
+    [
+     "EmptyIndex.http_status",
+     "class_attr",
+     43,
+     43,
+     "http_status = 404"
+    ],
+    [
+     "EmptyIndex.at",
+     "method",
+     45,
+     48,
+     "def at(cls, path=None) -> 'EmptyIndex'"
+    ],
+    [
+     "MissingAPIKey",
+     "class",
+     51,
+     59,
+     "class MissingAPIKey(MegabrainError, RuntimeError)"
+    ],
+    [
+     "MissingAPIKey.code",
+     "class_attr",
+     54,
+     54,
+     "code = 'missing_api_key'"
+    ],
+    [
+     "MissingAPIKey.http_status",
+     "class_attr",
+     55,
+     55,
+     "http_status = 503"
+    ],
+    [
+     "MissingAPIKey.named",
+     "method",
+     57,
+     59,
+     "def named(cls, name: str) -> 'MissingAPIKey'"
+    ],
+    [
+     "ProviderError",
+     "class",
+     62,
+     70,
+     "class ProviderError(MegabrainError, RuntimeError)"
+    ],
+    [
+     "ProviderError.code",
+     "class_attr",
+     65,
+     65,
+     "code = 'provider_error'"
+    ],
+    [
+     "ProviderError.http_status",
+     "class_attr",
+     66,
+     66,
+     "http_status = 502"
+    ],
+    [
+     "ProviderError.__init__",
+     "method",
+     68,
+     70,
+     "def __init__(self, message: str, status: int | None=None)"
+    ],
+    [
+     "UnknownTool",
+     "class",
+     73,
+     77,
+     "class UnknownTool(MegabrainError, ValueError)"
+    ],
+    [
+     "UnknownTool.code",
+     "class_attr",
+     76,
+     76,
+     "code = 'unknown_tool'"
+    ],
+    [
+     "UnknownTool.http_status",
+     "class_attr",
+     77,
+     77,
+     "http_status = 404"
+    ]
+   ]
+  },
+  "megabrain/flows.py": {
+   "chunks": [
+    [
+     "module",
+     "strip_code, enabled, set_enabled",
+     null,
+     1,
+     99,
+     "megabrain > megabrain/flows.py > [strip_code, enabled, set_enabled]",
+     "261884452f1bbc5ec6234152594cbcaa6a4459d6"
+    ],
+    [
+     "module",
+     "cache_flow, match_flows, serve_verbatim",
+     null,
+     100,
+     186,
+     "megabrain > megabrain/flows.py > [cache_flow, match_flows, serve_verbatim]",
+     "09fc95349f06671fc55c12e915223aa60550bc8e"
+    ],
+    [
+     "module",
+     "_research_questions, warm_flows, prune_stale, refresh_stale",
+     null,
+     187,
+     296,
+     "megabrain > megabrain/flows.py > [_research_questions, warm_flows, prune_stale, refresh_stale]",
+     "b3a7cacb9a37f4eccda076d3c96e1462fa2a8c1d"
+    ]
+   ],
+   "skeleton_sha": "809c553c8d4c8f2a4071cc29c8ccbeeb5d3fee00",
+   "symbols": [
+    [
+     "log",
+     "constant",
+     58,
+     58,
+     "log = logging.getLogger(__name__)"
+    ],
+    [
+     "FLOW_MIN_SIM",
+     "constant",
+     60,
+     60,
+     "FLOW_MIN_SIM = 0.62"
+    ],
+    [
+     "FLOW_SERVE_SIM",
+     "constant",
+     61,
+     61,
+     "FLOW_SERVE_SIM = 0.88"
+    ],
+    [
+     "FLOW_TOP_K",
+     "constant",
+     62,
+     62,
+     "FLOW_TOP_K = 2"
+    ],
+    [
+     "FLOW_DEDUP_SIM",
+     "constant",
+     63,
+     63,
+     "FLOW_DEDUP_SIM = 0.92"
+    ],
+    [
+     "FLOW_TEXT_CAP",
+     "constant",
+     64,
+     64,
+     "FLOW_TEXT_CAP = 14000"
+    ],
+    [
+     "FLOW_FILE_ADDS",
+     "constant",
+     65,
+     65,
+     "FLOW_FILE_ADDS = 3"
+    ],
+    [
+     "_CITE",
+     "constant",
+     67,
+     67,
+     "_CITE = re.compile('\\\\[\\\\[[^\\\\]]*\\\\]\\\\]')"
+    ],
+    [
+     "_CODE",
+     "constant",
+     68,
+     68,
+     "_CODE = re.compile('```.*?```', re.S)"
+    ],
+    [
+     "_META",
+     "constant",
+     69,
+     69,
+     "_META = 'flow_cache'"
+    ],
+    [
+     "strip_code",
+     "function",
+     72,
+     75,
+     "def strip_code(text: str) -> str"
+    ],
+    [
+     "enabled",
+     "function",
+     78,
+     93,
+     "def enabled(root=None) -> bool"
+    ],
+    [
+     "set_enabled",
+     "function",
+     96,
+     99,
+     "def set_enabled(root, on: bool) -> None"
+    ],
+    [
+     "cache_flow",
+     "function",
+     102,
+     144,
+     "def cache_flow(root: Path, question: str, answer: str, cited_files: list[str], emb=None) -> int | None"
+    ],
+    [
+     "match_flows",
+     "function",
+     147,
+     167,
+     "def match_flows(flow_metas: list[dict], FL: np.ndarray, qv: np.ndarray, FLQ: np.ndarray | None=None) -> list[dict]"
+    ],
+    [
+     "serve_verbatim",
+     "function",
+     170,
+     186,
+     "def serve_verbatim(root, flows: list[dict]) -> dict | None"
+    ],
+    [
+     "_research_questions",
+     "function",
+     189,
+     224,
+     "def _research_questions(root: Path, limit: int) -> list[str]"
+    ],
+    [
+     "warm_flows",
+     "function",
+     227,
+     255,
+     "def warm_flows(root: Path, limit: int=6, ask_fn=None, quiet: bool=False) -> dict"
+    ],
+    [
+     "prune_stale",
+     "function",
+     258,
+     263,
+     "def prune_stale(store: Store) -> int"
+    ],
+    [
+     "refresh_stale",
+     "function",
+     266,
+     296,
+     "def refresh_stale(root, ask_fn=None, quiet: bool=False) -> dict"
+    ]
+   ]
+  },
+  "megabrain/forge.py": {
+   "chunks": [
+    [
+     "module",
+     "forge_model, detect",
+     null,
+     1,
+     118,
+     "megabrain > megabrain/forge.py > [forge_model, detect]",
+     "d53a94e02190cce1bb1f2ca0161b60674fd24792"
+    ],
+    [
+     "module",
+     "_prompt, _extract_code",
+     null,
+     119,
+     208,
+     "megabrain > megabrain/forge.py > [_prompt, _extract_code]",
+     "e4465a016411e0421cc03da8bfe55d8d01fa4df2"
+    ],
+    [
+     "module",
+     "validate_strategy, install, forge",
+     null,
+     209,
+     314,
+     "megabrain > megabrain/forge.py > [validate_strategy, install, forge]",
+     "c70a84db79fe91352b3cfcafdfce34a7f69328b6"
+    ],
+    [
+     "function",
+     "render_report",
+     null,
+     315,
+     342,
+     "megabrain > megabrain/forge.py > def render_report(report: dict) -> str",
+     "332fe1ad455c3c420e49afe52dfcc659cf9ed509"
+    ]
+   ],
+   "skeleton_sha": "405a1c8f1ec6aef8a15ad1dcc967e1588482af10",
+   "symbols": [
+    [
+     "log",
+     "constant",
+     45,
+     45,
+     "log = logging.getLogger(__name__)"
+    ],
+    [
+     "ATTEMPTS",
+     "constant",
+     47,
+     47,
+     "ATTEMPTS = 3"
+    ],
+    [
+     "MAX_SAMPLE_CHARS",
+     "constant",
+     48,
+     48,
+     "MAX_SAMPLE_CHARS = 4000"
+    ],
+    [
+     "MAX_GEN_TOKENS",
+     "constant",
+     49,
+     49,
+     "MAX_GEN_TOKENS = 6000"
+    ],
+    [
+     "MIN_FILES",
+     "constant",
+     50,
+     50,
+     "MIN_FILES = 2"
+    ],
+    [
+     "SKIP_EXTS",
+     "constant",
+     53,
+     58,
+     "SKIP_EXTS = frozenset({'.png', '.jpg', '.jpeg', '.gif', '.webp', '.ico', '.bmp', '.pdf', '.zip', '.gz', '.tar', '.woff',"
+    ],
+    [
+     "forge_model",
+     "function",
+     61,
+     67,
+     "def forge_model() -> str"
+    ],
+    [
+     "detect",
+     "function",
+     72,
+     118,
+     "def detect(root: Path, exclude=()) -> list[dict]"
+    ],
+    [
+     "_EXAMPLE",
+     "constant",
+     123,
+     152,
+     "_EXAMPLE = 'class SqlStrategy:\\n    \"\"\"One chunk per run of `;`-terminated statements, merged to the budget;\\n    each `"
+    ],
+    [
+     "_prompt",
+     "function",
+     155,
+     203,
+     "def _prompt(ext: str, repo_name: str, samples: list[tuple[str, str]], feedback: str='') -> str"
+    ],
+    [
+     "_extract_code",
+     "function",
+     206,
+     208,
+     "def _extract_code(text: str) -> str"
+    ],
+    [
+     "validate_strategy",
+     "function",
+     213,
+     247,
+     "def validate_strategy(root: Path, code: str, ext: str, paths: list[str]) -> tuple[bool, str, dict]"
+    ],
+    [
+     "install",
+     "function",
+     252,
+     261,
+     "def install(root: Path, ext: str, code: str) -> Path"
+    ],
+    [
+     "forge",
+     "function",
+     266,
+     314,
+     "def forge(root, ext: str | None=None, dry_run: bool=False, attempts: int=ATTEMPTS, model: str | None=None, quiet: bool=False) -> dict"
+    ],
+    [
+     "render_report",
+     "function",
+     317,
+     342,
+     "def render_report(report: dict) -> str"
+    ]
+   ]
+  },
+  "megabrain/forge_eval.py": {
+   "chunks": [
+    [
+     "module",
+     "_py_probes, _generic_probes, probe_spans",
+     null,
+     1,
+     119,
+     "megabrain > megabrain/forge_eval.py > [_py_probes, _generic_probes, probe_spans]",
+     "1bdf656b6ddf0ff38510b21fdb801386c3efaf29"
+    ],
+    [
+     "module",
+     "_measure, changed_files, _index_copy, _granularity_violation",
+     null,
+     120,
+     238,
+     "megabrain > megabrain/forge_eval.py > [_measure, changed_files, _index_copy, _granularity_violation]",
+     "45a24af287a0ddd92f5e3303d9dff1a29729b891"
+    ],
+    [
+     "function",
+     "ab_gate",
+     null,
+     239,
+     297,
+     "megabrain > megabrain/forge_eval.py > def ab_gate(root: Path, candidate, targets=None, margin: float=IOU_MARGIN, regress_tol: float=0.01, baseline=None) -> dict",
+     "c09660f0e66280b81b918dc4cd5b1ab959d5bc90"
+    ]
+   ],
+   "skeleton_sha": "e68d603c582d32e6616ea23094cecbde727fbb9d",
+   "symbols": [
+    [
+     "IOU_MARGIN",
+     "constant",
+     43,
+     43,
+     "IOU_MARGIN = 0.01"
+    ],
+    [
+     "MAX_PROBES",
+     "constant",
+     44,
+     44,
+     "MAX_PROBES = 60"
+    ],
+    [
+     "TOPK",
+     "constant",
+     45,
+     45,
+     "TOPK = (1, 5)"
+    ],
+    [
+     "_py_probes",
+     "function",
+     50,
+     85,
+     "def _py_probes(source: str) -> list[tuple[str, int, int]]"
+    ],
+    [
+     "_generic_probes",
+     "function",
+     88,
+     108,
+     "def _generic_probes(source: str) -> list[tuple[str, int, int]]"
+    ],
+    [
+     "probe_spans",
+     "function",
+     111,
+     119,
+     "def probe_spans(path: Path) -> list[tuple[str, int, int]]"
+    ],
+    [
+     "_measure",
+     "function",
+     124,
+     162,
+     "def _measure(root: Path, target: str, probes) -> dict"
+    ],
+    [
+     "changed_files",
+     "function",
+     165,
+     188,
+     "def changed_files(root: Path, candidate, baseline=None) -> list[str]"
+    ],
+    [
+     "_index_copy",
+     "function",
+     191,
+     198,
+     "def _index_copy(root: Path, strategy)"
+    ],
+    [
+     "MIN_MEDIAN_NWS",
+     "constant",
+     201,
+     201,
+     "MIN_MEDIAN_NWS = 100"
+    ],
+    [
+     "_granularity_violation",
+     "function",
+     204,
+     238,
+     "def _granularity_violation(root: Path, candidate, files: list[str]) -> str | None"
+    ],
+    [
+     "ab_gate",
+     "function",
+     241,
+     297,
+     "def ab_gate(root: Path, candidate, targets=None, margin: float=IOU_MARGIN, regress_tol: float=0.01, baseline=None) -> dict"
+    ]
+   ]
+  },
+  "megabrain/forge_specialize.py": {
+   "chunks": [
+    [
+     "module",
+     "_dominant_collection, _diagnose",
+     null,
+     1,
+     100,
+     "megabrain > megabrain/forge_specialize.py > [_dominant_collection, _diagnose]",
+     "2b93708766aef197b1c45b41997db6d266090cc3"
+    ],
+    [
+     "module",
+     "detect_specialization, lit_baseline, gate_strategy, _load",
+     null,
+     101,
+     223,
+     "megabrain > megabrain/forge_specialize.py > [detect_specialization, lit_baseline, gate_strategy, _load]",
+     "3b3f94330f321d5f05193e5be3e8a3df6ba46a5a"
+    ],
+    [
+     "function",
+     "render_report",
+     null,
+     224,
+     248,
+     "megabrain > megabrain/forge_specialize.py > def render_report(report: dict) -> str",
+     "1eb78d489d37fa31912bb05f18326deee0794594"
+    ]
+   ],
+   "skeleton_sha": "933590aeaa92ebcf42277a417c79ef8b4318e463",
+   "symbols": [
+    [
+     "log",
+     "constant",
+     36,
+     36,
+     "log = logging.getLogger(__name__)"
+    ],
+    [
+     "BUDGET",
+     "constant",
+     38,
+     38,
+     "BUDGET = 4000"
+    ],
+    [
+     "BLOB_FRAC",
+     "constant",
+     39,
+     39,
+     "BLOB_FRAC = 0.55"
+    ],
+    [
+     "MIN_LINES",
+     "constant",
+     40,
+     40,
+     "MIN_LINES = 120"
+    ],
+    [
+     "MAX_OPP_FILES",
+     "constant",
+     41,
+     41,
+     "MAX_OPP_FILES = 40"
+    ],
+    [
+     "_dominant_collection",
+     "function",
+     46,
+     65,
+     "def _dominant_collection(source: str)"
+    ],
+    [
+     "_SHAPE_RANK",
+     "constant",
+     71,
+     71,
+     "_SHAPE_RANK = {'table': 3, 'blob': 2, 'window': 1}"
+    ],
+    [
+     "_diagnose",
+     "function",
+     74,
+     100,
+     "def _diagnose(rel: str, source: str, strat) -> tuple[str, str] | None"
+    ],
+    [
+     "detect_specialization",
+     "function",
+     103,
+     143,
+     "def detect_specialization(root: Path, exclude=()) -> list[dict]"
+    ],
+    [
+     "lit_baseline",
+     "function",
+     146,
+     182,
+     "def lit_baseline(ext: str, repo: str='')"
+    ],
+    [
+     "gate_strategy",
+     "function",
+     187,
+     217,
+     "def gate_strategy(root, strategy, ext: str, dry_run: bool=False, margin: float | None=None) -> dict"
+    ],
+    [
+     "_load",
+     "function",
+     220,
+     223,
+     "def _load(code: str, repo: str, ext: str)"
+    ],
+    [
+     "render_report",
+     "function",
+     226,
+     248,
+     "def render_report(report: dict) -> str"
+    ]
+   ]
+  },
+  "megabrain/frontends/__init__.py": {
+   "chunks": [
+    [
+     "module",
+     null,
+     null,
+     1,
+     2,
+     "megabrain > megabrain/frontends/__init__.py (module level)",
+     "544507ce3654f1fba3e274188ccc421a2e5a549a"
+    ]
+   ],
+   "skeleton_sha": "ba8b5304354dd8933218ae499572510d3348585f",
+   "symbols": []
+  },
+  "megabrain/frontends/cli.py": {
+   "chunks": [
+    [
+     "module",
+     null,
+     null,
+     1,
+     22,
+     "megabrain > megabrain/frontends/cli.py (module level)",
+     "087b78ef00b03ab54f54920e1318704e6d03158a"
+    ],
+    [
+     "block",
+     "main",
+     "1/2",
+     23,
+     120,
+     "megabrain > megabrain/frontends/cli.py > def main(argv=None)",
+     "a16c4299d55f2897296a4ed00e2b95b5d0d9552a"
+    ],
+    [
+     "block",
+     "main",
+     "2/2",
+     121,
+     153,
+     "megabrain > megabrain/frontends/cli.py > def main(argv=None)",
+     "018172f3ad588108986064ae913e095cc20c3768"
+    ],
+    [
+     "block",
+     "_dispatch",
+     "1/2",
+     154,
+     289,
+     "megabrain > megabrain/frontends/cli.py > def _dispatch(a, raw: list[Path], root: Path) -> None",
+     "fd2b8296acf0a3b61799b2e6d0a23472b359eb66"
+    ],
+    [
+     "block",
+     "_dispatch",
+     "2/2",
+     290,
+     292,
+     "megabrain > megabrain/frontends/cli.py > def _dispatch(a, raw: list[Path], root: Path) -> None",
+     "5a3b594881c5508ef31dbf7a07e68914e132df6e"
+    ],
+    [
+     "module",
+     null,
+     null,
+     293,
+     296,
+     "megabrain > megabrain/frontends/cli.py (module level)",
+     "494c28ef72c62a5924f4316a400d4193725ae15a"
+    ]
+   ],
+   "skeleton_sha": "263d465bce990aff80347f885cea0ba9800748a1",
+   "symbols": [
+    [
+     "main",
+     "function",
+     25,
+     153,
+     "def main(argv=None)"
+    ],
+    [
+     "_dispatch",
+     "function",
+     156,
+     292,
+     "def _dispatch(a, raw: list[Path], root: Path) -> None"
+    ]
+   ]
+  },
+  "megabrain/frontends/http.py": {
+   "chunks": [
+    [
+     "module",
+     null,
+     null,
+     1,
+     59,
+     "megabrain > megabrain/frontends/http.py (module level)",
+     "bd3b4ef0c3a5798a755653ddfcd2c755945ec4fa"
+    ],
+    [
+     "block",
+     "_make_handler",
+     "1/3",
+     60,
+     192,
+     "megabrain > megabrain/frontends/http.py > def _make_handler(repo: _Repo, cors: str | None, enable_llm: bool, token: str | None=None)",
+     "0498d20359a40f40079fc7a0cf6e324d2089502e"
+    ],
+    [
+     "block",
+     "_make_handler",
+     "2/3",
+     193,
+     230,
+     "megabrain > megabrain/frontends/http.py > def _make_handler(repo: _Repo, cors: str | None, enable_llm: bool, token: str | None=None)",
+     "602c58b05423c35707e8ea3ac627e24a9d1e68b5"
+    ],
+    [
+     "block",
+     "_make_handler",
+     "3/3",
+     231,
+     232,
+     "megabrain > megabrain/frontends/http.py > def _make_handler(repo: _Repo, cors: str | None, enable_llm: bool, token: str | None=None)",
+     "5ebaec407bc18bc3fde033e8db1a20bf3e3ec3f8"
+    ],
+    [
+     "function",
+     "serve",
+     null,
+     233,
+     257,
+     "megabrain > megabrain/frontends/http.py > def serve(root, port: int=2134, host: str='127.0.0.1', cors: str | None=None, enable_llm: bool=True, token: str | None=None) -> None",
+     "204e3d1d7f9cc01ae66dc9db8b5f400259e6b33f"
+    ]
+   ],
+   "skeleton_sha": "3cbcc6f1ae8c2fd53afe43bf0b1a03372e33edcf",
+   "symbols": [
+    [
+     "log",
+     "constant",
+     53,
+     53,
+     "log = logging.getLogger(__name__)"
+    ],
+    [
+     "_Repo",
+     "constant",
+     59,
+     59,
+     "_Repo = RepoSession"
+    ],
+    [
+     "_make_handler",
+     "function",
+     64,
+     232,
+     "def _make_handler(repo: _Repo, cors: str | None, enable_llm: bool, token: str | None=None)"
+    ],
+    [
+     "serve",
+     "function",
+     235,
+     257,
+     "def serve(root, port: int=2134, host: str='127.0.0.1', cors: str | None=None, enable_llm: bool=True, token: str | None=None) -> None"
+    ]
+   ]
+  },
+  "megabrain/frontends/mcp.py": {
+   "chunks": [
+    [
+     "module",
+     null,
+     null,
+     1,
+     34,
+     "megabrain > megabrain/frontends/mcp.py (module level)",
+     "0d12784588b404c30fa722b145e2bbf0057e1238"
+    ],
+    [
+     "block",
+     null,
+     "1/2",
+     35,
+     133,
+     "megabrain > megabrain/frontends/mcp.py (module level)",
+     "b4d951c3c34e5e0d5cbc644e1183726495bd4d15"
+    ],
+    [
+     "block",
+     null,
+     "2/2",
+     134,
+     198,
+     "megabrain > megabrain/frontends/mcp.py (module level)",
+     "3867594f3da9fc52424244daaea4b2eea4b7735a"
+    ],
+    [
+     "module",
+     "_scope, _scope_root, call_tool",
+     null,
+     199,
+     298,
+     "megabrain > megabrain/frontends/mcp.py > [_scope, _scope_root, call_tool]",
+     "55c938eb4185f3bda97a46b0fbbdae8313c098fd"
+    ],
+    [
+     "function",
+     "main",
+     null,
+     299,
+     340,
+     "megabrain > megabrain/frontends/mcp.py > def main()",
+     "494cf17f80c3e1afe9632a2577e0beb051e44aa6"
+    ]
+   ],
+   "skeleton_sha": "e8c7bbd1a5fe03ea764470b33918dee6ef43f765",
+   "symbols": [
+    [
+     "PROTOCOL",
+     "constant",
+     34,
+     34,
+     "PROTOCOL = '2024-11-05'"
+    ],
+    [
+     "TOOLS",
+     "constant",
+     36,
+     198,
+     "TOOLS = [{'name': 'megabrain_ask', 'description': 'THE primary tool for any how/where/why question about an indexed repo"
+    ],
+    [
+     "_scope",
+     "function",
+     201,
+     208,
+     "def _scope(args: dict) -> tuple[Path, str | None]"
+    ],
+    [
+     "_scope_root",
+     "function",
+     211,
+     218,
+     "def _scope_root(args: dict) -> tuple[Path, str | None]"
+    ],
+    [
+     "call_tool",
+     "function",
+     221,
+     298,
+     "def call_tool(name: str, args: dict) -> str"
+    ],
+    [
+     "main",
+     "function",
+     301,
+     336,
+     "def main()"
+    ]
+   ]
+  },
+  "megabrain/indexing/__init__.py": {
+   "chunks": [
+    [
+     "module",
+     null,
+     null,
+     1,
+     2,
+     "megabrain > megabrain/indexing/__init__.py (module level)",
+     "f91453291f09bfc555ed2f26beedd5c3c095df2c"
+    ]
+   ],
+   "skeleton_sha": "8f038a5b7313b358be2ed37c574718977a6cb693",
+   "symbols": []
+  },
+  "megabrain/indexing/graph.py": {
+   "chunks": [
+    [
+     "module",
+     "ts_edges, python_package_index, extract_edges",
+     null,
+     1,
+     129,
+     "megabrain > megabrain/indexing/graph.py > [ts_edges, python_package_index, extract_edges]",
+     "9c2dc52c50c6d7ce0a968ff7679109687ccadfb3"
+    ],
+    [
+     "module",
+     "php_class_index, php_edges",
+     null,
+     130,
+     170,
+     "megabrain > megabrain/indexing/graph.py > [php_class_index, php_edges]",
+     "433487c09d8e381c48e93e67d58bacd2e9564053"
+    ]
+   ],
+   "skeleton_sha": "cc07d7d94df57b1f1012abc101537517b8e282b7",
+   "symbols": [
+    [
+     "_TS_IMPORT",
+     "constant",
+     11,
+     15,
+     "_TS_IMPORT = re.compile('(?:import|export)\\\\s+[^\\'\"]*?from\\\\s+[\\'\"]([^\\'\"]+)[\\'\"]|require\\\\(\\\\s*[\\'\"]([^\\'\"]+)[\\'\"]\\\\s*\\"
+    ],
+    [
+     "ts_edges",
+     "function",
+     18,
+     43,
+     "def ts_edges(rel: str, source: str, all_files: set[str]) -> list[tuple[str, str]]"
+    ],
+    [
+     "python_package_index",
+     "function",
+     46,
+     73,
+     "def python_package_index(file_sources: dict[str, str], pkg_prefixes: set[str])"
+    ],
+    [
+     "extract_edges",
+     "function",
+     76,
+     113,
+     "def extract_edges(rel: str, tree: ast.Module, mod2file: dict[str, str], unique_defs: dict[str, str], qualdefs: dict[str, str], pkg_prefixes: set[str]) -> list[tuple[str, str]]"
+    ],
+    [
+     "_PHP_NS",
+     "constant",
+     118,
+     118,
+     "_PHP_NS = re.compile('^\\\\s*namespace\\\\s+([A-Za-z_][\\\\w\\\\\\\\]*)\\\\s*[;{]', re.M)"
+    ],
+    [
+     "_PHP_DECL",
+     "constant",
+     119,
+     121,
+     "_PHP_DECL = re.compile('^\\\\s*(?:abstract\\\\s+|final\\\\s+|readonly\\\\s+)*(?:class|interface|trait|enum)\\\\s+([A-Za-z_]\\\\w*)',"
+    ],
+    [
+     "_PHP_USE",
+     "constant",
+     125,
+     126,
+     "_PHP_USE = re.compile('^\\\\s*use\\\\s+(?!function\\\\b|const\\\\b)([A-Za-z_][\\\\w\\\\\\\\]*)(?:\\\\s+as\\\\s+\\\\w+)?\\\\s*;', re.M)"
+    ],
+    [
+     "_PHP_USE_GROUP",
+     "constant",
+     128,
+     129,
+     "_PHP_USE_GROUP = re.compile('^\\\\s*use\\\\s+(?!function\\\\b|const\\\\b)([A-Za-z_][\\\\w\\\\\\\\]*)\\\\\\\\\\\\{([^}]+)\\\\}\\\\s*;', re.M)"
+    ],
+    [
+     "php_class_index",
+     "function",
+     132,
+     145,
+     "def php_class_index(sources: dict[str, str]) -> dict[str, str]"
+    ],
+    [
+     "php_edges",
+     "function",
+     148,
+     170,
+     "def php_edges(rel: str, source: str, fqcn2file: dict[str, str]) -> list[tuple[str, str]]"
+    ]
+   ]
+  },
+  "megabrain/indexing/indexer.py": {
+   "chunks": [
+    [
+     "module",
+     "load_ignore, _split_patterns, _excluded, discover, maybe_reindex, index_repo",
+     null,
+     1,
+     117,
+     "megabrain > megabrain/indexing/indexer.py > [load_ignore, _split_patterns, _excluded, discover, maybe_reindex, index_repo]",
+     "6eb05f7bdad59c8b2091939e24582e07c721de26"
+    ],
+    [
+     "function",
+     "_index_into",
+     null,
+     118,
+     199,
+     "megabrain > megabrain/indexing/indexer.py > def _index_into(store: Store, emb: Embedder, root: Path, name: str, *, force, exclude, strategies, prune_flows, t0) -> dict",
+     "d2325a56aa457349a14e2163a1d8f785cb7f33be"
+    ]
+   ],
+   "skeleton_sha": "a7310bca476d40c32febe58023ea8fb2249b8a9b",
+   "symbols": [
+    [
+     "EXCLUDE_DIRS",
+     "constant",
+     19,
+     21,
+     "EXCLUDE_DIRS = {'.git', '__pycache__', '.venv', 'venv', 'node_modules', 'dist', 'build', 'coverage', '.next', '.nuxt', '"
+    ],
+    [
+     "AUTO_REFRESH_TTL",
+     "constant",
+     22,
+     22,
+     "AUTO_REFRESH_TTL = 60"
+    ],
+    [
+     "MAX_FILE_BYTES",
+     "constant",
+     23,
+     23,
+     "MAX_FILE_BYTES = 600000"
+    ],
+    [
+     "IGNORE_FILE",
+     "constant",
+     24,
+     24,
+     "IGNORE_FILE = '.megabrainignore'"
+    ],
+    [
+     "load_ignore",
+     "function",
+     27,
+     38,
+     "def load_ignore(root: Path) -> list[str]"
+    ],
+    [
+     "_split_patterns",
+     "function",
+     41,
+     53,
+     "def _split_patterns(patterns) -> tuple[set[str], list[str]]"
+    ],
+    [
+     "_excluded",
+     "function",
+     56,
+     63,
+     "def _excluded(rel: str, names: set[str], globs: list[str]) -> bool"
+    ],
+    [
+     "discover",
+     "function",
+     66,
+     79,
+     "def discover(root: Path, exts: tuple[str, ...], exclude=()) -> list[Path]"
+    ],
+    [
+     "maybe_reindex",
+     "function",
+     82,
+     97,
+     "def maybe_reindex(root: Path, ttl: int=AUTO_REFRESH_TTL) -> bool"
+    ],
+    [
+     "index_repo",
+     "function",
+     100,
+     117,
+     "def index_repo(root: Path, repo_name: str | None=None, quiet: bool=True, force: bool=False, exclude=(), strategies=(), prune_flows: bool=True) -> dict"
+    ],
+    [
+     "_index_into",
+     "function",
+     120,
+     199,
+     "def _index_into(store: Store, emb: Embedder, root: Path, name: str, *, force, exclude, strategies, prune_flows, t0) -> dict"
+    ]
+   ]
+  },
+  "megabrain/indexing/strategies.py": {
+   "chunks": [
+    [
+     "module",
+     "ChunkStrategy, PythonStrategy, TsJsStrategy, TreeSitterStrategy",
+     null,
+     1,
+     126,
+     "megabrain > megabrain/indexing/strategies.py > [ChunkStrategy, PythonStrategy, TsJsStrategy, TreeSitterStrategy]",
+     "35cad4592820e7d741bc487cd2379df291d75966"
+    ],
+    [
+     "module",
+     "MarkdownStrategy, PhpStrategy, _grammar_available, build_registry, builtin_strategy_for, strategy_for, all_exts, _sha256, _read_trust, trust_file",
+     null,
+     127,
+     251,
+     "megabrain > megabrain/indexing/strategies.py > [MarkdownStrategy, PhpStrategy, _grammar_available, build_registry, builtin_strategy_for, strategy_for, all_exts, _sha256, _read_trust, trust_file]",
+     "9e34c930103d1960423efdcaa5ac6c79abcdb037"
+    ],
+    [
+     "module",
+     "is_trusted, instantiate_strategies, load_repo_strategies",
+     null,
+     252,
+     300,
+     "megabrain > megabrain/indexing/strategies.py > [is_trusted, instantiate_strategies, load_repo_strategies]",
+     "c6ce6d31c7ec393ea7fc738505c777a9536a5fe6"
+    ]
+   ],
+   "skeleton_sha": "cb936fdc8c5597f78570793498208a2a80a4a2b4",
+   "symbols": [
+    [
+     "ChunkStrategy",
+     "class",
+     47,
+     62,
+     "class ChunkStrategy(Protocol)"
+    ],
+    [
+     "ChunkStrategy.exts",
+     "class_attr",
+     56,
+     56,
+     "exts: tuple[str, ...]"
+    ],
+    [
+     "ChunkStrategy.chunk_file",
+     "method",
+     58,
+     58,
+     "def chunk_file(self, relpath: str, source: str) -> FileResult"
+    ],
+    [
+     "ChunkStrategy.build_edge_ctx",
+     "method",
+     60,
+     60,
+     "def build_edge_ctx(self, sources: dict[str, str], repo_name: str)"
+    ],
+    [
+     "ChunkStrategy.extract_edges",
+     "method",
+     62,
+     62,
+     "def extract_edges(self, relpath: str, source: str, ctx)"
+    ],
+    [
+     "PythonStrategy",
+     "class",
+     65,
+     89,
+     "class PythonStrategy"
+    ],
+    [
+     "PythonStrategy.exts",
+     "class_attr",
+     66,
+     66,
+     "exts = ('.py',)"
+    ],
+    [
+     "PythonStrategy.__init__",
+     "method",
+     68,
+     69,
+     "def __init__(self, repo: str='')"
+    ],
+    [
+     "PythonStrategy.chunk_file",
+     "method",
+     71,
+     72,
+     "def chunk_file(self, relpath: str, source: str) -> FileResult"
+    ],
+    [
+     "PythonStrategy.build_edge_ctx",
+     "method",
+     74,
+     82,
+     "def build_edge_ctx(self, sources: dict[str, str], repo_name: str)"
+    ],
+    [
+     "PythonStrategy.extract_edges",
+     "method",
+     84,
+     89,
+     "def extract_edges(self, relpath, source, ctx)"
+    ],
+    [
+     "TsJsStrategy",
+     "class",
+     92,
+     106,
+     "class TsJsStrategy"
+    ],
+    [
+     "TsJsStrategy.exts",
+     "class_attr",
+     94,
+     94,
+     "exts = ('.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs')"
+    ],
+    [
+     "TsJsStrategy.__init__",
+     "method",
+     96,
+     97,
+     "def __init__(self, repo: str='')"
+    ],
+    [
+     "TsJsStrategy.chunk_file",
+     "method",
+     99,
+     100,
+     "def chunk_file(self, relpath: str, source: str) -> FileResult"
+    ],
+    [
+     "TsJsStrategy.build_edge_ctx",
+     "method",
+     102,
+     103,
+     "def build_edge_ctx(self, sources: dict[str, str], repo_name: str)"
+    ],
+    [
+     "TsJsStrategy.extract_edges",
+     "method",
+     105,
+     106,
+     "def extract_edges(self, relpath, source, ctx)"
+    ],
+    [
+     "TreeSitterStrategy",
+     "class",
+     109,
+     126,
+     "class TreeSitterStrategy"
+    ],
+    [
+     "TreeSitterStrategy.__init__",
+     "method",
+     114,
+     117,
+     "def __init__(self, spec: LangSpec, exts: tuple[str, ...], repo: str='')"
+    ],
+    [
+     "TreeSitterStrategy.chunk_file",
+     "method",
+     119,
+     120,
+     "def chunk_file(self, relpath: str, source: str) -> FileResult"
+    ],
+    [
+     "TreeSitterStrategy.build_edge_ctx",
+     "method",
+     122,
+     123,
+     "def build_edge_ctx(self, sources: dict[str, str], repo_name: str)"
+    ],
+    [
+     "TreeSitterStrategy.extract_edges",
+     "method",
+     125,
+     126,
+     "def extract_edges(self, relpath, source, ctx)"
+    ],
+    [
+     "MarkdownStrategy",
+     "class",
+     129,
+     142,
+     "class MarkdownStrategy"
+    ],
+    [
+     "MarkdownStrategy.exts",
+     "class_attr",
+     130,
+     130,
+     "exts = ('.md', '.markdown', '.mdx')"
+    ],
+    [
+     "MarkdownStrategy.__init__",
+     "method",
+     132,
+     133,
+     "def __init__(self, repo: str='')"
+    ],
+    [
+     "MarkdownStrategy.chunk_file",
+     "method",
+     135,
+     136,
+     "def chunk_file(self, relpath: str, source: str) -> FileResult"
+    ],
+    [
+     "MarkdownStrategy.build_edge_ctx",
+     "method",
+     138,
+     139,
+     "def build_edge_ctx(self, sources: dict[str, str], repo_name: str)"
+    ],
+    [
+     "MarkdownStrategy.extract_edges",
+     "method",
+     141,
+     142,
+     "def extract_edges(self, relpath, source, ctx)"
+    ],
+    [
+     "PhpStrategy",
+     "class",
+     145,
+     161,
+     "class PhpStrategy(TreeSitterStrategy)"
+    ],
+    [
+     "PhpStrategy.__init__",
+     "method",
+     152,
+     155,
+     "def __init__(self, repo: str='')"
+    ],
+    [
+     "PhpStrategy.build_edge_ctx",
+     "method",
+     157,
+     158,
+     "def build_edge_ctx(self, sources: dict[str, str], repo_name: str)"
+    ],
+    [
+     "PhpStrategy.extract_edges",
+     "method",
+     160,
+     161,
+     "def extract_edges(self, relpath, source, ctx)"
+    ],
+    [
+     "_TREE_SITTER_LANGS",
+     "constant",
+     165,
+     169,
+     "_TREE_SITTER_LANGS = [(RUBY_SPEC, ('.rb',), 'tree_sitter_ruby'), (GO_SPEC, ('.go',), 'tree_sitter_go'), (RUST_SPEC, ('.r"
+    ],
+    [
+     "_grammar_available",
+     "function",
+     172,
+     173,
+     "def _grammar_available(module: str) -> bool"
+    ],
+    [
+     "build_registry",
+     "function",
+     176,
+     188,
+     "def build_registry(repo: str='', extra: Sequence[ChunkStrategy]=()) -> list"
+    ],
+    [
+     "builtin_strategy_for",
+     "function",
+     191,
+     199,
+     "def builtin_strategy_for(ext: str, repo: str='')"
+    ],
+    [
+     "strategy_for",
+     "function",
+     202,
+     211,
+     "def strategy_for(registry: list, relpath: str)"
+    ],
+    [
+     "all_exts",
+     "function",
+     214,
+     216,
+     "def all_exts(registry: list) -> tuple[str, ...]"
+    ],
+    [
+     "STRATEGY_DIR",
+     "constant",
+     229,
+     229,
+     "STRATEGY_DIR = '.megabrain/strategies'"
+    ],
+    [
+     "TRUST_STORE",
+     "constant",
+     230,
+     230,
+     "TRUST_STORE = Path.home() / '.megabrain' / 'trust.json'"
+    ],
+    [
+     "log",
+     "constant",
+     232,
+     232,
+     "log = logging.getLogger(__name__)"
+    ],
+    [
+     "_sha256",
+     "function",
+     235,
+     236,
+     "def _sha256(path: Path) -> str"
+    ],
+    [
+     "_read_trust",
+     "function",
+     239,
+     243,
+     "def _read_trust() -> dict"
+    ],
+    [
+     "trust_file",
+     "function",
+     246,
+     251,
+     "def trust_file(path: Path) -> None"
+    ],
+    [
+     "is_trusted",
+     "function",
+     254,
+     256,
+     "def is_trusted(path: Path) -> bool"
+    ],
+    [
+     "instantiate_strategies",
+     "function",
+     259,
+     278,
+     "def instantiate_strategies(code: str, repo: str, origin: str) -> list"
+    ],
+    [
+     "load_repo_strategies",
+     "function",
+     281,
+     300,
+     "def load_repo_strategies(root: Path, repo: str='') -> list"
+    ]
+   ]
+  },
+  "megabrain/mcp_server.py": {
+   "chunks": [
+    [
+     "module",
+     null,
+     null,
+     1,
+     8,
+     "megabrain > megabrain/mcp_server.py (module level)",
+     "9ae9ac280deb18e69ea01a5c3cae0324cf5057e8"
+    ]
+   ],
+   "skeleton_sha": "3578db20ddc18d4f57232db4d951b2c6d4e4d59e",
+   "symbols": []
+  },
+  "megabrain/model.py": {
+   "chunks": [
+    [
+     "class",
+     "ChunkMeta",
+     null,
+     1,
+     42,
+     "megabrain > megabrain/model.py > class ChunkMeta",
+     "62937f34ddd4dbc38977c882c28aa91235b330eb"
+    ]
+   ],
+   "skeleton_sha": "65191d809d4f8ad8d41d86706bcabac6dd0278b3",
+   "symbols": [
+    [
+     "ChunkMeta",
+     "class",
+     23,
+     42,
+     "class ChunkMeta"
+    ],
+    [
+     "ChunkMeta.id",
+     "class_attr",
+     27,
+     27,
+     "id: int"
+    ],
+    [
+     "ChunkMeta.file",
+     "class_attr",
+     28,
+     28,
+     "file: str"
+    ],
+    [
+     "ChunkMeta.kind",
+     "class_attr",
+     29,
+     29,
+     "kind: str | None"
+    ],
+    [
+     "ChunkMeta.name",
+     "class_attr",
+     30,
+     30,
+     "name: str | None"
+    ],
+    [
+     "ChunkMeta.part",
+     "class_attr",
+     31,
+     31,
+     "part: str | None"
+    ],
+    [
+     "ChunkMeta.start_line",
+     "class_attr",
+     32,
+     32,
+     "start_line: int"
+    ],
+    [
+     "ChunkMeta.end_line",
+     "class_attr",
+     33,
+     33,
+     "end_line: int"
+    ],
+    [
+     "ChunkMeta.text",
+     "class_attr",
+     34,
+     34,
+     "text: str"
+    ],
+    [
+     "ChunkMeta.breadcrumb",
+     "class_attr",
+     35,
+     35,
+     "breadcrumb: str | None"
+    ],
+    [
+     "ChunkMeta.to_dict",
+     "method",
+     37,
+     42,
+     "def to_dict(self) -> dict"
+    ]
+   ]
+  },
+  "megabrain/providers/__init__.py": {
+   "chunks": [
+    [
+     "module",
+     "chat_provider, ask_model, rerank_model, _resolve, find_key",
+     null,
+     1,
+     104,
+     "megabrain > megabrain/providers/__init__.py > [chat_provider, ask_model, rerank_model, _resolve, find_key]",
+     "dc9bdf7dbcc344e424e3e24caeded11aedacb925"
+    ],
+    [
+     "module",
+     "_is_local, _key_for, find_embed_key, find_chat_key, _headers, post_json, chat_text, stream_chat",
+     null,
+     105,
+     192,
+     "megabrain > megabrain/providers/__init__.py > [_is_local, _key_for, find_embed_key, find_chat_key, _headers, post_json, chat_text, stream_chat]",
+     "c24379b52c6f054932070944416d17c78f0ca06e"
+    ],
+    [
+     "module",
+     "_or_stream_chat, OpenRouterProvider",
+     null,
+     193,
+     303,
+     "megabrain > megabrain/providers/__init__.py > [_or_stream_chat, OpenRouterProvider]",
+     "708cee4511a3c61edcf2bdcb80b711bd260766ce"
+    ],
+    [
+     "module",
+     "ClaudeProvider, resolve",
+     null,
+     304,
+     355,
+     "megabrain > megabrain/providers/__init__.py > [ClaudeProvider, resolve]",
+     "2f0b8268a0b4f5908dcc14a36f3383786b1cf7cf"
+    ]
+   ],
+   "skeleton_sha": "7afa454c1da095b23c277ec613bad8d577646ce9",
+   "symbols": [
+    [
+     "BASE_URL",
+     "constant",
+     48,
+     48,
+     "BASE_URL = os.environ.get('OPENROUTER_BASE_URL', 'https://openrouter.ai/api/v1').rstrip('/')"
+    ],
+    [
+     "EMBED_MODEL",
+     "constant",
+     55,
+     55,
+     "EMBED_MODEL = os.environ.get('MEGABRAIN_EMBED_MODEL', 'perplexity/pplx-embed-v1-0.6b')"
+    ],
+    [
+     "ASK_MODEL",
+     "constant",
+     56,
+     56,
+     "ASK_MODEL = os.environ.get('MEGABRAIN_ASK_MODEL', 'qwen/qwen3-coder')"
+    ],
+    [
+     "RERANK_MODEL",
+     "constant",
+     57,
+     57,
+     "RERANK_MODEL = os.environ.get('MEGABRAIN_RERANK_MODEL', 'qwen/qwen3-coder')"
+    ],
+    [
+     "chat_provider",
+     "function",
+     60,
+     63,
+     "def chat_provider() -> str"
+    ],
+    [
+     "ask_model",
+     "function",
+     66,
+     74,
+     "def ask_model() -> str"
+    ],
+    [
+     "rerank_model",
+     "function",
+     77,
+     79,
+     "def rerank_model() -> str"
+    ],
+    [
+     "_REFERER",
+     "constant",
+     82,
+     82,
+     "_REFERER = os.environ.get('OPENROUTER_HTTP_REFERER', 'https://github.com/bernatch22/megabrain')"
+    ],
+    [
+     "_TITLE",
+     "constant",
+     83,
+     83,
+     "_TITLE = os.environ.get('OPENROUTER_APP_TITLE', 'megabrain')"
+    ],
+    [
+     "_RETRY_CODES",
+     "constant",
+     85,
+     85,
+     "_RETRY_CODES = (429, 500, 502, 503, 529)"
+    ],
+    [
+     "_resolve",
+     "function",
+     88,
+     100,
+     "def _resolve(name: str, required: bool=True) -> str | None"
+    ],
+    [
+     "find_key",
+     "function",
+     103,
+     104,
+     "def find_key(required: bool=True) -> str | None"
+    ],
+    [
+     "EMBED_BASE_URL",
+     "constant",
+     110,
+     110,
+     "EMBED_BASE_URL = os.environ.get('MEGABRAIN_EMBED_BASE_URL', BASE_URL).rstrip('/')"
+    ],
+    [
+     "CHAT_BASE_URL",
+     "constant",
+     111,
+     111,
+     "CHAT_BASE_URL = os.environ.get('MEGABRAIN_CHAT_BASE_URL', BASE_URL).rstrip('/')"
+    ],
+    [
+     "_is_local",
+     "function",
+     114,
+     117,
+     "def _is_local(url: str) -> bool"
+    ],
+    [
+     "_key_for",
+     "function",
+     120,
+     127,
+     "def _key_for(base_url: str, explicit: str | None, required: bool) -> str | None"
+    ],
+    [
+     "find_embed_key",
+     "function",
+     130,
+     133,
+     "def find_embed_key(required: bool=True) -> str | None"
+    ],
+    [
+     "find_chat_key",
+     "function",
+     136,
+     142,
+     "def find_chat_key(required: bool=True) -> str | None"
+    ],
+    [
+     "_headers",
+     "function",
+     145,
+     150,
+     "def _headers(key: str, base_url: str=BASE_URL) -> dict"
+    ],
+    [
+     "post_json",
+     "function",
+     153,
+     172,
+     "def post_json(path: str, body: dict, key: str | None=None, retries: int=5, timeout: int=120, base_url: str | None=None) -> dict"
+    ],
+    [
+     "chat_text",
+     "function",
+     175,
+     181,
+     "def chat_text(model: str, prompt: str, max_tokens: int, temperature: float=0.0, key: str | None=None, retries: int=5, timeout: int=45) -> str"
+    ],
+    [
+     "stream_chat",
+     "function",
+     184,
+     192,
+     "def stream_chat(body: dict, key: str | None=None, retries: int=4, on_delta=None, timeout: int=90, with_tools: bool=False)"
+    ],
+    [
+     "_or_stream_chat",
+     "function",
+     195,
+     270,
+     "def _or_stream_chat(body: dict, key: str | None=None, retries: int=4, on_delta=None, timeout: int=90, with_tools: bool=False)"
+    ],
+    [
+     "OpenRouterProvider",
+     "class",
+     280,
+     303,
+     "class OpenRouterProvider"
+    ],
+    [
+     "OpenRouterProvider.name",
+     "class_attr",
+     284,
+     284,
+     "name = 'openrouter'"
+    ],
+    [
+     "OpenRouterProvider.agent_stream",
+     "class_attr",
+     285,
+     285,
+     "agent_stream = None"
+    ],
+    [
+     "OpenRouterProvider.available",
+     "method",
+     287,
+     288,
+     "def available(self) -> bool"
+    ],
+    [
+     "OpenRouterProvider.chat_text",
+     "method",
+     290,
+     298,
+     "def chat_text(self, model: str, prompt: str, max_tokens: int, temperature: float=0.0, key: str | None=None, retries: int=5, timeout: int=45) -> str"
+    ],
+    [
+     "OpenRouterProvider.stream_chat",
+     "method",
+     300,
+     303,
+     "def stream_chat(self, body: dict, key: str | None=None, retries: int=4, on_delta=None, timeout: int=90, with_tools: bool=False)"
+    ],
+    [
+     "ClaudeProvider",
+     "class",
+     306,
+     333,
+     "class ClaudeProvider"
+    ],
+    [
+     "ClaudeProvider.name",
+     "class_attr",
+     311,
+     311,
+     "name = 'claude'"
+    ],
+    [
+     "ClaudeProvider.available",
+     "method",
+     313,
+     315,
+     "def available(self) -> bool"
+    ],
+    [
+     "ClaudeProvider.chat_text",
+     "method",
+     317,
+     321,
+     "def chat_text(self, model: str, prompt: str, max_tokens: int, temperature: float=0.0, key: str | None=None, retries: int=5, timeout: int=45) -> str"
+    ],
+    [
+     "ClaudeProvider.stream_chat",
+     "method",
+     323,
+     328,
+     "def stream_chat(self, body: dict, key: str | None=None, retries: int=4, on_delta=None, timeout: int=90, with_tools: bool=False)"
+    ],
+    [
+     "ClaudeProvider.agent_stream",
+     "method",
+     330,
+     333,
+     "def agent_stream(self)"
+    ],
+    [
+     "_REGISTRY",
+     "constant",
+     336,
+     337,
+     "_REGISTRY: dict[str, object] = {'openrouter': OpenRouterProvider(), 'claude': ClaudeProvider()}"
+    ],
+    [
+     "_PRIORITY",
+     "constant",
+     338,
+     338,
+     "_PRIORITY = ('claude', 'openrouter')"
+    ],
+    [
+     "resolve",
+     "function",
+     341,
+     355,
+     "def resolve()"
+    ]
+   ]
+  },
+  "megabrain/providers/base.py": {
+   "chunks": [
+    [
+     "class",
+     "ChatProvider",
+     null,
+     1,
+     49,
+     "megabrain > megabrain/providers/base.py > class ChatProvider(Protocol)",
+     "84b7cc3652ac966c3ed5c1292355b19dd7e786d6"
+    ]
+   ],
+   "skeleton_sha": "046130b45821491e1b5cb33f923c124f7f269041",
+   "symbols": [
+    [
+     "ChatProvider",
+     "class",
+     22,
+     49,
+     "class ChatProvider(Protocol)"
+    ],
+    [
+     "ChatProvider.name",
+     "class_attr",
+     38,
+     38,
+     "name: str"
+    ],
+    [
+     "ChatProvider.agent_stream",
+     "class_attr",
+     39,
+     39,
+     "agent_stream: Callable[..., str] | None"
+    ],
+    [
+     "ChatProvider.available",
+     "method",
+     41,
+     41,
+     "def available(self) -> bool"
+    ],
+    [
+     "ChatProvider.chat_text",
+     "method",
+     43,
+     45,
+     "def chat_text(self, model: str, prompt: str, max_tokens: int, temperature: float=0.0, key: str | None=None, retries: int=5, timeout: int=45) -> str"
+    ],
+    [
+     "ChatProvider.stream_chat",
+     "method",
+     47,
+     49,
+     "def stream_chat(self, body: dict, key: str | None=None, retries: int=4, on_delta: Callable[[str], None] | None=None, timeout: int=90, with_tools: bool=False) -> Any"
+    ]
+   ]
+  },
+  "megabrain/providers/claude.py": {
+   "chunks": [
+    [
+     "module",
+     "_sdk, _consume, stream_chat",
+     null,
+     1,
+     116,
+     "megabrain > megabrain/providers/claude.py > [_sdk, _consume, stream_chat]",
+     "78cfb696cad615a9782de6bf787ab6d2ab01add9"
+    ],
+    [
+     "module",
+     "agent_stream, chat_text",
+     null,
+     117,
+     155,
+     "megabrain > megabrain/providers/claude.py > [agent_stream, chat_text]",
+     "2ec732bc32db43ea871841d616912faf6ca8cacd"
+    ]
+   ],
+   "skeleton_sha": "e65c01b44a02f3d9f1175772d4c39a284a723b57",
+   "symbols": [
+    [
+     "_BUILTIN_TOOLS",
+     "constant",
+     34,
+     36,
+     "_BUILTIN_TOOLS = ['Bash', 'Read', 'Write', 'Edit', 'Glob', 'Grep', 'WebFetch', 'WebSearch', 'Task', 'TodoWrite', 'Notebo"
+    ],
+    [
+     "_sdk",
+     "function",
+     39,
+     47,
+     "def _sdk()"
+    ],
+    [
+     "_consume",
+     "function",
+     50,
+     90,
+     "def _consume(sdk, prompt: str, options, on_delta, timeout: float | None=None) -> tuple[str, str]"
+    ],
+    [
+     "stream_chat",
+     "function",
+     93,
+     116,
+     "def stream_chat(body: dict, on_delta=None, timeout: float | None=None) -> tuple[str, str]"
+    ],
+    [
+     "agent_stream",
+     "function",
+     119,
+     145,
+     "def agent_stream(prompt: str, model: str | None, tools: list[dict], on_delta=None, max_turns: int=8, timeout: float | None=None) -> str"
+    ],
+    [
+     "chat_text",
+     "function",
+     148,
+     155,
+     "def chat_text(model: str, prompt: str, max_tokens: int, timeout: float | None=None) -> str"
+    ]
+   ]
+  },
+  "megabrain/providers/embeddings.py": {
+   "chunks": [
+    [
+     "module",
+     "model_name, Embedder",
+     null,
+     1,
+     105,
+     "megabrain > megabrain/providers/embeddings.py > [model_name, Embedder]",
+     "da6d24c92e6d81e2d467dcc6cf54644fe8f199ba"
+    ]
+   ],
+   "skeleton_sha": "b99adc061ba8309f5e2098b4eab9ef4796b9b854",
+   "symbols": [
+    [
+     "model_name",
+     "function",
+     27,
+     29,
+     "def model_name() -> str"
+    ],
+    [
+     "MODEL",
+     "constant",
+     33,
+     33,
+     "MODEL = model_name()"
+    ],
+    [
+     "Embedder",
+     "class",
+     36,
+     101,
+     "class Embedder"
+    ],
+    [
+     "Embedder.__init__",
+     "method",
+     37,
+     54,
+     "def __init__(self, api_key: str | None=None, model: str | None=None, dims: int | None=None, batch: int | None=None, cache_dir: Path | None=None)"
+    ],
+    [
+     "Embedder._cpath",
+     "method",
+     56,
+     58,
+     "def _cpath(self, text: str) -> Path"
+    ],
+    [
+     "Embedder.embed",
+     "method",
+     60,
+     79,
+     "def embed(self, texts: list[str], batch_size: int | None=None) -> np.ndarray"
+    ],
+    [
+     "Embedder._request",
+     "method",
+     81,
+     101,
+     "def _request(self, batch: list[str]) -> list[np.ndarray]"
+    ],
+    [
+     "PplxEmbedder",
+     "constant",
+     105,
+     105,
+     "PplxEmbedder = Embedder"
+    ]
+   ]
+  },
+  "megabrain/retrieval/__init__.py": {
+   "chunks": [
+    [
+     "module",
+     null,
+     null,
+     1,
+     14,
+     "megabrain > megabrain/retrieval/__init__.py (module level)",
+     "95ac198a816a9101c93c2640a9afcd2e442e3bd4"
+    ]
+   ],
+   "skeleton_sha": "30715f2d01dadfc4ae06f0b1f1c00ccf938e6539",
+   "symbols": []
+  },
+  "megabrain/retrieval/bm25.py": {
+   "chunks": [
+    [
+     "module",
+     "tokenize, BM25",
+     null,
+     1,
+     57,
+     "megabrain > megabrain/retrieval/bm25.py > [tokenize, BM25]",
+     "402ea25c0740c3ea6ea2bb162b48eb3e4488db3c"
+    ]
+   ],
+   "skeleton_sha": "88c4299697899b52bdb8bb7a81c86aba0b4232ca",
+   "symbols": [
+    [
+     "tokenize",
+     "function",
+     18,
+     27,
+     "def tokenize(text: str) -> list[str]"
+    ],
+    [
+     "BM25",
+     "class",
+     30,
+     57,
+     "class BM25"
+    ],
+    [
+     "BM25.__init__",
+     "method",
+     31,
+     42,
+     "def __init__(self, docs: list[list[str]], k1: float=1.2, b: float=0.75)"
+    ],
+    [
+     "BM25.scores",
+     "method",
+     44,
+     57,
+     "def scores(self, query: str)"
+    ]
+   ]
+  },
+  "megabrain/retrieval/bundle.py": {
+   "chunks": [
+    [
+     "module",
+     null,
+     null,
+     1,
+     27,
+     "megabrain > megabrain/retrieval/bundle.py (module level)",
+     "d0c051f9d090dc1e19ddaf908b85eed2b71aafba"
+    ],
+    [
+     "module",
+     "search_with_state, search",
+     null,
+     28,
+     139,
+     "megabrain > megabrain/retrieval/bundle.py > [search_with_state, search]",
+     "fae71d80103beb6abe408f5119799fac384ddefc"
+    ],
+    [
+     "module",
+     "selection, chunks_for_file, chunks_for_file_root, prune_search, prune_search_root",
+     null,
+     140,
+     253,
+     "megabrain > megabrain/retrieval/bundle.py > [selection, chunks_for_file, chunks_for_file_root, prune_search, prune_search_root]",
+     "0c57b0bad63bf90f7eb122da46507e84aed96868"
+    ],
+    [
+     "function",
+     "search_multi",
+     null,
+     254,
+     287,
+     "megabrain > megabrain/retrieval/bundle.py > def search_multi(roots: list[Path], query: str, path_filters: list[str | None] | None=None) -> dict",
+     "c240ab6b026bb1e67080d4b955bc3bb38fe3d688"
+    ]
+   ],
+   "skeleton_sha": "e9fa700e021a160a3d6a6984de4f46f5c3766a92",
+   "symbols": [
+    [
+     "OUTLINE_KINDS",
+     "constant",
+     25,
+     27,
+     "OUTLINE_KINDS = ('class', 'function', 'async_function', 'method', 'async_method', 'constant', 'const', 'var', 'interface"
+    ],
+    [
+     "search_with_state",
+     "function",
+     30,
+     130,
+     "def search_with_state(st: SearchState, query: str, rerank: bool=False, path_filter: str | None=None, scored: tuple[list, np.ndarray] | None=None) -> dict"
+    ],
+    [
+     "search",
+     "function",
+     133,
+     139,
+     "def search(root: Path, query: str, rerank: bool=False, path_filter: str | None=None) -> dict"
+    ],
+    [
+     "selection",
+     "function",
+     142,
+     160,
+     "def selection(res: dict) -> list[tuple[dict, float]]"
+    ],
+    [
+     "chunks_for_file",
+     "function",
+     163,
+     193,
+     "def chunks_for_file(st: SearchState, relpath: str, query: str, path_filter: str | None=None) -> dict"
+    ],
+    [
+     "chunks_for_file_root",
+     "function",
+     196,
+     200,
+     "def chunks_for_file_root(root: Path, relpath: str, query: str, path_filter: str | None=None) -> dict"
+    ],
+    [
+     "prune_search",
+     "function",
+     203,
+     246,
+     "def prune_search(st: SearchState, query: str, path_filter: str | None=None, with_text: bool=True, include_pruned: bool=False) -> dict"
+    ],
+    [
+     "prune_search_root",
+     "function",
+     249,
+     253,
+     "def prune_search_root(root: Path, query: str, path_filter: str | None=None, with_text: bool=True, include_pruned: bool=False) -> dict"
+    ],
+    [
+     "search_multi",
+     "function",
+     256,
+     287,
+     "def search_multi(roots: list[Path], query: str, path_filters: list[str | None] | None=None) -> dict"
+    ]
+   ]
+  },
+  "megabrain/retrieval/files.py": {
+   "chunks": [
+    [
+     "function",
+     "get_code",
+     null,
+     1,
+     39,
+     "megabrain > megabrain/retrieval/files.py > def get_code(root: Path, relpath: str, symbol: str | None=None) -> str",
+     "8e3d2d130503c6e9b964944b050d3203886ccf26"
+    ]
+   ],
+   "skeleton_sha": "424a357179c7517efa6c3281938b6bbc79c504de",
+   "symbols": [
+    [
+     "get_code",
+     "function",
+     18,
+     39,
+     "def get_code(root: Path, relpath: str, symbol: str | None=None) -> str"
+    ]
+   ]
+  },
+  "megabrain/retrieval/issue.py": {
+   "chunks": [
+    [
+     "module",
+     "_ground_path, SymbolIndex, query_variants, parse_issue",
+     null,
+     1,
+     129,
+     "megabrain > megabrain/retrieval/issue.py > [_ground_path, SymbolIndex, query_variants, parse_issue]",
+     "fe61e9479f5dc32f9b2e1af9a103b43f63a6e71f"
+    ]
+   ],
+   "skeleton_sha": "b7b64751c5e7c2e1dee33bb0d3689b426d2fc78a",
+   "symbols": [
+    [
+     "_FRAME",
+     "constant",
+     16,
+     16,
+     "_FRAME = re.compile('File \"([^\"]+)\", line (\\\\d+)(?:, in (\\\\w+))?')"
+    ],
+    [
+     "_JSFRAME",
+     "constant",
+     18,
+     20,
+     "_JSFRAME = re.compile('\\\\bat\\\\s+(?:[\\\\w$.<>\\\\[\\\\]* ]+?\\\\s+)?\\\\(?([\\\\w./\\\\-]+\\\\.(?:ts|tsx|js|jsx|mjs|cjs)):(\\\\d+)(?::\\\\d+"
+    ],
+    [
+     "_SRCPATH",
+     "constant",
+     21,
+     22,
+     "_SRCPATH = re.compile('[\\\\w/.\\\\-]+\\\\.(?:py|ts|tsx|js|jsx|mjs|cjs|rb|go|rs|php)\\\\b')"
+    ],
+    [
+     "_TICKED",
+     "constant",
+     23,
+     23,
+     "_TICKED = re.compile('`([^`\\\\n]{2,80})`')"
+    ],
+    [
+     "_DOTTED",
+     "constant",
+     24,
+     24,
+     "_DOTTED = re.compile('\\\\b[A-Za-z_][\\\\w]*(?:\\\\.[A-Za-z_][\\\\w]*)+\\\\b')"
+    ],
+    [
+     "_ground_path",
+     "function",
+     27,
+     38,
+     "def _ground_path(p: str, files: list[str]) -> str | None"
+    ],
+    [
+     "SymbolIndex",
+     "class",
+     41,
+     63,
+     "class SymbolIndex"
+    ],
+    [
+     "SymbolIndex.__init__",
+     "method",
+     42,
+     49,
+     "def __init__(self, symbols: list[dict])"
+    ],
+    [
+     "SymbolIndex.ground",
+     "method",
+     51,
+     63,
+     "def ground(self, term: str) -> list[dict]"
+    ],
+    [
+     "query_variants",
+     "function",
+     66,
+     84,
+     "def query_variants(text: str) -> list[str]"
+    ],
+    [
+     "parse_issue",
+     "function",
+     87,
+     129,
+     "def parse_issue(text: str, files: list[str], symbols: list[dict]) -> dict"
+    ]
+   ]
+  },
+  "megabrain/retrieval/params.py": {
+   "chunks": [
+    [
+     "class",
+     "RetrievalParams",
+     null,
+     1,
+     50,
+     "megabrain > megabrain/retrieval/params.py > class RetrievalParams",
+     "321d99949f71608093230324f7f648e24a5a0064"
+    ]
+   ],
+   "skeleton_sha": "742aaa0a661a105322631f3a736a05ca5be01814",
+   "symbols": [
+    [
+     "RetrievalParams",
+     "class",
+     20,
+     47,
+     "class RetrievalParams"
+    ],
+    [
+     "RetrievalParams.file_fusion_w",
+     "class_attr",
+     23,
+     23,
+     "file_fusion_w: float = 0.5"
+    ],
+    [
+     "RetrievalParams.test_penalty",
+     "class_attr",
+     24,
+     24,
+     "test_penalty: float = 0.85"
+    ],
+    [
+     "RetrievalParams.file_boost_w",
+     "class_attr",
+     25,
+     25,
+     "file_boost_w: float = 0.05"
+    ],
+    [
+     "RetrievalParams.sym_boost_w",
+     "class_attr",
+     26,
+     26,
+     "sym_boost_w: float = 0.03"
+    ],
+    [
+     "RetrievalParams.lexical_boost_cap",
+     "class_attr",
+     27,
+     27,
+     "lexical_boost_cap: int = 2"
+    ],
+    [
+     "RetrievalParams.issue_token_threshold",
+     "class_attr",
+     30,
+     30,
+     "issue_token_threshold: int = 25"
+    ],
+    [
+     "RetrievalParams.rrf_k",
+     "class_attr",
+     33,
+     33,
+     "rrf_k: int = 60"
+    ],
+    [
+     "RetrievalParams.tier_bonus",
+     "class_attr",
+     34,
+     34,
+     "tier_bonus: tuple[float, float, float] = (0.6, 0.25, 0.1)"
+    ],
+    [
+     "RetrievalParams.span_bonus",
+     "class_attr",
+     35,
+     35,
+     "span_bonus: float = 0.15"
+    ],
+    [
+     "RetrievalParams.tier1_max",
+     "class_attr",
+     38,
+     38,
+     "tier1_max: int = 4"
+    ],
+    [
+     "RetrievalParams.tier1_gap",
+     "class_attr",
+     39,
+     39,
+     "tier1_gap: float = 0.97"
+    ],
+    [
+     "RetrievalParams.cand_files",
+     "class_attr",
+     40,
+     40,
+     "cand_files: int = 12"
+    ],
+    [
+     "RetrievalParams.graph_extras",
+     "class_attr",
+     41,
+     41,
+     "graph_extras: int = 7"
+    ],
+    [
+     "RetrievalParams.chunk_keep_ratio",
+     "class_attr",
+     44,
+     44,
+     "chunk_keep_ratio: float = 0.8"
+    ],
+    [
+     "RetrievalParams.tier1_chunk_cap",
+     "class_attr",
+     45,
+     45,
+     "tier1_chunk_cap: int = 12"
+    ],
+    [
+     "RetrievalParams.rerank_deep_pool",
+     "class_attr",
+     46,
+     46,
+     "rerank_deep_pool: int = 24"
+    ],
+    [
+     "RetrievalParams.multi_tier1_extra",
+     "class_attr",
+     47,
+     47,
+     "multi_tier1_extra: int = 2"
+    ],
+    [
+     "DEFAULT_PARAMS",
+     "constant",
+     50,
+     50,
+     "DEFAULT_PARAMS = RetrievalParams()"
+    ]
+   ]
+  },
+  "megabrain/retrieval/query.py": {
+   "chunks": [
+    [
+     "module",
+     null,
+     null,
+     1,
+     57,
+     "megabrain > megabrain/retrieval/query.py (module level)",
+     "0d034b488b259aedfcc40f924b9ba77ee0ff783b"
+    ]
+   ],
+   "skeleton_sha": "b89934acc5866a821b658e978a33d4dc3e4395af",
+   "symbols": [
+    [
+     "_score_chunks",
+     "constant",
+     48,
+     48,
+     "_score_chunks = score_chunks"
+    ],
+    [
+     "__all__",
+     "constant",
+     50,
+     57,
+     "__all__ = ['SearchState', 'load_state', 'RetrievalParams', 'DEFAULT_PARAMS', 'score_chunks', '_score_chunks', 'ident_tok"
+    ]
+   ]
+  },
+  "megabrain/retrieval/render.py": {
+   "chunks": [
+    [
+     "module",
+     "lang_of, render",
+     null,
+     1,
+     99,
+     "megabrain > megabrain/retrieval/render.py > [lang_of, render]",
+     "b601549c150463e87641f074ebdc2bf6f75105a0"
+    ],
+    [
+     "function",
+     "render_pruned",
+     null,
+     100,
+     118,
+     "megabrain > megabrain/retrieval/render.py > def render_pruned(res: dict, with_text: bool=True) -> str",
+     "858d2906b981d6fd14026e4cd7f0cc44233d3d9d"
+    ]
+   ],
+   "skeleton_sha": "5ef2f88845a1af21aa996aee34aac88912d66479",
+   "symbols": [
+    [
+     "lang_of",
+     "function",
+     14,
+     18,
+     "def lang_of(path: str) -> str"
+    ],
+    [
+     "OUTLINE_KINDS",
+     "constant",
+     25,
+     27,
+     "OUTLINE_KINDS = ('class', 'function', 'async_function', 'method', 'async_method', 'constant', 'const', 'var', 'interface"
+    ],
+    [
+     "render",
+     "function",
+     30,
+     99,
+     "def render(res: dict, compact: bool=False, related_code: bool=False) -> str"
+    ],
+    [
+     "render_pruned",
+     "function",
+     102,
+     118,
+     "def render_pruned(res: dict, with_text: bool=True) -> str"
+    ]
+   ]
+  },
+  "megabrain/retrieval/rerank.py": {
+   "chunks": [
+    [
+     "module",
+     "_one_vote, llm_order",
+     null,
+     1,
+     78,
+     "megabrain > megabrain/retrieval/rerank.py > [_one_vote, llm_order]",
+     "05d91ec599c449176b281d8700eb1ffa3f06f5f4"
+    ]
+   ],
+   "skeleton_sha": "49265c6187ba38fbfee09678786a9cd943d0ca5b",
+   "symbols": [
+    [
+     "_one_vote",
+     "function",
+     18,
+     44,
+     "def _one_vote(key: str, query: str, lines: list[str], n: int) -> list[int] | None"
+    ],
+    [
+     "llm_order",
+     "function",
+     47,
+     78,
+     "def llm_order(query: str, candidates: list[dict], votes: int=3) -> list[int]"
+    ]
+   ]
+  },
+  "megabrain/retrieval/scoring.py": {
+   "chunks": [
+    [
+     "module",
+     "_is_test_path, _under_path, _apply_path_filter, _ident_tokens",
+     null,
+     1,
+     76,
+     "megabrain > megabrain/retrieval/scoring.py > [_is_test_path, _under_path, _apply_path_filter, _ident_tokens]",
+     "4e86e254ec2c11a4f005d89a82644888bc31f7da"
+    ],
+    [
+     "block",
+     "score_chunks",
+     "1/2",
+     77,
+     180,
+     "megabrain > megabrain/retrieval/scoring.py > def score_chunks(st: SearchState, query: str, path_filter: str | None=None) -> tuple[list, np.ndarray]",
+     "367d48addac40e1fe0777ec03bbf511abe4ab4b2"
+    ],
+    [
+     "block",
+     "score_chunks",
+     "2/2",
+     181,
+     198,
+     "megabrain > megabrain/retrieval/scoring.py > def score_chunks(st: SearchState, query: str, path_filter: str | None=None) -> tuple[list, np.ndarray]",
+     "0ddd1f65d84670573eb9d7e2946d1aeab44312a6"
+    ]
+   ],
+   "skeleton_sha": "b7e924c4ecd5ab5652a227e687fbab6ed4be914b",
+   "symbols": [
+    [
+     "TEST_DIR_SEGS",
+     "constant",
+     24,
+     24,
+     "TEST_DIR_SEGS = frozenset({'test', 'tests', 'spec', 'specs', '__tests__', 'testing'})"
+    ],
+    [
+     "_is_test_path",
+     "function",
+     27,
+     36,
+     "def _is_test_path(relpath: str) -> bool"
+    ],
+    [
+     "_under_path",
+     "function",
+     39,
+     46,
+     "def _under_path(relpath: str, path_filter: str) -> bool"
+    ],
+    [
+     "_apply_path_filter",
+     "function",
+     49,
+     60,
+     "def _apply_path_filter(metas: list, M: np.ndarray, path_filter: str | None)"
+    ],
+    [
+     "_ident_tokens",
+     "function",
+     63,
+     71,
+     "def _ident_tokens(text: str) -> set[str]"
+    ],
+    [
+     "ident_tokens",
+     "constant",
+     76,
+     76,
+     "ident_tokens = _ident_tokens"
+    ],
+    [
+     "score_chunks",
+     "function",
+     79,
+     198,
+     "def score_chunks(st: SearchState, query: str, path_filter: str | None=None) -> tuple[list, np.ndarray]"
+    ]
+   ]
+  },
+  "megabrain/retrieval/state.py": {
+   "chunks": [
+    [
+     "module",
+     "SearchState, load_state",
+     null,
+     1,
+     83,
+     "megabrain > megabrain/retrieval/state.py > [SearchState, load_state]",
+     "6ac59dbd98dc6a49bfe89ab8ced0a903e9eeabf4"
+    ]
+   ],
+   "skeleton_sha": "17819be2034b50b85673e98b524aa3b922dc1a57",
+   "symbols": [
+    [
+     "SearchState",
+     "class",
+     24,
+     64,
+     "class SearchState"
+    ],
+    [
+     "SearchState.store",
+     "class_attr",
+     30,
+     30,
+     "store: Store"
+    ],
+    [
+     "SearchState.emb",
+     "class_attr",
+     31,
+     31,
+     "emb: Embedder"
+    ],
+    [
+     "SearchState.metas",
+     "class_attr",
+     32,
+     32,
+     "metas: list"
+    ],
+    [
+     "SearchState.M",
+     "class_attr",
+     33,
+     33,
+     "M: np.ndarray"
+    ],
+    [
+     "SearchState.fpaths",
+     "class_attr",
+     34,
+     34,
+     "fpaths: list"
+    ],
+    [
+     "SearchState.fskels",
+     "class_attr",
+     35,
+     35,
+     "fskels: list"
+    ],
+    [
+     "SearchState.F",
+     "class_attr",
+     36,
+     36,
+     "F: np.ndarray"
+    ],
+    [
+     "SearchState.repo",
+     "class_attr",
+     37,
+     37,
+     "repo: str"
+    ],
+    [
+     "SearchState.bm25",
+     "class_attr",
+     40,
+     40,
+     "bm25: object | None = None"
+    ],
+    [
+     "SearchState.issue_files",
+     "class_attr",
+     41,
+     41,
+     "issue_files: list | None = None"
+    ],
+    [
+     "SearchState.issue_syms",
+     "class_attr",
+     42,
+     42,
+     "issue_syms: list | None = None"
+    ],
+    [
+     "SearchState.flows",
+     "class_attr",
+     46,
+     46,
+     "flows: list | None = None"
+    ],
+    [
+     "SearchState.FL",
+     "class_attr",
+     47,
+     47,
+     "FL: np.ndarray | None = None"
+    ],
+    [
+     "SearchState.FLQ",
+     "class_attr",
+     48,
+     48,
+     "FLQ: np.ndarray | None = None"
+    ],
+    [
+     "SearchState.qv",
+     "class_attr",
+     49,
+     49,
+     "qv: np.ndarray | None = None"
+    ],
+    [
+     "SearchState.params",
+     "class_attr",
+     52,
+     52,
+     "params: RetrievalParams = DEFAULT_PARAMS"
+    ],
+    [
+     "SearchState.close",
+     "method",
+     54,
+     58,
+     "def close(self) -> None"
+    ],
+    [
+     "SearchState.__enter__",
+     "method",
+     60,
+     61,
+     "def __enter__(self) -> 'SearchState'"
+    ],
+    [
+     "SearchState.__exit__",
+     "method",
+     63,
+     64,
+     "def __exit__(self, *exc) -> None"
+    ],
+    [
+     "load_state",
+     "function",
+     67,
+     83,
+     "def load_state(root: Path, check_same_thread: bool=True, params: RetrievalParams | None=None) -> SearchState"
+    ]
+   ]
+  },
+  "megabrain/session.py": {
+   "chunks": [
+    [
+     "class",
+     "RepoSession",
+     null,
+     1,
+     52,
+     "megabrain > megabrain/session.py > class RepoSession",
+     "d1ba71f6c62f429566f0480baa7d8cee1d6118e5"
+    ]
+   ],
+   "skeleton_sha": "d734247e62b9cca55801a8c443fdae08259f5b20",
+   "symbols": [
+    [
+     "RepoSession",
+     "class",
+     25,
+     52,
+     "class RepoSession"
+    ],
+    [
+     "RepoSession.__init__",
+     "method",
+     26,
+     32,
+     "def __init__(self, root: Path)"
+    ],
+    [
+     "RepoSession._mtime_now",
+     "method",
+     34,
+     38,
+     "def _mtime_now(self) -> float"
+    ],
+    [
+     "RepoSession.with_state",
+     "method",
+     40,
+     52,
+     "def with_state(self, fn)"
+    ]
+   ]
+  },
+  "megabrain/store.py": {
+   "chunks": [
+    [
+     "function",
+     "resolve_root",
+     null,
+     1,
+     80,
+     "megabrain > megabrain/store.py > def resolve_root(path: Path) -> tuple[Path, str]",
+     "745967434f6554c69e27f33b96f198a7c81d87b5"
+    ],
+    [
+     "method",
+     "Store.__init__, Store.close, Store.__enter__, Store.__exit__, Store.file_sha, Store.delete_file, Store.upsert_file, Store.insert_chunks, Store.insert_symbols, Store.replace_edges, Store.all_paths, Store.commit, Store.load_matrix, Store.load_file_matrix, Store.neighbors",
+     null,
+     81,
+     194,
+     "megabrain > megabrain/store.py > class Store > [Store.__init__, Store.close, Store.__enter__, Store.__exit__, Store.file_sha, Store.delete_file, Store.upsert_file, Store.insert_chunks, Store.insert_symbols, Store.replace_edges, Store.all_paths, Store.commit, Store.load_matrix, Store.load_file_matrix, Store.neighbors]",
+     "455153eb437f17e89cf8e4829701991eb530e6e6"
+    ],
+    [
+     "method",
+     "Store.symbols_for, Store.stats, Store.set_meta, Store.get_meta, Store.insert_flow, Store.delete_flow, Store.stale_flows, Store.prune_stale_flows, Store.load_flows",
+     null,
+     195,
+     264,
+     "megabrain > megabrain/store.py > class Store > [Store.symbols_for, Store.stats, Store.set_meta, Store.get_meta, Store.insert_flow, Store.delete_flow, Store.stale_flows, Store.prune_stale_flows, Store.load_flows]",
+     "bd531497da1452b8d65c9eb7180d5a3e8d6cf1c7"
+    ]
+   ],
+   "skeleton_sha": "8b1d0df9b954f72ecc34b8d07c0265cced4ded29",
+   "symbols": [
+    [
+     "resolve_root",
+     "function",
+     23,
+     41,
+     "def resolve_root(path: Path) -> tuple[Path, str]"
+    ],
+    [
+     "SCHEMA",
+     "constant",
+     44,
+     80,
+     "SCHEMA = '\\nCREATE TABLE IF NOT EXISTS files (\\n    path TEXT PRIMARY KEY,\\n    sha  TEXT NOT NULL,\\n    skeleton TEXT,\\"
+    ],
+    [
+     "Store",
+     "class",
+     83,
+     264,
+     "class Store"
+    ],
+    [
+     "Store.__init__",
+     "method",
+     84,
+     96,
+     "def __init__(self, repo_root: Path, check_same_thread: bool=True)"
+    ],
+    [
+     "Store.close",
+     "method",
+     98,
+     99,
+     "def close(self)"
+    ],
+    [
+     "Store.__enter__",
+     "method",
+     101,
+     102,
+     "def __enter__(self) -> 'Store'"
+    ],
+    [
+     "Store.__exit__",
+     "method",
+     104,
+     105,
+     "def __exit__(self, *exc)"
+    ],
+    [
+     "Store.file_sha",
+     "method",
+     109,
+     111,
+     "def file_sha(self, path: str) -> str | None"
+    ],
+    [
+     "Store.delete_file",
+     "method",
+     113,
+     126,
+     "def delete_file(self, path: str, drop_incoming: bool=False)"
+    ],
+    [
+     "Store.upsert_file",
+     "method",
+     128,
+     132,
+     "def upsert_file(self, path: str, sha: str, skeleton: str, skel_vec: np.ndarray | None)"
+    ],
+    [
+     "Store.insert_chunks",
+     "method",
+     134,
+     142,
+     "def insert_chunks(self, chunks: Sequence['Chunk'], vecs) -> None"
+    ],
+    [
+     "Store.insert_symbols",
+     "method",
+     144,
+     151,
+     "def insert_symbols(self, symbols: Sequence['Symbol']) -> None"
+    ],
+    [
+     "Store.replace_edges",
+     "method",
+     153,
+     156,
+     "def replace_edges(self, src: str, edges: list[tuple[str, str]])"
+    ],
+    [
+     "Store.all_paths",
+     "method",
+     158,
+     159,
+     "def all_paths(self) -> set[str]"
+    ],
+    [
+     "Store.commit",
+     "method",
+     161,
+     162,
+     "def commit(self)"
+    ],
+    [
+     "Store.load_matrix",
+     "method",
+     166,
+     177,
+     "def load_matrix(self) -> tuple[list[ChunkMeta], np.ndarray]"
+    ],
+    [
+     "Store.load_file_matrix",
+     "method",
+     179,
+     186,
+     "def load_file_matrix(self) -> tuple[list[str], list[str], np.ndarray]"
+    ],
+    [
+     "Store.neighbors",
+     "method",
+     188,
+     194,
+     "def neighbors(self, path: str) -> set[str]"
+    ],
+    [
+     "Store.symbols_for",
+     "method",
+     196,
+     201,
+     "def symbols_for(self, path: str) -> list[dict]"
+    ],
+    [
+     "Store.stats",
+     "method",
+     203,
+     209,
+     "def stats(self) -> dict"
+    ],
+    [
+     "Store.set_meta",
+     "method",
+     211,
+     212,
+     "def set_meta(self, k: str, v)"
+    ],
+    [
+     "Store.get_meta",
+     "method",
+     214,
+     216,
+     "def get_meta(self, k: str)"
+    ],
+    [
+     "Store.insert_flow",
+     "method",
+     220,
+     227,
+     "def insert_flow(self, question: str, text: str, files: dict, vec: np.ndarray, qvec: np.ndarray | None=None) -> int"
+    ],
+    [
+     "Store.delete_flow",
+     "method",
+     229,
+     230,
+     "def delete_flow(self, flow_id: int)"
+    ],
+    [
+     "Store.stale_flows",
+     "method",
+     232,
+     239,
+     "def stale_flows(self) -> list[dict]"
+    ],
+    [
+     "Store.prune_stale_flows",
+     "method",
+     241,
+     248,
+     "def prune_stale_flows(self) -> int"
+    ],
+    [
+     "Store.load_flows",
+     "method",
+     250,
+     264,
+     "def load_flows(self) -> tuple[list[dict], np.ndarray, np.ndarray]"
+    ]
+   ]
+  }
+ },
+ "tree": {
+  "main.go": {
+   "chunks": [
+    [
+     "module",
+     null,
+     null,
+     1,
+     1,
+     "demo > main.go (module level)",
+     "af96a5c06ec8bf0b99b61196b464b2f70533fe93"
+    ],
+    [
+     "function",
+     "Add",
+     null,
+     2,
+     5,
+     "demo > main.go > func Add(a int, b int) int",
+     "8064c1719fe88c5a97f2f467169e0b0f8807affc"
+    ],
+    [
+     "type",
+     "Server",
+     null,
+     6,
+     9,
+     "demo > main.go > type Server struct",
+     "6e5e6e8a6a8dbe953b2fe4d387402b1eb7479b90"
+    ],
+    [
+     "method",
+     "Run",
+     null,
+     10,
+     13,
+     "demo > main.go > func (s *Server) Run() error",
+     "2891fcebd511ca098d031819aaaff4670f5e7f34"
+    ]
+   ],
+   "skeleton_sha": "a4b29c9c34132fe624ddee5939e7d10f01a4b621",
+   "symbols": [
+    [
+     "Add",
+     "function",
+     3,
+     5,
+     "func Add(a int, b int) int"
+    ],
+    [
+     "Server",
+     "type",
+     7,
+     9,
+     "type Server struct"
+    ],
+    [
+     "Run",
+     "method",
+     11,
+     13,
+     "func (s *Server) Run() error"
+    ]
+   ]
+  },
+  "svc.ts": {
+   "chunks": [
+    [
+     "block",
+     "handle",
+     "1/2",
+     1,
+     3,
+     "demo > svc.ts > handle(req)",
+     "d77d5df935ba913e2ad1ab5b51644c3afe9c0f56"
+    ],
+    [
+     "block",
+     "handle",
+     "2/2",
+     4,
+     6,
+     "demo > svc.ts > handle(req)",
+     "974158f4e3e14d2567d790d52d1e31c97453d9c0"
+    ],
+    [
+     "block",
+     "dispatch",
+     "1/3",
+     7,
+     8,
+     "demo > svc.ts > dispatch(req)",
+     "06936066b7588beb9d7b281b6e41b2cba0c2efce"
+    ],
+    [
+     "block",
+     "dispatch",
+     "2/3",
+     9,
+     10,
+     "demo > svc.ts > dispatch(req)",
+     "00adbfdad452ef043a0537316e19f9c5ca2822e5"
+    ],
+    [
+     "block",
+     "dispatch",
+     "3/3",
+     11,
+     13,
+     "demo > svc.ts > dispatch(req)",
+     "3c6e10ecb8144232ea84ecfe3f10ec7366c70dfb"
+    ],
+    [
+     "function",
+     "helper",
+     null,
+     14,
+     17,
+     "demo > svc.ts > function helper(x)",
+     "dfc1d6b78c51059aaa69522e345ee4fb929b2672"
+    ]
+   ],
+   "skeleton_sha": "cbdc7781dadf27217b0e6f5e5146ae73106d712a",
+   "symbols": [
+    [
+     "Service",
+     "class",
+     1,
+     13,
+     "class Service"
+    ],
+    [
+     "Service.handle",
+     "method",
+     2,
+     6,
+     "handle(req)"
+    ],
+    [
+     "Service.dispatch",
+     "method",
+     7,
+     12,
+     "dispatch(req)"
+    ],
+    [
+     "helper",
+     "function",
+     15,
+     17,
+     "function helper(x)"
+    ]
+   ]
+  }
+ }
+}

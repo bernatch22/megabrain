@@ -24,6 +24,7 @@ from typing import Callable, Protocol
 from tree_sitter import Language, Parser
 
 from .base import DEFAULT_BUDGET, Chunk, FileResult, Symbol, nws
+from .cast import greedy_pack, merge_units, pack_lines
 
 # ---------------------------------------------------------------- language specs
 
@@ -323,33 +324,17 @@ class TreeSitterChunker:
         return nws("".join(lines[s - 1:e]))
 
     def _merge(self, units, lines, relpath, crumb, parent, src):
-        chunks: list[Chunk] = []
-        buf: list[tuple] = []
-        bsize = 0
-
-        def flush():
-            nonlocal buf, bsize
-            if not buf:
-                return
+        # the shared split-then-merge driver (cast.merge_units); flush and the
+        # oversized-unit split are the tree-sitter-specific callbacks.
+        def emit_merged(buf: list[tuple]) -> list[Chunk]:
             s, e = buf[0][1], buf[-1][2]
             kind, name, bc = self._describe(buf, crumb, parent, src)
-            chunks.append(Chunk(relpath, kind, name, s, e,
-                                "".join(lines[s - 1:e]), bc).finalize())
-            buf, bsize = [], 0
+            return [Chunk(relpath, kind, name, s, e,
+                          "".join(lines[s - 1:e]), bc).finalize()]
 
-        for u in units:
-            usz = self._usize(lines, u[1], u[2])
-            if usz > self.budget:
-                flush()
-                chunks.extend(self.split_unit(u, lines, relpath, crumb, src))
-            elif bsize + usz > self.budget:
-                flush()
-                buf, bsize = [u], usz
-            else:
-                buf.append(u)
-                bsize += usz
-        flush()
-        return chunks
+        return merge_units(
+            units, lambda u: self._usize(lines, u[1], u[2]), self.budget,
+            emit_merged, lambda u: self.split_unit(u, lines, relpath, crumb, src))
 
     def _describe(self, buf, crumb, parent, src):
         named = []
@@ -399,48 +384,15 @@ class TreeSitterChunker:
                                     start=s, end=e)
 
     def _pack(self, units, lines):
-        blocks = []
-        bs = be = None
-        size = 0
-        for _n, s, e in units:
-            usz = self._usize(lines, s, e)
-            if usz > self.budget:
-                # oversized single unit: flush, then line-window it
-                if bs is not None:
-                    blocks.append((bs, be))
-                    bs, be, size = None, None, 0
-                ws, wsize = s, 0
-                for ln in range(s, e + 1):
-                    lsz = nws(lines[ln - 1])
-                    if wsize + lsz > self.budget and ln > ws:
-                        blocks.append((ws, ln - 1))
-                        ws, wsize = ln, lsz
-                    else:
-                        wsize += lsz
-                blocks.append((ws, e))
-            elif bs is None:
-                bs, be, size = s, e, usz
-            elif size + usz > self.budget:
-                blocks.append((bs, be))
-                bs, be, size = s, e, usz
-            else:
-                be, size = e, size + usz
-        if bs is not None:
-            blocks.append((bs, be))
-        return blocks
+        # shared greedy block packing (cast.greedy_pack); oversized units are
+        # line-windowed inside it
+        return greedy_pack([(s, e, self._usize(lines, s, e)) for _n, s, e in units],
+                           lines, self.budget)
 
     def lines_fallback(self, relpath, lines, crumb, start=1, end=None):
         end = end or len(lines)
-        out, s, size = [], start, 0
-        wins = []
-        for ln in range(start, end + 1):
-            lsz = nws(lines[ln - 1])
-            if size + lsz > self.budget and ln > s:
-                wins.append((s, ln - 1))
-                s, size = ln, lsz
-            else:
-                size += lsz
-        wins.append((s, end))
+        out = []
+        wins = pack_lines(lines, start, end, self.budget)
         n = len(wins)
         for i, (a, b) in enumerate(wins, 1):
             out.append(Chunk(relpath, "block" if n > 1 else "file", None, a, b,
