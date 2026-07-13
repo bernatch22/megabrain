@@ -155,10 +155,10 @@ def main(argv=None):
 
 def _dispatch(a, raw: list[Path], root: Path) -> None:
     if a.cmd == "index":
-        from ..indexing.indexer import index_repo
+        from .. import app
         exclude = [x for item in a.exclude for x in item.split(",") if x.strip()]
         for r in raw:
-            index_repo(r, force=a.force, exclude=exclude)
+            app.index(r, force=a.force, exclude=exclude, quiet=False)
             if a.warm_flows:
                 import json as _json
 
@@ -167,57 +167,50 @@ def _dispatch(a, raw: list[Path], root: Path) -> None:
     elif a.cmd == "query":
         import json as _json
 
-        from ..indexing.indexer import maybe_reindex
-        from ..retrieval.query import render, search, search_multi
+        from .. import app
+        from ..retrieval.query import render, render_pruned
         from ..store import resolve_root
         scoped = [resolve_root(p) for p in raw]           # [(root, subpath), …]
         roots = [r for r, _ in scoped]
         pfs = [sp or None for _, sp in scoped]
-        for r in dict.fromkeys(roots):     # answers match disk (60s TTL, fail-open)
-            maybe_reindex(r)
         if getattr(a, "prune", False):
-            from ..retrieval.query import prune_search_root, render_pruned
-            res = prune_search_root(roots[0], a.task, path_filter=pfs[0],
-                                    with_text=not a.compact)
+            res = app.prune(roots[0], a.task, path_filter=pfs[0],
+                            with_text=not a.compact)
             print(_json.dumps(res, indent=1) if a.json
                   else render_pruned(res, with_text=not a.compact))
+        elif len(roots) > 1:
+            res = app.query_multi(roots, a.task, path_filters=pfs)
+            print(_json.dumps(res, indent=1) if a.json
+                  else render(res, compact=a.compact, related_code=a.full))
         else:
-            res = (search_multi(roots, a.task, path_filters=pfs) if len(roots) > 1
-                   else search(roots[0], a.task, rerank=a.best, path_filter=pfs[0]))
+            res = app.query(roots[0], a.task, rerank=a.best, path_filter=pfs[0])
             print(_json.dumps(res, indent=1) if a.json
                   else render(res, compact=a.compact, related_code=a.full))
     elif a.cmd == "ask":
+        # ask STREAMS on the CLI (token-by-token) — it drives stream_events
+        # directly rather than app.ask (which is the buffered collector); the
+        # reindex pre-step is applied here to match the other verbs.
+        from .. import app
         from ..ask import stream_ask
-        from ..indexing.indexer import maybe_reindex
-        from ..store import resolve_root
-        r0, sp = resolve_root(root)
-        maybe_reindex(r0)                  # answers match disk (60s TTL, fail-open)
+        r0, sp = app.resolve_scope(root)
+        app._maybe_reindex(r0, True)       # answers match disk (60s TTL, fail-open)
         stream_ask(r0, a.question, rerank=a.best, show_map=not a.no_map,
                    docs_only=a.docs, path_filter=sp or None,
                    include_docs=a.with_docs,
                    agents=True if a.agents else (False if a.no_agents else None))
     elif a.cmd == "get":
-        from ..retrieval.query import get_code
+        from .. import app
         from ..store import resolve_root
         r0, sp = resolve_root(root)
-        # a bare file arg under a sub-path is joined onto the sub-path so
-        # `megabrain get ~/repo/src dispatch.ts` finds src/dispatch.ts.
-        rel = a.file
-        if sp and not (Path(r0) / rel).exists() and (Path(r0) / sp / rel).exists():
-            rel = (Path(sp) / rel).as_posix()
-        print(get_code(r0, rel, a.symbol))
+        print(app.get(r0, sp or None, a.file, a.symbol))
     elif a.cmd == "chunks":
         import json as _json
 
-        from ..indexing.indexer import maybe_reindex
-        from ..retrieval.query import chunks_for_file_root
+        from .. import app
         from ..store import resolve_root
         r0, sp = resolve_root(root)
-        maybe_reindex(r0)
-        rel = a.file
-        if sp and not (Path(r0) / rel).exists() and (Path(r0) / sp / rel).exists():
-            rel = (Path(sp) / rel).as_posix()
-        print(_json.dumps(chunks_for_file_root(r0, rel, a.query, path_filter=sp or None), indent=1))
+        print(_json.dumps(app.chunks(r0, sp or None, a.file, a.query,
+                                     path_filter=sp or None), indent=1))
     elif a.cmd == "serve-api":
         from .http import serve
         serve(root, port=a.port, host=a.host, cors=a.cors, enable_llm=not a.no_llm,
@@ -291,9 +284,8 @@ def _dispatch(a, raw: list[Path], root: Path) -> None:
             trust_file(f)
             print(f"trusted {f}")
     elif a.cmd == "stats":
-        from ..store import Store
-        with Store(root) as s:
-            st = s.stats()
+        from .. import app
+        st = app.stats(root)
         print(f"files={st['files']} chunks={st['chunks']} symbols={st['symbols']} "
               f"edges={st['edges']} meta={st['last_index']}")
 

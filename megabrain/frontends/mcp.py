@@ -198,51 +198,48 @@ TOOLS = [
 ]
 
 
-def _maybe_reindex(root: Path):
-    from ..indexing.indexer import maybe_reindex
-    maybe_reindex(root)
-
-
 def _scope(args: dict) -> tuple[Path, str | None]:
     """Resolve repo_path (+ optional scope_path) to (repo_root, path_filter) for
-    PATH-SCOPE. repo_path may itself be a sub-path inside an indexed repo; an
-    explicit `scope_path` arg is appended to it. path_filter is None at the root."""
+    PATH-SCOPE (thin wrapper over app.resolve_scope, kept as the documented MCP
+    entry the tests import). repo_path may itself be a sub-path inside an indexed
+    repo; an explicit `scope_path`/`subpath` arg is appended to it."""
+    from .. import app
+    return app.resolve_scope(args["repo_path"],
+                             args.get("scope_path") or args.get("subpath"))
+
+
+def _scope_root(args: dict) -> tuple[Path, str | None]:
+    """(repo_root, subpath) for get/chunks: repo_path alone resolves to the root
+    + the sub the bare `file` arg is joined onto (app.rel_join) — NO scope_path
+    append (those tools take an explicit file, not a folder scope). Faithful to
+    the pre-refactor resolve_root(repo_path) path."""
     from ..store import resolve_root
-    p = Path(args["repo_path"]).expanduser()
-    sub = (args.get("scope_path") or args.get("subpath") or "").strip().strip("/")
-    if sub:
-        p = p / sub
-    root, subpath = resolve_root(p)
-    return root, (subpath or None)
+    root, sub = resolve_root(Path(args["repo_path"]).expanduser())
+    return root, (sub or None)
 
 
 def call_tool(name: str, args: dict) -> str:
+    from .. import app
     if name == "megabrain_query":
-        from ..retrieval.query import render, search
+        from ..retrieval.query import render, render_pruned
         root, pf = _scope(args)
-        _maybe_reindex(root)
         if args.get("prune_noise"):
-            from ..retrieval.query import prune_search_root, render_pruned
             with_text = not bool(args.get("compact"))
-            res = prune_search_root(root, args["task"], path_filter=pf,
-                                    with_text=with_text)
+            res = app.prune(root, args["task"], path_filter=pf, with_text=with_text)
             return render_pruned(res, with_text=with_text)
-        return render(search(root, args["task"], path_filter=pf),
+        return render(app.query(root, args["task"], path_filter=pf),
                       compact=bool(args.get("compact")),
                       related_code=bool(args.get("full")))
     if name == "megabrain_ask":
-        from ..ask import ask, render_ask
+        from ..ask import render_ask
         root, pf = _scope(args)
-        _maybe_reindex(root)
-        ag = args.get("agents")
         # MCP is request/response — the consuming agent only reads the final
         # text, so the fan-out runs buffered (no streaming) and the trace
         # lands as a one-line footer.
-        out = ask(root, args["question"],
-                  docs_only=bool(args.get("docs")),
-                  include_docs=bool(args.get("include_docs")),
-                  path_filter=pf,
-                  agents=None if ag is None else bool(ag))
+        out = app.ask(root, args["question"], path_filter=pf,
+                      docs_only=bool(args.get("docs")),
+                      include_docs=bool(args.get("include_docs")),
+                      agents=args.get("agents"))
         text = render_ask(out)
         if out.get("agents"):
             tr = " · ".join(f'{a["label"]}({len(a["files"])}f)'
@@ -250,26 +247,14 @@ def call_tool(name: str, args: dict) -> str:
             text += f"\n\n— multi-agent: {tr}"
         return text
     if name == "megabrain_get":
-        from ..retrieval.query import get_code
-        from ..store import resolve_root
-        root, sub = resolve_root(Path(args["repo_path"]).expanduser())
-        rel = args["file"]
-        if sub and not (root / rel).exists() and (root / sub / rel).exists():
-            rel = (Path(sub) / rel).as_posix()
-        return get_code(root, rel, args.get("symbol"))
+        root, sub = _scope_root(args)
+        return app.get(root, sub, args["file"], args.get("symbol"))
     if name == "megabrain_chunks":
-        from ..retrieval.query import chunks_for_file_root
-        from ..store import resolve_root
-        root, sub = resolve_root(Path(args["repo_path"]).expanduser())
-        rel = args["file"]
-        if sub and not (root / rel).exists() and (root / sub / rel).exists():
-            rel = (Path(sub) / rel).as_posix()
-        _maybe_reindex(root)
-        return json.dumps(chunks_for_file_root(root, rel, args["query"]))
+        root, sub = _scope_root(args)
+        return json.dumps(app.chunks(root, sub, args["file"], args["query"]))
     if name == "megabrain_index":
-        from ..indexing.indexer import index_repo
         root = Path(args["repo_path"]).expanduser().resolve()
-        return json.dumps(index_repo(root, quiet=True))
+        return json.dumps(app.index(root))
     if name == "megabrain_forge":
         root = Path(args["repo_path"]).expanduser().resolve()
         if args.get("specialize"):
