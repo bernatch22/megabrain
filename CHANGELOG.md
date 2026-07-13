@@ -1,5 +1,40 @@
 # Changelog
 
+## Unreleased — art-of-code refactor (v2)
+
+Internal architecture pass toward the "art of code" layering. **No public
+contract changed**: the CLI/MCP/serve-api surfaces, the on-disk index + trust
+formats, and the Python API are byte-compatible; MCP tool schemas and chunker
+output are pinned byte-for-byte by new golden tests. See `REFACTOR.md`.
+
+- **One `ask` pipeline.** `ask()` is now a buffered collector over
+  `stream_events`; the flow-cache read AND write live in that single pipeline.
+  Fixes a real divergence where CLI/SSE asks never populated the flow cache.
+- **Structured errors** (`megabrain/errors.py`): a `MegabrainError` taxonomy
+  with `code` + `http_status`; one catch site per frontend (CLI no longer dumps
+  tracebacks; HTTP no longer leaks internals).
+- **`ChatProvider` Protocol + registry** (`providers/base.py`): the three
+  provider if-switches collapse into `resolve()`; `agent_stream` is a probed
+  capability. Mirrors the `ChunkStrategy` pattern.
+- **`ChunkMeta`** (`megabrain/model.py`): the chunk row is a frozen typed
+  record end-to-end; the SQL column order lives only in `store.py`.
+- **`RetrievalParams`** (`retrieval/params.py`): every tuning knob in one frozen,
+  injectable record (sweeps replace() it instead of monkeypatching globals).
+- **`query.py` split** into `state / scoring / bundle / render / files`;
+  `query.py` is now a compatibility facade. `selection()` is the single
+  definition of signal (prune + chunks_for_file are projections of it).
+- **`app.py` application-service layer**: one use-case per verb + the shared
+  pre-steps (resolve/rel_join/agents tri-state/reindex) all frontends call.
+  `docsearch.py` and `session.py` (RepoSession) extracted from the HTTP handler.
+- **One cAST engine** (`chunkers/cast.py`): `merge_units` / `greedy_pack` /
+  `pack_lines`, shared by the Python and tree-sitter chunkers (were duplicated).
+  Byte-identity proven by `tests/test_cast_unification.py`.
+- **`TreeChunkerOps`** public contract for the php→tree-sitter reuse seam.
+- **Lifecycle**: `SearchState`/`Store` close via context managers everywhere;
+  `index_repo` owns its connection and returns stats (the library never prints).
+- **Layering**: indexing no longer imports the `flows` feature module
+  (stale-flow invalidation is now `Store` integrity).
+
 ## 0.7.2 — 2026-07-11
 
 - **`prune_noise` — NO-LLM noise pruning on the query path.** A new option

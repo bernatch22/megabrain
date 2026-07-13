@@ -188,7 +188,8 @@ span-IoU 0.037 → 0.115 with hit@1 held). Do not chase it on ordinary code.
 
 ## 3. Query time — retrieval (no LLM)
 
-`retrieval/query.py`. `load_state()` loads matrices once (servers keep it warm and reload on
+`retrieval/` (scoring in `scoring.py`, assembly in `bundle.py`, exposed through the
+`retrieval/query.py` facade). `load_state()` (in `state.py`) loads matrices once (servers keep it warm and reload on
 db-mtime change); `search_with_state()` runs per query, all vectorized.
 
 ### 3.1 Scoring
@@ -422,23 +423,39 @@ megabrain/
   ask.py             narrated walkthrough with verbatim splice (code/docs/code+docs modes)
   ask_agents.py      ask v2: broad-query classifier · planner · parallel tool-enabled
                      sub-agents · synthesizer · the stream_events event driver
-  store.py           SQLite schema + loads (close/context-manager)
-  chunkers/          CONTENT → CHUNKS: base (contract) · python · treesitter+LangSpec · php · markdown
+  errors.py          structured error taxonomy (MegabrainError → code + http_status)
+  model.py           ChunkMeta — the frozen read-side chunk record
+  app.py             application-service layer: one use-case per verb + the
+                     shared pre-steps (resolve_scope · rel_join · normalize_agents
+                     · reindex policy) all frontends call
+  docsearch.py       docs-site search projection (was trapped in http)
+  session.py         RepoSession — warm, self-invalidating state (shared by http + mcp)
+  store.py           SQLite schema + loads + row packing + flow integrity (close/context-manager)
+  chunkers/          CONTENT → CHUNKS: base (contract) · cast (the shared cAST
+                     engine) · python · treesitter+LangSpec (TreeChunkerOps) · php · markdown
   indexing/          BUILD the index
-    indexer.py         registry-driven incremental walk + maybe_reindex (60s TTL)
+    indexer.py         registry-driven incremental walk + maybe_reindex (60s TTL);
+                       returns stats (never prints)
     strategies.py      ext → strategy registry + ChunkStrategy protocol (custom via
                        index_repo) + trust-gated repo-local loading (.megabrain/strategies)
     graph.py           import/call edges (py · ts/js · php)
   retrieval/         ANSWER queries (no LLM in this package — rule 1)
-    query.py           scoring, issue mode, bundle, render (RELATED map), chunks_for_file, multi-repo
+    query.py           compatibility facade re-exporting the split modules below
+    params.py          RetrievalParams — every tuning knob, frozen + injectable
+    state.py           SearchState + load_state (warm state, lifecycle)
+    scoring.py         score_chunks — the single scoring truth (dense/fusion/issue/lexical)
+    bundle.py          rank + tier (CORE/RELATED) · selection · prune · chunks_for_file · multi
+    render.py          bundle → markdown (pure view)
+    files.py           get_code — the file-serving containment boundary
     issue.py           deterministic issue parsing (py + js/ts frames, variants)
     bm25.py            sparse entity-ID lane (postings)
     rerank.py          optional listwise LLM reorder (permute-only, --best)
   providers/         everything that talks to a model API
-    __init__.py        chat routing (auto claude/openrouter) + OpenAI-compat clients + keys
+    base.py            ChatProvider Protocol (available/chat_text/stream_chat/agent_stream)
+    __init__.py        provider registry + resolve() (auto claude/openrouter) + OpenAI-compat clients + keys
     claude.py          Claude Agent SDK transport (subscription credits / ANTHROPIC_API_KEY)
-    embeddings.py      embed client (int8 decode, L2 norm, atomic disk cache)
-  frontends/         entry points over the same engine
+    embeddings.py      embed client (construction-time config; int8 decode, L2 norm, atomic disk cache)
+  frontends/         thin adapters over app.py (map transport args → use-case → render)
     cli.py · mcp.py · http.py   (megabrain CLI · stdio MCP · serve-api)
   mcp_server.py      launcher shim — keeps `python3 -m megabrain.mcp_server` registrations working
 examples/            programmatic API · custom .sql chunker · chunk heatmap · web demo
@@ -446,7 +463,8 @@ examples/            programmatic API · custom .sql chunker · chunk heatmap ·
 
 Public API (lazy, typed): `megabrain.{index_repo, search, render, get_code,
 load_state, search_with_state, prune_search, prune_search_root, render_pruned,
-Store, ChunkStrategy, Chunk, Symbol, FileResult, validate_partition}`; the
+Store, ChunkMeta, ChunkStrategy, Chunk, Symbol, FileResult, validate_partition,
+MegabrainError, IndexNotFound, EmptyIndex, MissingAPIKey, ProviderError}`; the
 walkthrough via `from megabrain.ask import ask, render_ask, stream_ask`.
 `prune_search(state, query, path_filter=None, with_text=True,
 include_pruned=False)` returns `{query, repo, chunks:[{id, file, start_line,

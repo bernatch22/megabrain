@@ -32,7 +32,7 @@ The public suite (`python -m pytest`) is offline and covers chunkers
 (partition guarantees per language), retrieval plumbing, the MCP server, and
 security containment. The end-to-end retrieval benchmark (a 30-query golden
 set over a private corpus) runs maintainer-side before releases; PRs that
-could shift ranking (weights in `query.py`, chunk budgets, issue grounding)
+could shift ranking (weights in `retrieval/params.py`, chunk budgets, issue grounding)
 will be gated on it — say so in the PR description so it gets run.
 
 ## Adding a language (the best first contribution)
