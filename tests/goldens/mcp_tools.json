@@ -1,133 +1,131 @@
 [
  {
-  "name": "megabrain_ask",
-  "description": "THE primary tool for any how/where/why question about an indexed repo. Returns a senior-engineer walkthrough that explains the whole relevant flow with the REAL code spliced in at each step (verbatim from disk, true line numbers — the model narrates and cites code spans but cannot rewrite them, so code is never hallucinated). Retrieval has no LLM; one chat call writes the explanation — and BROAD questions automatically fan out into parallel sub-agents (one per subsystem, with retrieval tools) whose answers are synthesized, same grounding. Use this INSTEAD OF reading files one by one or spawning explore agents — one call replaces minutes of navigation. Non-cited related files are listed at the end. Explains CODE only by default; set docs=true to explain documentation (markdown) instead. ~6-19s (broad fan-out: up to ~40s).",
+  "description": "THE primary tool for any how/where/why question about an indexed repo. Returns a senior-engineer walkthrough that explains the whole relevant flow with the REAL code spliced in at each step (verbatim from disk, true line numbers \u2014 the model narrates and cites code spans but cannot rewrite them, so code is never hallucinated). Retrieval has no LLM; one chat call writes the explanation \u2014 and BROAD questions automatically fan out into parallel sub-agents (one per subsystem, with retrieval tools) whose answers are synthesized, same grounding. Use this INSTEAD OF reading files one by one or spawning explore agents \u2014 one call replaces minutes of navigation. Non-cited related files are listed at the end. Explains CODE only by default; set docs=true to explain documentation (markdown) instead. ~6-19s (broad fan-out: up to ~40s).",
   "inputSchema": {
-   "type": "object",
    "properties": {
-    "repo_path": {
-     "type": "string",
-     "description": "path to the indexed repo root (a sub-path also works — the root is auto-detected from .megabrain)"
-    },
-    "question": {
-     "type": "string",
-     "description": "how/where/why question, natural language"
-    },
-    "scope_path": {
-     "type": "string",
-     "description": "optional repo-relative folder (e.g. src/dispatch) to scope the walkthrough to files under it; omit for the whole repo"
+    "agents": {
+     "description": "true = force the multi-agent fan-out, false = never fan out; omit for AUTO (fan out only when the question is broad)",
+     "type": "boolean"
     },
     "docs": {
-     "type": "boolean",
-     "description": "explain documentation (markdown) only, instead of code (default false)"
+     "description": "explain documentation (markdown) only, instead of code (default false)",
+     "type": "boolean"
     },
     "include_docs": {
-     "type": "boolean",
-     "description": "explain code AND docs together (default false = code only)"
+     "description": "explain code AND docs together (default false = code only)",
+     "type": "boolean"
     },
-    "agents": {
-     "type": "boolean",
-     "description": "true = force the multi-agent fan-out, false = never fan out; omit for AUTO (fan out only when the question is broad)"
+    "question": {
+     "description": "how/where/why question, natural language",
+     "type": "string"
+    },
+    "repo_path": {
+     "description": "path to the indexed repo root (a sub-path also works \u2014 the root is auto-detected from .megabrain)",
+     "type": "string"
+    },
+    "scope_path": {
+     "description": "optional repo-relative folder (e.g. src/dispatch) to scope the walkthrough to files under it; omit for the whole repo",
+     "type": "string"
     }
    },
    "required": [
     "repo_path",
     "question"
-   ]
-  }
+   ],
+   "type": "object"
+  },
+  "name": "megabrain_ask"
  },
  {
-  "name": "megabrain_query",
-  "description": "The same retrieval as megabrain_ask but UNFILTERED and with NO LLM (~200ms): returns ALL related code as a map — CORE (full code of the top files + symbol index) and RELATED (every connected file with its best chunk). Use when you want the raw complete bundle, when ask might have skipped something, or for speed.",
+  "description": "The same retrieval as megabrain_ask but UNFILTERED and with NO LLM (~200ms): returns ALL related code as a map \u2014 CORE (full code of the top files + symbol index) and RELATED (every connected file with its best chunk). Use when you want the raw complete bundle, when ask might have skipped something, or for speed.",
   "inputSchema": {
-   "type": "object",
    "properties": {
-    "repo_path": {
-     "type": "string",
-     "description": "path to the indexed repo root (a sub-path also works — the root is auto-detected from .megabrain)"
-    },
-    "task": {
-     "type": "string",
-     "description": "feature/question, natural language"
-    },
-    "scope_path": {
-     "type": "string",
-     "description": "optional repo-relative folder (e.g. src/dispatch) to scope the bundle to files under it; omit for the whole repo"
-    },
     "compact": {
-     "type": "boolean",
-     "description": "signatures only, no code bodies"
+     "description": "signatures only, no code bodies",
+     "type": "boolean"
     },
     "full": {
-     "type": "boolean",
-     "description": "include RELATED best-chunk code bodies (default false: RELATED renders as a map — file, match span, symbols — so the bundle stays context-friendly)"
+     "description": "include RELATED best-chunk code bodies (default false: RELATED renders as a map \u2014 file, match span, symbols \u2014 so the bundle stays context-friendly)",
+     "type": "boolean"
     },
     "prune_noise": {
-     "type": "boolean",
-     "description": "NO-LLM noise pruning: instead of the file-grouped bundle, return ONLY the signal chunks as a flat list ranked by relevance ([id] file:lines · score + code), noise dropped. The lean alternative to megabrain_ask when you just need the exact code to read, not a narration — deterministic, no LLM, no tokens."
+     "description": "NO-LLM noise pruning: instead of the file-grouped bundle, return ONLY the signal chunks as a flat list ranked by relevance ([id] file:lines \u00b7 score + code), noise dropped. The lean alternative to megabrain_ask when you just need the exact code to read, not a narration \u2014 deterministic, no LLM, no tokens.",
+     "type": "boolean"
+    },
+    "repo_path": {
+     "description": "path to the indexed repo root (a sub-path also works \u2014 the root is auto-detected from .megabrain)",
+     "type": "string"
+    },
+    "scope_path": {
+     "description": "optional repo-relative folder (e.g. src/dispatch) to scope the bundle to files under it; omit for the whole repo",
+     "type": "string"
+    },
+    "task": {
+     "description": "feature/question, natural language",
+     "type": "string"
     }
    },
    "required": [
     "repo_path",
     "task"
-   ]
-  }
+   ],
+   "type": "object"
+  },
+  "name": "megabrain_query"
  },
  {
-  "name": "megabrain_get",
   "description": "Fetch the full code of one file, or one symbol (e.g. Service.handle). Use to expand a RELATED entry or follow up after ask/query.",
   "inputSchema": {
-   "type": "object",
    "properties": {
+    "file": {
+     "description": "repo-relative path",
+     "type": "string"
+    },
     "repo_path": {
      "type": "string"
     },
-    "file": {
-     "type": "string",
-     "description": "repo-relative path"
-    },
     "symbol": {
-     "type": "string",
-     "description": "optional symbol name, e.g. Service.handle"
+     "description": "optional symbol name, e.g. Service.handle",
+     "type": "string"
     }
    },
    "required": [
     "repo_path",
     "file"
-   ]
-  }
+   ],
+   "type": "object"
+  },
+  "name": "megabrain_get"
  },
  {
-  "name": "megabrain_chunks",
   "description": "Score EVERY chunk of ONE file against a query: each chunk's span (start/end line), relevance score, and whether the full retrieval actually SELECTED it into the bundle. Shows signal-vs-noise inside a file (what retrieval reads vs ignores); powers chunk-selection visualizations.",
   "inputSchema": {
-   "type": "object",
    "properties": {
-    "repo_path": {
-     "type": "string",
-     "description": "path to the indexed repo root (a sub-path also works — the root is auto-detected from .megabrain)"
-    },
     "file": {
-     "type": "string",
-     "description": "repo-relative path of the file to map"
+     "description": "repo-relative path of the file to map",
+     "type": "string"
     },
     "query": {
-     "type": "string",
-     "description": "the retrieval query to score chunks against"
+     "description": "the retrieval query to score chunks against",
+     "type": "string"
+    },
+    "repo_path": {
+     "description": "path to the indexed repo root (a sub-path also works \u2014 the root is auto-detected from .megabrain)",
+     "type": "string"
     }
    },
    "required": [
     "repo_path",
     "file",
     "query"
-   ]
-  }
+   ],
+   "type": "object"
+  },
+  "name": "megabrain_chunks"
  },
  {
-  "name": "megabrain_index",
   "description": "Index or incrementally update a repo before querying a NEW one (fast: only changed files are re-embedded; ask/query auto-refresh a stale index).",
   "inputSchema": {
-   "type": "object",
    "properties": {
     "repo_path": {
      "type": "string"
@@ -135,53 +133,49 @@
    },
    "required": [
     "repo_path"
-   ]
-  }
+   ],
+   "type": "object"
+  },
+  "name": "megabrain_index"
  },
  {
-  "name": "megabrain_forge",
-  "description": "Make megabrain index file types it currently can't (COVERAGE forge). Detects the repo's uncovered text extensions (e.g. .toml, .yaml, .astro, .proto), then for each one an LLM writes a chunking strategy from real sample files, only accepted after chunking EVERY matching file with a clean exact-line partition (repair loop on failure — nothing unvetted installs). The vetted strategy lands in .megabrain/strategies/, trusted, and loads on every future index. Use when queries miss content because its file type isn't indexed. list_only=true = free census; dry_run=true = inspect the generated code without installing. specialize=true returns the census of poorly-chunked ALREADY-covered files (NOTE: the LLM path for specialization was removed — it lost to a deterministic recipe; hand-write a strategy into .megabrain/strategies/ and gate it with the Python API forge_specialize.gate_strategy, which installs it only on a measured retrieval win). ~10-60s per extension when generating.",
+  "description": "Make megabrain index file types it currently can't (COVERAGE forge). Detects the repo's uncovered text extensions (e.g. .toml, .yaml, .astro, .proto), then for each one an LLM writes a chunking strategy from real sample files, only accepted after chunking EVERY matching file with a clean exact-line partition (repair loop on failure \u2014 nothing unvetted installs). The vetted strategy lands in .megabrain/strategies/, trusted, and loads on every future index. Use when queries miss content because its file type isn't indexed. list_only=true = free census; dry_run=true = inspect the generated code without installing. specialize=true returns the census of poorly-chunked ALREADY-covered files (NOTE: the LLM path for specialization was removed \u2014 it lost to a deterministic recipe; hand-write a strategy into .megabrain/strategies/ and gate it with the Python API forge_specialize.gate_strategy, which installs it only on a measured retrieval win). ~10-60s per extension when generating.",
   "inputSchema": {
-   "type": "object",
    "properties": {
-    "repo_path": {
-     "type": "string",
-     "description": "path to the repo root"
+    "dry_run": {
+     "description": "generate + validate but do not install or reindex; the report includes the generated code",
+     "type": "boolean"
     },
     "ext": {
-     "type": "string",
-     "description": "forge one extension only, e.g. '.toml'; omit to forge every detected candidate"
+     "description": "forge one extension only, e.g. '.toml'; omit to forge every detected candidate",
+     "type": "string"
     },
     "list_only": {
-     "type": "boolean",
-     "description": "just return the census (no LLM call)"
+     "description": "just return the census (no LLM call)",
+     "type": "boolean"
     },
-    "dry_run": {
-     "type": "boolean",
-     "description": "generate + validate but do not install or reindex; the report includes the generated code"
+    "repo_path": {
+     "description": "path to the repo root",
+     "type": "string"
     },
     "specialize": {
-     "type": "boolean",
-     "description": "return the census of poorly-chunked COVERED files (no LLM; strategies are hand-written + gated via gate_strategy)"
+     "description": "return the census of poorly-chunked COVERED files (no LLM; strategies are hand-written + gated via gate_strategy)",
+     "type": "boolean"
     }
    },
    "required": [
     "repo_path"
-   ]
-  }
+   ],
+   "type": "object"
+  },
+  "name": "megabrain_forge"
  },
  {
-  "name": "megabrain_flows",
-  "description": "Manage the self-caching workflow retrieval for a repo (OPT-IN, off by default). When on, every megabrain_ask caches its cross-file walkthrough and the next related question retrieves the whole workflow at once — no extra call, it rides megabrain_ask/megabrain_query. Actions: 'warm' discovers the repo's main workflows and pre-caches them with N research asks (also enables the mode); 'refresh' re-asks stale flows against the current code (UPDATE, not just expire); 'enable'/'disable' toggle the mode; 'list' shows what's cached. Use 'warm' once on a repo an agent team will work in, so its workflows are searchable from the first question.",
+  "description": "Manage the self-caching workflow retrieval for a repo (OPT-IN, off by default). When on, every megabrain_ask caches its cross-file walkthrough and the next related question retrieves the whole workflow at once \u2014 no extra call, it rides megabrain_ask/megabrain_query. Actions: 'warm' discovers the repo's main workflows and pre-caches them with N research asks (also enables the mode); 'refresh' re-asks stale flows against the current code (UPDATE, not just expire); 'enable'/'disable' toggle the mode; 'list' shows what's cached. Use 'warm' once on a repo an agent team will work in, so its workflows are searchable from the first question.",
   "inputSchema": {
-   "type": "object",
    "properties": {
-    "repo_path": {
-     "type": "string",
-     "description": "path to the repo root"
-    },
     "action": {
-     "type": "string",
+     "description": "default 'list'",
      "enum": [
       "list",
       "warm",
@@ -189,16 +183,22 @@
       "enable",
       "disable"
      ],
-     "description": "default 'list'"
+     "type": "string"
     },
     "n": {
-     "type": "integer",
-     "description": "for action='warm': how many top workflows to discover + cache (default 6)"
+     "description": "for action='warm': how many top workflows to discover + cache (default 6)",
+     "type": "integer"
+    },
+    "repo_path": {
+     "description": "path to the repo root",
+     "type": "string"
     }
    },
    "required": [
     "repo_path"
-   ]
-  }
+   ],
+   "type": "object"
+  },
+  "name": "megabrain_flows"
  }
 ]
