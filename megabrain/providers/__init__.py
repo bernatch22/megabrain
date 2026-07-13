@@ -58,20 +58,9 @@ RERANK_MODEL = os.environ.get("MEGABRAIN_RERANK_MODEL", "qwen/qwen3-coder")
 
 
 def chat_provider() -> str:
-    """Chat backend for ask/--best (read per call so tests/shells can flip it):
-    'claude' (Claude Agent SDK: Claude Code subscription credits, or
-    ANTHROPIC_API_KEY) or 'openrouter' (any OpenAI-compatible endpoint, see
-    CHAT_BASE_URL). Embeddings are NOT affected by this switch.
-
-    Default is AUTO: Claude when its SDK is importable (so a Claude Code user
-    gets subscription-credit narration with zero config), else OpenRouter (so a
-    plain `pip install megabrain` still works out of the box). Set
-    MEGABRAIN_CHAT_PROVIDER to pin it either way."""
-    v = os.environ.get("MEGABRAIN_CHAT_PROVIDER")
-    if v:
-        return v.strip().lower()
-    import importlib.util
-    return "claude" if importlib.util.find_spec("claude_agent_sdk") else "openrouter"
+    """Name of the resolved chat backend (see resolve()) — kept as the stable
+    string-shaped accessor for callers/tests that only need the name."""
+    return resolve().name
 
 
 def ask_model() -> str:
@@ -185,40 +174,34 @@ def post_json(path: str, body: dict, key: str | None = None, retries: int = 5,
 
 def chat_text(model: str, prompt: str, max_tokens: int, temperature: float = 0.0,
               key: str | None = None, retries: int = 5, timeout: int = 45) -> str:
-    """One non-streamed chat completion -> assistant text (OpenAI schema).
-    `timeout` bounds BOTH providers (on claude it caps the CLI spawn)."""
-    if chat_provider() == "claude":
-        from . import claude as providers_claude
-        return providers_claude.chat_text(model, prompt, max_tokens,
-                                          timeout=timeout)
-    body = {"model": model, "max_tokens": max_tokens, "temperature": temperature,
-            "messages": [{"role": "user", "content": prompt}]}
-    d = post_json("/chat/completions", body, key or find_chat_key(),
-                  retries=retries, timeout=timeout, base_url=CHAT_BASE_URL)
-    return (d.get("choices") or [{}])[0].get("message", {}).get("content") or ""
+    """One non-streamed chat completion -> assistant text (OpenAI schema),
+    routed through the resolved ChatProvider. `timeout` bounds BOTH backends
+    (on claude it caps the CLI spawn)."""
+    return resolve().chat_text(model, prompt, max_tokens, temperature=temperature,
+                               key=key, retries=retries, timeout=timeout)
 
 
 def stream_chat(body: dict, key: str | None = None, retries: int = 4,
                 on_delta=None, timeout: int = 90, with_tools: bool = False):
-    """Streamed chat completion (OpenAI SSE). Returns (text, finish_reason) —
-    or (text, finish_reason, tool_calls) when `with_tools=True` (ask v2 agents;
-    the caller puts the `tools` spec in the body and runs the loop).
+    """Streamed chat completion, routed through the resolved ChatProvider.
+    Returns (text, finish_reason) — or (text, finish_reason, tool_calls) when
+    `with_tools=True` (ask v2 agents; the caller puts the `tools` spec in the
+    body and runs the loop). finish_reason is OpenAI's ("length" on cap)."""
+    return resolve().stream_chat(body, key=key, retries=retries,
+                                 on_delta=on_delta, timeout=timeout,
+                                 with_tools=with_tools)
+
+
+def _or_stream_chat(body: dict, key: str | None = None, retries: int = 4,
+                    on_delta=None, timeout: int = 90, with_tools: bool = False):
+    """OpenAI-compatible SSE transport (OpenRouter/local/native endpoints).
 
     Parses `data: {...}` chunks: `choices[0].delta.content` deltas, terminated
     by `data: [DONE]`; SSE comment/keep-alive lines are skipped. Fragmented
     `delta.tool_calls` (id / function.name / function.arguments) accumulate per
     index into [{id, name, arguments}] in call order. Backoff on 429/5xx; once
     any delta has been emitted via on_delta we stop retrying so the terminal
-    never double-prints. finish_reason is OpenAI's ("length" on cap).
-
-    MEGABRAIN_CHAT_PROVIDER=claude reroutes the same body through the Claude
-    Agent SDK (Claude Code credits / ANTHROPIC_API_KEY) — same return contract.
-    (Tool-enabled claude turns go through claude.agent_stream instead: the SDK
-    runs its own tool loop, so the claude route never returns tool_calls.)"""
-    if chat_provider() == "claude":
-        from . import claude as providers_claude
-        text, stop = providers_claude.stream_chat(body, on_delta=on_delta)
-        return (text, stop, []) if with_tools else (text, stop)
+    never double-prints."""
     key = key or find_chat_key()
     body = {**body, "stream": True}
     data = json.dumps(body).encode()
@@ -284,4 +267,89 @@ def stream_chat(body: dict, key: str | None = None, retries: int = 4,
                 time.sleep(2 ** attempt)
                 continue
             raise
-    raise last if last else RuntimeError("unreachable")
+    raise last if last else ProviderError("unreachable")
+
+
+# ── the provider registry (base.ChatProvider — the ChunkStrategy pattern) ──
+# Adding a backend = one adapter class + one _REGISTRY entry. No call-site
+# edits: chat_text/stream_chat above and ask_agents' tool loop all route
+# through resolve(), and capabilities are probed (p.agent_stream), not
+# name-switched.
+
+
+class OpenRouterProvider:
+    """Any OpenAI-compatible endpoint (OpenRouter, Ollama, LM Studio, vLLM,
+    a provider's native API) — the always-available default."""
+
+    name = "openrouter"
+    agent_stream = None      # no native tool loop: callers run the OpenAI one
+
+    def available(self) -> bool:
+        return True
+
+    def chat_text(self, model: str, prompt: str, max_tokens: int,
+                  temperature: float = 0.0, key: str | None = None,
+                  retries: int = 5, timeout: int = 45) -> str:
+        body = {"model": model, "max_tokens": max_tokens,
+                "temperature": temperature,
+                "messages": [{"role": "user", "content": prompt}]}
+        d = post_json("/chat/completions", body, key or find_chat_key(),
+                      retries=retries, timeout=timeout, base_url=CHAT_BASE_URL)
+        return (d.get("choices") or [{}])[0].get("message", {}).get("content") or ""
+
+    def stream_chat(self, body: dict, key: str | None = None, retries: int = 4,
+                    on_delta=None, timeout: int = 90, with_tools: bool = False):
+        return _or_stream_chat(body, key=key, retries=retries, on_delta=on_delta,
+                               timeout=timeout, with_tools=with_tools)
+
+
+class ClaudeProvider:
+    """Claude Agent SDK (Claude Code subscription credits / ANTHROPIC_API_KEY).
+    Self-gates on the SDK being importable; carries the native tool-loop
+    capability (agent_stream) the OpenAI path lacks."""
+
+    name = "claude"
+
+    def available(self) -> bool:
+        import importlib.util
+        return importlib.util.find_spec("claude_agent_sdk") is not None
+
+    def chat_text(self, model: str, prompt: str, max_tokens: int,
+                  temperature: float = 0.0, key: str | None = None,
+                  retries: int = 5, timeout: int = 45) -> str:
+        from . import claude as _claude
+        return _claude.chat_text(model, prompt, max_tokens, timeout=timeout)
+
+    def stream_chat(self, body: dict, key: str | None = None, retries: int = 4,
+                    on_delta=None, timeout: int = 90, with_tools: bool = False):
+        from . import claude as _claude
+        text, stop = _claude.stream_chat(body, on_delta=on_delta)
+        # the SDK runs its own tool loop -> this route never returns tool_calls
+        return (text, stop, []) if with_tools else (text, stop)
+
+    @property
+    def agent_stream(self):
+        from . import claude as _claude
+        return _claude.agent_stream
+
+
+_REGISTRY: dict[str, object] = {"openrouter": OpenRouterProvider(),
+                                "claude": ClaudeProvider()}
+_PRIORITY = ("claude", "openrouter")
+
+
+def resolve():
+    """The ChatProvider for this call — read per call so tests/shells can flip
+    it. MEGABRAIN_CHAT_PROVIDER pins by name (an unknown name falls back to
+    openrouter, the always-available default — fail-open, exactly like the old
+    switch). Unset = AUTO: the first provider whose available() self-gate
+    passes, in _PRIORITY order (claude first, so a Claude Code user gets
+    subscription-credit narration with zero config; embeddings are never
+    affected by this)."""
+    v = (os.environ.get("MEGABRAIN_CHAT_PROVIDER") or "").strip().lower()
+    if v:
+        return _REGISTRY.get(v, _REGISTRY["openrouter"])
+    for name in _PRIORITY:
+        if _REGISTRY[name].available():
+            return _REGISTRY[name]
+    return _REGISTRY["openrouter"]

@@ -7,6 +7,7 @@ end-to-end index/search tests run anywhere (CI, contributor laptops).
 
 from __future__ import annotations
 
+import hashlib
 import re
 import sys
 from pathlib import Path
@@ -17,6 +18,13 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 DIMS = 256
+
+
+def _bucket(tok: str) -> int:
+    """Deterministic token bucket. md5, NOT builtin hash(): str hash is salted
+    per process, which made near-threshold similarity tests (e.g. flow attach
+    cutoffs) flaky depending on the interpreter's seed."""
+    return int.from_bytes(hashlib.md5(tok.encode()).digest()[:4], "big") % DIMS
 
 
 @pytest.fixture(autouse=True)
@@ -38,7 +46,7 @@ class FakeEmbedder:
         out = np.zeros((len(texts), DIMS), dtype=np.float32)
         for i, t in enumerate(texts):
             for tok in re.findall(r"[A-Za-z_]+", t.lower()):
-                out[i, hash(tok) % DIMS] += 1.0
+                out[i, _bucket(tok)] += 1.0
             n = np.linalg.norm(out[i])
             if n > 0:
                 out[i] /= n

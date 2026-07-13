@@ -296,14 +296,14 @@ def _openrouter_agent(prompt: str, tools: list[dict], key: str | None,
 
 def _agent_llm(prompt: str, tools: list[dict], key: str | None,
                on_delta, max_tokens: int) -> str:
-    """One tool-enabled agent turn, provider-routed: the Claude Agent SDK runs
-    its own tool loop (tools registered as an in-process MCP server); the
-    OpenAI path loops here."""
-    if providers.chat_provider() == "claude":
-        from .providers import claude as providers_claude
-        return providers_claude.agent_stream(prompt, model=providers.ask_model(),
-                                             tools=tools, on_delta=on_delta,
-                                             timeout=AGENT_TIMEOUT)
+    """One tool-enabled agent turn. CAPABILITY PROBE, not a name switch: a
+    provider with a native tool loop (p.agent_stream — e.g. the Claude Agent
+    SDK registers the tools as an in-process MCP server) runs it itself; any
+    OpenAI-compatible provider gets the function-calling loop here."""
+    p = providers.resolve()
+    if p.agent_stream is not None:
+        return p.agent_stream(prompt, model=providers.ask_model(), tools=tools,
+                              on_delta=on_delta, timeout=AGENT_TIMEOUT)
     return _openrouter_agent(prompt, tools, key, on_delta, max_tokens)
 
 
