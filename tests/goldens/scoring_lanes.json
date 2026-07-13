@@ -1,0 +1,40 @@
+{
+ "short": {
+  "files": [
+   "auth/login.py",
+   "auth/token.py",
+   "billing/invoice.py",
+   "tests/test_login.py"
+  ],
+  "fused": [
+   1.2533777332305909,
+   1.0337997674942017,
+   0.75,
+   0.7736085033416749
+  ]
+ },
+ "issue": {
+  "files": [
+   "auth/login.py",
+   "auth/token.py",
+   "billing/invoice.py",
+   "tests/test_login.py"
+  ],
+  "fused": [
+   1.75,
+   0.9807475678443419,
+   0.9622023809523809,
+   -1.0
+  ]
+ },
+ "scoped": {
+  "files": [
+   "auth/login.py",
+   "auth/token.py"
+  ],
+  "fused": [
+   1.2533777332305909,
+   1.0337997674942017
+  ]
+ }
+}

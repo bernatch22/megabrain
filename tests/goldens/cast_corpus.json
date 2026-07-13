@@ -4584,81 +4584,333 @@
    "chunks": [
     [
      "module",
-     "_is_test_path, _under_path, _apply_path_filter, _ident_tokens",
+     "_is_test_path, _under_path, _apply_path_filter, _ident_tokens, QueryCtx",
      null,
      1,
-     76,
-     "megabrain > megabrain/retrieval/scoring.py > [_is_test_path, _under_path, _apply_path_filter, _ident_tokens]",
-     "4e86e254ec2c11a4f005d89a82644888bc31f7da"
+     117,
+     "megabrain > megabrain/retrieval/scoring.py > [_is_test_path, _under_path, _apply_path_filter, _ident_tokens, QueryCtx]",
+     "6f851277006201bdf68d722216020e9e477761c2"
     ],
     [
-     "block",
-     "score_chunks",
-     "1/2",
-     77,
-     180,
-     "megabrain > megabrain/retrieval/scoring.py > def score_chunks(st: SearchState, query: str, path_filter: str | None=None) -> tuple[list, np.ndarray]",
-     "367d48addac40e1fe0777ec03bbf511abe4ab4b2"
+     "module",
+     "ScoreLane, DenseFileFusionLane, TestPenaltyLane, IssueLane",
+     null,
+     118,
+     242,
+     "megabrain > megabrain/retrieval/scoring.py > [ScoreLane, DenseFileFusionLane, TestPenaltyLane, IssueLane]",
+     "c922a74fde90f2ea4823941598103c0bb3b44788"
     ],
     [
-     "block",
-     "score_chunks",
-     "2/2",
-     181,
-     198,
-     "megabrain > megabrain/retrieval/scoring.py > def score_chunks(st: SearchState, query: str, path_filter: str | None=None) -> tuple[list, np.ndarray]",
-     "0ddd1f65d84670573eb9d7e2946d1aeab44312a6"
+     "module",
+     "LexicalBoostLane, score_chunks",
+     null,
+     243,
+     301,
+     "megabrain > megabrain/retrieval/scoring.py > [LexicalBoostLane, score_chunks]",
+     "271d41b790c111e6a7ebcae79f121556ad5016eb"
     ]
    ],
-   "skeleton_sha": "b7e924c4ecd5ab5652a227e687fbab6ed4be914b",
+   "skeleton_sha": "87c434544b41fb97bb2a3e64bb4e9ba57c85e74f",
    "symbols": [
     [
      "TEST_DIR_SEGS",
      "constant",
-     24,
-     24,
+     37,
+     37,
      "TEST_DIR_SEGS = frozenset({'test', 'tests', 'spec', 'specs', '__tests__', 'testing'})"
     ],
     [
      "_is_test_path",
      "function",
-     27,
-     36,
+     40,
+     49,
      "def _is_test_path(relpath: str) -> bool"
     ],
     [
      "_under_path",
      "function",
-     39,
-     46,
+     52,
+     59,
      "def _under_path(relpath: str, path_filter: str) -> bool"
     ],
     [
      "_apply_path_filter",
      "function",
-     49,
-     60,
+     62,
+     73,
      "def _apply_path_filter(metas: list, M: np.ndarray, path_filter: str | None)"
     ],
     [
      "_ident_tokens",
      "function",
-     63,
-     71,
+     76,
+     84,
      "def _ident_tokens(text: str) -> set[str]"
     ],
     [
      "ident_tokens",
      "constant",
-     76,
-     76,
+     89,
+     89,
      "ident_tokens = _ident_tokens"
+    ],
+    [
+     "QueryCtx",
+     "class",
+     92,
+     117,
+     "class QueryCtx"
+    ],
+    [
+     "QueryCtx.st",
+     "class_attr",
+     98,
+     98,
+     "st: SearchState"
+    ],
+    [
+     "QueryCtx.query",
+     "class_attr",
+     99,
+     99,
+     "query: str"
+    ],
+    [
+     "QueryCtx.path_filter",
+     "class_attr",
+     100,
+     100,
+     "path_filter: str | None"
+    ],
+    [
+     "QueryCtx.p",
+     "class_attr",
+     101,
+     101,
+     "p: RetrievalParams"
+    ],
+    [
+     "QueryCtx.metas",
+     "class_attr",
+     102,
+     102,
+     "metas: list"
+    ],
+    [
+     "QueryCtx.M",
+     "class_attr",
+     103,
+     103,
+     "M: np.ndarray"
+    ],
+    [
+     "QueryCtx.fpaths",
+     "class_attr",
+     104,
+     104,
+     "fpaths: list"
+    ],
+    [
+     "QueryCtx.F",
+     "class_attr",
+     105,
+     105,
+     "F: np.ndarray"
+    ],
+    [
+     "QueryCtx.qv",
+     "class_attr",
+     106,
+     106,
+     "qv: np.ndarray"
+    ],
+    [
+     "QueryCtx.cfi",
+     "class_attr",
+     107,
+     107,
+     "cfi: np.ndarray"
+    ],
+    [
+     "QueryCtx.is_test",
+     "class_attr",
+     108,
+     108,
+     "is_test: np.ndarray"
+    ],
+    [
+     "QueryCtx.qtok",
+     "class_attr",
+     109,
+     109,
+     "qtok: set"
+    ],
+    [
+     "QueryCtx.store",
+     "method",
+     111,
+     113,
+     "def store(self)"
+    ],
+    [
+     "QueryCtx.emb",
+     "method",
+     115,
+     117,
+     "def emb(self)"
+    ],
+    [
+     "ScoreLane",
+     "class",
+     120,
+     129,
+     "class ScoreLane(Protocol)"
+    ],
+    [
+     "ScoreLane.name",
+     "class_attr",
+     125,
+     125,
+     "name: str"
+    ],
+    [
+     "ScoreLane.applies",
+     "method",
+     127,
+     127,
+     "def applies(self, ctx: QueryCtx) -> bool"
+    ],
+    [
+     "ScoreLane.apply",
+     "method",
+     129,
+     129,
+     "def apply(self, ctx: QueryCtx, fused: np.ndarray | None) -> np.ndarray"
+    ],
+    [
+     "DenseFileFusionLane",
+     "class",
+     132,
+     143,
+     "class DenseFileFusionLane"
+    ],
+    [
+     "DenseFileFusionLane.name",
+     "class_attr",
+     135,
+     135,
+     "name = 'dense+file'"
+    ],
+    [
+     "DenseFileFusionLane.applies",
+     "method",
+     137,
+     138,
+     "def applies(self, ctx: QueryCtx) -> bool"
+    ],
+    [
+     "DenseFileFusionLane.apply",
+     "method",
+     140,
+     143,
+     "def apply(self, ctx: QueryCtx, fused: np.ndarray | None) -> np.ndarray"
+    ],
+    [
+     "TestPenaltyLane",
+     "class",
+     146,
+     155,
+     "class TestPenaltyLane"
+    ],
+    [
+     "TestPenaltyLane.name",
+     "class_attr",
+     149,
+     149,
+     "name = 'test-penalty'"
+    ],
+    [
+     "TestPenaltyLane.applies",
+     "method",
+     151,
+     152,
+     "def applies(self, ctx: QueryCtx) -> bool"
+    ],
+    [
+     "TestPenaltyLane.apply",
+     "method",
+     154,
+     155,
+     "def apply(self, ctx: QueryCtx, fused: np.ndarray) -> np.ndarray"
+    ],
+    [
+     "IssueLane",
+     "class",
+     158,
+     242,
+     "class IssueLane"
+    ],
+    [
+     "IssueLane.name",
+     "class_attr",
+     163,
+     163,
+     "name = 'issue'"
+    ],
+    [
+     "IssueLane.applies",
+     "method",
+     165,
+     166,
+     "def applies(self, ctx: QueryCtx) -> bool"
+    ],
+    [
+     "IssueLane.apply",
+     "method",
+     168,
+     242,
+     "def apply(self, ctx: QueryCtx, fused: np.ndarray) -> np.ndarray"
+    ],
+    [
+     "LexicalBoostLane",
+     "class",
+     245,
+     266,
+     "class LexicalBoostLane"
+    ],
+    [
+     "LexicalBoostLane.name",
+     "class_attr",
+     252,
+     252,
+     "name = 'lexical'"
+    ],
+    [
+     "LexicalBoostLane.applies",
+     "method",
+     254,
+     255,
+     "def applies(self, ctx: QueryCtx) -> bool"
+    ],
+    [
+     "LexicalBoostLane.apply",
+     "method",
+     257,
+     266,
+     "def apply(self, ctx: QueryCtx, fused: np.ndarray) -> np.ndarray"
+    ],
+    [
+     "LANES",
+     "constant",
+     271,
+     272,
+     "LANES: tuple[ScoreLane, ...] = (DenseFileFusionLane(), TestPenaltyLane(), IssueLane(), LexicalBoostLane())"
     ],
     [
      "score_chunks",
      "function",
-     79,
-     198,
+     275,
+     301,
      "def score_chunks(st: SearchState, query: str, path_filter: str | None=None) -> tuple[list, np.ndarray]"
     ]
    ]

@@ -1,21 +1,34 @@
 """Chunk scoring — the single source of truth.
 
 score_chunks() computes the fused relevance of EVERY candidate chunk for a
-query, without ranking or tiering. The lanes: dense cosine fused with the
-file-vector score, a soft test-file penalty, issue mode for long queries
-(variant-ensemble RRF + the BM25 sparse entity-ID lane + deterministic
-traceback/identifier grounding pins), and the exact-token lexical boost for
-short developer queries. Shared by search_with_state() and chunks_for_file()
-— keep the scoring semantics here and nowhere else. No LLM in this path:
-scoring is deterministic and embedding-only (locked rule #1).
+query, without ranking or tiering. It runs a pipeline of self-gating LANES over
+one shared QueryCtx, each mutating the `fused` score array in a fixed order:
+
+    DenseFileFusionLane  dense chunk cosine fused with the file-vector score
+    TestPenaltyLane      soft down-weight for test files
+    IssueLane            long queries only: variant-ensemble RRF + BM25 sparse
+                         entity-ID lane + deterministic traceback/identifier
+                         grounding pins (tests fully masked)
+    LexicalBoostLane     short dev queries only: exact filename/symbol token match
+
+Each lane `applies(ctx)` (a cheap self-gate) and `apply(ctx, fused)`; adding a
+signal is one new lane class + one LANES entry (OCP), never surgery on a
+120-line function. The arithmetic and order are unchanged from the pre-lane
+engine — tests/test_scoring_lanes.py pins the fused array bit-for-bit.
+
+No LLM in this path: scoring is deterministic and embedding-only (locked rule
+#1). Shared by search_with_state() and chunks_for_file().
 """
 
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass
+from typing import Protocol
 
 import numpy as np
 
+from .params import RetrievalParams
 from .state import SearchState
 
 # directory names that mark a file as test/spec code wherever they appear in
@@ -76,38 +89,86 @@ def _ident_tokens(text: str) -> set[str]:
 ident_tokens = _ident_tokens
 
 
-def score_chunks(st: SearchState, query: str,
-                 path_filter: str | None = None) -> tuple[list, np.ndarray]:
-    """Full per-chunk scoring (dense + file-fusion + test penalty + issue-mode /
-    lexical boosts) WITHOUT ranking/tiering. Returns (path-filtered metas, fused
-    score array), index-aligned. Single source of truth for chunk scoring —
-    shared by search_with_state() and chunks_for_file()."""
-    store, emb, p = st.store, st.emb, st.params
-    metas, M = st.metas, st.M
-    fpaths, F = st.fpaths, st.F
-    if not metas:
-        from ..errors import EmptyIndex
-        raise EmptyIndex.at()
-    # PATH-SCOPE: restrict candidates to files under the sub-path BEFORE scoring,
-    # so CORE/RELATED/graph-neighbors all stay within it. No filter -> unchanged.
-    metas, M = _apply_path_filter(metas, M, path_filter)
-    qv = emb.embed([query])[0]
-    st.qv = qv                     # re-used by the flow lane (no second embed)
+@dataclass
+class QueryCtx:
+    """Everything the scoring lanes share for one query, computed once. The
+    lanes read from here and mutate only the `fused` array threaded between
+    them; nothing lane-specific leaks into this struct except the caches that
+    already lived on SearchState (bm25 / issue symbol corpus / st.qv)."""
+    st: SearchState
+    query: str
+    path_filter: str | None
+    p: RetrievalParams
+    metas: list                  # path-filtered, index-aligned with M
+    M: np.ndarray                # path-filtered chunk matrix
+    fpaths: list
+    F: np.ndarray                # file matrix
+    qv: np.ndarray               # query embedding (also stashed on st.qv)
+    cfi: np.ndarray              # chunk -> file-row index (-1 if absent)
+    is_test: np.ndarray          # per-chunk test-file mask
+    qtok: set                    # identifier tokens of the query
 
-    dense = (M @ qv + 1) / 2
-    fscore = (F @ qv + 1) / 2
-    f2i = {f: i for i, f in enumerate(fpaths)}
-    cfi = np.array([f2i.get(m.file, -1) for m in metas])
-    fused = dense + p.file_fusion_w * np.where(cfi >= 0, fscore[cfi], 0.5)
-    # soft down-weight for test files: keep them reachable, stop them crowding
-    is_test = np.array([_is_test_path(m.file) for m in metas])
-    fused = np.where(is_test, fused * p.test_penalty, fused)
+    @property
+    def store(self):
+        return self.st.store
 
-    # issue mode (long queries, e.g. bug reports): deterministic grounding —
-    # traceback frames pin files/spans, identifiers boost, tests fully masked
-    # (LocAgent-style; gold files for issues are never tests).
-    qtok = _ident_tokens(query)
-    if len(qtok) > p.issue_token_threshold:
+    @property
+    def emb(self):
+        return self.st.emb
+
+
+class ScoreLane(Protocol):
+    """A scoring signal. `applies` is a cheap self-gate (no-op when the query
+    isn't this lane's kind); `apply` returns the new fused array. Recall-safe
+    lanes never drop candidates, only reweight."""
+
+    name: str
+
+    def applies(self, ctx: QueryCtx) -> bool: ...
+
+    def apply(self, ctx: QueryCtx, fused: np.ndarray | None) -> np.ndarray: ...
+
+
+class DenseFileFusionLane:
+    """Base relevance: dense chunk cosine fused with the file-skeleton cosine."""
+
+    name = "dense+file"
+
+    def applies(self, ctx: QueryCtx) -> bool:
+        return True
+
+    def apply(self, ctx: QueryCtx, fused: np.ndarray | None) -> np.ndarray:
+        dense = (ctx.M @ ctx.qv + 1) / 2
+        fscore = (ctx.F @ ctx.qv + 1) / 2
+        return dense + ctx.p.file_fusion_w * np.where(ctx.cfi >= 0, fscore[ctx.cfi], 0.5)
+
+
+class TestPenaltyLane:
+    """Soft down-weight for test files: keep them reachable, stop them crowding."""
+
+    name = "test-penalty"
+
+    def applies(self, ctx: QueryCtx) -> bool:
+        return True
+
+    def apply(self, ctx: QueryCtx, fused: np.ndarray) -> np.ndarray:
+        return np.where(ctx.is_test, fused * ctx.p.test_penalty, fused)
+
+
+class IssueLane:
+    """Long queries (bug reports/tracebacks): deterministic grounding — the BM25
+    sparse entity-ID lane + a variant-ensemble RRF merge + traceback/identifier
+    pins, with tests fully masked (LocAgent-style; gold files are never tests)."""
+
+    name = "issue"
+
+    def applies(self, ctx: QueryCtx) -> bool:
+        return len(ctx.qtok) > ctx.p.issue_token_threshold
+
+    def apply(self, ctx: QueryCtx, fused: np.ndarray) -> np.ndarray:
+        st, p, metas, M, F = ctx.st, ctx.p, ctx.metas, ctx.M, ctx.F
+        fpaths, cfi, is_test = ctx.fpaths, ctx.cfi, ctx.is_test
+        store, emb, query = ctx.store, ctx.emb, ctx.query
         from .bm25 import BM25
         from .bm25 import tokenize as _bt
         from .issue import parse_issue, query_variants
@@ -153,7 +214,7 @@ def score_chunks(st: SearchState, query: str,
             fused = rrf / rrf.max() if rrf.max() > 0 else rrf  # [0,1] so tier bonuses keep scale
         # symbol corpus for grounding: cache only the unfiltered view (under a
         # path filter, grounding must stay within the filtered file set).
-        if path_filter is None and st.issue_syms is not None:
+        if ctx.path_filter is None and st.issue_syms is not None:
             all_files, all_syms = st.issue_files, st.issue_syms
         else:
             all_files = list(dict.fromkeys(m.file for m in metas))
@@ -162,7 +223,7 @@ def score_chunks(st: SearchState, query: str,
                 for s in store.symbols_for(f):
                     all_syms.append({"file": f, "name": s["name"],
                                      "line": s["line"], "end_line": s["end_line"]})
-            if path_filter is None:
+            if ctx.path_filter is None:
                 st.issue_files, st.issue_syms = all_files, all_syms
         g = parse_issue(query, all_files, all_syms)
         fused = np.where(is_test, -1.0, fused)
@@ -178,21 +239,63 @@ def score_chunks(st: SearchState, query: str,
                 if not (m.end_line < lo or m.start_line > hi):
                     fused[i] += p.span_bonus
                     break
+        return fused
 
-    # exact symbol/filename token match -> additive boost (lexical lane).
-    # Only for short developer queries: long texts (issue reports) carry so many
-    # identifier tokens that the boost becomes uniform noise.
-    if qtok and len(qtok) <= p.issue_token_threshold:
-        boost = np.zeros(len(metas))
-        for i, m in enumerate(metas):
+
+class LexicalBoostLane:
+    """Short dev queries only: exact filename/symbol token match -> additive
+    boost. Long texts (issue reports) carry so many identifier tokens the boost
+    becomes uniform noise, so it self-gates OFF there. (BM25 is deliberately NOT
+    blended into short queries — it raised SWE recall but cost golden bundle
+    completeness; it stays in issue-mode RRF only.)"""
+
+    name = "lexical"
+
+    def applies(self, ctx: QueryCtx) -> bool:
+        return bool(ctx.qtok) and len(ctx.qtok) <= ctx.p.issue_token_threshold
+
+    def apply(self, ctx: QueryCtx, fused: np.ndarray) -> np.ndarray:
+        p, qtok = ctx.p, ctx.qtok
+        boost = np.zeros(len(ctx.metas))
+        for i, m in enumerate(ctx.metas):
             stem = m.file.rsplit("/", 1)[-1].rsplit(".", 1)[0]
             nf = len(_ident_tokens(stem) & qtok)
             ns = len(_ident_tokens(m.name or "") & qtok)
             boost[i] = max(p.file_boost_w * min(nf, p.lexical_boost_cap),
                            p.sym_boost_w * min(ns, p.lexical_boost_cap))
-        fused = fused + boost
-        # NB: BM25 sparse lane is deliberately NOT blended into short dev queries
-        # — it raised SWE recall but cost golden bundle completeness (the product
-        # priority). It stays in issue-mode RRF only, where rerank cleans ordering.
+        return fused + boost
 
+
+# The scoring pipeline — ordered. Adding a signal = one lane class + one entry.
+# Order is load-bearing (test penalty before issue masking; lexical last).
+LANES: tuple[ScoreLane, ...] = (
+    DenseFileFusionLane(), TestPenaltyLane(), IssueLane(), LexicalBoostLane())
+
+
+def score_chunks(st: SearchState, query: str,
+                 path_filter: str | None = None) -> tuple[list, np.ndarray]:
+    """Full per-chunk scoring (dense + file-fusion + test penalty + issue-mode /
+    lexical boosts) WITHOUT ranking/tiering, run as the LANES pipeline over one
+    QueryCtx. Returns (path-filtered metas, fused score array), index-aligned.
+    Single source of truth for chunk scoring — shared by search_with_state()
+    and chunks_for_file()."""
+    if not st.metas:
+        from ..errors import EmptyIndex
+        raise EmptyIndex.at()
+    # PATH-SCOPE: restrict candidates to files under the sub-path BEFORE scoring,
+    # so CORE/RELATED/graph-neighbors all stay within it. No filter -> unchanged.
+    metas, M = _apply_path_filter(st.metas, st.M, path_filter)
+    qv = st.emb.embed([query])[0]
+    st.qv = qv                     # re-used by the flow lane (no second embed)
+    f2i = {f: i for i, f in enumerate(st.fpaths)}
+    ctx = QueryCtx(
+        st=st, query=query, path_filter=path_filter, p=st.params,
+        metas=metas, M=M, fpaths=st.fpaths, F=st.F, qv=qv,
+        cfi=np.array([f2i.get(m.file, -1) for m in metas]),
+        is_test=np.array([_is_test_path(m.file) for m in metas]),
+        qtok=_ident_tokens(query))
+    fused: np.ndarray | None = None
+    for lane in LANES:
+        if lane.applies(ctx):
+            fused = lane.apply(ctx, fused)
     return metas, fused
