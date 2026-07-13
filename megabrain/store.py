@@ -200,6 +200,14 @@ class Store:
         return [{"name": r[0], "kind": r[1], "line": r[2], "end_line": r[3],
                  "signature": r[4], "doc": r[5]} for r in rows]
 
+    def stats(self) -> dict:
+        """Index shape counts — the store's knowledge, so no frontend ever
+        runs raw SQL against the schema."""
+        count = lambda t: self.db.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]  # noqa: E731
+        return {"files": count("files"), "chunks": count("chunks"),
+                "symbols": count("symbols"), "edges": count("edges"),
+                "last_index": self.get_meta("last_index")}
+
     def set_meta(self, k: str, v):
         self.db.execute("INSERT OR REPLACE INTO meta(k,v) VALUES (?,?)", (k, json.dumps(v)))
 

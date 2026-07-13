@@ -38,7 +38,13 @@ def _pin_chat_provider(monkeypatch):
 class FakeEmbedder:
     """Drop-in for megabrain.embeddings.Embedder: token-hash embeddings."""
 
-    def __init__(self, api_key: str | None = None):
+    def __init__(self, api_key: str | None = None, model: str | None = None,
+                 **_kw):
+        import os
+        # honor the same construction-time config as the real Embedder so
+        # embed-model-change tests can flip MEGABRAIN_EMBED_MODEL
+        self.model = model or os.environ.get("MEGABRAIN_EMBED_MODEL",
+                                             "fake/token-hash")
         self.cost = 0.0
         self.tokens = 0
 

@@ -19,20 +19,11 @@ import numpy as np
 
 from ..providers.embeddings import Embedder
 from ..store import Store
-
-FILE_FUSION_W = 0.5     # phase 3 winner
-TIER1_MAX = 4
-TIER1_GAP = 0.97        # full code only for files within 3% of top score (noise control)
-CAND_FILES = 12
-GRAPH_EXTRAS = 7        # graph neighbors of top files pulled into tier2 (recall-safe:
-                        # never touches tier1/R@1; more candidates only lift bundle_full).
-                        # Retuned 6->7 after the edge-preservation fix: the healed graph
-                        # (+35% edges) has more neighbors competing for the slots.
-CHUNK_KEEP_RATIO = 0.8  # within a tier-1 file, keep chunks >= ratio * best chunk
-TEST_PENALTY = 0.85     # soft down-weight for test files in ranking
+from .params import DEFAULT_PARAMS, RetrievalParams
 
 # directory names that mark a file as test/spec code wherever they appear in
 # the path. Segment-exact (never substring: "src/contest/" is not a test dir).
+# Vocabulary, not a tuning knob — the knobs live in params.RetrievalParams.
 TEST_DIR_SEGS = frozenset({"test", "tests", "spec", "specs", "__tests__", "testing"})
 
 
@@ -46,8 +37,6 @@ def _is_test_path(relpath: str) -> bool:
         return True
     return bool(re.search(r"(^|[._-])(test|spec)s?([._-]|$)",
                           parts[-1].rsplit(".", 1)[0]))
-FILE_BOOST_W = 0.05     # per matched filename token (capped at 2; grid-tuned p6)
-SYM_BOOST_W = 0.03      # per matched symbol-name token (capped at 2; grid-tuned p6)
 
 # symbol kinds worth surfacing in the file outline (display only — not ranking).
 # Spans Python, TS/JS, Ruby/Go and doc headings so every content type shows.
@@ -117,11 +106,28 @@ class SearchState:
     FL: np.ndarray | None = None
     FLQ: np.ndarray | None = None
     qv: np.ndarray | None = None
+    # every tuning knob, injectable (sweeps replace() this instead of
+    # monkeypatching module globals). Frozen -> safe to share across threads.
+    params: RetrievalParams = DEFAULT_PARAMS
+
+    def close(self) -> None:
+        """Release the underlying SQLite connection. One-shot entries
+        (search/prune_search_root/…) close via `with`; long-running servers
+        close on state reload/shutdown."""
+        self.store.close()
+
+    def __enter__(self) -> "SearchState":
+        return self
+
+    def __exit__(self, *exc) -> None:
+        self.close()
 
 
-def load_state(root: Path, check_same_thread: bool = True) -> SearchState:
+def load_state(root: Path, check_same_thread: bool = True,
+               params: RetrievalParams | None = None) -> SearchState:
     """Load the per-repo retrieval state (chunk + file matrices) once. The
-    expensive part of a query — kept out of the hot path by serve.py."""
+    expensive part of a query — kept out of the hot path by serve.py.
+    `params` injects a tuning variant (default: the validated configuration)."""
     store = Store(Path(root), check_same_thread=check_same_thread)
     metas, M = store.load_matrix()
     fpaths, fskels, F = store.load_file_matrix()
@@ -132,7 +138,8 @@ def load_state(root: Path, check_same_thread: bool = True) -> SearchState:
     from ..flows import enabled as _flows_on
     flows, FL, FLQ = store.load_flows() if _flows_on(root) else ([], None, None)
     return SearchState(store, Embedder(), metas, M, fpaths, fskels, F, repo,
-                       flows=flows, FL=FL, FLQ=FLQ)
+                       flows=flows, FL=FL, FLQ=FLQ,
+                       params=params or DEFAULT_PARAMS)
 
 
 def _score_chunks(st: SearchState, query: str,
@@ -141,7 +148,7 @@ def _score_chunks(st: SearchState, query: str,
     lexical boosts) WITHOUT ranking/tiering. Returns (path-filtered metas, fused
     score array), index-aligned. Single source of truth for chunk scoring —
     shared by search_with_state() and chunks_for_file()."""
-    store, emb = st.store, st.emb
+    store, emb, p = st.store, st.emb, st.params
     metas, M = st.metas, st.M
     fpaths, F = st.fpaths, st.F
     if not metas:
@@ -157,16 +164,16 @@ def _score_chunks(st: SearchState, query: str,
     fscore = (F @ qv + 1) / 2
     f2i = {f: i for i, f in enumerate(fpaths)}
     cfi = np.array([f2i.get(m.file, -1) for m in metas])
-    fused = dense + FILE_FUSION_W * np.where(cfi >= 0, fscore[cfi], 0.5)
+    fused = dense + p.file_fusion_w * np.where(cfi >= 0, fscore[cfi], 0.5)
     # soft down-weight for test files: keep them reachable, stop them crowding
     is_test = np.array([_is_test_path(m.file) for m in metas])
-    fused = np.where(is_test, fused * TEST_PENALTY, fused)
+    fused = np.where(is_test, fused * p.test_penalty, fused)
 
     # issue mode (long queries, e.g. bug reports): deterministic grounding —
     # traceback frames pin files/spans, identifiers boost, tests fully masked
     # (LocAgent-style; gold files for issues are never tests).
     qtok = _ident_tokens(query)
-    if len(qtok) > 25:
+    if len(qtok) > p.issue_token_threshold:
         from .bm25 import BM25
         from .bm25 import tokenize as _bt
         from .issue import parse_issue, query_variants
@@ -196,19 +203,19 @@ def _score_chunks(st: SearchState, query: str,
             for v in range(len(variants)):
                 dv = (M @ VV[v] + 1) / 2
                 fv = (F @ VV[v] + 1) / 2
-                rankings.append(dv + FILE_FUSION_W * np.where(cfi >= 0, fv[cfi], 0.5))
+                rankings.append(dv + p.file_fusion_w * np.where(cfi >= 0, fv[cfi], 0.5))
             rankings.append(bm25_chunk)  # sparse entity-ID lane
             rrf = np.zeros(len(metas))
             for s in rankings:
                 order_ = np.argsort(-s)
                 ranks = np.empty(len(metas), dtype=int)
                 ranks[order_] = np.arange(len(metas))
-                rrf += 1.0 / (60 + ranks + 1)
+                rrf += 1.0 / (p.rrf_k + ranks + 1)
             # full-issue ranking keeps double weight
             order_ = np.argsort(-fused)
             ranks = np.empty(len(metas), dtype=int)
             ranks[order_] = np.arange(len(metas))
-            rrf += 1.0 / (60 + ranks + 1)
+            rrf += 1.0 / (p.rrf_k + ranks + 1)
             fused = rrf / rrf.max() if rrf.max() > 0 else rrf  # [0,1] so tier bonuses keep scale
         # symbol corpus for grounding: cache only the unfiltered view (under a
         # path filter, grounding must stay within the filtered file set).
@@ -225,7 +232,6 @@ def _score_chunks(st: SearchState, query: str,
                 st.issue_files, st.issue_syms = all_files, all_syms
         g = parse_issue(query, all_files, all_syms)
         fused = np.where(is_test, -1.0, fused)
-        TIER_BONUS = {0: 0.6, 1: 0.25, 2: 0.10}
         span_by_file: dict[str, list[tuple[int, int]]] = {}
         for f, lo, hi in g["pin_spans"]:
             span_by_file.setdefault(f, []).append((lo, hi))
@@ -233,22 +239,23 @@ def _score_chunks(st: SearchState, query: str,
             tier = g["pin_files"].get(m.file)
             if tier is None:
                 continue
-            fused[i] += TIER_BONUS[tier]
+            fused[i] += p.tier_bonus[tier]
             for lo, hi in span_by_file.get(m.file, []):
                 if not (m.end_line < lo or m.start_line > hi):
-                    fused[i] += 0.15
+                    fused[i] += p.span_bonus
                     break
 
     # exact symbol/filename token match -> additive boost (lexical lane).
     # Only for short developer queries: long texts (issue reports) carry so many
     # identifier tokens that the boost becomes uniform noise.
-    if qtok and len(qtok) <= 25:
+    if qtok and len(qtok) <= p.issue_token_threshold:
         boost = np.zeros(len(metas))
         for i, m in enumerate(metas):
             stem = m.file.rsplit("/", 1)[-1].rsplit(".", 1)[0]
             nf = len(_ident_tokens(stem) & qtok)
             ns = len(_ident_tokens(m.name or "") & qtok)
-            boost[i] = max(FILE_BOOST_W * min(nf, 2), SYM_BOOST_W * min(ns, 2))
+            boost[i] = max(p.file_boost_w * min(nf, p.lexical_boost_cap),
+                           p.sym_boost_w * min(ns, p.lexical_boost_cap))
         fused = fused + boost
         # NB: BM25 sparse lane is deliberately NOT blended into short dev queries
         # — it raised SWE recall but cost golden bundle completeness (the product
@@ -264,7 +271,7 @@ def search_with_state(st: SearchState, query: str, rerank: bool = False,
     `scored` accepts a precomputed (metas, fused) from _score_chunks so callers
     that also need the raw scores (chunks_for_file) score exactly once."""
     t0 = time.time()
-    store = st.store
+    store, p = st.store, st.params
     metas, fused = scored if scored is not None else _score_chunks(st, query, path_filter)
     order = np.argsort(-fused)
     file_rank: list[str] = []
@@ -274,20 +281,20 @@ def search_with_state(st: SearchState, query: str, rerank: bool = False,
         if f not in file_rank:
             file_rank.append(f)
         file_chunks.setdefault(f, []).append(int(ci))
-    cands = file_rank[:CAND_FILES]
+    cands = file_rank[:p.cand_files]
 
     neigh: set[str] = set()
     for f in cands[:3]:
         neigh |= store.neighbors(f)
     neigh -= set(cands)
     fbest = {f: fused[file_chunks[f][0]] for f in file_rank}
-    extras = sorted(neigh & set(file_rank), key=lambda f: -fbest[f])[:GRAPH_EXTRAS]
+    extras = sorted(neigh & set(file_rank), key=lambda f: -fbest[f])[:p.graph_extras]
 
     if rerank and len(cands) > 1:
         # optional LLM ORDER rerank: code evidence + 3-vote merge (+~2-3s)
         from .rerank import llm_order
         # deeper pool when reranking: the LLM can rescue rank 13-24
-        deep = file_rank[:24]
+        deep = file_rank[:p.rerank_deep_pool]
         for f in deep:
             if f not in cands:
                 cands.append(f)
@@ -295,18 +302,19 @@ def search_with_state(st: SearchState, query: str, rerank: bool = False,
         order = llm_order(query, ev)
         cands = [cands[i] for i in order]
 
-    tier1 = cands[:TIER1_MAX]
-    # adaptive CORE: only files within TIER1_GAP of the top get full code;
+    tier1 = cands[:p.tier1_max]
+    # adaptive CORE: only files within tier1_gap of the top get full code;
     # the rest demote to the map (bundle membership unchanged)
     top_score = fbest[tier1[0]]
-    tier1 = [f for f in tier1 if fbest[f] >= top_score * TIER1_GAP] or tier1[:1]
+    tier1 = [f for f in tier1 if fbest[f] >= top_score * p.tier1_gap] or tier1[:1]
     tier2 = [f for f in cands if f not in tier1] + extras
 
     out_t1 = []
     for f in tier1:
         idxs = file_chunks[f]
         best = fused[idxs[0]]
-        keep = [i for i in idxs if fused[i] >= best * CHUNK_KEEP_RATIO][:12] or idxs[:1]
+        keep = [i for i in idxs
+                if fused[i] >= best * p.chunk_keep_ratio][:p.tier1_chunk_cap] or idxs[:1]
         keep.sort(key=lambda i: metas[i].start_line)
         out_t1.append({
             "file": f, "score": float(best),
@@ -364,36 +372,46 @@ def search(root: Path, query: str, rerank: bool = False,
     """One-shot retrieval (CLI/MCP entry). Builds state then queries — identical
     output to search_with_state(load_state(root), ...). `path_filter` (a POSIX
     subpath relative to root) scopes retrieval to files under it (PATH-SCOPE)."""
-    return search_with_state(load_state(Path(root)), query, rerank, path_filter)
+    with load_state(Path(root)) as st:
+        return search_with_state(st, query, rerank, path_filter)
+
+
+def selection(res: dict) -> list[tuple[dict, float]]:
+    """THE single definition of what retrieval SELECTED out of a bundle: every
+    tier-1 chunk that survived the chunk_keep_ratio cut, plus each RELATED
+    file's best chunk — (chunk dict, relevance score), tier1 first, deduped.
+    prune_search and chunks_for_file are both projections of this; keep the
+    semantics here and nowhere else."""
+    out: list[tuple[dict, float]] = []
+    seen: set = set()
+    for t in res["tier1"]:
+        for c in t["chunks"]:
+            if c["id"] not in seen:
+                seen.add(c["id"])
+                out.append((c, float(c["score"])))
+    for t in res["tier2"]:
+        bc = t.get("best_chunk")
+        if bc and bc["id"] not in seen:
+            seen.add(bc["id"])
+            out.append((bc, float(t["score"])))
+    return out
 
 
 def chunks_for_file(st: SearchState, relpath: str, query: str,
                     path_filter: str | None = None) -> dict:
     """One file + query → EVERY chunk of that file with its span, relevance
-    score, and whether the full retrieval SELECTED it into the bundle.
-
-    Selection reflects a real cross-file search: a chunk is `selected` when its
-    file lands in CORE and the chunk survives the CHUNK_KEEP_RATIO cut, or when it
-    is the best chunk of a RELATED file. So the map shows true signal-vs-noise
-    (what the agent would actually read), not just an intra-file threshold.
-    Powers the chunk-selection demo UI."""
+    score, and whether the full retrieval SELECTED it into the bundle
+    (selection() — what the agent would actually read, not an intra-file
+    threshold). Powers the chunk-selection demo UI."""
     metas, fused = _score_chunks(st, query, path_filter)
     res = search_with_state(st, query, path_filter=path_filter,
                             scored=(metas, fused))
-    selected: set[int] = set()
+    selected = {c["id"] for c, _ in selection(res)}
     role = "unranked"
-    for t in res["tier1"]:
-        if t["file"] == relpath:
-            role = "core"
-            selected |= {c["id"] for c in t["chunks"]}
-    if role == "unranked":
-        for t in res["tier2"]:
-            if t["file"] == relpath:
-                role = "related"
-                bc = t.get("best_chunk")
-                if bc:
-                    selected.add(bc["id"])
-                break
+    if any(t["file"] == relpath for t in res["tier1"]):
+        role = "core"
+    elif any(t["file"] == relpath for t in res["tier2"]):
+        role = "related"
     rows = []
     for i, m in enumerate(metas):
         if m.file != relpath:
@@ -415,7 +433,8 @@ def chunks_for_file(st: SearchState, relpath: str, query: str,
 def chunks_for_file_root(root: Path, relpath: str, query: str,
                          path_filter: str | None = None) -> dict:
     """CLI/one-shot entry for chunks_for_file (builds state then queries)."""
-    return chunks_for_file(load_state(Path(root)), relpath, query, path_filter)
+    with load_state(Path(root)) as st:
+        return chunks_for_file(st, relpath, query, path_filter)
 
 
 def prune_search(st: SearchState, query: str, path_filter: str | None = None,
@@ -432,8 +451,6 @@ def prune_search(st: SearchState, query: str, path_filter: str | None = None,
     chunks, relevance-ordered) under "noise" — for a signal-vs-noise diff view."""
     metas, fused = _score_chunks(st, query, path_filter)
     res = search_with_state(st, query, path_filter=path_filter, scored=(metas, fused))
-    kept: list[dict] = []
-    seen: set = set()
 
     def rec(c: dict, score: float) -> dict:
         item = {"id": c["id"], "file": c["file"],
@@ -443,20 +460,10 @@ def prune_search(st: SearchState, query: str, path_filter: str | None = None,
             item["text"] = c["text"]
         return item
 
-    def add(c: dict, score: float) -> None:
-        if c["id"] in seen:
-            return
-        seen.add(c["id"])
-        kept.append(rec(c, score))
-
-    for t in res["tier1"]:
-        for c in t["chunks"]:
-            add(c, c["score"])
-    for t in res["tier2"]:
-        bc = t.get("best_chunk")
-        if bc:
-            add(bc, t["score"])
-    kept.sort(key=lambda c: -c["score"])
+    # a pure projection of selection() — the ONE definition of signal
+    picked = selection(res)
+    seen = {c["id"] for c, _ in picked}
+    kept = sorted((rec(c, s) for c, s in picked), key=lambda c: -c["score"])
     # honest noise count: chunks living in the bundle's files that we dropped.
     bundle_files = {t["file"] for t in res["tier1"]} | {t["file"] for t in res["tier2"]}
     noise: list[dict] = []
@@ -479,8 +486,8 @@ def prune_search(st: SearchState, query: str, path_filter: str | None = None,
 def prune_search_root(root: Path, query: str, path_filter: str | None = None,
                       with_text: bool = True, include_pruned: bool = False) -> dict:
     """CLI/MCP one-shot entry for prune_search (builds state then queries)."""
-    return prune_search(load_state(Path(root)), query, path_filter, with_text,
-                        include_pruned)
+    with load_state(Path(root)) as st:
+        return prune_search(st, query, path_filter, with_text, include_pruned)
 
 
 def render_pruned(res: dict, with_text: bool = True) -> str:
@@ -523,13 +530,14 @@ def search_multi(roots: list[Path], query: str,
             t2.append({**t, "file": f'{res["repo"]}/{t["file"]}', "_repo": res["repo"]})
     t1.sort(key=lambda t: -t["score"])
     t2.sort(key=lambda t: -t["score"])
-    promoted = t1[:TIER1_MAX + 2]
+    cap = DEFAULT_PARAMS.tier1_max + DEFAULT_PARAMS.multi_tier1_extra
+    promoted = t1[:cap]
     demoted = [{"file": t["file"], "score": t["score"], "via_graph": False,
                 "matched": [c["name"] for c in t["chunks"][:3] if c["name"]],
                 "doc": None,
                 "symbols": [s for s in t["symbols"]
                             if s["kind"] in OUTLINE_KINDS][:12]}
-               for t in t1[TIER1_MAX + 2:]]
+               for t in t1[cap:]]
     return {"query": query, "tier1": promoted, "tier2": demoted + t2,
             "repo": "+".join(r["repo"] for r in results),
             "ms": int((time.time() - t0) * 1000)}
@@ -627,9 +635,9 @@ def get_code(root: Path, relpath: str, symbol: str | None = None) -> str:
     src = p.read_text(errors="replace")
     if not symbol:
         return f"```{lang_of(relpath)}\n{src}\n```"
-    store = Store(Path(root))
-    syms = [s for s in store.symbols_for(relpath)
-            if s["name"] == symbol or s["name"].endswith("." + symbol)]
+    with Store(Path(root)) as store:
+        syms = [s for s in store.symbols_for(relpath)
+                if s["name"] == symbol or s["name"].endswith("." + symbol)]
     if not syms:
         return f"symbol {symbol} not found in {relpath}"
     lines = src.splitlines(keepends=True)

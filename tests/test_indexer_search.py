@@ -26,8 +26,9 @@ def test_force_reembeds_everything(tiny_repo):
 
 
 def test_embed_model_change_triggers_full_reembed(tiny_repo, monkeypatch):
-    import megabrain.indexing.indexer as indexer
-    monkeypatch.setattr(indexer, "EMBED_MODEL", "other/model")
+    # construction-time config: the Embedder reads MEGABRAIN_EMBED_MODEL when
+    # built, and index_repo trusts the instance's .model (no module globals)
+    monkeypatch.setenv("MEGABRAIN_EMBED_MODEL", "other/model")
     r = index_repo(tiny_repo, quiet=True)        # no force asked — auto-detected
     assert r["changed"] == 3
     assert Store(tiny_repo).get_meta("embed_model") == "other/model"

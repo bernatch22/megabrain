@@ -12,9 +12,9 @@ from megabrain import providers
 
 @pytest.fixture
 def embedder(monkeypatch, tmp_path):
-    monkeypatch.setattr(E, "CACHE", tmp_path / "cache")
-    e = E.Embedder(api_key="test-key")
-    (tmp_path / "cache").mkdir(exist_ok=True)
+    # construction-time config: the cache dir and dims are injected, not
+    # module globals (two embedders with different configs can coexist)
+    e = E.Embedder(api_key="test-key", cache_dir=tmp_path / "cache")
     return e
 
 
@@ -63,9 +63,10 @@ def test_batching_splits_requests(embedder, monkeypatch):
 
 
 def test_dims_assert_when_pinned(embedder, monkeypatch):
-    monkeypatch.setattr(E, "DIMS", 8)
+    from megabrain.errors import ProviderError
+    embedder.dims = 8
     monkeypatch.setattr(providers, "post_json", _api([[1.0, 2.0]]))
-    with pytest.raises(ValueError, match="dims"):
+    with pytest.raises(ProviderError, match="dims"):
         embedder.embed(["x"])
 
 

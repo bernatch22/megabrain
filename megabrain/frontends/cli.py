@@ -292,13 +292,10 @@ def _dispatch(a, raw: list[Path], root: Path) -> None:
             print(f"trusted {f}")
     elif a.cmd == "stats":
         from ..store import Store
-        s = Store(root)
-        n_chunks = s.db.execute("SELECT COUNT(*) FROM chunks").fetchone()[0]
-        n_files = s.db.execute("SELECT COUNT(*) FROM files").fetchone()[0]
-        n_syms = s.db.execute("SELECT COUNT(*) FROM symbols").fetchone()[0]
-        n_edges = s.db.execute("SELECT COUNT(*) FROM edges").fetchone()[0]
-        print(f"files={n_files} chunks={n_chunks} symbols={n_syms} edges={n_edges} "
-              f"meta={s.get_meta('last_index')}")
+        with Store(root) as s:
+            st = s.stats()
+        print(f"files={st['files']} chunks={st['chunks']} symbols={st['symbols']} "
+              f"edges={st['edges']} meta={st['last_index']}")
 
 
 if __name__ == "__main__":

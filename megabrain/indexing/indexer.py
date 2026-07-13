@@ -11,7 +11,6 @@ from fnmatch import fnmatch
 from pathlib import Path
 
 from ..chunkers import embed_text, validate_partition
-from ..providers.embeddings import MODEL as EMBED_MODEL
 from ..providers.embeddings import Embedder
 from ..store import Store
 from .strategies import all_exts, build_registry, load_repo_strategies, strategy_for
@@ -111,8 +110,17 @@ def index_repo(root: Path, repo_name: str | None = None, quiet: bool = False,
     root = Path(root).resolve()
     name = repo_name or root.name
     t0 = time.time()
-    store = Store(root)
     emb = Embedder()
+    with Store(root) as store:
+        return _index_into(store, emb, root, name, quiet=quiet, force=force,
+                           exclude=exclude, strategies=strategies,
+                           prune_flows=prune_flows, t0=t0)
+
+
+def _index_into(store: Store, emb: Embedder, root: Path, name: str, *, quiet,
+                force, exclude, strategies, prune_flows, t0) -> dict:
+    """The indexing pipeline against an OPEN store — index_repo owns the
+    connection lifecycle (with Store(...)), this owns the work."""
     registry = build_registry(name, extra=(*strategies,
                                            *load_repo_strategies(root, name)))
     # exclude = built-in dirs + `.megabrainignore` (persistent) + caller-supplied.
@@ -120,12 +128,13 @@ def index_repo(root: Path, repo_name: str | None = None, quiet: bool = False,
 
     # A change of embedding model invalidates every stored vector (different
     # space/dims), so re-embed everything — not just sha-changed files. This
-    # makes MEGABRAIN_EMBED_MODEL swaps safe: stale vectors never silently linger.
+    # makes MEGABRAIN_EMBED_MODEL swaps safe: stale vectors never silently
+    # linger. The instance's model is the truth (construction-time config).
     prev_model = store.get_meta("embed_model")
-    if prev_model is not None and prev_model != EMBED_MODEL:
+    if prev_model is not None and prev_model != emb.model:
         force = True
         logging.getLogger(__name__).info(
-            "embed model changed (%s -> %s); re-embedding all", prev_model, EMBED_MODEL)
+            "embed model changed (%s -> %s); re-embedding all", prev_model, emb.model)
 
     paths = discover(root, all_exts(registry), excludes)
     # POSIX relpaths everywhere: they're the DB keys and the engine matches
@@ -178,7 +187,7 @@ def index_repo(root: Path, repo_name: str | None = None, quiet: bool = False,
     stale_flows = prune_stale(store) if prune_flows else 0
 
     store.set_meta("repo_name", name)
-    store.set_meta("embed_model", EMBED_MODEL)
+    store.set_meta("embed_model", emb.model)
     store.set_meta("last_index", {"t": time.time(), "files": len(paths)})
     store.commit()
     result = {"files": len(paths), "changed": changed, "unchanged": unchanged,

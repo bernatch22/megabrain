@@ -30,7 +30,9 @@ GOLDEN_DIR = Path(__file__).parent / "goldens"
 class DeterministicEmbedder:
     """Like conftest.FakeEmbedder but md5-bucketed: stable across processes."""
 
-    def __init__(self, api_key: str | None = None):
+    def __init__(self, api_key: str | None = None, model: str | None = None,
+                 **_kw):
+        self.model = model or "fake/md5-deterministic"
         self.cost = 0.0
         self.tokens = 0
 
