@@ -255,23 +255,12 @@ def warm_flows(root: Path, limit: int = 6, ask_fn=None, quiet: bool = False) -> 
             "questions": warmed}
 
 
-def _stale_flows(store: Store) -> tuple[list[dict], set[str]]:
-    """(flows whose cited files changed sha or vanished, current path set)."""
-    metas, _, _ = store.load_flows()
-    current = {r[0]: r[1] for r in store.db.execute("SELECT path, sha FROM files")}
-    stale = [m for m in metas
-             if any(current.get(f) != sha for f, sha in m["files"].items())]
-    return stale, set(current)
-
-
 def prune_stale(store: Store) -> int:
-    """Drop flows whose cited files changed sha or left the index. Called by
-    index_repo after every (re)index, so flows always describe current code —
-    the cheap, no-LLM default (a stale walkthrough simply disappears)."""
-    stale, _ = _stale_flows(store)
-    for m in stale:
-        store.delete_flow(m["id"])
-    return len(stale)
+    """Compatibility alias — stale-flow INVALIDATION lives on the Store now
+    (store.prune_stale_flows: pure sha-compare integrity, no LLM), so the
+    indexer never imports this feature module. This module keeps the LLM side:
+    refresh_stale re-asks instead of dropping."""
+    return store.prune_stale_flows()
 
 
 def refresh_stale(root, ask_fn=None, quiet: bool = False) -> dict:
@@ -286,7 +275,7 @@ def refresh_stale(root, ask_fn=None, quiet: bool = False) -> dict:
     if ask_fn is None:
         from .ask import ask as ask_fn
     with Store(root) as store:
-        stale, current = _stale_flows(store)
+        stale, current = store.stale_flows(), store.all_paths()
         to_reask, dropped = [], 0
         for m in stale:
             store.delete_flow(m["id"])                     # clear the stale row first

@@ -229,6 +229,24 @@ class Store:
     def delete_flow(self, flow_id: int):
         self.db.execute("DELETE FROM flows WHERE id=?", (flow_id,))
 
+    def stale_flows(self) -> list[dict]:
+        """Flows whose cited files changed sha or vanished from the index.
+        Store-level INTEGRITY knowledge (pure SQL + sha compare, no LLM):
+        a cached walkthrough is valid only while its sources are unchanged."""
+        metas, _, _ = self.load_flows()
+        current = {r[0]: r[1] for r in self.db.execute("SELECT path, sha FROM files")}
+        return [m for m in metas
+                if any(current.get(f) != sha for f, sha in m["files"].items())]
+
+    def prune_stale_flows(self) -> int:
+        """Drop stale flows (see stale_flows). Called by index_repo after every
+        (re)index so flows always describe current code — the cheap, no-LLM
+        default; flows.refresh_stale is the opt-in re-ask UPDATE instead."""
+        stale = self.stale_flows()
+        for m in stale:
+            self.delete_flow(m["id"])
+        return len(stale)
+
     def load_flows(self) -> tuple[list[dict], np.ndarray, np.ndarray]:
         """(metas, attach matrix, question-only matrix). Rows cached before the
         qvec migration get a zero qvec — they still attach, never serve."""

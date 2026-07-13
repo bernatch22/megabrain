@@ -181,10 +181,11 @@ def _index_into(store: Store, emb: Embedder, root: Path, name: str, *, quiet,
 
     # flow invalidation: a cached ask synthesis dies with the code it cites —
     # any cited file whose sha changed (or vanished) drops the whole flow.
-    # `prune_flows=False` keeps stale flows so `flows --refresh` can re-ask them
-    # (it reindexes first to update shas, then regenerates instead of dropping).
-    from ..flows import prune_stale
-    stale_flows = prune_stale(store) if prune_flows else 0
+    # Store-level integrity (no import of the flows feature module — indexing
+    # never depends upward). `prune_flows=False` keeps stale flows so
+    # `flows --refresh` can re-ask them (it reindexes first to update shas,
+    # then regenerates instead of dropping).
+    stale_flows = store.prune_stale_flows() if prune_flows else 0
 
     store.set_meta("repo_name", name)
     store.set_meta("embed_model", emb.model)
