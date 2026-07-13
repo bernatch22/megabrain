@@ -115,10 +115,10 @@ def chunks(root: Path, sub: str | None, file: str, query_str: str,
                                 path_filter=path_filter)
 
 
-def index(root: Path, force: bool = False, exclude=(), quiet: bool = True) -> dict:
-    """Incremental index/update."""
+def index(root: Path, force: bool = False, exclude=()) -> dict:
+    """Incremental index/update — returns stats; the caller renders them."""
     from .indexing.indexer import index_repo
-    return index_repo(root, force=force, exclude=exclude, quiet=quiet)
+    return index_repo(root, force=force, exclude=exclude)
 
 
 def stats(root: Path) -> dict:

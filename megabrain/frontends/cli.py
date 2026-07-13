@@ -155,10 +155,12 @@ def main(argv=None):
 
 def _dispatch(a, raw: list[Path], root: Path) -> None:
     if a.cmd == "index":
+        import json as _json
+
         from .. import app
         exclude = [x for item in a.exclude for x in item.split(",") if x.strip()]
         for r in raw:
-            app.index(r, force=a.force, exclude=exclude, quiet=False)
+            print(_json.dumps(app.index(r, force=a.force, exclude=exclude), indent=1))
             if a.warm_flows:
                 import json as _json
 

@@ -4,7 +4,6 @@ No daemon, no watcher: one command, runs in seconds on a warm cache."""
 from __future__ import annotations
 
 import hashlib
-import json
 import logging
 import time
 from fnmatch import fnmatch
@@ -98,26 +97,27 @@ def maybe_reindex(root: Path, ttl: int = AUTO_REFRESH_TTL) -> bool:
         return False
 
 
-def index_repo(root: Path, repo_name: str | None = None, quiet: bool = False,
+def index_repo(root: Path, repo_name: str | None = None, quiet: bool = True,
                force: bool = False, exclude=(), strategies=(),
                prune_flows: bool = True) -> dict:
-    """Index/update a repo. `strategies` injects custom ChunkStrategy instances
-    (checked before the built-ins, so they can claim new extensions or override
-    existing ones) — see examples/02_custom_chunker.py. Trusted repo-local
-    strategies (`.megabrain/strategies/*.py`, installed by `megabrain forge` or
-    approved with `megabrain trust`) load automatically after them, so custom
-    extensions survive every reindex including the 60s auto-refresh."""
+    """Index/update a repo and RETURN the stats dict — the library never prints
+    (rendering the result is the frontend's job; `quiet` is accepted for
+    backward compatibility and ignored). `strategies` injects custom
+    ChunkStrategy instances (checked before the built-ins, so they can claim new
+    extensions or override existing ones) — see examples/02_custom_chunker.py.
+    Trusted repo-local strategies (`.megabrain/strategies/*.py`) load
+    automatically after them, so custom extensions survive every reindex."""
     root = Path(root).resolve()
     name = repo_name or root.name
     t0 = time.time()
     emb = Embedder()
     with Store(root) as store:
-        return _index_into(store, emb, root, name, quiet=quiet, force=force,
+        return _index_into(store, emb, root, name, force=force,
                            exclude=exclude, strategies=strategies,
                            prune_flows=prune_flows, t0=t0)
 
 
-def _index_into(store: Store, emb: Embedder, root: Path, name: str, *, quiet,
+def _index_into(store: Store, emb: Embedder, root: Path, name: str, *,
                 force, exclude, strategies, prune_flows, t0) -> dict:
     """The indexing pipeline against an OPEN store — index_repo owns the
     connection lifecycle (with Store(...)), this owns the work."""
@@ -191,12 +191,9 @@ def _index_into(store: Store, emb: Embedder, root: Path, name: str, *, quiet,
     store.set_meta("embed_model", emb.model)
     store.set_meta("last_index", {"t": time.time(), "files": len(paths)})
     store.commit()
-    result = {"files": len(paths), "changed": changed, "unchanged": unchanged,
-              "removed": removed, "new_chunks": stats["chunks"],
-              "partition_violations": stats["violations"],
-              "stale_flows_pruned": stale_flows,
-              "embed_tokens": emb.tokens, "embed_cost_usd": round(emb.cost, 6),
-              "seconds": round(time.time() - t0, 2)}
-    if not quiet:
-        print(json.dumps(result, indent=1))
-    return result
+    return {"files": len(paths), "changed": changed, "unchanged": unchanged,
+            "removed": removed, "new_chunks": stats["chunks"],
+            "partition_violations": stats["violations"],
+            "stale_flows_pruned": stale_flows,
+            "embed_tokens": emb.tokens, "embed_cost_usd": round(emb.cost, 6),
+            "seconds": round(time.time() - t0, 2)}
