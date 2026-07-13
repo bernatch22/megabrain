@@ -44,6 +44,7 @@ _EXPORTS = {
     "load_state": ".retrieval.query",
     "search_with_state": ".retrieval.query",
     "Store": ".store",
+    "ChunkMeta": ".model",
     # structured errors (catch MegabrainError to handle any engine failure):
     "MegabrainError": ".errors",
     "IndexNotFound": ".errors",

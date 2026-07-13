@@ -155,13 +155,8 @@ def index_repo(root: Path, repo_name: str | None = None, quiet: bool = False,
             stats["violations"] += 1
         texts = [embed_text(c) for c in r.chunks]
         vecs = emb.embed(texts) if texts else None
-        rows = [(c.file, c.kind, c.name, c.part, c.start_line, c.end_line,
-                 c.text, c.breadcrumb, vecs[i].astype("float32").tobytes())
-                for i, c in enumerate(r.chunks)]
-        store.insert_chunks(rows)
-        store.insert_symbols([
-            (s.file, s.name, s.kind, s.line, s.end_line, s.signature,
-             json.dumps(s.decorators), s.doc) for s in r.symbols])
+        store.insert_chunks(r.chunks, vecs)
+        store.insert_symbols(r.symbols)
         skel_vec = emb.embed([r.skeleton])[0] if r.skeleton else None
         store.upsert_file(rel, sha, r.skeleton, skel_vec)
         edges = strat.extract_edges(rel, src, edge_ctx[strat])

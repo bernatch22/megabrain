@@ -74,7 +74,7 @@ def _apply_path_filter(metas: list, M: np.ndarray, path_filter: str | None):
     bundle). Returns (metas, M) — untouched when no filter."""
     if not path_filter:
         return metas, M
-    idx = [i for i, m in enumerate(metas) if _under_path(m["file"], path_filter)]
+    idx = [i for i, m in enumerate(metas) if _under_path(m.file, path_filter)]
     if not idx:
         return metas, M
     return [metas[i] for i in idx], M[idx]
@@ -156,10 +156,10 @@ def _score_chunks(st: SearchState, query: str,
     dense = (M @ qv + 1) / 2
     fscore = (F @ qv + 1) / 2
     f2i = {f: i for i, f in enumerate(fpaths)}
-    cfi = np.array([f2i.get(m["file"], -1) for m in metas])
+    cfi = np.array([f2i.get(m.file, -1) for m in metas])
     fused = dense + FILE_FUSION_W * np.where(cfi >= 0, fscore[cfi], 0.5)
     # soft down-weight for test files: keep them reachable, stop them crowding
-    is_test = np.array([_is_test_path(m["file"]) for m in metas])
+    is_test = np.array([_is_test_path(m.file) for m in metas])
     fused = np.where(is_test, fused * TEST_PENALTY, fused)
 
     # issue mode (long queries, e.g. bug reports): deterministic grounding —
@@ -185,7 +185,7 @@ def _score_chunks(st: SearchState, query: str,
             st.bm25 = BM25(file_docs)
         bm25_fscore = st.bm25.scores(query)
         bf2i = {f: i for i, f in enumerate(fpaths)}
-        cbi = np.array([bf2i.get(m["file"], -1) for m in metas])
+        cbi = np.array([bf2i.get(m.file, -1) for m in metas])
         bm25_chunk = np.where(cbi >= 0, bm25_fscore[cbi], 0.0)
         # variant ensemble: title/traceback/code/identifier views, ONE batch
         # embed call (no extra latency), RRF-merged into the dense lane
@@ -215,7 +215,7 @@ def _score_chunks(st: SearchState, query: str,
         if path_filter is None and st.issue_syms is not None:
             all_files, all_syms = st.issue_files, st.issue_syms
         else:
-            all_files = list(dict.fromkeys(m["file"] for m in metas))
+            all_files = list(dict.fromkeys(m.file for m in metas))
             all_syms = []
             for f in all_files:
                 for s in store.symbols_for(f):
@@ -230,12 +230,12 @@ def _score_chunks(st: SearchState, query: str,
         for f, lo, hi in g["pin_spans"]:
             span_by_file.setdefault(f, []).append((lo, hi))
         for i, m in enumerate(metas):
-            tier = g["pin_files"].get(m["file"])
+            tier = g["pin_files"].get(m.file)
             if tier is None:
                 continue
             fused[i] += TIER_BONUS[tier]
-            for lo, hi in span_by_file.get(m["file"], []):
-                if not (m["end_line"] < lo or m["start_line"] > hi):
+            for lo, hi in span_by_file.get(m.file, []):
+                if not (m.end_line < lo or m.start_line > hi):
                     fused[i] += 0.15
                     break
 
@@ -245,9 +245,9 @@ def _score_chunks(st: SearchState, query: str,
     if qtok and len(qtok) <= 25:
         boost = np.zeros(len(metas))
         for i, m in enumerate(metas):
-            stem = m["file"].rsplit("/", 1)[-1].rsplit(".", 1)[0]
+            stem = m.file.rsplit("/", 1)[-1].rsplit(".", 1)[0]
             nf = len(_ident_tokens(stem) & qtok)
-            ns = len(_ident_tokens(m["name"] or "") & qtok)
+            ns = len(_ident_tokens(m.name or "") & qtok)
             boost[i] = max(FILE_BOOST_W * min(nf, 2), SYM_BOOST_W * min(ns, 2))
         fused = fused + boost
         # NB: BM25 sparse lane is deliberately NOT blended into short dev queries
@@ -270,7 +270,7 @@ def search_with_state(st: SearchState, query: str, rerank: bool = False,
     file_rank: list[str] = []
     file_chunks: dict[str, list[int]] = {}
     for ci in order:
-        f = metas[ci]["file"]
+        f = metas[ci].file
         if f not in file_rank:
             file_rank.append(f)
         file_chunks.setdefault(f, []).append(int(ci))
@@ -291,7 +291,7 @@ def search_with_state(st: SearchState, query: str, rerank: bool = False,
         for f in deep:
             if f not in cands:
                 cands.append(f)
-        ev = [{"file": f, "code": metas[file_chunks[f][0]]["text"]} for f in cands]
+        ev = [{"file": f, "code": metas[file_chunks[f][0]].text} for f in cands]
         order = llm_order(query, ev)
         cands = [cands[i] for i in order]
 
@@ -307,20 +307,20 @@ def search_with_state(st: SearchState, query: str, rerank: bool = False,
         idxs = file_chunks[f]
         best = fused[idxs[0]]
         keep = [i for i in idxs if fused[i] >= best * CHUNK_KEEP_RATIO][:12] or idxs[:1]
-        keep.sort(key=lambda i: metas[i]["start_line"])
+        keep.sort(key=lambda i: metas[i].start_line)
         out_t1.append({
             "file": f, "score": float(best),
-            "chunks": [metas[i] | {"score": float(fused[i])} for i in keep],
+            "chunks": [{**metas[i].to_dict(), "score": float(fused[i])} for i in keep],
             "symbols": store.symbols_for(f),
             "neighbors": sorted(store.neighbors(f) & set(cands + extras)),
         })
     out_t2 = []
     for f in tier2:
         idxs = file_chunks.get(f, [])
-        matched = [metas[i]["name"] for i in idxs[:3] if metas[i]["name"]]
+        matched = [metas[i].name for i in idxs[:3] if metas[i].name]
         syms = store.symbols_for(f)
         docline = next((s["doc"] for s in syms if s["doc"]), None)
-        best_chunk = metas[idxs[0]] if idxs else None
+        best_chunk = metas[idxs[0]].to_dict() if idxs else None
         out_t2.append({
             "file": f, "score": float(fbest.get(f, 0)),
             "via_graph": f in extras, "matched": matched, "doc": docline,
@@ -346,7 +346,8 @@ def search_with_state(st: SearchState, query: str, rerank: bool = False,
                     "file": f, "score": float(fbest.get(f, 0)),
                     "via_graph": False, "via_flow": True,
                     "matched": [], "doc": next((s["doc"] for s in syms if s["doc"]), None),
-                    "best_chunk": metas[file_chunks[f][0]] if file_chunks.get(f) else None,
+                    "best_chunk": (metas[file_chunks[f][0]].to_dict()
+                                   if file_chunks.get(f) else None),
                     "symbols": [s for s in syms if s["kind"] in OUTLINE_KINDS][:12],
                 })
                 have.add(f)
@@ -395,13 +396,13 @@ def chunks_for_file(st: SearchState, relpath: str, query: str,
                 break
     rows = []
     for i, m in enumerate(metas):
-        if m["file"] != relpath:
+        if m.file != relpath:
             continue
         rows.append({
-            "id": m["id"], "kind": m["kind"], "name": m["name"], "part": m["part"],
-            "start_line": m["start_line"], "end_line": m["end_line"],
-            "breadcrumb": m["breadcrumb"], "text": m["text"],
-            "score": float(fused[i]), "selected": m["id"] in selected,
+            "id": m.id, "kind": m.kind, "name": m.name, "part": m.part,
+            "start_line": m.start_line, "end_line": m.end_line,
+            "breadcrumb": m.breadcrumb, "text": m.text,
+            "score": float(fused[i]), "selected": m.id in selected,
         })
     rows.sort(key=lambda r: r["start_line"])
     scores = [r["score"] for r in rows] or [0.0]
@@ -461,11 +462,11 @@ def prune_search(st: SearchState, query: str, path_filter: str | None = None,
     noise: list[dict] = []
     in_bundle = 0
     for i, m in enumerate(metas):
-        if m["file"] not in bundle_files:
+        if m.file not in bundle_files:
             continue
         in_bundle += 1
-        if include_pruned and m["id"] not in seen:
-            noise.append(rec(m, fused[i]))
+        if include_pruned and m.id not in seen:
+            noise.append(rec(m.to_dict(), fused[i]))
     noise.sort(key=lambda c: -c["score"])
     out = {"query": query, "repo": st.repo, "chunks": kept,
            "kept": len(kept), "pruned": max(0, in_bundle - len(kept)),

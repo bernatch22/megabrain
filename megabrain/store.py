@@ -10,8 +10,14 @@ from __future__ import annotations
 import json
 import sqlite3
 from pathlib import Path
+from typing import TYPE_CHECKING, Sequence
 
 import numpy as np
+
+from .model import ChunkMeta
+
+if TYPE_CHECKING:
+    from .chunkers import Chunk, Symbol
 
 
 def resolve_root(path: Path) -> tuple[Path, str]:
@@ -125,15 +131,24 @@ class Store:
             "INSERT OR REPLACE INTO files(path, sha, skeleton, skel_vec) VALUES (?,?,?,?)",
             (path, sha, skeleton, blob))
 
-    def insert_chunks(self, rows: list[tuple]):
+    def insert_chunks(self, chunks: Sequence["Chunk"], vecs) -> None:
+        """Persist chunker output. Row packing lives HERE — the column order
+        exists in exactly one file (this one), matched by load_matrix below."""
         self.db.executemany(
             "INSERT INTO chunks(file,kind,name,part,start_line,end_line,text,breadcrumb,vec) "
-            "VALUES (?,?,?,?,?,?,?,?,?)", rows)
+            "VALUES (?,?,?,?,?,?,?,?,?)",
+            [(c.file, c.kind, c.name, c.part, c.start_line, c.end_line,
+              c.text, c.breadcrumb, vecs[i].astype(np.float32).tobytes())
+             for i, c in enumerate(chunks)])
 
-    def insert_symbols(self, rows: list[tuple]):
+    def insert_symbols(self, symbols: Sequence["Symbol"]) -> None:
+        """Persist chunker symbols; serialization policy (decorators as JSON)
+        is the store's knowledge, not the indexer's."""
         self.db.executemany(
             "INSERT INTO symbols(file,name,kind,line,end_line,signature,decorators,doc) "
-            "VALUES (?,?,?,?,?,?,?,?)", rows)
+            "VALUES (?,?,?,?,?,?,?,?)",
+            [(s.file, s.name, s.kind, s.line, s.end_line, s.signature,
+              json.dumps(s.decorators), s.doc) for s in symbols])
 
     def replace_edges(self, src: str, edges: list[tuple[str, str]]):
         self.db.execute("DELETE FROM edges WHERE src=?", (src,))
@@ -148,15 +163,15 @@ class Store:
 
     # ---- query-time loads
 
-    def load_matrix(self) -> tuple[list[dict], np.ndarray]:
+    def load_matrix(self) -> tuple[list[ChunkMeta], np.ndarray]:
         rows = self.db.execute(
             "SELECT id,file,kind,name,part,start_line,end_line,text,breadcrumb,vec "
             "FROM chunks WHERE vec IS NOT NULL ORDER BY id").fetchall()
         metas, vecs = [], []
         for r in rows:
-            metas.append({"id": r[0], "file": r[1], "kind": r[2], "name": r[3],
-                          "part": r[4], "start_line": r[5], "end_line": r[6],
-                          "text": r[7], "breadcrumb": r[8]})
+            metas.append(ChunkMeta(id=r[0], file=r[1], kind=r[2], name=r[3],
+                                   part=r[4], start_line=r[5], end_line=r[6],
+                                   text=r[7], breadcrumb=r[8]))
             vecs.append(np.frombuffer(r[9], dtype=np.float32))
         M = np.stack(vecs) if vecs else np.zeros((0, 1))
         return metas, M

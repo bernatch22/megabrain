@@ -55,25 +55,31 @@ def test_under_path_boundary():
     assert _under_path("anything", "")                           # empty = all
 
 
+def _meta(file: str):
+    from megabrain.model import ChunkMeta
+    return ChunkMeta(id=0, file=file, kind=None, name=None, part=None,
+                     start_line=1, end_line=1, text="", breadcrumb=None)
+
+
 def test_apply_path_filter_scopes_metas():
-    metas = [{"file": "src/dispatch/a.ts"}, {"file": "src/dispatcher.ts"},
-             {"file": "src/other/b.ts"}]
+    metas = [_meta("src/dispatch/a.ts"), _meta("src/dispatcher.ts"),
+             _meta("src/other/b.ts")]
     M = np.arange(len(metas) * 2, dtype=np.float32).reshape(len(metas), 2)
     fm, fM = _apply_path_filter(metas, M, "src/dispatch")
-    assert [m["file"] for m in fm] == ["src/dispatch/a.ts"]
+    assert [m.file for m in fm] == ["src/dispatch/a.ts"]
     assert fM.shape == (1, 2)
     assert np.array_equal(fM[0], M[0])
 
 
 def test_apply_path_filter_none_is_identity():
-    metas = [{"file": "a.ts"}]
+    metas = [_meta("a.ts")]
     M = np.zeros((1, 2), dtype=np.float32)
     fm, fM = _apply_path_filter(metas, M, None)
     assert fm is metas and fM is M
 
 
 def test_apply_path_filter_fail_open_on_no_match():
-    metas = [{"file": "a.ts"}]
+    metas = [_meta("a.ts")]
     M = np.zeros((1, 2), dtype=np.float32)
     fm, fM = _apply_path_filter(metas, M, "does/not/exist")
     assert fm is metas and fM is M   # unfiltered, not empty

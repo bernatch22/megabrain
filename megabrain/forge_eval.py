@@ -142,9 +142,9 @@ def _measure(root: Path, target: str, probes) -> dict:
         top_iou, overlap_rank = None, None
         for rank, ci in enumerate(order):
             m = metas[ci]
-            if m["file"] != target:
+            if m.file != target:
                 continue
-            s, e = m["start_line"], m["end_line"]
+            s, e = m.start_line, m.end_line
             inter = max(0, min(b, e) - max(a, s) + 1)
             iou = inter / (max(b, e) - min(a, s) + 1) if inter > 0 else 0.0
             if top_iou is None:                 # the file's best-ranked chunk
