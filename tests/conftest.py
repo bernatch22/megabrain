@@ -64,9 +64,11 @@ class FakeEmbedder:
 def fake_embedder(monkeypatch):
     """Patch the engine to use FakeEmbedder everywhere (indexer + query)."""
     import megabrain.indexing.indexer as indexer
-    import megabrain.retrieval.query as query
+    import megabrain.retrieval.state as state
     monkeypatch.setattr(indexer, "Embedder", FakeEmbedder)
-    monkeypatch.setattr(query, "Embedder", FakeEmbedder)
+    # Embedder moved to retrieval.state in the query.py split; load_state()
+    # resolves it there.
+    monkeypatch.setattr(state, "Embedder", FakeEmbedder)
     return FakeEmbedder
 
 

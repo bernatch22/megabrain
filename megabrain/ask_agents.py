@@ -74,8 +74,8 @@ def classify_bundle(res: dict, question: str = "") -> dict:
         if near >= 4:
             reasons.append(f"{near} RELATED files near score parity")
     if question:
-        from .retrieval.query import _ident_tokens
-        if len(_ident_tokens(question)) > 25:
+        from .retrieval.query import ident_tokens
+        if len(ident_tokens(question)) > 25:
             reasons.append("issue-length query")
     return {"broad": bool(reasons), "reasons": reasons}
 

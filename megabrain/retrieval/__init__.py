@@ -1,3 +1,14 @@
-"""Answering queries — no LLM in this package (locked rule #1): scoring/bundle/
-render (query), deterministic issue parsing (issue), the sparse entity-ID lane
-(bm25), and the optional permute-only LLM reorder (rerank, --best)."""
+"""Answering queries — no LLM in this package (locked rule #1).
+
+Layered by responsibility (import `megabrain.retrieval.query` for the stable
+surface, or the concrete modules directly):
+
+    state    warm per-repo SearchState + load_state (lifecycle)
+    scoring  score_chunks + path/test/ident helpers — the one scoring truth
+    bundle   rank + tier into CORE/RELATED; selection/prune/chunks_for_file
+    render   bundle -> markdown (pure view)
+    files    get_code — the file-serving containment boundary
+    issue    deterministic issue/traceback parsing (no LLM)
+    bm25     the sparse entity-ID lane (issue mode only)
+    rerank   optional permute-only LLM reorder (--best)
+"""

@@ -54,9 +54,9 @@ def golden_repo(tmp_path, monkeypatch):
     than conftest.tiny_repo: a class file exercises multi-chunk CORE and the
     symbol outline; cross-file imports exercise the graph lane."""
     import megabrain.indexing.indexer as indexer
-    import megabrain.retrieval.query as query
+    import megabrain.retrieval.state as state
     monkeypatch.setattr(indexer, "Embedder", DeterministicEmbedder)
-    monkeypatch.setattr(query, "Embedder", DeterministicEmbedder)
+    monkeypatch.setattr(state, "Embedder", DeterministicEmbedder)
 
     (tmp_path / "auth").mkdir()
     (tmp_path / "auth" / "login.py").write_text(

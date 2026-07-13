@@ -132,12 +132,12 @@ def _measure(root: Path, target: str, probes) -> dict:
       while embedding as noise).
     - hit@k = an overlapping chunk sits within the top-k GLOBALLY (rank across
       the whole repo, all files competing)."""
-    from .retrieval.query import _score_chunks, load_state
+    from .retrieval.query import load_state, score_chunks
     st = load_state(root)
     ious = []
     hits = {k: 0 for k in TOPK}
     for q, a, b in probes:
-        metas, fused = _score_chunks(st, q)
+        metas, fused = score_chunks(st, q)
         order = np.argsort(-fused)
         top_iou, overlap_rank = None, None
         for rank, ci in enumerate(order):
