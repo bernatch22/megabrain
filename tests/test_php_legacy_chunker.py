@@ -9,7 +9,7 @@ pytest.importorskip("tree_sitter_php")
 
 from megabrain.chunkers import PHP_SPEC, TreeSitterChunker, validate_partition  # noqa: E402
 from megabrain.chunkers.php import LegacyPhpChunker, PhpChunker, looks_legacy  # noqa: E402
-from megabrain.chunkers.treesitter import _parser  # noqa: E402
+from megabrain.chunkers.treesitter import parser_for  # noqa: E402
 
 LEGACY = """<?php
 //---------------------------------------------------------
@@ -51,7 +51,7 @@ MODERN = ("<?php\nnamespace App;\n\nclass Foo {\n"
 
 
 def _root(src: str):
-    return _parser(PHP_SPEC, "php").parse(src.encode()).root_node
+    return parser_for(PHP_SPEC, "php").parse(src.encode()).root_node
 
 
 def test_detection_legacy_vs_modern():

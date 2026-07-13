@@ -19,7 +19,7 @@ imports and the gate tests — its output is byte-identical to before the refact
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Callable
+from typing import Callable, Protocol
 
 from tree_sitter import Language, Parser
 
@@ -178,17 +178,54 @@ PHP_SPEC = LangSpec(
 _parsers: dict[tuple[str, str], Parser] = {}
 
 
-def _parser(spec: LangSpec, ext: str) -> Parser:
+def parser_for(spec: LangSpec, ext: str) -> Parser:
     key = (spec.name, ext)
     if key not in _parsers:
         _parsers[key] = Parser(Language(spec.grammar(ext)))
     return _parsers[key]
 
 
-def _signature(node, source: bytes) -> str:
+def first_line_signature(node, source: bytes) -> str:
     """First line of the declaration, trimmed."""
     line = source[node.start_byte:node.end_byte].split(b"\n", 1)[0].decode(errors="replace")
     return line.strip().rstrip("{").strip()[:140]
+
+
+# ---------------------------------------------------------------- public contract
+
+
+class TreeChunkerOps(Protocol):
+    """The reusable core of the generic tree-sitter chunker, as an explicit
+    contract: segmentation, oversized-def splitting, symbol/skeleton extraction,
+    line-window fallback and def naming — everything a shape-specializing
+    chunker needs to reuse without duplicating the cAST machinery.
+
+    LegacyPhpChunker (and any future shape-specializing chunker) composes THIS
+    contract, never internals — renaming any member is a breaking change to
+    every composing chunker.
+    """
+
+    spec: LangSpec
+
+    def segment(self, nodes, region_start: int, region_end: int):
+        """Line-partition a node list into (node, start, end) units."""
+        ...
+
+    def split_unit(self, u, lines, relpath, crumb, src):
+        """Split one oversized unit (class -> methods, function -> k/n blocks)."""
+        ...
+
+    def symbols_of(self, relpath, root, src) -> list:
+        """Extract the def/class Symbol list from a parse tree."""
+        ...
+
+    def lines_fallback(self, relpath, lines, crumb, start=1, end=None):
+        """Budget-sized line windows when no structure is available."""
+        ...
+
+    def name_of(self, node) -> str | None:
+        """Declared name of a def node, per the LangSpec's name fields."""
+        ...
 
 
 # ---------------------------------------------------------------- chunker
@@ -202,7 +239,7 @@ class TreeSitterChunker:
 
     # ---- language hooks (driven by the spec)
 
-    def _name_of(self, node) -> str | None:
+    def name_of(self, node) -> str | None:
         n = node.child_by_field_name(self.spec.name_field)
         if n is not None:
             return n.text.decode()
@@ -247,25 +284,25 @@ class TreeSitterChunker:
             return FileResult(relpath, [], [], "", True, 0)
         ext = relpath.rsplit(".", 1)[-1] if "." in relpath else ""
         try:
-            tree = _parser(self.spec, ext).parse(source.encode())
+            tree = parser_for(self.spec, ext).parse(source.encode())
         except Exception:
-            return FileResult(relpath, self._lines_fallback(relpath, lines, crumb),
+            return FileResult(relpath, self.lines_fallback(relpath, lines, crumb),
                               [], "", False, total)
         root = tree.root_node
         src = source.encode()
-        units = self._segment(list(root.named_children), 1, total)
+        units = self.segment(list(root.named_children), 1, total)
         if not units:
             c = Chunk(relpath, "module", None, 1, total,
                       "".join(lines), crumb).finalize()
             return FileResult(relpath, [c], [], "", True, total)
         chunks = self._merge(units, lines, relpath, crumb, parent=None, src=src)
-        symbols = self._symbols(relpath, root, src)
+        symbols = self.symbols_of(relpath, root, src)
         skeleton = self._skeleton(relpath, root, src)
         return FileResult(relpath, chunks, symbols, skeleton, True, total)
 
     # ---- segmentation (line partition, gaps attach to following node)
 
-    def _segment(self, nodes, region_start: int, region_end: int):
+    def segment(self, nodes, region_start: int, region_end: int):
         units = []
         cursor = region_start
         for n in nodes:
@@ -304,7 +341,7 @@ class TreeSitterChunker:
             usz = self._usize(lines, u[1], u[2])
             if usz > self.budget:
                 flush()
-                chunks.extend(self._split_unit(u, lines, relpath, crumb, src))
+                chunks.extend(self.split_unit(u, lines, relpath, crumb, src))
             elif bsize + usz > self.budget:
                 flush()
                 buf, bsize = [u], usz
@@ -318,38 +355,38 @@ class TreeSitterChunker:
         named = []
         for n, _s, _e in buf:
             d = self._unwrap(n)
-            if d.type in self.spec.def_types and self._name_of(d):
+            if d.type in self.spec.def_types and self.name_of(d):
                 named.append(d)
         prefix = ""
         pcrumb = crumb
         if parent is not None:
-            prefix = f"{self._name_of(parent)}."
-            pcrumb = f"{crumb} > {_signature(parent, src)}"
+            prefix = f"{self.name_of(parent)}."
+            pcrumb = f"{crumb} > {first_line_signature(parent, src)}"
         if len(named) == 1:
             d = named[0]
             kind = self.spec.def_types[d.type]
             if parent is not None and kind == "function":
                 kind = "method"
-            return kind, f"{prefix}{self._name_of(d)}", f"{pcrumb} > {_signature(d, src)}"
+            return kind, f"{prefix}{self.name_of(d)}", f"{pcrumb} > {first_line_signature(d, src)}"
         if named:
-            names = ", ".join(f"{prefix}{self._name_of(d)}" for d in named)
+            names = ", ".join(f"{prefix}{self.name_of(d)}" for d in named)
             return ("method" if parent is not None else "module"), names, f"{pcrumb} > [{names}]"
         return ("class_header" if parent is not None else "module"), \
-            (self._name_of(parent) if parent is not None else None), \
+            (self.name_of(parent) if parent is not None else None), \
             f"{pcrumb} ({'class body' if parent is not None else 'module level'})"
 
-    def _split_unit(self, u, lines, relpath, crumb, src):
+    def split_unit(self, u, lines, relpath, crumb, src):
         node, s, e = u
         d = self._unwrap(node)
         body = d.child_by_field_name(self.spec.body_field)
         if d.type in self.spec.container_types and body is not None:
-            inner = self._segment(list(body.named_children), s, e)
+            inner = self.segment(list(body.named_children), s, e)
             if inner:
                 return self._merge(inner, lines, relpath, crumb, parent=d, src=src)
         if body is not None and body.named_children:
-            name = self._name_of(d)
-            bc = f"{crumb} > {_signature(d, src)}"
-            inner = self._segment(list(body.named_children), s, e)
+            name = self.name_of(d)
+            bc = f"{crumb} > {first_line_signature(d, src)}"
+            inner = self.segment(list(body.named_children), s, e)
             if inner:
                 blocks = self._pack(inner, lines)
                 n = len(blocks)
@@ -358,7 +395,7 @@ class TreeSitterChunker:
                               part=(f"{i}/{n}" if n > 1 else None)).finalize()
                         for i, (bs, be) in enumerate(blocks, 1)]
         # unsplittable big node: line windows
-        return self._lines_fallback(relpath, lines, f"{crumb} > {_signature(d, src)}",
+        return self.lines_fallback(relpath, lines, f"{crumb} > {first_line_signature(d, src)}",
                                     start=s, end=e)
 
     def _pack(self, units, lines):
@@ -392,7 +429,7 @@ class TreeSitterChunker:
             blocks.append((bs, be))
         return blocks
 
-    def _lines_fallback(self, relpath, lines, crumb, start=1, end=None):
+    def lines_fallback(self, relpath, lines, crumb, start=1, end=None):
         end = end or len(lines)
         out, s, size = [], start, 0
         wins = []
@@ -437,18 +474,18 @@ class TreeSitterChunker:
             return None
         return left.text.decode(), "method"
 
-    def _symbols(self, relpath, root, src) -> list[Symbol]:
+    def symbols_of(self, relpath, root, src) -> list[Symbol]:
         out: list[Symbol] = []
 
         def visit(node, prefix):
             for ch in node.named_children:
                 d = self._unwrap(ch)
-                if d.type in self.spec.def_types and self._name_of(d):
-                    name = self._name_of(d)
+                if d.type in self.spec.def_types and self.name_of(d):
+                    name = self.name_of(d)
                     kind = self.spec.def_types[d.type]
                     out.append(Symbol(relpath, f"{prefix}{name}", kind,
                                       d.start_point[0] + 1, d.end_point[0] + 1,
-                                      _signature(d, src)))
+                                      first_line_signature(d, src)))
                     if d.type in self.spec.container_types:
                         body = d.child_by_field_name(self.spec.body_field)
                         if body is not None:
@@ -459,14 +496,14 @@ class TreeSitterChunker:
                     name, kind = asg
                     out.append(Symbol(relpath, f"{prefix}{name}", kind,
                                       ch.start_point[0] + 1, ch.end_point[0] + 1,
-                                      _signature(ch, src)))
+                                      first_line_signature(ch, src)))
 
         visit(root, "")
         return out
 
     def _skeleton(self, relpath, root, src) -> str:
         parts = [f"# {relpath}"]
-        for s in self._symbols(relpath, root, src):
+        for s in self.symbols_of(relpath, root, src):
             indent = "    " if "." in s.name else ""
             parts.append(f"{indent}{s.signature}")
         return "\n".join(parts)

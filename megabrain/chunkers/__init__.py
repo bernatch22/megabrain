@@ -12,13 +12,15 @@ from .treesitter import (
                    RUST_SPEC,
                    TS_SPEC,
                    LangSpec,
+                   TreeChunkerOps,
                    TreeSitterChunker,
                    TsChunker,
+                   parser_for,
 )
 
 __all__ = [
     "DEFAULT_BUDGET", "Chunk", "FileResult", "Symbol", "embed_text", "nws",
     "validate_partition", "CastChunker", "MarkdownChunker", "qmd_cut",
-    "TreeSitterChunker", "TsChunker", "LangSpec",
+    "TreeSitterChunker", "TsChunker", "LangSpec", "TreeChunkerOps", "parser_for",
     "TS_SPEC", "RUBY_SPEC", "GO_SPEC", "RUST_SPEC", "PHP_SPEC",
 ]

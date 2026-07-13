@@ -28,7 +28,13 @@ import re
 
 from .base import DEFAULT_BUDGET, Chunk, FileResult, Symbol, nws
 from .markdown import qmd_cut
-from .treesitter import PHP_SPEC, TreeSitterChunker, _parser, _signature
+from .treesitter import (
+    PHP_SPEC,
+    TreeChunkerOps,
+    TreeSitterChunker,
+    first_line_signature,
+    parser_for,
+)
 
 BANNER_MIN_FLUSH = 400   # a banner starts a new section only once the current
                          # one holds this much code (avoids dust sections)
@@ -71,8 +77,9 @@ class LegacyPhpChunker:
         self.repo = repo
         # composition: reuse the generic chunker's segmentation, naming,
         # oversized-def splitting and symbol/skeleton extraction — one source
-        # of truth for everything that isn't legacy-specific.
-        self._ts = TreeSitterChunker(PHP_SPEC, budget=budget, repo=repo)
+        # of truth for everything that isn't legacy-specific. We depend on the
+        # public TreeChunkerOps contract, never on chunker internals.
+        self._ts: TreeChunkerOps = TreeSitterChunker(PHP_SPEC, budget=budget, repo=repo)
 
     # ---- public API
 
@@ -85,22 +92,22 @@ class LegacyPhpChunker:
         src = source.encode()
         if root is None:
             try:
-                root = _parser(PHP_SPEC, "php").parse(src).root_node
+                root = parser_for(PHP_SPEC, "php").parse(src).root_node
             except Exception:
                 root = None
         if root is None or not list(root.named_children):
             return FileResult(relpath,
-                              self._ts._lines_fallback(relpath, lines, f"{crumb} (unparsed)"),
+                              self._ts.lines_fallback(relpath, lines, f"{crumb} (unparsed)"),
                               [], "", False, total)
 
-        units = self._ts._segment(list(root.named_children), 1, total)
+        units = self._ts.segment(list(root.named_children), 1, total)
         if not units:
             c = Chunk(relpath, "module", None, 1, total, "".join(lines), crumb).finalize()
             return FileResult(relpath, [c], [], "", True, total)
 
         banner = self._banner_lines(lines, total)
         chunks, sections = self._build(units, lines, relpath, crumb, src, banner)
-        symbols = self._ts._symbols(relpath, root, src)
+        symbols = self._ts.symbols_of(relpath, root, src)
         symbols += [Symbol(relpath, title, "heading", s, e, f"// {title}")
                     for title, s, e in sections]
         symbols.sort(key=lambda s: s.line)
@@ -179,10 +186,10 @@ class LegacyPhpChunker:
         if self._usize(lines, s, e) > self.budget:
             # oversized function/class: the generic chunker's split (class ->
             # methods, function -> part k/n blocks) is exactly right — reuse it.
-            return self._ts._split_unit((node, s, e), lines, relpath, crumb, src)
+            return self._ts.split_unit((node, s, e), lines, relpath, crumb, src)
         kind = PHP_SPEC.def_types[node.type]
-        name = self._ts._name_of(node)
-        bc = f"{crumb} > {_signature(node, src)}"
+        name = self._ts.name_of(node)
+        bc = f"{crumb} > {first_line_signature(node, src)}"
         return [Chunk(relpath, kind, name, s, e,
                       "".join(lines[s - 1:e]), bc).finalize()]
 
@@ -249,7 +256,7 @@ class PhpChunker:
 
     def chunk_file(self, relpath: str, source: str) -> FileResult:
         try:
-            root = _parser(PHP_SPEC, "php").parse(source.encode()).root_node
+            root = parser_for(PHP_SPEC, "php").parse(source.encode()).root_node
         except Exception:
             root = None
         if root is not None and looks_legacy(root):
