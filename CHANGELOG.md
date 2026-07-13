@@ -29,6 +29,10 @@ output are pinned byte-for-byte by new golden tests. See `REFACTOR.md`.
 - **One cAST engine** (`chunkers/cast.py`): `merge_units` / `greedy_pack` /
   `pack_lines`, shared by the Python and tree-sitter chunkers (were duplicated).
   Byte-identity proven by `tests/test_cast_unification.py`.
+- **Scoring lanes**: `score_chunks` is a self-gating `ScoreLane` pipeline
+  (dense+fusion · test-penalty · issue · lexical) over one `QueryCtx` — adding a
+  signal is one lane class + one entry (OCP). Bit-identical: a float-array
+  differential harness (`tests/test_scoring_lanes.py`) proves no score moved.
 - **`TreeChunkerOps`** public contract for the php→tree-sitter reuse seam.
 - **Lifecycle**: `SearchState`/`Store` close via context managers everywhere;
   `index_repo` owns its connection and returns stats (the library never prints).

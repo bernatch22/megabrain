@@ -443,7 +443,8 @@ megabrain/
     query.py           compatibility facade re-exporting the split modules below
     params.py          RetrievalParams — every tuning knob, frozen + injectable
     state.py           SearchState + load_state (warm state, lifecycle)
-    scoring.py         score_chunks — the single scoring truth (dense/fusion/issue/lexical)
+    scoring.py         score_chunks — self-gating lane pipeline (dense+fusion ·
+                       test-penalty · issue · lexical); add a signal = 1 lane + 1 entry
     bundle.py          rank + tier (CORE/RELATED) · selection · prune · chunks_for_file · multi
     render.py          bundle → markdown (pure view)
     files.py           get_code — the file-serving containment boundary
