@@ -1,0 +1,44 @@
+{
+ "chunks": [
+  {
+   "end_line": 13,
+   "file": "auth/login.py",
+   "id": 1,
+   "kind": "module",
+   "name": "login_user, check_password",
+   "score": 1.1876,
+   "start_line": 1
+  },
+  {
+   "end_line": 15,
+   "file": "auth/session.py",
+   "id": 2,
+   "kind": "module",
+   "name": "Session, open_session",
+   "score": 0.9282,
+   "start_line": 1
+  },
+  {
+   "end_line": 3,
+   "file": "billing/invoice.py",
+   "id": 3,
+   "kind": "function",
+   "name": "create_invoice",
+   "score": 0.75,
+   "start_line": 1
+  },
+  {
+   "end_line": 3,
+   "file": "util.py",
+   "id": 4,
+   "kind": "function",
+   "name": "flatten",
+   "score": 0.75,
+   "start_line": 1
+  }
+ ],
+ "kept": 4,
+ "noise": [],
+ "pruned": 0,
+ "scanned": 4
+}

@@ -1,0 +1,44 @@
+{
+ "tier1": [
+  {
+   "chunks": [
+    [
+     1,
+     1,
+     13
+    ]
+   ],
+   "file": "auth/login.py",
+   "neighbors": [
+    "auth/session.py"
+   ],
+   "score": 1.1876
+  }
+ ],
+ "tier2": [
+  {
+   "best_chunk": 2,
+   "file": "auth/session.py",
+   "matched": [
+    "Session, open_session"
+   ],
+   "via_graph": false
+  },
+  {
+   "best_chunk": 3,
+   "file": "billing/invoice.py",
+   "matched": [
+    "create_invoice"
+   ],
+   "via_graph": false
+  },
+  {
+   "best_chunk": 4,
+   "file": "util.py",
+   "matched": [
+    "flatten"
+   ],
+   "via_graph": false
+  }
+ ]
+}
