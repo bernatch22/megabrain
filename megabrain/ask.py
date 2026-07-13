@@ -9,17 +9,13 @@ disk. Streamed, ~1-3s. Fail-open: no citations / API error -> full bundle.
 
 from __future__ import annotations
 
-import logging
 import re
 import sys
-import time
 from pathlib import Path
 
 from . import providers
 from .indexing.strategies import MarkdownStrategy
-from .retrieval.query import SearchState, lang_of, load_state, render, search_with_state
-
-log = logging.getLogger(__name__)
+from .retrieval.query import SearchState, lang_of, render
 
 # ask is a CODE walkthrough: docs (markdown) are excluded from its candidates so a
 # code explanation isn't diluted with prose. docs_only flips it to a docs-only
@@ -121,17 +117,6 @@ RETRIEVED CHUNKS:
             "stream": True, "messages": [{"role": "user", "content": prompt}]}
 
 
-def _explain_stream(question: str, cands: list[dict], key: str,
-                    flow_ctx: str = "") -> str:
-    """ONE streamed chat call -> explanation text with [[k]]/[[k:lo-hi]] citations."""
-    text, stop = providers.stream_chat(_build_body(question, cands, flow_ctx), key)
-    if stop == "length":
-        cut = max(text.rfind("\n\n"), text.rfind(". "))
-        if cut > 0:
-            text = text[:cut + 1].rstrip() + "\n\n_(walkthrough truncated — ask a narrower question for the rest)_"
-    return text
-
-
 def _code_block(c: dict, lo: int | None, hi: int | None, seen: set,
                 file_syms: dict[str, list[dict]]) -> str:
     cs, ce = c["start_line"], c["end_line"]
@@ -224,64 +209,27 @@ def ask(root: Path, question: str, rerank: bool = False,
         docs_only: bool = False, path_filter: str | None = None,
         state: SearchState | None = None, include_docs: bool = False,
         agents: bool | None = False) -> dict:
-    """One-shot ask. `agents`: False = always single-agent (the default, so
-    library callers and evals keep v1 behavior and cost), None = AUTO (fan out
-    into parallel sub-agents only when ask_agents.classify_bundle says the
-    question is broad), True = force the fan-out. Frontends (CLI/MCP/HTTP)
-    pass auto. Fan-out is fail-open: any error falls back to the single-agent
-    call, then to the bundle."""
-    t0 = time.time()
-    st = state or load_state(Path(root))
-    res = search_with_state(st, question, rerank=rerank, path_filter=path_filter)
-    retrieval_ms = int((time.time() - t0) * 1000)
-    cands = _candidates(res, docs_only, include_docs)
-    key = providers.find_chat_key(required=False)
-    text, llm_ms, trace = "", 0, None
-
-    # SERVE-FROM-CACHE: a near-exact cached flow whose code is still current is
-    # returned verbatim — no LLM, instant, zero cost. (Only when not docs-mode;
-    # the sha recheck in serve_verbatim keeps it from ever serving stale code.)
-    if not docs_only and not include_docs:
-        from .flows import serve_verbatim
-        served = serve_verbatim(root, res.get("flows") or [])
-        if served:
-            return {"result": res, "cands": cands, "text": served["text"],
-                    "file_syms": {}, "retrieval_ms": retrieval_ms, "llm_ms": 0,
-                    "served_from_cache": True, "query": question,
-                    "repo": res["repo"], "agents": None}
-
-    if key and cands:
-        t1 = time.time()
-        if agents is not False:
-            try:
-                from .ask_agents import classify_bundle, run_agents
-                if agents is True or classify_bundle(res, question)["broad"]:
-                    o = run_agents(root, question, res=res, cands=cands,
-                                   st=st, key=key)
-                    text, trace = o["text"], o["agents"]
-            except Exception:
-                log.debug("multi-agent ask failed (falling back to single-agent)",
-                          exc_info=True)
-        if not text:
-            try:
-                text = _explain_stream(question, cands, key, _flow_ctx(res))
-            except Exception:
-                log.debug("ask explanation failed (falling back to full bundle)",
-                          exc_info=True)
-                text = ""
-        llm_ms = int((time.time() - t1) * 1000)
-    file_syms = {f: st.store.symbols_for(f) for f in {c["file"] for c in cands}}
-    out = {"result": res, "cands": cands, "text": text, "file_syms": file_syms,
-           "retrieval_ms": retrieval_ms, "llm_ms": llm_ms,
-           "query": question, "repo": res["repo"], "agents": trace}
-    # WRITE PATH of the flow cache: a successful cited walkthrough is a workflow
-    # worth remembering. We cache the SPLICED BODY (prose + real code from disk,
-    # no header/footer) so a near-exact later question can be served verbatim
-    # without an LLM. Fail-open by construction; reuses st.emb.
-    if text and _SEL.search(text):
-        from .flows import cache_flow
-        body, _, _ = _splice(out)
-        cache_flow(Path(root), question, body, cited_files(out), emb=st.emb)
+    """One-shot ask: a buffered COLLECTOR over ask_agents.stream_events — the
+    single pipeline every surface shares (retrieve -> serve-from-cache ->
+    classify -> fan-out or single agent -> splice -> flow-cache write), with
+    the events discarded. `agents`: False = always single-agent (the default,
+    so library callers and evals keep v1 behavior and cost), None = AUTO (fan
+    out only when ask_agents.classify_bundle says the question is broad),
+    True = force the fan-out. Fan-out is fail-open: any error falls back to
+    the single-agent call, then to the bundle."""
+    from .ask_agents import stream_events
+    out = stream_events(Path(root), question, lambda ev: None, agents=agents,
+                        rerank=rerank, docs_only=docs_only,
+                        include_docs=include_docs, path_filter=path_filter,
+                        state=state)
+    # buffered parity with the old single-agent path: a length-stopped answer
+    # is trimmed to the last complete sentence + a truncation note. (Streaming
+    # sinks get the same signal as the "length" event instead.)
+    if out.pop("truncated", False) and out.get("agents") is None and out["text"]:
+        cut = max(out["text"].rfind("\n\n"), out["text"].rfind(". "))
+        if cut > 0:
+            out["text"] = (out["text"][:cut + 1].rstrip()
+                           + "\n\n_(walkthrough truncated — ask a narrower question for the rest)_")
     return out
 
 
@@ -365,30 +313,15 @@ def stream_ask(root: Path, question: str, out=None, rerank: bool = False,
         out.write(s)
         out.flush()
 
-    # SERVE-FROM-CACHE (flow mode only — a no-op when off, the default): a
-    # near-exact cached flow whose code is still byte-identical prints instantly
-    # with no LLM. Costs one retrieval; on a miss, stream_events re-retrieves
-    # (accepted: the mode is opt-in and the hit saves a whole LLM call).
-    from .flows import enabled as _flows_on
-    if not docs_only and not include_docs and _flows_on(root):
-        try:
-            from .flows import serve_verbatim
-            from .retrieval.query import load_state, search_with_state
-            _st = load_state(Path(root))
-            _res = search_with_state(_st, question, path_filter=path_filter)
-            served = serve_verbatim(root, _res.get("flows") or [])
-            if served:
-                write(f'# megabrain — "{question}"\n')
-                write(f'repo `{_res["repo"]}` · ⚡ served from flow cache '
-                      f'(cached ask: "{served["question"][:70]}") · 0ms explain\n\n')
-                write(served["text"].rstrip() + "\n")
-                return
-        except Exception:
-            log.debug("flow serve check failed; streaming normally", exc_info=True)
-
     def sink(ev: dict):
         t = ev["type"]
-        if t == "retrieval":
+        if t == "cached":
+            # serve-from-cache hit inside the pipeline (one retrieval, no LLM)
+            write(f'# megabrain — "{question}"\n')
+            write(f'repo `{ev["repo"]}` · ⚡ served from flow cache '
+                  f'(cached ask: "{ev["question"][:70]}") · 0ms explain\n\n')
+            write(ev["text"].rstrip() + "\n")
+        elif t == "retrieval":
             if ev["llm"]:              # no LLM/candidates -> bare bundle, no header
                 write(f'# megabrain — "{question}"\n')
                 write(f'repo `{ev["repo"]}` · {ev["ms"]}ms retrieval · '

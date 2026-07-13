@@ -466,7 +466,7 @@ def stream_events(root, question: str, on_event, *, agents: bool | None = None,
     out only when classify_bundle says broad), True = force, False = never.
     on_event is called under a lock (sub-agents emit from worker threads).
     Returns the ask()-shaped summary dict for buffered reuse."""
-    from .ask import _build_body, _candidates, _Splicer
+    from .ask import _build_body, _candidates, _flow_ctx, _Splicer
     lock = threading.Lock()
 
     def emit(ev: dict):
@@ -481,6 +481,21 @@ def stream_events(root, question: str, on_event, *, agents: bool | None = None,
     key = providers.find_chat_key(required=False)
     base = {"result": res, "cands": cands, "query": question, "repo": res["repo"],
             "retrieval_ms": retrieval_ms, "agents": None, "file_syms": {}}
+
+    # SERVE-FROM-CACHE (flow mode only — a no-op when off, the default): a
+    # near-exact cached flow whose cited files are still byte-identical is
+    # returned verbatim — no LLM, instant, zero cost. Lives HERE, in the one
+    # pipeline, so every surface (CLI stream, SSE, MCP, library ask()) gets the
+    # same behavior from the single retrieval above.
+    if not docs_only and not include_docs:
+        from .flows import serve_verbatim
+        served = serve_verbatim(root, res.get("flows") or [])
+        if served:
+            emit({"type": "cached", "repo": res["repo"], "ms": retrieval_ms,
+                  "question": served["question"], "text": served["text"]})
+            return {**base, "text": served["text"], "llm_ms": 0,
+                    "served_from_cache": True}
+
     emit({"type": "retrieval", "repo": res["repo"], "ms": retrieval_ms,
           "files": len(res["tier1"]) + len(res["tier2"]),
           "model": providers.ask_model(), "llm": bool(key and cands)})
@@ -519,8 +534,10 @@ def stream_events(root, question: str, on_event, *, agents: bool | None = None,
                 emit({"type": "synthesis_delta", "text": s})
 
         try:
-            text, stop = providers.stream_chat(_build_body(question, cands), key,
-                                               on_delta=od)
+            # KNOWN-FLOW context for the narrator (non-citable) — the buffered
+            # ask always passed it; the unified pipeline keeps that behavior.
+            text, stop = providers.stream_chat(
+                _build_body(question, cands, _flow_ctx(res)), key, on_delta=od)
         except Exception:
             log.debug("ask stream interrupted", exc_info=True)
         s = splicer.flush()
@@ -532,7 +549,7 @@ def stream_events(root, question: str, on_event, *, agents: bool | None = None,
     if not splicer.cited:              # fail-open: ungrounded prose -> the bundle
         note = "no code cited" if text else "explanation unavailable"
         emit({"type": "bundle", "note": note, "text": render(res)})
-        return {**base, "text": text, "llm_ms": llm_ms}
+        return {**base, "text": text, "llm_ms": llm_ms, "truncated": truncated}
     if truncated:
         emit({"type": "length"})
     dropped = [f'{c["file"].rsplit("/", 1)[-1]}:{c["start_line"]}'
@@ -541,4 +558,17 @@ def stream_events(root, question: str, on_event, *, agents: bool | None = None,
           "retrieval_ms": retrieval_ms, "llm_ms": llm_ms,
           "dropped": dropped[:12] if show_map else [],
           "n_dropped": len(dropped), "agents": trace})
-    return {**base, "text": text, "llm_ms": llm_ms, "agents": trace}
+    out = {**base, "text": text, "llm_ms": llm_ms, "agents": trace,
+           "truncated": truncated}
+    # WRITE PATH of the flow cache: a successful cited walkthrough is a
+    # workflow worth remembering. Lives HERE, in the one pipeline, so EVERY
+    # surface accumulates flows (the old buffered-only write meant CLI/SSE
+    # asks never populated the cache). cache_flow gates on enabled(root) and
+    # is fail-open by construction; reuses st.emb.
+    from .ask import _SEL, _splice, cited_files
+    if text and _SEL.search(text):
+        from .flows import cache_flow
+        body, _, _ = _splice(out)
+        cache_flow(Path(root), question, body, cited_files(out),
+                   emb=getattr(st, "emb", None))
+    return out
