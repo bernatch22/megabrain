@@ -16,7 +16,10 @@ sub-path. The repo root itself behaves exactly as before (no filter).
 import argparse
 import logging
 import os
+import sys
 from pathlib import Path
+
+from ..errors import MegabrainError
 
 
 def main(argv=None):
@@ -139,6 +142,18 @@ def main(argv=None):
         ap.error(f"`{a.cmd}` takes a single path — comma-separated multi-path "
                  f"applies to `index` and `query` only")
 
+    # THE one CLI catch site: engine errors print as one line + exit 2 — never
+    # a raw traceback at the user. MEGABRAIN_DEBUG=1 re-raises for developers.
+    try:
+        _dispatch(a, raw, root)
+    except MegabrainError as e:
+        if os.environ.get("MEGABRAIN_DEBUG"):
+            raise
+        print(f"megabrain: {e}", file=sys.stderr)
+        raise SystemExit(2) from None
+
+
+def _dispatch(a, raw: list[Path], root: Path) -> None:
     if a.cmd == "index":
         from ..indexing.indexer import index_repo
         exclude = [x for item in a.exclude for x in item.split(",") if x.strip()]

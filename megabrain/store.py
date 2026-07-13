@@ -31,9 +31,8 @@ def resolve_root(path: Path) -> tuple[Path, str]:
         if (anc / ".megabrain" / "db.sqlite").exists():
             rel = p.relative_to(anc).as_posix()
             return anc, ("" if rel == "." else rel)
-    raise ValueError(
-        f"no megabrain index found at or above {p} — run `megabrain index` "
-        f"on the repo root (looked for .megabrain/db.sqlite up the tree)")
+    from .errors import IndexNotFound
+    raise IndexNotFound.at(p)
 
 
 SCHEMA = """

@@ -39,6 +39,7 @@ OPENROUTER_API_KEY in its environment. CORS is off by default
 from __future__ import annotations
 
 import json
+import logging
 import os
 import re
 import threading
@@ -47,7 +48,10 @@ import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
+from ..errors import MegabrainError
 from ..retrieval.query import SearchState, load_state, search_with_state
+
+log = logging.getLogger(__name__)
 
 # ── docsearch adapter ─────────────────────────────────────────────────────
 # Section-level semantic hits shaped for a docs-site search box. Result groups
@@ -301,8 +305,11 @@ def _make_handler(repo: _Repo, cors: str | None, enable_llm: bool,
                     return self._send(200, repo.with_state(
                         lambda st: chunks_for_file(st, rel, q)))
                 return self._err(404, "not found")
-            except Exception as e:       # noqa: BLE001 — surface any engine error as 500
-                return self._err(500, str(e))
+            except MegabrainError as e:  # typed engine error -> mapped status
+                return self._err(e.http_status, str(e))
+            except Exception:            # noqa: BLE001 — never leak internals
+                log.exception("GET %s failed", path)
+                return self._err(500, "internal error")
 
         def do_POST(self):
             path = (urllib.parse.urlparse(self.path).path).rstrip("/") or "/"
@@ -379,8 +386,11 @@ def _make_handler(repo: _Repo, cors: str | None, enable_llm: bool,
                     return self._send(200, index_repo(repo.root, quiet=True,
                                                       force=bool(body.get("force"))))
                 return self._err(404, "not found")
-            except Exception as e:       # noqa: BLE001
-                return self._err(500, str(e))
+            except MegabrainError as e:  # typed engine error -> mapped status
+                return self._err(e.http_status, str(e))
+            except Exception:            # noqa: BLE001 — never leak internals
+                log.exception("POST %s failed", path)
+                return self._err(500, "internal error")
 
     return Handler
 

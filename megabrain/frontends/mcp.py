@@ -29,6 +29,7 @@ import sys
 from pathlib import Path
 
 from .. import __version__
+from ..errors import MegabrainError
 
 PROTOCOL = "2024-11-05"
 
@@ -308,7 +309,8 @@ def call_tool(name: str, args: dict) -> str:
         return json.dumps({"enabled": _flows.enabled(root),
                            "flows": [{"question": m["question"],
                                       "files": sorted(m["files"])} for m in metas]}, indent=1)
-    raise ValueError(f"unknown tool {name}")
+    from ..errors import UnknownTool
+    raise UnknownTool(f"unknown tool {name}")
 
 
 def main():
@@ -333,8 +335,13 @@ def main():
             try:
                 text = call_tool(p.get("name", ""), p.get("arguments", {}))
                 result = {"content": [{"type": "text", "text": text}]}
-            except Exception as e:
-                result = {"content": [{"type": "text", "text": f"error: {e}"}], "isError": True}
+            except MegabrainError as e:  # typed -> stable machine code in the text
+                result = {"content": [{"type": "text",
+                                       "text": f"error ({e.code}): {e}"}],
+                          "isError": True}
+            except Exception as e:       # noqa: BLE001 — local stdio, msg is useful
+                result = {"content": [{"type": "text", "text": f"error: {e}"}],
+                          "isError": True}
         elif mid is None:
             continue  # notification
         else:

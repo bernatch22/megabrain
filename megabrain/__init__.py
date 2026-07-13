@@ -44,6 +44,12 @@ _EXPORTS = {
     "load_state": ".retrieval.query",
     "search_with_state": ".retrieval.query",
     "Store": ".store",
+    # structured errors (catch MegabrainError to handle any engine failure):
+    "MegabrainError": ".errors",
+    "IndexNotFound": ".errors",
+    "EmptyIndex": ".errors",
+    "MissingAPIKey": ".errors",
+    "ProviderError": ".errors",
     # custom-chunker surface (see examples/02_custom_chunker.py):
     "ChunkStrategy": ".indexing.strategies",
     "Chunk": ".chunkers",

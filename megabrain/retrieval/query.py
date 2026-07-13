@@ -145,7 +145,8 @@ def _score_chunks(st: SearchState, query: str,
     metas, M = st.metas, st.M
     fpaths, F = st.fpaths, st.F
     if not metas:
-        raise RuntimeError("index is empty — run: megabrain index")
+        from ..errors import EmptyIndex
+        raise EmptyIndex.at()
     # PATH-SCOPE: restrict candidates to files under the sub-path BEFORE scoring,
     # so CORE/RELATED/graph-neighbors all stay within it. No filter -> unchanged.
     metas, M = _apply_path_filter(metas, M, path_filter)

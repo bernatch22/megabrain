@@ -43,6 +43,8 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+from ..errors import MissingAPIKey, ProviderError
+
 BASE_URL = os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1").rstrip("/")
 
 # Model defaults — provider/slug ids, overridable by env so any OpenRouter model works.
@@ -105,7 +107,7 @@ def _resolve(name: str, required: bool = True) -> str | None:
         if m:
             return m.group(1)
     if required:
-        raise RuntimeError(f"{name} not set (env or ~/.zshrc)")
+        raise MissingAPIKey.named(name)
     return None
 
 
@@ -176,8 +178,9 @@ def post_json(path: str, body: dict, key: str | None = None, retries: int = 5,
             if e.code in _RETRY_CODES and attempt < retries - 1:
                 time.sleep(2 ** attempt)
                 continue
-            raise RuntimeError(f"openrouter {e.code}: {e.read()[:200]}") from e
-    raise RuntimeError("unreachable")
+            raise ProviderError(f"openrouter {e.code}: {e.read()[:200]}",
+                                status=e.code) from e
+    raise ProviderError("unreachable")
 
 
 def chat_text(model: str, prompt: str, max_tokens: int, temperature: float = 0.0,
