@@ -46,7 +46,7 @@ def _research_questions(root: Path, limit: int) -> list[str]:
         from .. import providers
         tree = "\n".join(f"- {f}: {docline.get(f, '')}" for f in hubs)
         raw = providers.chat_text(
-            providers.rerank_model(),
+            providers.ask_model(),
             "You are exploring an unfamiliar codebase. Based on its central "
             f"files below, write {limit} specific research questions a senior "
             "engineer would ask to understand the system's MAIN WORKFLOWS "

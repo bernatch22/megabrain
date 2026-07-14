@@ -90,7 +90,6 @@ def test_key_sentinel_and_model_defaults(monkeypatch):
     monkeypatch.delenv("MEGABRAIN_ASK_MODEL", raising=False)
     assert providers.find_chat_key(required=True) == "claude"   # no key needed
     assert providers.ask_model() == "haiku"
-    assert providers.rerank_model() == "haiku"
     monkeypatch.setenv("MEGABRAIN_ASK_MODEL", "claude-sonnet-4-5")
     assert providers.ask_model() == "claude-sonnet-4-5"
     monkeypatch.setenv("MEGABRAIN_CHAT_PROVIDER", "openrouter")

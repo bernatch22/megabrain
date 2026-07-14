@@ -1,4 +1,4 @@
-"""Claude chat provider — `ask`/`--best` through the Claude Agent SDK.
+"""Claude chat provider — `ask` through the Claude Agent SDK.
 
 Selected with MEGABRAIN_CHAT_PROVIDER=claude. The SDK drives the Claude Code
 CLI, so it uses whatever credentials Claude Code already has:
@@ -94,7 +94,7 @@ def stream_chat(body: dict, on_delta=None,
                 timeout: float | None = None) -> tuple[str, str]:
     """OpenAI-shaped chat body -> (text, finish_reason), streaming deltas to
     `on_delta` as they arrive. Mirrors the contract of providers.stream_chat
-    so ask/rerank don't care which backend ran. Pure narration: no tools."""
+    so ask doesn't care which backend ran. Pure narration: no tools."""
     sdk = _sdk()
     prompt = "\n\n".join(m.get("content") or "" for m in body.get("messages", [])
                          if m.get("role") == "user")
@@ -147,7 +147,7 @@ def agent_stream(prompt: str, model: str | None, tools: list[dict],
 
 def chat_text(model: str, prompt: str, max_tokens: int,
               timeout: float | None = None) -> str:
-    """Non-streamed helper (rerank votes, ask v2 planner) — same transport,
+    """Non-streamed helper (the ask v2 planner) — same transport,
     buffered; `timeout` bounds the CLI spawn (callers fail open)."""
     text, _ = stream_chat({"model": model,
                            "messages": [{"role": "user", "content": prompt}]},

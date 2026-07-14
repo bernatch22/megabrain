@@ -206,7 +206,7 @@ class _Splicer:
         return len({self.cands[k]["file"] for k in self.cited})
 
 
-def ask(root: Path, question: str, rerank: bool = False,
+def ask(root: Path, question: str,
         docs_only: bool = False, path_filter: str | None = None,
         state: SearchState | None = None, include_docs: bool = False,
         agents: bool | None = False) -> dict:
@@ -220,9 +220,8 @@ def ask(root: Path, question: str, rerank: bool = False,
     the single-agent call, then to the bundle."""
     from .agents import stream_events
     out = stream_events(Path(root), question, lambda ev: None, agents=agents,
-                        rerank=rerank, docs_only=docs_only,
-                        include_docs=include_docs, path_filter=path_filter,
-                        state=state)
+                        docs_only=docs_only, include_docs=include_docs,
+                        path_filter=path_filter, state=state)
     # buffered parity with the old single-agent path: a length-stopped answer
     # is trimmed to the last complete sentence + a truncation note. (Streaming
     # sinks get the same signal as the "length" event instead.)
@@ -293,7 +292,7 @@ def render_ask(out: dict) -> str:
     return "\n".join(L)
 
 
-def stream_ask(root: Path, question: str, out=None, rerank: bool = False,
+def stream_ask(root: Path, question: str, out=None,
                show_map: bool = True, docs_only: bool = False,
                path_filter: str | None = None, include_docs: bool = False,
                agents: bool | None = None) -> None:
@@ -365,6 +364,6 @@ def stream_ask(root: Path, question: str, out=None, rerank: bool = False,
                 write('— full bundle: `megabrain query` · any file: '
                       '`megabrain get <file>`\n')
 
-    stream_events(Path(root), question, sink, agents=agents, rerank=rerank,
+    stream_events(Path(root), question, sink, agents=agents,
                   show_map=show_map, docs_only=docs_only,
                   include_docs=include_docs, path_filter=path_filter)

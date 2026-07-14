@@ -70,24 +70,24 @@
    "chunks": [
     [
      "module",
-     "resolve_scope, rel_join, normalize_agents, _maybe_reindex, query, query_multi, prune, ask, get",
+     "resolve_scope, rel_join, normalize_agents, _maybe_reindex, query, query_multi, prune, ask, get, chunks",
      null,
      1,
-     106,
-     "megabrain > megabrain/app.py > [resolve_scope, rel_join, normalize_agents, _maybe_reindex, query, query_multi, prune, ask, get]",
-     "db6777c28a06fa16bc94e55b92888b9190588c93"
+     114,
+     "megabrain > megabrain/app.py > [resolve_scope, rel_join, normalize_agents, _maybe_reindex, query, query_multi, prune, ask, get, chunks]",
+     "c14c0df452e3b9901861bfbc0e94d5f0374ff3a7"
     ],
     [
      "module",
-     "chunks, index, stats",
+     "index, stats",
      null,
-     107,
-     128,
-     "megabrain > megabrain/app.py > [chunks, index, stats]",
-     "e3d5400d3e71b7a1af7fb3fb2c25890aefd701a9"
+     115,
+     127,
+     "megabrain > megabrain/app.py > [index, stats]",
+     "d1bc94d6f1d031a9dcbd6bb30e26232da1dab3e3"
     ]
    ],
-   "skeleton_sha": "d3a3e2d7ed25b847786d1c8f45f0c8675c5cc889",
+   "skeleton_sha": "8c38f458a2026cca4820ca0ee559c2777e6d162f",
    "symbols": [
     [
      "resolve_scope",
@@ -122,7 +122,7 @@
      "function",
      60,
      65,
-     "def query(root: Path, task: str, path_filter: str | None=None, rerank: bool=False, reindex: bool=True) -> dict"
+     "def query(root: Path, task: str, path_filter: str | None=None, reindex: bool=True) -> dict"
     ],
     [
      "query_multi",
@@ -142,35 +142,35 @@
      "ask",
      "function",
      89,
-     98,
-     "def ask(root: Path, question: str, path_filter: str | None=None, docs_only: bool=False, include_docs: bool=False, agents: Any=None, rerank: bool=False, reindex: bool=True) -> dict"
+     97,
+     "def ask(root: Path, question: str, path_filter: str | None=None, docs_only: bool=False, include_docs: bool=False, agents: Any=None, reindex: bool=True) -> dict"
     ],
     [
      "get",
      "function",
-     101,
-     106,
+     100,
+     105,
      "def get(root: Path, sub: str | None, file: str, symbol: str | None=None) -> str"
     ],
     [
      "chunks",
      "function",
-     109,
-     115,
+     108,
+     114,
      "def chunks(root: Path, sub: str | None, file: str, query_str: str, path_filter: str | None=None, reindex: bool=True) -> dict"
     ],
     [
      "index",
      "function",
-     118,
-     121,
+     117,
+     120,
      "def index(root: Path, force: bool=False, exclude=()) -> dict"
     ],
     [
      "stats",
      "function",
-     124,
-     128,
+     123,
+     127,
      "def stats(root: Path) -> dict"
     ]
    ]
@@ -207,7 +207,7 @@
      1,
      115,
      "megabrain > megabrain/ask/agents.py > [_top_dir, classify_bundle, repo_map, _chunk_lines]",
-     "11886141bf670ce3ddc503616195a08020711fea"
+     "b10a0285e76b6b312b9c37123267612b5cd691a9"
     ],
     [
      "module",
@@ -216,7 +216,7 @@
      116,
      239,
      "megabrain > megabrain/ask/agents.py > [_plan_llm, _plan_cluster, _plan, _tools]",
-     "0607f75a489f585cee8d585b7a469f9170d65148"
+     "9cf18eeb937e7c7240a82e9d5fa80741a9957c33"
     ],
     [
      "module",
@@ -234,7 +234,7 @@
      347,
      458,
      "megabrain > megabrain/ask/agents.py > [_synth_body, run_agents]",
-     "d5ca1f099a6c3d6207f678a62624e3ef42e1895b"
+     "e0a1f8b085d1c5ad2649ec467a9e96285f5ec3e9"
     ],
     [
      "block",
@@ -242,8 +242,8 @@
      "1/2",
      459,
      565,
-     "megabrain > megabrain/ask/agents.py > def stream_events(root, question: str, on_event, *, agents: bool | None=None, rerank: bool=False, show_map: bool=True, docs_only: bool=False, include_docs: bool=False, path_filter: str | None=None, state=None) -> dict",
-     "a97432054a8f9bc1cc33a550bfcb84eacd6efb67"
+     "megabrain > megabrain/ask/agents.py > def stream_events(root, question: str, on_event, *, agents: bool | None=None, show_map: bool=True, docs_only: bool=False, include_docs: bool=False, path_filter: str | None=None, state=None) -> dict",
+     "24350c5f2e50a8908f4e7b76463abfc7f943f5e3"
     ],
     [
      "block",
@@ -251,11 +251,11 @@
      "2/2",
      566,
      577,
-     "megabrain > megabrain/ask/agents.py > def stream_events(root, question: str, on_event, *, agents: bool | None=None, rerank: bool=False, show_map: bool=True, docs_only: bool=False, include_docs: bool=False, path_filter: str | None=None, state=None) -> dict",
+     "megabrain > megabrain/ask/agents.py > def stream_events(root, question: str, on_event, *, agents: bool | None=None, show_map: bool=True, docs_only: bool=False, include_docs: bool=False, path_filter: str | None=None, state=None) -> dict",
      "5a741f82421f0497ac76c212f02bbd51ffc3663d"
     ]
    ],
-   "skeleton_sha": "dfbaa70ae5555072c8deb4d6e3fe6bf4b910f629",
+   "skeleton_sha": "ca4fda87d33d1b0fdaae7928ff5cbf22e56c59cb",
    "symbols": [
     [
      "log",
@@ -430,7 +430,7 @@
      "function",
      463,
      577,
-     "def stream_events(root, question: str, on_event, *, agents: bool | None=None, rerank: bool=False, show_map: bool=True, docs_only: bool=False, include_docs: bool=False, path_filter: str | None=None, state=None) -> dict"
+     "def stream_events(root, question: str, on_event, *, agents: bool | None=None, show_map: bool=True, docs_only: bool=False, include_docs: bool=False, path_filter: str | None=None, state=None) -> dict"
     ]
    ]
   },
@@ -459,21 +459,21 @@
      "_Splicer, ask, cited_files, _splice",
      null,
      166,
-     267,
+     266,
      "megabrain > megabrain/ask/narrator.py > [_Splicer, ask, cited_files, _splice]",
-     "4ab8a80e1b18055b2c3f6768c136d985360e4ac7"
+     "7261f3fa6caac8ff585d0248fa9ee430eeaa2ba1"
     ],
     [
      "module",
      "render_ask, stream_ask",
      null,
-     268,
-     370,
+     267,
+     369,
      "megabrain > megabrain/ask/narrator.py > [render_ask, stream_ask]",
-     "028d2a3fcab98415aa8105dcdf8b9602a57e6419"
+     "bab92b9af51dbc5970fc72e6607b9f2f9ab30088"
     ]
    ],
-   "skeleton_sha": "42410aa5e2df9bd02bc835afd718cee30095b706",
+   "skeleton_sha": "99d6a399e6b878a33418557d86e3ea9ef737ac9e",
    "symbols": [
     [
      "DOC_EXTS",
@@ -591,36 +591,36 @@
      "ask",
      "function",
      209,
-     234,
-     "def ask(root: Path, question: str, rerank: bool=False, docs_only: bool=False, path_filter: str | None=None, state: SearchState | None=None, include_docs: bool=False, agents: bool | None=False) -> dict"
+     233,
+     "def ask(root: Path, question: str, docs_only: bool=False, path_filter: str | None=None, state: SearchState | None=None, include_docs: bool=False, agents: bool | None=False) -> dict"
     ],
     [
      "cited_files",
      "function",
-     237,
-     247,
+     236,
+     246,
      "def cited_files(out: dict) -> list[str]"
     ],
     [
      "_splice",
      "function",
-     250,
-     267,
+     249,
+     266,
      "def _splice(out: dict) -> tuple[str, set, set]"
     ],
     [
      "render_ask",
      "function",
-     270,
-     293,
+     269,
+     292,
      "def render_ask(out: dict) -> str"
     ],
     [
      "stream_ask",
      "function",
-     296,
-     370,
-     "def stream_ask(root: Path, question: str, out=None, rerank: bool=False, show_map: bool=True, docs_only: bool=False, path_filter: str | None=None, include_docs: bool=False, agents: bool | None=None) -> None"
+     295,
+     369,
+     "def stream_ask(root: Path, question: str, out=None, show_map: bool=True, docs_only: bool=False, path_filter: str | None=None, include_docs: bool=False, agents: bool | None=None) -> None"
     ]
    ]
   },
@@ -633,7 +633,7 @@
      1,
      92,
      "megabrain > megabrain/ask/warmup.py > [_research_questions, warm_flows]",
-     "5111057d43afeb62c8ab8deb566f5d5206b974ae"
+     "a353dd5508983d019b26d7cbaa5840402f06953c"
     ],
     [
      "function",
@@ -3116,28 +3116,28 @@
    "chunks": [
     [
      "module",
-     "chat_provider, ask_model, rerank_model, _resolve, find_key",
+     "chat_provider, ask_model, _resolve, find_key",
      null,
      1,
      104,
-     "megabrain > megabrain/providers/__init__.py > [chat_provider, ask_model, rerank_model, _resolve, find_key]",
-     "dc9bdf7dbcc344e424e3e24caeded11aedacb925"
+     "megabrain > megabrain/providers/__init__.py > [chat_provider, ask_model, _resolve, find_key]",
+     "510df2ec2590132135822279209ca5a623c5e9ec"
     ],
     [
      "module",
      "_is_local, _key_for, find_embed_key, find_chat_key, _headers, post_json, chat_text, stream_chat",
      null,
      105,
-     192,
+     186,
      "megabrain > megabrain/providers/__init__.py > [_is_local, _key_for, find_embed_key, find_chat_key, _headers, post_json, chat_text, stream_chat]",
-     "c24379b52c6f054932070944416d17c78f0ca06e"
+     "1244f9bc7ce8284b113eebc56fad672f76b213b3"
     ],
     [
      "module",
      "_or_stream_chat, OpenRouterProvider",
      null,
-     193,
-     303,
+     187,
+     297,
      "megabrain > megabrain/providers/__init__.py > [_or_stream_chat, OpenRouterProvider]",
      "708cee4511a3c61edcf2bdcb80b711bd260766ce"
     ],
@@ -3145,278 +3145,264 @@
      "module",
      "ClaudeProvider, resolve",
      null,
-     304,
-     355,
+     298,
+     349,
      "megabrain > megabrain/providers/__init__.py > [ClaudeProvider, resolve]",
      "2f0b8268a0b4f5908dcc14a36f3383786b1cf7cf"
     ]
    ],
-   "skeleton_sha": "7afa454c1da095b23c277ec613bad8d577646ce9",
+   "skeleton_sha": "faba603e8aef80d445bd36894502d3143d630abe",
    "symbols": [
     [
      "BASE_URL",
      "constant",
-     48,
-     48,
+     47,
+     47,
      "BASE_URL = os.environ.get('OPENROUTER_BASE_URL', 'https://openrouter.ai/api/v1').rstrip('/')"
     ],
     [
      "EMBED_MODEL",
      "constant",
-     55,
-     55,
+     54,
+     54,
      "EMBED_MODEL = os.environ.get('MEGABRAIN_EMBED_MODEL', 'perplexity/pplx-embed-v1-0.6b')"
     ],
     [
      "ASK_MODEL",
      "constant",
-     56,
-     56,
+     55,
+     55,
      "ASK_MODEL = os.environ.get('MEGABRAIN_ASK_MODEL', 'qwen/qwen3-coder')"
-    ],
-    [
-     "RERANK_MODEL",
-     "constant",
-     57,
-     57,
-     "RERANK_MODEL = os.environ.get('MEGABRAIN_RERANK_MODEL', 'qwen/qwen3-coder')"
     ],
     [
      "chat_provider",
      "function",
-     60,
-     63,
+     58,
+     61,
      "def chat_provider() -> str"
     ],
     [
      "ask_model",
      "function",
-     66,
-     74,
+     64,
+     72,
      "def ask_model() -> str"
-    ],
-    [
-     "rerank_model",
-     "function",
-     77,
-     79,
-     "def rerank_model() -> str"
     ],
     [
      "_REFERER",
      "constant",
-     82,
-     82,
+     76,
+     76,
      "_REFERER = os.environ.get('OPENROUTER_HTTP_REFERER', 'https://github.com/bernatch22/megabrain')"
     ],
     [
      "_TITLE",
      "constant",
-     83,
-     83,
+     77,
+     77,
      "_TITLE = os.environ.get('OPENROUTER_APP_TITLE', 'megabrain')"
     ],
     [
      "_RETRY_CODES",
      "constant",
-     85,
-     85,
+     79,
+     79,
      "_RETRY_CODES = (429, 500, 502, 503, 529)"
     ],
     [
      "_resolve",
      "function",
-     88,
-     100,
+     82,
+     94,
      "def _resolve(name: str, required: bool=True) -> str | None"
     ],
     [
      "find_key",
      "function",
-     103,
-     104,
+     97,
+     98,
      "def find_key(required: bool=True) -> str | None"
     ],
     [
      "EMBED_BASE_URL",
      "constant",
-     110,
-     110,
+     104,
+     104,
      "EMBED_BASE_URL = os.environ.get('MEGABRAIN_EMBED_BASE_URL', BASE_URL).rstrip('/')"
     ],
     [
      "CHAT_BASE_URL",
      "constant",
-     111,
-     111,
+     105,
+     105,
      "CHAT_BASE_URL = os.environ.get('MEGABRAIN_CHAT_BASE_URL', BASE_URL).rstrip('/')"
     ],
     [
      "_is_local",
      "function",
-     114,
-     117,
+     108,
+     111,
      "def _is_local(url: str) -> bool"
     ],
     [
      "_key_for",
      "function",
-     120,
-     127,
+     114,
+     121,
      "def _key_for(base_url: str, explicit: str | None, required: bool) -> str | None"
     ],
     [
      "find_embed_key",
      "function",
-     130,
-     133,
+     124,
+     127,
      "def find_embed_key(required: bool=True) -> str | None"
     ],
     [
      "find_chat_key",
      "function",
+     130,
      136,
-     142,
      "def find_chat_key(required: bool=True) -> str | None"
     ],
     [
      "_headers",
      "function",
-     145,
-     150,
+     139,
+     144,
      "def _headers(key: str, base_url: str=BASE_URL) -> dict"
     ],
     [
      "post_json",
      "function",
-     153,
-     172,
+     147,
+     166,
      "def post_json(path: str, body: dict, key: str | None=None, retries: int=5, timeout: int=120, base_url: str | None=None) -> dict"
     ],
     [
      "chat_text",
      "function",
+     169,
      175,
-     181,
      "def chat_text(model: str, prompt: str, max_tokens: int, temperature: float=0.0, key: str | None=None, retries: int=5, timeout: int=45) -> str"
     ],
     [
      "stream_chat",
      "function",
-     184,
-     192,
+     178,
+     186,
      "def stream_chat(body: dict, key: str | None=None, retries: int=4, on_delta=None, timeout: int=90, with_tools: bool=False)"
     ],
     [
      "_or_stream_chat",
      "function",
-     195,
-     270,
+     189,
+     264,
      "def _or_stream_chat(body: dict, key: str | None=None, retries: int=4, on_delta=None, timeout: int=90, with_tools: bool=False)"
     ],
     [
      "OpenRouterProvider",
      "class",
-     280,
-     303,
+     274,
+     297,
      "class OpenRouterProvider"
     ],
     [
      "OpenRouterProvider.name",
      "class_attr",
-     284,
-     284,
+     278,
+     278,
      "name = 'openrouter'"
     ],
     [
      "OpenRouterProvider.agent_stream",
      "class_attr",
-     285,
-     285,
+     279,
+     279,
      "agent_stream = None"
     ],
     [
      "OpenRouterProvider.available",
      "method",
-     287,
-     288,
+     281,
+     282,
      "def available(self) -> bool"
     ],
     [
      "OpenRouterProvider.chat_text",
      "method",
-     290,
-     298,
+     284,
+     292,
      "def chat_text(self, model: str, prompt: str, max_tokens: int, temperature: float=0.0, key: str | None=None, retries: int=5, timeout: int=45) -> str"
     ],
     [
      "OpenRouterProvider.stream_chat",
      "method",
-     300,
-     303,
+     294,
+     297,
      "def stream_chat(self, body: dict, key: str | None=None, retries: int=4, on_delta=None, timeout: int=90, with_tools: bool=False)"
     ],
     [
      "ClaudeProvider",
      "class",
-     306,
-     333,
+     300,
+     327,
      "class ClaudeProvider"
     ],
     [
      "ClaudeProvider.name",
      "class_attr",
-     311,
-     311,
+     305,
+     305,
      "name = 'claude'"
     ],
     [
      "ClaudeProvider.available",
      "method",
-     313,
-     315,
+     307,
+     309,
      "def available(self) -> bool"
     ],
     [
      "ClaudeProvider.chat_text",
      "method",
-     317,
-     321,
+     311,
+     315,
      "def chat_text(self, model: str, prompt: str, max_tokens: int, temperature: float=0.0, key: str | None=None, retries: int=5, timeout: int=45) -> str"
     ],
     [
      "ClaudeProvider.stream_chat",
      "method",
-     323,
-     328,
+     317,
+     322,
      "def stream_chat(self, body: dict, key: str | None=None, retries: int=4, on_delta=None, timeout: int=90, with_tools: bool=False)"
     ],
     [
      "ClaudeProvider.agent_stream",
      "method",
-     330,
-     333,
+     324,
+     327,
      "def agent_stream(self)"
     ],
     [
      "_REGISTRY",
      "constant",
-     336,
-     337,
+     330,
+     331,
      "_REGISTRY: dict[str, object] = {'openrouter': OpenRouterProvider(), 'claude': ClaudeProvider()}"
     ],
     [
      "_PRIORITY",
      "constant",
-     338,
-     338,
+     332,
+     332,
      "_PRIORITY = ('claude', 'openrouter')"
     ],
     [
      "resolve",
      "function",
-     341,
-     355,
+     335,
+     349,
      "def resolve()"
     ]
    ]
@@ -3488,7 +3474,7 @@
      1,
      116,
      "megabrain > megabrain/providers/claude.py > [_sdk, _consume, stream_chat]",
-     "78cfb696cad615a9782de6bf787ab6d2ab01add9"
+     "4ae63fb92061e3055c6a5161c9e9ae544d92f3f5"
     ],
     [
      "module",
@@ -3497,10 +3483,10 @@
      117,
      155,
      "megabrain > megabrain/providers/claude.py > [agent_stream, chat_text]",
-     "2ec732bc32db43ea871841d616912faf6ca8cacd"
+     "da4531ebc43c474e106a13132a4ad26d467a3662"
     ]
    ],
-   "skeleton_sha": "e65c01b44a02f3d9f1175772d4c39a284a723b57",
+   "skeleton_sha": "5bdd664dd3f69d1fb8f5cb2ac7c7943145c84f65",
    "symbols": [
     [
      "_BUILTIN_TOOLS",
@@ -3611,9 +3597,9 @@
      null,
      null,
      1,
-     13,
+     14,
      "megabrain > megabrain/retrieval/__init__.py (module level)",
-     "f701c8bb45743db1d9edd198e2bfffc854a555df"
+     "72ec4014c35e3dfe79a71d02454c5568f4170429"
     ]
    ],
    "skeleton_sha": "30715f2d01dadfc4ae06f0b1f1c00ccf938e6539",
@@ -3666,43 +3652,34 @@
   "megabrain/retrieval/bundle.py": {
    "chunks": [
     [
-     "module",
-     null,
+     "function",
+     "search_with_state",
      null,
      1,
-     27,
-     "megabrain > megabrain/retrieval/bundle.py (module level)",
-     "36c8a5f40fdc5b2670252e69fd5e82862855cd81"
+     118,
+     "megabrain > megabrain/retrieval/bundle.py > def search_with_state(st: SearchState, query: str, path_filter: str | None=None, scored: tuple[list, np.ndarray] | None=None) -> dict",
+     "027b08b41d0069303b43e84d640d1783e21672db"
     ],
     [
      "module",
-     "search_with_state, search",
+     "search, selection, chunks_for_file, chunks_for_file_root",
      null,
-     28,
-     139,
-     "megabrain > megabrain/retrieval/bundle.py > [search_with_state, search]",
-     "149db69a261c3f75ec403b24298db633afb1a9f4"
+     119,
+     187,
+     "megabrain > megabrain/retrieval/bundle.py > [search, selection, chunks_for_file, chunks_for_file_root]",
+     "8691e70e810e95338a980542c7dc1b92d9669e2e"
     ],
     [
      "module",
-     "selection, chunks_for_file, chunks_for_file_root, prune_search, prune_search_root",
+     "prune_search, prune_search_root, search_multi",
      null,
-     140,
-     253,
-     "megabrain > megabrain/retrieval/bundle.py > [selection, chunks_for_file, chunks_for_file_root, prune_search, prune_search_root]",
-     "0c57b0bad63bf90f7eb122da46507e84aed96868"
-    ],
-    [
-     "function",
-     "search_multi",
-     null,
-     254,
-     287,
-     "megabrain > megabrain/retrieval/bundle.py > def search_multi(roots: list[Path], query: str, path_filters: list[str | None] | None=None) -> dict",
-     "c240ab6b026bb1e67080d4b955bc3bb38fe3d688"
+     188,
+     274,
+     "megabrain > megabrain/retrieval/bundle.py > [prune_search, prune_search_root, search_multi]",
+     "3f33f32322847a98113b5ce8e3733ba2a6bd61b2"
     ]
    ],
-   "skeleton_sha": "e9fa700e021a160a3d6a6984de4f46f5c3766a92",
+   "skeleton_sha": "69b227e1d1a48b830b098cfcb03ce4a6ca0522a1",
    "symbols": [
     [
      "OUTLINE_KINDS",
@@ -3715,56 +3692,56 @@
      "search_with_state",
      "function",
      30,
-     130,
-     "def search_with_state(st: SearchState, query: str, rerank: bool=False, path_filter: str | None=None, scored: tuple[list, np.ndarray] | None=None) -> dict"
+     118,
+     "def search_with_state(st: SearchState, query: str, path_filter: str | None=None, scored: tuple[list, np.ndarray] | None=None) -> dict"
     ],
     [
      "search",
      "function",
-     133,
-     139,
-     "def search(root: Path, query: str, rerank: bool=False, path_filter: str | None=None) -> dict"
+     121,
+     126,
+     "def search(root: Path, query: str, path_filter: str | None=None) -> dict"
     ],
     [
      "selection",
      "function",
-     142,
-     160,
+     129,
+     147,
      "def selection(res: dict) -> list[tuple[dict, float]]"
     ],
     [
      "chunks_for_file",
      "function",
-     163,
-     193,
+     150,
+     180,
      "def chunks_for_file(st: SearchState, relpath: str, query: str, path_filter: str | None=None) -> dict"
     ],
     [
      "chunks_for_file_root",
      "function",
-     196,
-     200,
+     183,
+     187,
      "def chunks_for_file_root(root: Path, relpath: str, query: str, path_filter: str | None=None) -> dict"
     ],
     [
      "prune_search",
      "function",
-     203,
-     246,
+     190,
+     233,
      "def prune_search(st: SearchState, query: str, path_filter: str | None=None, with_text: bool=True, include_pruned: bool=False) -> dict"
     ],
     [
      "prune_search_root",
      "function",
-     249,
-     253,
+     236,
+     240,
      "def prune_search_root(root: Path, query: str, path_filter: str | None=None, with_text: bool=True, include_pruned: bool=False) -> dict"
     ],
     [
      "search_multi",
      "function",
-     256,
-     287,
+     243,
+     274,
      "def search_multi(roots: list[Path], query: str, path_filters: list[str | None] | None=None) -> dict"
     ]
    ]
@@ -3987,9 +3964,9 @@
      "RetrievalParams",
      null,
      1,
-     50,
+     49,
      "megabrain > megabrain/retrieval/params.py > class RetrievalParams",
-     "321d99949f71608093230324f7f648e24a5a0064"
+     "4b60fdd122f0b54edb731386168e0b191cea2893"
     ]
    ],
    "skeleton_sha": "742aaa0a661a105322631f3a736a05ca5be01814",
@@ -3998,7 +3975,7 @@
      "RetrievalParams",
      "class",
      20,
-     47,
+     46,
      "class RetrievalParams"
     ],
     [
@@ -4107,24 +4084,17 @@
      "tier1_chunk_cap: int = 12"
     ],
     [
-     "RetrievalParams.rerank_deep_pool",
-     "class_attr",
-     46,
-     46,
-     "rerank_deep_pool: int = 24"
-    ],
-    [
      "RetrievalParams.multi_tier1_extra",
      "class_attr",
-     47,
-     47,
+     46,
+     46,
      "multi_tier1_extra: int = 2"
     ],
     [
      "DEFAULT_PARAMS",
      "constant",
-     50,
-     50,
+     49,
+     49,
      "DEFAULT_PARAMS = RetrievalParams()"
     ]
    ]
@@ -4179,36 +4149,6 @@
      102,
      118,
      "def render_pruned(res: dict, with_text: bool=True) -> str"
-    ]
-   ]
-  },
-  "megabrain/retrieval/rerank.py": {
-   "chunks": [
-    [
-     "module",
-     "_one_vote, llm_order",
-     null,
-     1,
-     78,
-     "megabrain > megabrain/retrieval/rerank.py > [_one_vote, llm_order]",
-     "05d91ec599c449176b281d8700eb1ffa3f06f5f4"
-    ]
-   ],
-   "skeleton_sha": "49265c6187ba38fbfee09678786a9cd943d0ca5b",
-   "symbols": [
-    [
-     "_one_vote",
-     "function",
-     18,
-     44,
-     "def _one_vote(key: str, query: str, lines: list[str], n: int) -> list[int] | None"
-    ],
-    [
-     "llm_order",
-     "function",
-     47,
-     78,
-     "def llm_order(query: str, candidates: list[dict], votes: int=3) -> list[int]"
     ]
    ]
   },
@@ -4734,43 +4674,43 @@
      "main",
      "1/2",
      23,
-     120,
+     119,
      "megabrain > megabrain/server/cli.py > def main(argv=None)",
-     "7e590189fb9a0b9b7cf05d9086e7df5ba97826ac"
+     "71a19cac32625a662936609b272d237aafe182df"
     ],
     [
      "block",
      "main",
      "2/2",
-     121,
-     153,
+     120,
+     151,
      "megabrain > megabrain/server/cli.py > def main(argv=None)",
-     "018172f3ad588108986064ae913e095cc20c3768"
+     "11447837b4250adde082fc2ff535b7f156dbf5eb"
     ],
     [
      "block",
      "_dispatch",
      "1/2",
-     154,
-     286,
+     152,
+     285,
      "megabrain > megabrain/server/cli.py > def _dispatch(a, raw: list[Path], root: Path) -> None",
-     "5844ea830d58d4b77bc830a6c33fc4ba69829c44"
+     "4cea337065d1aed0d836ef11b7a6bee5e13ba68d"
     ],
     [
      "block",
      "_dispatch",
      "2/2",
-     287,
-     292,
+     286,
+     290,
      "megabrain > megabrain/server/cli.py > def _dispatch(a, raw: list[Path], root: Path) -> None",
-     "f9b5858ba21e2432c8ffd536f47e6f62e3835082"
+     "6226033a4ba0a7e51381affb281a025e4cb039a4"
     ],
     [
      "module",
      null,
      null,
-     293,
-     296,
+     291,
+     294,
      "megabrain > megabrain/server/cli.py (module level)",
      "494c28ef72c62a5924f4316a400d4193725ae15a"
     ]
@@ -4781,14 +4721,14 @@
      "main",
      "function",
      25,
-     153,
+     151,
      "def main(argv=None)"
     ],
     [
      "_dispatch",
      "function",
-     156,
-     292,
+     154,
+     290,
      "def _dispatch(a, raw: list[Path], root: Path) -> None"
     ]
    ]

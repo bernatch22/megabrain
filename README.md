@@ -91,7 +91,6 @@ Pin the provider and models with env vars (any OpenRouter slug):
 ```bash
 export MEGABRAIN_CHAT_PROVIDER=openrouter                          # pin openrouter (skip claude auto-pick)
 export MEGABRAIN_ASK_MODEL=google/gemini-3.1-flash-lite-preview    # the `ask` narration model
-export MEGABRAIN_RERANK_MODEL=google/gemini-3.1-flash-lite-preview # ask fan-out PLANNER + `--best` reorder
 export MEGABRAIN_EMBED_MODEL=perplexity/pplx-embed-v1-0.6b         # the embedding model
 ```
 
@@ -148,7 +147,7 @@ strategy and have the engine *measure* it before it installs:
 ```bash
 megabrain forge ~/repo --specialize          # census: covered files the built-in chunks poorly
 # write a ChunkStrategy into .megabrain/strategies/<ext>.py, then gate it:
-python -c "from megabrain.forge_specialize import gate_strategy; \
+python -c "from megabrain.forge.specialize import gate_strategy; \
            print(gate_strategy('~/repo', open('strat.py').read(), '.py'))"
 ```
 

@@ -5,20 +5,19 @@ Both embeddings and chat go through OpenRouter's OpenAI-compatible API
 (https://openrouter.ai/api/v1), so the whole engine is provider-agnostic:
 any OpenRouter model works, selected purely by env. The defaults reproduce
 the validated stack (pplx-embed-v1-0.6b embeddings — same 1024-dim int8
-vectors as before) with qwen3-coder narrating `ask`/`--best` (a code bakeoff
+vectors as before) with qwen3-coder narrating `ask` (a code bakeoff
 found it on par with claude-haiku-4.5 at ~5x lower cost — see evals/ASK_MODELS.md).
 
 Env surface (all optional except an embedding credential):
     OPENROUTER_API_KEY      Bearer key for OpenRouter (chat + embeddings)
     OPENROUTER_BASE_URL     default https://openrouter.ai/api/v1
-    MEGABRAIN_CHAT_PROVIDER 'claude' | 'openrouter' — route ask/--best. Default
+    MEGABRAIN_CHAT_PROVIDER 'claude' | 'openrouter' — route ask. Default
                             AUTO: claude when its SDK is importable, else
                             openrouter. Claude uses Claude Code subscription
                             credits or ANTHROPIC_API_KEY (providers_claude.py).
                             Embeddings ALWAYS use OpenRouter/local, never this.
     MEGABRAIN_EMBED_MODEL   default perplexity/pplx-embed-v1-0.6b
     MEGABRAIN_ASK_MODEL     default qwen/qwen3-coder ('haiku' on claude)
-    MEGABRAIN_RERANK_MODEL  default qwen/qwen3-coder ('haiku' on claude)
     OPENROUTER_HTTP_REFERER / OPENROUTER_APP_TITLE  optional attribution headers
 
 Local / hybrid stacks — point embeddings and/or chat at ANY OpenAI-compatible
@@ -54,7 +53,6 @@ BASE_URL = os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
 # claude-haiku-4.5 for the last bit of secondary-citation completeness.
 EMBED_MODEL = os.environ.get("MEGABRAIN_EMBED_MODEL", "perplexity/pplx-embed-v1-0.6b")
 ASK_MODEL = os.environ.get("MEGABRAIN_ASK_MODEL", "qwen/qwen3-coder")
-RERANK_MODEL = os.environ.get("MEGABRAIN_RERANK_MODEL", "qwen/qwen3-coder")
 
 
 def chat_provider() -> str:
@@ -73,10 +71,6 @@ def ask_model() -> str:
     return os.environ.get("MEGABRAIN_ASK_MODEL") or \
         ("haiku" if chat_provider() == "claude" else "google/gemini-3-flash-preview")
 
-
-def rerank_model() -> str:
-    return os.environ.get("MEGABRAIN_RERANK_MODEL") or \
-        ("haiku" if chat_provider() == "claude" else "qwen/qwen3-coder")
 
 # Optional OpenRouter attribution (leaderboard only — not required to function).
 _REFERER = os.environ.get("OPENROUTER_HTTP_REFERER", "https://github.com/bernatch22/megabrain")
@@ -134,7 +128,7 @@ def find_embed_key(required: bool = True) -> str | None:
 
 
 def find_chat_key(required: bool = True) -> str | None:
-    """Key for the chat (ask/rerank) endpoint — same resolution as embeddings.
+    """Key for the chat (ask) endpoint — same resolution as embeddings.
     On the claude provider there may be no key at all (subscription auth lives
     inside the Claude Code CLI), so a sentinel keeps ask's `if key` gate open."""
     if chat_provider() == "claude":

@@ -9,5 +9,6 @@ Layered by responsibility — import the concrete module you need:
     files    get_code — the file-serving containment boundary
     issue    deterministic issue/traceback parsing (no LLM)
     bm25     the sparse entity-ID lane (issue mode only)
-    rerank   optional permute-only LLM reorder (--best)
+
+No LLM anywhere in this package (rule #1) — retrieval is embedding-only.
 """

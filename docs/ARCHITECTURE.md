@@ -9,7 +9,7 @@ model bakeoffs — see §7). The five hard rules:
 
 1. **No LLM in the retrieval path** — LLM pruning was tested four ways and every
    variant cost completeness or added 1–2 s for no recall gain. The only LLM calls
-   are `ask` (post-retrieval narrator) and `--best` (optional reorder) — both fail-open.
+   is `ask` (the post-retrieval narrator) — fail-open.
 2. **Completeness beats ordering** — the bundle is tuned so golden `bundle_full`
    recall is **1.00**. A change that lowers it is not merged. Noise is handled by
    *render structure* (§4.3), never by dropping files.
@@ -244,10 +244,6 @@ bodies. The bundle **data** always carries `best_chunk` — ask, serve-api and t
 webui consume it unchanged. Expansion is multi-turn: `megabrain get <file>
 [--symbol N]`.
 
-Optional `--best`: listwise LLM reorder (`rerank.llm_order` — 3 parallel votes,
-mean-rank merge, a file can rise freely but fall ≤1 place). Permute-only, so recall
-is untouched by construction. Off by default.
-
 **Noise pruning (`prune_search`, opt-in, no LLM).** The bundle already marks which
 chunks are *signal* — a tier-1 chunk that survives the `CHUNK_KEEP_RATIO` cut, or a
 related file's best chunk. `prune_search` (CLI `query --prune`, MCP
@@ -318,8 +314,8 @@ The LLM is a narrator that can only **point**, never paste:
 
 Chat routing (`providers.chat_provider()`) is **auto**: `claude` when
 `claude_agent_sdk` is importable, else `openrouter`; pin with
-`MEGABRAIN_CHAT_PROVIDER`. Models per provider via `MEGABRAIN_ASK_MODEL` /
-`MEGABRAIN_RERANK_MODEL` (defaults: `haiku` on claude, `qwen/qwen3-coder` on
+`MEGABRAIN_CHAT_PROVIDER`. The narrator model per provider via `MEGABRAIN_ASK_MODEL` (defaults: `haiku` on
+claude, `qwen/qwen3-coder` on
 OpenRouter — a bakeoff found qwen on par with Haiku on citation selection at ~5×
 lower cost, since retrieval already guarantees completeness).
 
@@ -352,10 +348,10 @@ The fan-out (`run_agents`, gated to ≤4 sub-agents, ≤3 tool rounds each):
 
 1. **Repo map** — every indexed path + its skeleton docline (from the file matrix
    already in `SearchState`), budget-capped; goes in EVERY agent's prompt.
-2. **Plan** — one cheap LLM call (`rerank_model`) splits the question into scoped
+2. **Plan** — one cheap LLM call (the ask model) splits the question into scoped
    sub-queries and assigns each agent a slice of the shared candidate list
    (fail-open → deterministic top-level-dir clustering → single-agent ask).
-3. **Parallel sub-agents** (ThreadPool, the `rerank.llm_order` pattern) — each
+3. **Parallel sub-agents** (a ThreadPool over the slices) — each
    knows it is "sub-agent k of n" whose answer will be synthesized, sees the repo
    map + its chunks with **GLOBAL `[[k]]` numbering**, and may call retrieval
    **tools** (`search_more` / `get_file` / `get_symbol` — the backends are
@@ -442,7 +438,6 @@ src/megabrain/
     docsearch.py       docs-site search projection
     issue.py           deterministic issue parsing (py + js/ts frames, variants)
     bm25.py            sparse entity-ID lane (postings)
-    rerank.py          optional listwise LLM reorder (permute-only, --best)
   ask/               NARRATE (the only layer that talks to an LLM at query time)
     narrator.py        walkthrough with verbatim splice (code/docs/code+docs modes)
     agents.py          ask v2: classifier · planner · parallel tool-enabled

@@ -3,7 +3,7 @@
 When a question is BROAD (flat tier1, candidates spread across subsystems,
 many near-parity RELATED files), one narrator dilutes: it must cover several
 subsystems in a single pass. ask v2 fans out: a planner (one cheap LLM call,
-rerank_model) splits the bundle into <=MAX_AGENTS scoped slices, parallel
+the ask model) splits the bundle into <=MAX_AGENTS scoped slices, parallel
 sub-agents each explain their slice — with retrieval TOOLS they may call on
 demand (search_more / get_file / get_symbol; the tools themselves stay
 no-LLM) — and a synthesizer merges the partials into ONE walkthrough.
@@ -119,8 +119,8 @@ def _chunk_lines(cands: list[dict]) -> list[str]:
 
 def _plan_llm(question: str, cands: list[dict], rmap: str,
               max_agents: int) -> list[dict] | None:
-    """One cheap LLM call (rerank_model) -> [{label, sub_query, chunks}].
-    JSON-parse fail-open like rerank._one_vote: any problem -> None."""
+    """One cheap LLM call (the ask model) -> [{label, sub_query, chunks}].
+    JSON-parse fail-open: any problem -> None."""
     idx = "\n".join(_chunk_lines(cands))
     prompt = f"""Split this developer question into focused sub-questions for a team of parallel code-explainer agents, and assign each agent the retrieved chunks it needs.
 
@@ -135,7 +135,7 @@ RETRIEVED CHUNKS (number · file · lines · symbol):
 Reply ONLY JSON: {{"agents": [{{"label": "short-kebab-name", "sub_query": "...", "chunks": [0, 2]}}]}}
 Rules: 2-{max_agents} agents, grouped by subsystem/theme; every agent gets >=1 chunk; assign each chunk to AT MOST one agent (drop only chunks irrelevant to the question); sub_query is a scoped version of the question, answerable from that agent's chunks alone."""
     try:
-        text = providers.chat_text(providers.rerank_model(), prompt,
+        text = providers.chat_text(providers.ask_model(), prompt,
                                    max_tokens=600, timeout=PLAN_TIMEOUT)
         m = re.search(r"\{.*\}", text, re.S)
         if not m:
@@ -378,7 +378,7 @@ def run_agents(root, question: str, *, res: dict, cands: list[dict], st,
                key: str | None, emit=None, splicer=None,
                max_agents: int = MAX_AGENTS) -> dict:
     """Fan out over an ALREADY-RETRIEVED bundle: plan -> parallel sub-agents
-    (rerank.llm_order's ThreadPool pattern) -> streamed synthesis. Returns
+    (a ThreadPool over the sub-agents) -> streamed synthesis. Returns
     {"text": raw citation text, "agents": trace, "truncated": bool}; raises
     when no plan is possible or every sub-agent fails (caller fail-opens to
     single-agent ask). `splicer` (ask._Splicer) makes synthesis_delta events
@@ -387,7 +387,7 @@ def run_agents(root, question: str, *, res: dict, cands: list[dict], st,
     emit = emit or (lambda ev: None)
     t0 = time.time()
     rmap = repo_map(st)
-    emit({"type": "planning", "model": providers.rerank_model(),
+    emit({"type": "planning", "model": providers.ask_model(),
           "timeout_s": PLAN_TIMEOUT})
     plan = _plan(question, cands, rmap, key, max_agents)
     if not plan or len(plan) < 2:
@@ -461,7 +461,7 @@ def run_agents(root, question: str, *, res: dict, cands: list[dict], st,
 # ── the unified event driver (CLI / SSE / webui sinks) ─────────────────────
 
 def stream_events(root, question: str, on_event, *, agents: bool | None = None,
-                  rerank: bool = False, show_map: bool = True,
+                  show_map: bool = True,
                   docs_only: bool = False, include_docs: bool = False,
                   path_filter: str | None = None, state=None) -> dict:
     """Run the whole ask flow (retrieval -> classify -> fan-out or single
@@ -478,7 +478,7 @@ def stream_events(root, question: str, on_event, *, agents: bool | None = None,
 
     t0 = time.time()
     st = state or load_state(Path(root))
-    res = search_with_state(st, question, rerank=rerank, path_filter=path_filter)
+    res = search_with_state(st, question, path_filter=path_filter)
     retrieval_ms = int((time.time() - t0) * 1000)
     cands = _candidates(res, docs_only, include_docs)
     key = providers.find_chat_key(required=False)

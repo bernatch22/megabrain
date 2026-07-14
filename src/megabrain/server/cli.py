@@ -52,13 +52,11 @@ def main(argv=None):
     p.add_argument("--full", action="store_true",
                    help="include RELATED best-chunk code bodies (default renders "
                         "RELATED as a map: file, match span, symbols — ~60%% fewer tokens)")
-    p.add_argument("--best", action="store_true", help="LLM order-rerank of candidates (+~2s, never drops files)")
     p.add_argument("--json", action="store_true")
 
     p = sub.add_parser("ask")
     p.add_argument("path")
     p.add_argument("question")
-    p.add_argument("--best", action="store_true")
     p.add_argument("--no-map", action="store_true")
     p.add_argument("--docs", action="store_true",
                    help="explain docs (markdown) only, instead of code")
@@ -185,7 +183,7 @@ def _dispatch(a, raw: list[Path], root: Path) -> None:
             print(_json.dumps(res, indent=1) if a.json
                   else render(res, compact=a.compact, related_code=a.full))
         else:
-            res = app.query(roots[0], a.task, rerank=a.best, path_filter=pfs[0])
+            res = app.query(roots[0], a.task, path_filter=pfs[0])
             print(_json.dumps(res, indent=1) if a.json
                   else render(res, compact=a.compact, related_code=a.full))
     elif a.cmd == "ask":
@@ -196,7 +194,7 @@ def _dispatch(a, raw: list[Path], root: Path) -> None:
         from ..ask import stream_ask
         r0, sp = app.resolve_scope(root)
         app._maybe_reindex(r0, True)       # answers match disk (60s TTL, fail-open)
-        stream_ask(r0, a.question, rerank=a.best, show_map=not a.no_map,
+        stream_ask(r0, a.question, show_map=not a.no_map,
                    docs_only=a.docs, path_filter=sp or None,
                    include_docs=a.with_docs,
                    agents=True if a.agents else (False if a.no_agents else None))

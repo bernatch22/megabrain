@@ -27,7 +27,7 @@ OUTLINE_KINDS = ("class", "function", "async_function", "method", "async_method"
                  "module", "heading")
 
 
-def search_with_state(st: SearchState, query: str, rerank: bool = False,
+def search_with_state(st: SearchState, query: str,
                       path_filter: str | None = None,
                       scored: tuple[list, np.ndarray] | None = None) -> dict:
     """Full retrieval: score every chunk, then rank + tier into CORE/RELATED.
@@ -52,18 +52,6 @@ def search_with_state(st: SearchState, query: str, rerank: bool = False,
     neigh -= set(cands)
     fbest = {f: fused[file_chunks[f][0]] for f in file_rank}
     extras = sorted(neigh & set(file_rank), key=lambda f: -fbest[f])[:p.graph_extras]
-
-    if rerank and len(cands) > 1:
-        # optional LLM ORDER rerank: code evidence + 3-vote merge (+~2-3s)
-        from .rerank import llm_order
-        # deeper pool when reranking: the LLM can rescue rank 13-24
-        deep = file_rank[:p.rerank_deep_pool]
-        for f in deep:
-            if f not in cands:
-                cands.append(f)
-        ev = [{"file": f, "code": metas[file_chunks[f][0]].text} for f in cands]
-        order = llm_order(query, ev)
-        cands = [cands[i] for i in order]
 
     tier1 = cands[:p.tier1_max]
     # adaptive CORE: only files within tier1_gap of the top get full code;
@@ -130,13 +118,12 @@ def search_with_state(st: SearchState, query: str, rerank: bool = False,
             "ms": int((time.time() - t0) * 1000)}
 
 
-def search(root: Path, query: str, rerank: bool = False,
-           path_filter: str | None = None) -> dict:
+def search(root: Path, query: str, path_filter: str | None = None) -> dict:
     """One-shot retrieval (CLI/MCP entry). Builds state then queries — identical
     output to search_with_state(load_state(root), ...). `path_filter` (a POSIX
     subpath relative to root) scopes retrieval to files under it (PATH-SCOPE)."""
     with load_state(Path(root)) as st:
-        return search_with_state(st, query, rerank, path_filter)
+        return search_with_state(st, query, path_filter)
 
 
 def selection(res: dict) -> list[tuple[dict, float]]:

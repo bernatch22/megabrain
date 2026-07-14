@@ -43,7 +43,6 @@ class RetrievalParams:
                                   # edge-preservation fix: +35% edges compete)
     chunk_keep_ratio: float = 0.8  # within a tier-1 file, keep chunks >= ratio*best
     tier1_chunk_cap: int = 12      # hard cap of chunks per CORE file
-    rerank_deep_pool: int = 24     # candidate pool when the LLM rerank runs
     multi_tier1_extra: int = 2     # search_multi: tier1 cap = tier1_max + this
 
 
