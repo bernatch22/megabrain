@@ -49,7 +49,7 @@ def _is_test_path(relpath: str) -> bool:
                           parts[-1].rsplit(".", 1)[0]))
 
 
-def _under_path(relpath: str, path_filter: str) -> bool:
+def under_path(relpath: str, path_filter: str) -> bool:
     """True when `relpath` is the filter file itself or lives under the filter
     directory (directory-boundary aware, so `src/dispatch` never matches
     `src/dispatcher.ts`). Empty filter matches everything."""
@@ -59,7 +59,7 @@ def _under_path(relpath: str, path_filter: str) -> bool:
     return relpath == pf or relpath.startswith(pf + "/")
 
 
-def _apply_path_filter(metas: list, M: np.ndarray, path_filter: str | None):
+def apply_path_filter(metas: list, M: np.ndarray, path_filter: str | None):
     """Restrict the candidate chunk set to files under `path_filter`. Applied at
     the START of scoring so the ENTIRE bundle (CORE, RELATED, graph neighbors)
     stays within the sub-path. Fail-open: if the filter matches nothing, return
@@ -67,13 +67,13 @@ def _apply_path_filter(metas: list, M: np.ndarray, path_filter: str | None):
     bundle). Returns (metas, M) — untouched when no filter."""
     if not path_filter:
         return metas, M
-    idx = [i for i, m in enumerate(metas) if _under_path(m.file, path_filter)]
+    idx = [i for i, m in enumerate(metas) if under_path(m.file, path_filter)]
     if not idx:
         return metas, M
     return [metas[i] for i in idx], M[idx]
 
 
-def _ident_tokens(text: str) -> set[str]:
+def ident_tokens(text: str) -> set[str]:
     """Identifier-aware tokens: split camelCase/snake_case, len>=4 to avoid noise."""
     out = set()
     for w in re.findall(r"[A-Za-z_][A-Za-z0-9_]*", text):
@@ -82,11 +82,6 @@ def _ident_tokens(text: str) -> set[str]:
                 if len(s) >= 4:
                     out.add(s.lower())
     return out
-
-
-# public name (ask_agents uses it); the underscore spelling stays for
-# backward compatibility with older imports of the pre-split query module.
-ident_tokens = _ident_tokens
 
 
 @dataclass
@@ -259,8 +254,8 @@ class LexicalBoostLane:
         boost = np.zeros(len(ctx.metas))
         for i, m in enumerate(ctx.metas):
             stem = m.file.rsplit("/", 1)[-1].rsplit(".", 1)[0]
-            nf = len(_ident_tokens(stem) & qtok)
-            ns = len(_ident_tokens(m.name or "") & qtok)
+            nf = len(ident_tokens(stem) & qtok)
+            ns = len(ident_tokens(m.name or "") & qtok)
             boost[i] = max(p.file_boost_w * min(nf, p.lexical_boost_cap),
                            p.sym_boost_w * min(ns, p.lexical_boost_cap))
         return fused + boost
@@ -284,7 +279,7 @@ def score_chunks(st: SearchState, query: str,
         raise EmptyIndex.at()
     # PATH-SCOPE: restrict candidates to files under the sub-path BEFORE scoring,
     # so CORE/RELATED/graph-neighbors all stay within it. No filter -> unchanged.
-    metas, M = _apply_path_filter(st.metas, st.M, path_filter)
+    metas, M = apply_path_filter(st.metas, st.M, path_filter)
     qv = st.emb.embed([query])[0]
     st.qv = qv                     # re-used by the flow lane (no second embed)
     f2i = {f: i for i, f in enumerate(st.fpaths)}
@@ -293,7 +288,7 @@ def score_chunks(st: SearchState, query: str,
         metas=metas, M=M, fpaths=st.fpaths, F=st.F, qv=qv,
         cfi=np.array([f2i.get(m.file, -1) for m in metas]),
         is_test=np.array([_is_test_path(m.file) for m in metas]),
-        qtok=_ident_tokens(query))
+        qtok=ident_tokens(query))
     fused: np.ndarray | None = None
     for lane in LANES:
         if lane.applies(ctx):

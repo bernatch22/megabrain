@@ -1,7 +1,7 @@
 """get_code must never escape the repo root — it is exposed to untrusted input
 via serve.py `GET /get?file=` and the MCP `megabrain_get` tool."""
 
-from megabrain.retrieval.query import get_code
+from megabrain.retrieval.files import get_code
 
 
 def test_relative_traversal_blocked(tmp_path):

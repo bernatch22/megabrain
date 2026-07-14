@@ -17,7 +17,7 @@ from pathlib import Path
 import numpy as np
 
 from .params import DEFAULT_PARAMS
-from .scoring import _under_path, score_chunks
+from .scoring import score_chunks, under_path
 from .state import SearchState, load_state
 
 # symbol kinds worth surfacing in the file outline (display only — not ranking).
@@ -110,7 +110,7 @@ def search_with_state(st: SearchState, query: str, rerank: bool = False,
         adds = 0
         for fl in flows_out:
             for f in fl["files"]:
-                if f in have or adds >= FLOW_FILE_ADDS or not _under_path(f, path_filter or ""):
+                if f in have or adds >= FLOW_FILE_ADDS or not under_path(f, path_filter or ""):
                     continue
                 syms = store.symbols_for(f)
                 out_t2.append({

@@ -255,14 +255,6 @@ def warm_flows(root: Path, limit: int = 6, ask_fn=None, quiet: bool = False) -> 
             "questions": warmed}
 
 
-def prune_stale(store: Store) -> int:
-    """Compatibility alias — stale-flow INVALIDATION lives on the Store now
-    (store.prune_stale_flows: pure sha-compare integrity, no LLM), so the
-    indexer never imports this feature module. This module keeps the LLM side:
-    refresh_stale re-asks instead of dropping."""
-    return store.prune_stale_flows()
-
-
 def refresh_stale(root, ask_fn=None, quiet: bool = False) -> dict:
     """UPDATE instead of expire: for each stale flow, re-run its ORIGINAL
     question against the current code so the cached walkthrough is regenerated

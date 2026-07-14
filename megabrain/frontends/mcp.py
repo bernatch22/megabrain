@@ -221,7 +221,7 @@ def _scope_root(args: dict) -> tuple[Path, str | None]:
 def call_tool(name: str, args: dict) -> str:
     from .. import app
     if name == "megabrain_query":
-        from ..retrieval.query import render, render_pruned
+        from ..retrieval.render import render, render_pruned
         root, pf = _scope(args)
         if args.get("prune_noise"):
             with_text = not bool(args.get("compact"))

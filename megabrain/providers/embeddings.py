@@ -29,10 +29,6 @@ def model_name() -> str:
     return os.environ.get("MEGABRAIN_EMBED_MODEL", "perplexity/pplx-embed-v1-0.6b")
 
 
-# Back-compat module constant (snapshot at import; prefer model_name()).
-MODEL = model_name()
-
-
 class Embedder:
     def __init__(self, api_key: str | None = None, model: str | None = None,
                  dims: int | None = None, batch: int | None = None,
@@ -99,7 +95,3 @@ class Embedder:
             n = np.linalg.norm(v)
             vecs.append(v / n if n > 0 else v)
         return vecs
-
-
-# Back-compat alias (older imports referenced the pplx-specific name).
-PplxEmbedder = Embedder

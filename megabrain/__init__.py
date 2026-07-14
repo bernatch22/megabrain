@@ -35,14 +35,14 @@ __version__ = "0.7.2"
 
 _EXPORTS = {
     "index_repo": ".indexing.indexer",
-    "search": ".retrieval.query",
-    "render": ".retrieval.query",
-    "prune_search": ".retrieval.query",
-    "prune_search_root": ".retrieval.query",
-    "render_pruned": ".retrieval.query",
-    "get_code": ".retrieval.query",
-    "load_state": ".retrieval.query",
-    "search_with_state": ".retrieval.query",
+    "search": ".retrieval.bundle",
+    "search_with_state": ".retrieval.bundle",
+    "prune_search": ".retrieval.bundle",
+    "prune_search_root": ".retrieval.bundle",
+    "render": ".retrieval.render",
+    "render_pruned": ".retrieval.render",
+    "get_code": ".retrieval.files",
+    "load_state": ".retrieval.state",
     "Store": ".store",
     "ChunkMeta": ".model",
     # structured errors (catch MegabrainError to handle any engine failure):

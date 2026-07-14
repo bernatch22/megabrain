@@ -2,7 +2,7 @@
 No network, no corpus — this is what contributors/CI can always run."""
 
 from megabrain.indexing.indexer import index_repo
-from megabrain.retrieval.query import search
+from megabrain.retrieval.bundle import search
 from megabrain.store import Store
 
 
@@ -69,7 +69,8 @@ def test_search_finds_the_relevant_file(tiny_repo):
 def test_prune_search_returns_flat_ranked_signal(tiny_repo):
     """pruneNoise: a flat list of only the SELECTED chunks, relevance-ordered,
     each with a stable id + span + code; noise counted, not returned."""
-    from megabrain.retrieval.query import prune_search_root, render_pruned
+    from megabrain.retrieval.bundle import prune_search_root
+    from megabrain.retrieval.render import render_pruned
     res = prune_search_root(tiny_repo, "authenticate user login password")
     ch = res["chunks"]
     assert ch, "must return signal chunks"
@@ -162,7 +163,7 @@ def test_is_test_path_detects_all_layouts():
     """Regression: the old detector checked only the SECOND path component and
     `tests/` plural, so `test/retry.ts` (ky, express) and `spec/…` (Ruby) never
     received TEST_PENALTY and outranked the core they exercise."""
-    from megabrain.retrieval.query import _is_test_path
+    from megabrain.retrieval.scoring import _is_test_path
 
     assert _is_test_path("test/retry.ts")              # singular test/ dir
     assert _is_test_path("tests/foo.py")

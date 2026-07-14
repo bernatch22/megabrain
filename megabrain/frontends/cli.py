@@ -170,7 +170,7 @@ def _dispatch(a, raw: list[Path], root: Path) -> None:
         import json as _json
 
         from .. import app
-        from ..retrieval.query import render, render_pruned
+        from ..retrieval.render import render, render_pruned
         from ..store import resolve_root
         scoped = [resolve_root(p) for p in raw]           # [(root, subpath), …]
         roots = [r for r, _ in scoped]

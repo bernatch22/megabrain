@@ -98,7 +98,8 @@ def indexed(tmp_path, monkeypatch):
 
 
 def _fused(indexed, query, path_filter=None):
-    from megabrain.retrieval.query import load_state, score_chunks
+    from megabrain.retrieval.scoring import score_chunks
+    from megabrain.retrieval.state import load_state
     with load_state(indexed) as st:
         metas, fused = score_chunks(st, query, path_filter=path_filter)
     return [m.file for m in metas], np.asarray(fused, dtype=np.float64)

@@ -11,7 +11,7 @@ Needs an embedding key (query embedding only — chunks are already indexed).
 
 import sys
 
-from megabrain.retrieval.query import chunks_for_file_root
+from megabrain.retrieval.bundle import chunks_for_file_root
 
 
 def main():

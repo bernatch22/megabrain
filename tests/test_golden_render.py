@@ -126,7 +126,8 @@ QUERIES = {
 
 
 def test_render_goldens(golden_repo):
-    from megabrain.retrieval.query import render, search
+    from megabrain.retrieval.bundle import search
+    from megabrain.retrieval.render import render
     for key, q in QUERIES.items():
         res = _normalize(search(golden_repo, q))
         _check(f"render_{key}.md", render(res))
@@ -137,7 +138,8 @@ def test_render_goldens(golden_repo):
 
 
 def test_render_pruned_golden(golden_repo):
-    from megabrain.retrieval.query import prune_search_root, render_pruned
+    from megabrain.retrieval.bundle import prune_search_root
+    from megabrain.retrieval.render import render_pruned
     res = _normalize(prune_search_root(golden_repo, QUERIES["login"],
                                        include_pruned=True))
     _check("render_pruned_login.md", render_pruned(res))
@@ -154,7 +156,7 @@ def test_render_pruned_golden(golden_repo):
 def test_bundle_structure_golden(golden_repo):
     """Pin the bundle SHAPE (files, order, chunk spans, selection) as JSON —
     the contract every frontend + ask consume."""
-    from megabrain.retrieval.query import chunks_for_file_root, search
+    from megabrain.retrieval.bundle import chunks_for_file_root, search
     res = _normalize(search(golden_repo, QUERIES["login"]))
     shape = {
         "tier1": [{"file": t["file"], "score": round(t["score"], 4),
@@ -176,7 +178,7 @@ def test_bundle_structure_golden(golden_repo):
 
 
 def test_get_code_golden(golden_repo):
-    from megabrain.retrieval.query import get_code
+    from megabrain.retrieval.files import get_code
     _check("get_code_symbol.md", get_code(golden_repo, "auth/session.py", "Session.expire"))
     _check("get_code_file.md", get_code(golden_repo, "util.py"))
     # the containment guard is part of the pinned contract

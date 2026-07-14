@@ -47,21 +47,20 @@ from pathlib import Path
 
 from ..docsearch import docsearch
 from ..errors import MegabrainError
-from ..retrieval.query import search_with_state
+from ..retrieval.bundle import search_with_state
 from ..session import RepoSession
 
 log = logging.getLogger(__name__)
 
-# serve-api pins one repo; RepoSession (megabrain.session) holds warm,
-# self-invalidating retrieval state, and docsearch (megabrain.docsearch) is the
+# serve-api pins one repo. RepoSession (megabrain.session) holds the warm,
+# self-invalidating retrieval state and docsearch (megabrain.docsearch) is the
 # retrieval projection — both extracted so they are not trapped in this
 # transport (the MCP server reuses RepoSession too).
-_Repo = RepoSession
 
 
 # ── HTTP ──────────────────────────────────────────────────────────────────
 
-def _make_handler(repo: _Repo, cors: str | None, enable_llm: bool,
+def _make_handler(repo: RepoSession, cors: str | None, enable_llm: bool,
                   token: str | None = None):
     class Handler(BaseHTTPRequestHandler):
         protocol_version = "HTTP/1.1"
@@ -130,7 +129,7 @@ def _make_handler(repo: _Repo, cors: str | None, enable_llm: bool,
                     rel = (qs.get("file") or [""])[0]
                     if not rel:
                         return self._err(400, "missing file")
-                    from ..retrieval.query import get_code
+                    from ..retrieval.files import get_code
                     sym = (qs.get("symbol") or [None])[0]
                     return self._send(200, {"code": get_code(repo.root, rel, sym)})
                 if path == "/chunks":
@@ -138,7 +137,7 @@ def _make_handler(repo: _Repo, cors: str | None, enable_llm: bool,
                     q = (qs.get("q") or qs.get("query") or [""])[0].strip()
                     if not rel or not q:
                         return self._err(400, "missing file or q")
-                    from ..retrieval.query import chunks_for_file
+                    from ..retrieval.bundle import chunks_for_file
                     return self._send(200, repo.with_state(
                         lambda st: chunks_for_file(st, rel, q)))
                 return self._err(404, "not found")
@@ -235,7 +234,7 @@ def _make_handler(repo: _Repo, cors: str | None, enable_llm: bool,
 def serve(root, port: int = 2134, host: str = "127.0.0.1",
           cors: str | None = None, enable_llm: bool = True,
           token: str | None = None) -> None:
-    repo = _Repo(Path(root))
+    repo = RepoSession(Path(root))
     chunks = repo.with_state(lambda st: len(st.metas))   # warm up + validate index
     if chunks == 0:
         print(f"⚠  index at {repo.root}/.megabrain is empty — POST /index or run "

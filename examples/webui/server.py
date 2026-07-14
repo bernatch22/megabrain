@@ -41,7 +41,7 @@ from megabrain.ask_agents import stream_events
 from megabrain.frontends.http import _Repo
 from megabrain.indexing.indexer import index_repo
 from megabrain.providers import chat_provider
-from megabrain.retrieval.query import chunks_for_file, search_with_state
+from megabrain.retrieval.bundle import chunks_for_file, search_with_state
 
 PORT = 8688
 HERE = Path(__file__).parent

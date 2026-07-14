@@ -13,7 +13,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from megabrain.retrieval.query import _apply_path_filter, _under_path, search
+from megabrain.retrieval.bundle import search
+from megabrain.retrieval.scoring import apply_path_filter, under_path
 from megabrain.store import resolve_root
 
 SDK = Path("~/pinecall/sdk").expanduser()
@@ -49,10 +50,10 @@ def test_resolve_root_no_index_raises(tmp_path: Path):
 # ── directory-boundary-aware match + filter (no corpus) ────────────────────
 
 def test_under_path_boundary():
-    assert _under_path("src/dispatch/run.ts", "src/dispatch")
-    assert _under_path("src/dispatch", "src/dispatch")          # filter IS a file
-    assert not _under_path("src/dispatcher.ts", "src/dispatch")  # prefix, not dir
-    assert _under_path("anything", "")                           # empty = all
+    assert under_path("src/dispatch/run.ts", "src/dispatch")
+    assert under_path("src/dispatch", "src/dispatch")          # filter IS a file
+    assert not under_path("src/dispatcher.ts", "src/dispatch")  # prefix, not dir
+    assert under_path("anything", "")                           # empty = all
 
 
 def _meta(file: str):
@@ -65,7 +66,7 @@ def test_apply_path_filter_scopes_metas():
     metas = [_meta("src/dispatch/a.ts"), _meta("src/dispatcher.ts"),
              _meta("src/other/b.ts")]
     M = np.arange(len(metas) * 2, dtype=np.float32).reshape(len(metas), 2)
-    fm, fM = _apply_path_filter(metas, M, "src/dispatch")
+    fm, fM = apply_path_filter(metas, M, "src/dispatch")
     assert [m.file for m in fm] == ["src/dispatch/a.ts"]
     assert fM.shape == (1, 2)
     assert np.array_equal(fM[0], M[0])
@@ -74,14 +75,14 @@ def test_apply_path_filter_scopes_metas():
 def test_apply_path_filter_none_is_identity():
     metas = [_meta("a.ts")]
     M = np.zeros((1, 2), dtype=np.float32)
-    fm, fM = _apply_path_filter(metas, M, None)
+    fm, fM = apply_path_filter(metas, M, None)
     assert fm is metas and fM is M
 
 
 def test_apply_path_filter_fail_open_on_no_match():
     metas = [_meta("a.ts")]
     M = np.zeros((1, 2), dtype=np.float32)
-    fm, fM = _apply_path_filter(metas, M, "does/not/exist")
+    fm, fM = apply_path_filter(metas, M, "does/not/exist")
     assert fm is metas and fM is M   # unfiltered, not empty
 
 
@@ -102,7 +103,7 @@ def test_subpath_bundle_stays_under_subpath():
     files = _bundle_files(res)
     assert files, "expected a non-empty scoped bundle"
     for f in files:
-        assert _under_path(f, SUBDIR), f"{f} escaped the sub-path scope"
+        assert under_path(f, SUBDIR), f"{f} escaped the sub-path scope"
 
 
 @skip_no_sdk

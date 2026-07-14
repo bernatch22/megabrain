@@ -15,7 +15,8 @@ from pathlib import Path
 
 from . import providers
 from .indexing.strategies import MarkdownStrategy
-from .retrieval.query import SearchState, lang_of, render
+from .retrieval.render import lang_of, render
+from .retrieval.state import SearchState
 
 # ask is a CODE walkthrough: docs (markdown) are excluded from its candidates so a
 # code explanation isn't diluted with prose. docs_only flips it to a docs-only

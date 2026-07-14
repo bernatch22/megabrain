@@ -9,10 +9,10 @@
      1,
      72,
      "megabrain > megabrain/__init__.py > [__getattr__, __dir__]",
-     "5df55647561f2353468ad918ebefd560652b436b"
+     "e0bd6768a7026851ea0c05950e4737b253229dfa"
     ]
    ],
-   "skeleton_sha": "a9b4439b7bc5a6313580fd667748af0d4e29e768",
+   "skeleton_sha": "920d887edc28e9293ef8fae8b7e7f60c9ff8d7c0",
    "symbols": [
     [
      "__version__",
@@ -26,7 +26,7 @@
      "constant",
      36,
      60,
-     "_EXPORTS = {'index_repo': '.indexing.indexer', 'search': '.retrieval.query', 'render': '.retrieval.query', 'prune_search"
+     "_EXPORTS = {'index_repo': '.indexing.indexer', 'search': '.retrieval.bundle', 'search_with_state': '.retrieval.bundle', "
     ],
     [
      "__all__",
@@ -60,7 +60,7 @@
      1,
      106,
      "megabrain > megabrain/app.py > [resolve_scope, rel_join, normalize_agents, _maybe_reindex, query, query_multi, prune, ask, get]",
-     "15c0b1cabbca0e744829d45f9bfbb967cdb7778e"
+     "41a0e0413186930cec7ffcbceb9ce653a8d0b921"
     ],
     [
      "module",
@@ -69,7 +69,7 @@
      107,
      128,
      "megabrain > megabrain/app.py > [chunks, index, stats]",
-     "bcc7208b94bc5b3a5982b0007a262fb47a27076e"
+     "404bc705738a8d1ee100f00617c8498199c10cfe"
     ]
    ],
    "skeleton_sha": "d3a3e2d7ed25b847786d1c8f45f0c8675c5cc889",
@@ -167,16 +167,16 @@
      "_candidates, _flow_ctx",
      null,
      1,
-     82,
+     83,
      "megabrain > megabrain/ask.py > [_candidates, _flow_ctx]",
-     "865e778f5308155f11aab606a841cc5076126513"
+     "a263ef6b506a848ee4af2c0314c18c2ad15e60f0"
     ],
     [
      "module",
      "_numbered, _build_body, _code_block",
      null,
-     83,
-     164,
+     84,
+     165,
      "megabrain > megabrain/ask.py > [_numbered, _build_body, _code_block]",
      "5e02c5b734c8a5144c7b4d776d080c2041b88f06"
     ],
@@ -184,8 +184,8 @@
      "module",
      "_Splicer, ask, cited_files, _splice",
      null,
-     165,
-     266,
+     166,
+     267,
      "megabrain > megabrain/ask.py > [_Splicer, ask, cited_files, _splice]",
      "5960b3adabd3124f465963f6ccc10293521803ef"
     ],
@@ -193,8 +193,8 @@
      "module",
      "render_ask, stream_ask",
      null,
-     267,
-     369,
+     268,
+     370,
      "megabrain > megabrain/ask.py > [render_ask, stream_ask]",
      "77dc9057a351321a1ffbf2131e0853eda5a1536b"
     ]
@@ -204,148 +204,148 @@
     [
      "DOC_EXTS",
      "constant",
-     23,
-     23,
+     24,
+     24,
      "DOC_EXTS = MarkdownStrategy.exts"
     ],
     [
      "MAX_CTX_CHARS",
      "constant",
-     25,
-     25,
+     26,
+     26,
      "MAX_CTX_CHARS = 200000"
     ],
     [
      "_SEL",
      "constant",
-     30,
-     30,
+     31,
+     31,
      "_SEL = re.compile('\\\\[\\\\[(\\\\d+)(?::\\\\s*[Ll]?(\\\\d+)\\\\s*-\\\\s*[Ll]?(\\\\d+))?\\\\s*\\\\]\\\\]')"
     ],
     [
      "_candidates",
      "function",
-     33,
-     58,
+     34,
+     59,
      "def _candidates(res: dict, docs_only: bool=False, include_docs: bool=False) -> list[dict]"
     ],
     [
      "_RULES",
      "constant",
-     61,
-     67,
+     62,
+     68,
      "_RULES = '- NEVER paste or quote code. Cite it with DOUBLE brackets: [[3]] (whole chunk) or [[3:705-731]] (file lines 70"
     ],
     [
      "_flow_ctx",
      "function",
-     70,
-     82,
+     71,
+     83,
      "def _flow_ctx(res: dict) -> str"
     ],
     [
      "_numbered",
      "function",
-     85,
-     92,
+     86,
+     93,
      "def _numbered(c: dict) -> str"
     ],
     [
      "_build_body",
      "function",
-     95,
-     117,
+     96,
+     118,
      "def _build_body(question: str, cands: list[dict], flow_ctx: str='') -> dict"
     ],
     [
      "_code_block",
      "function",
-     120,
-     157,
+     121,
+     158,
      "def _code_block(c: dict, lo: int | None, hi: int | None, seen: set, file_syms: dict[str, list[dict]]) -> str"
     ],
     [
      "_PARTIAL",
      "constant",
-     164,
-     164,
+     165,
+     165,
      "_PARTIAL = re.compile('\\\\[(?:\\\\[(?:\\\\d+(?::\\\\s*[Ll]?\\\\d*(?:-\\\\s*[Ll]?\\\\d*)?)?\\\\]?)?)?$')"
     ],
     [
      "_Splicer",
      "class",
-     167,
-     205,
+     168,
+     206,
      "class _Splicer"
     ],
     [
      "_Splicer.__init__",
      "method",
-     175,
-     179,
+     176,
+     180,
      "def __init__(self, cands: list[dict], file_syms: dict[str, list[dict]])"
     ],
     [
      "_Splicer._sub",
      "method",
-     181,
-     188,
+     182,
+     189,
      "def _sub(self, m)"
     ],
     [
      "_Splicer.feed",
      "method",
-     190,
-     197,
+     191,
+     198,
      "def feed(self, d: str) -> str"
     ],
     [
      "_Splicer.flush",
      "method",
-     199,
-     201,
+     200,
+     202,
      "def flush(self) -> str"
     ],
     [
      "_Splicer.files",
      "method",
-     203,
-     205,
+     204,
+     206,
      "def files(self) -> int"
     ],
     [
      "ask",
      "function",
-     208,
-     233,
+     209,
+     234,
      "def ask(root: Path, question: str, rerank: bool=False, docs_only: bool=False, path_filter: str | None=None, state: SearchState | None=None, include_docs: bool=False, agents: bool | None=False) -> dict"
     ],
     [
      "cited_files",
      "function",
-     236,
-     246,
+     237,
+     247,
      "def cited_files(out: dict) -> list[str]"
     ],
     [
      "_splice",
      "function",
-     249,
-     266,
+     250,
+     267,
      "def _splice(out: dict) -> tuple[str, set, set]"
     ],
     [
      "render_ask",
      "function",
-     269,
-     292,
+     270,
+     293,
      "def render_ask(out: dict) -> str"
     ],
     [
      "stream_ask",
      "function",
-     295,
-     369,
+     296,
+     370,
      "def stream_ask(root: Path, question: str, out=None, rerank: bool=False, show_map: bool=True, docs_only: bool=False, path_filter: str | None=None, include_docs: bool=False, agents: bool | None=None) -> None"
     ]
    ]
@@ -357,16 +357,16 @@
      "_top_dir, classify_bundle, repo_map, _chunk_lines",
      null,
      1,
-     112,
+     115,
      "megabrain > megabrain/ask_agents.py > [_top_dir, classify_bundle, repo_map, _chunk_lines]",
-     "cc24eff1f5a5f23a5ccf35106e3319ff05750c72"
+     "b78b75e9fd1fd329cbbfb48a4ab1a17da8f7b0a7"
     ],
     [
      "module",
      "_plan_llm, _plan_cluster, _plan, _tools",
      null,
-     113,
-     236,
+     116,
+     239,
      "megabrain > megabrain/ask_agents.py > [_plan_llm, _plan_cluster, _plan, _tools]",
      "0607f75a489f585cee8d585b7a469f9170d65148"
     ],
@@ -374,8 +374,8 @@
      "module",
      "_wrap_tools, _openrouter_agent, _agent_llm, _sub_rules, _subagent_prompt",
      null,
-     237,
-     343,
+     240,
+     346,
      "megabrain > megabrain/ask_agents.py > [_wrap_tools, _openrouter_agent, _agent_llm, _sub_rules, _subagent_prompt]",
      "b444961a7bdbf3446be62fa2e1537a0038f5b785"
     ],
@@ -383,8 +383,8 @@
      "module",
      "_synth_body, run_agents",
      null,
-     344,
-     455,
+     347,
+     458,
      "megabrain > megabrain/ask_agents.py > [_synth_body, run_agents]",
      "30b2276809ad03a3343a60dc6090f2badc6c211b"
     ],
@@ -392,8 +392,8 @@
      "block",
      "stream_events",
      "1/2",
-     456,
-     562,
+     459,
+     565,
      "megabrain > megabrain/ask_agents.py > def stream_events(root, question: str, on_event, *, agents: bool | None=None, rerank: bool=False, show_map: bool=True, docs_only: bool=False, include_docs: bool=False, path_filter: str | None=None, state=None) -> dict",
      "be2057cad076f4435c4770c2d391445a29ac717c"
     ],
@@ -401,8 +401,8 @@
      "block",
      "stream_events",
      "2/2",
-     563,
-     574,
+     566,
+     577,
      "megabrain > megabrain/ask_agents.py > def stream_events(root, question: str, on_event, *, agents: bool | None=None, rerank: bool=False, show_map: bool=True, docs_only: bool=False, include_docs: bool=False, path_filter: str | None=None, state=None) -> dict",
      "1e147ac631bf0e8ee3aee9987d036778604c43ec"
     ]
@@ -412,176 +412,176 @@
     [
      "log",
      "constant",
-     38,
-     38,
+     41,
+     41,
      "log = logging.getLogger(__name__)"
     ],
     [
      "MAX_AGENTS",
      "constant",
-     40,
-     40,
+     43,
+     43,
      "MAX_AGENTS = 4"
     ],
     [
      "TOOL_ROUNDS",
      "constant",
-     41,
-     41,
+     44,
+     44,
      "TOOL_ROUNDS = 3"
     ],
     [
      "TOOL_CAP",
      "constant",
-     42,
-     42,
+     45,
+     45,
      "TOOL_CAP = 8000"
     ],
     [
      "MAP_CHARS",
      "constant",
-     43,
-     43,
+     46,
+     46,
      "MAP_CHARS = 6000"
     ],
     [
      "SUB_MAX_TOKENS",
      "constant",
-     44,
-     44,
+     47,
+     47,
      "SUB_MAX_TOKENS = 1400"
     ],
     [
      "SYNTH_MAX_TOKENS",
      "constant",
-     45,
-     45,
+     48,
+     48,
      "SYNTH_MAX_TOKENS = 2400"
     ],
     [
      "PLAN_TIMEOUT",
      "constant",
-     46,
-     46,
+     49,
+     49,
      "PLAN_TIMEOUT = 30"
     ],
     [
      "AGENT_TIMEOUT",
      "constant",
-     48,
-     48,
+     51,
+     51,
      "AGENT_TIMEOUT = 300"
     ],
     [
      "_top_dir",
      "function",
-     51,
-     52,
+     54,
+     55,
      "def _top_dir(f: str) -> str"
     ],
     [
      "classify_bundle",
      "function",
-     55,
-     80,
+     58,
+     83,
      "def classify_bundle(res: dict, question: str='') -> dict"
     ],
     [
      "repo_map",
      "function",
-     83,
-     106,
+     86,
+     109,
      "def repo_map(st, max_chars: int=MAP_CHARS) -> str"
     ],
     [
      "_chunk_lines",
      "function",
-     109,
      112,
+     115,
      "def _chunk_lines(cands: list[dict]) -> list[str]"
     ],
     [
      "_plan_llm",
      "function",
-     117,
-     157,
+     120,
+     160,
      "def _plan_llm(question: str, cands: list[dict], rmap: str, max_agents: int) -> list[dict] | None"
     ],
     [
      "_plan_cluster",
      "function",
-     160,
-     176,
+     163,
+     179,
      "def _plan_cluster(question: str, cands: list[dict], max_agents: int) -> list[dict] | None"
     ],
     [
      "_plan",
      "function",
-     179,
      182,
+     185,
      "def _plan(question: str, cands: list[dict], rmap: str, key: str | None, max_agents: int=MAX_AGENTS) -> list[dict] | None"
     ],
     [
      "_tools",
      "function",
-     187,
-     236,
+     190,
+     239,
      "def _tools(root: Path) -> list[dict]"
     ],
     [
      "_wrap_tools",
      "function",
-     239,
-     254,
+     242,
+     257,
      "def _wrap_tools(tools: list[dict], emit, aid: int) -> list[dict]"
     ],
     [
      "_openrouter_agent",
      "function",
-     259,
-     294,
+     262,
+     297,
      "def _openrouter_agent(prompt: str, tools: list[dict], key: str | None, on_delta, max_tokens: int) -> str"
     ],
     [
      "_agent_llm",
      "function",
-     297,
-     307,
+     300,
+     310,
      "def _agent_llm(prompt: str, tools: list[dict], key: str | None, on_delta, max_tokens: int) -> str"
     ],
     [
      "_sub_rules",
      "function",
-     312,
      315,
+     318,
      "def _sub_rules() -> str"
     ],
     [
      "_subagent_prompt",
      "function",
-     318,
-     343,
+     321,
+     346,
      "def _subagent_prompt(question: str, agent: dict, cands: list[dict], rmap: str, repo: str, n: int) -> str"
     ],
     [
      "_synth_body",
      "function",
-     346,
-     369,
+     349,
+     372,
      "def _synth_body(question: str, partials: list[tuple[dict, str]], cands: list[dict]) -> dict"
     ],
     [
      "run_agents",
      "function",
-     374,
-     455,
+     377,
+     458,
      "def run_agents(root, question: str, *, res: dict, cands: list[dict], st, key: str | None, emit=None, splicer=None, max_agents: int=MAX_AGENTS) -> dict"
     ],
     [
      "stream_events",
      "function",
-     460,
-     574,
+     463,
+     577,
      "def stream_events(root, question: str, on_event, *, agents: bool | None=None, rerank: bool=False, show_map: bool=True, docs_only: bool=False, include_docs: bool=False, path_filter: str | None=None, state=None) -> dict"
     ]
    ]
@@ -2041,15 +2041,15 @@
     ],
     [
      "module",
-     "_research_questions, warm_flows, prune_stale, refresh_stale",
+     "_research_questions, warm_flows, refresh_stale",
      null,
      187,
-     296,
-     "megabrain > megabrain/flows.py > [_research_questions, warm_flows, prune_stale, refresh_stale]",
-     "b3a7cacb9a37f4eccda076d3c96e1462fa2a8c1d"
+     288,
+     "megabrain > megabrain/flows.py > [_research_questions, warm_flows, refresh_stale]",
+     "3829235cb9f15da52a2ec3de56ec1cd3dc49ab0e"
     ]
    ],
-   "skeleton_sha": "809c553c8d4c8f2a4071cc29c8ccbeeb5d3fee00",
+   "skeleton_sha": "a1fc6a1a409488c96106d05a0d6b91b7bb8ed4e3",
    "symbols": [
     [
      "log",
@@ -2178,17 +2178,10 @@
      "def warm_flows(root: Path, limit: int=6, ask_fn=None, quiet: bool=False) -> dict"
     ],
     [
-     "prune_stale",
-     "function",
-     258,
-     263,
-     "def prune_stale(store: Store) -> int"
-    ],
-    [
      "refresh_stale",
      "function",
-     266,
-     296,
+     258,
+     288,
      "def refresh_stale(root, ask_fn=None, quiet: bool=False) -> dict"
     ]
    ]
@@ -2357,16 +2350,16 @@
      "_measure, changed_files, _index_copy, _granularity_violation",
      null,
      120,
-     238,
+     239,
      "megabrain > megabrain/forge_eval.py > [_measure, changed_files, _index_copy, _granularity_violation]",
-     "45a24af287a0ddd92f5e3303d9dff1a29729b891"
+     "a4fbdd63bb9e5f48fdbcecb97031304f415178fd"
     ],
     [
      "function",
      "ab_gate",
      null,
-     239,
-     297,
+     240,
+     298,
      "megabrain > megabrain/forge_eval.py > def ab_gate(root: Path, candidate, targets=None, margin: float=IOU_MARGIN, regress_tol: float=0.01, baseline=None) -> dict",
      "c09660f0e66280b81b918dc4cd5b1ab959d5bc90"
     ]
@@ -2419,42 +2412,42 @@
      "_measure",
      "function",
      124,
-     162,
+     163,
      "def _measure(root: Path, target: str, probes) -> dict"
     ],
     [
      "changed_files",
      "function",
-     165,
-     188,
+     166,
+     189,
      "def changed_files(root: Path, candidate, baseline=None) -> list[str]"
     ],
     [
      "_index_copy",
      "function",
-     191,
-     198,
+     192,
+     199,
      "def _index_copy(root: Path, strategy)"
     ],
     [
      "MIN_MEDIAN_NWS",
      "constant",
-     201,
-     201,
+     202,
+     202,
      "MIN_MEDIAN_NWS = 100"
     ],
     [
      "_granularity_violation",
      "function",
-     204,
-     238,
+     205,
+     239,
      "def _granularity_violation(root: Path, candidate, files: list[str]) -> str | None"
     ],
     [
      "ab_gate",
      "function",
-     241,
-     297,
+     242,
+     298,
      "def ab_gate(root: Path, candidate, targets=None, margin: float=IOU_MARGIN, regress_tol: float=0.01, baseline=None) -> dict"
     ]
    ]
@@ -2635,7 +2628,7 @@
      154,
      289,
      "megabrain > megabrain/frontends/cli.py > def _dispatch(a, raw: list[Path], root: Path) -> None",
-     "fd2b8296acf0a3b61799b2e6d0a23472b359eb66"
+     "7b77330425236730195e685e39d92f1fedf94903"
     ],
     [
      "block",
@@ -2681,48 +2674,48 @@
      null,
      null,
      1,
-     59,
+     53,
      "megabrain > megabrain/frontends/http.py (module level)",
-     "bd3b4ef0c3a5798a755653ddfcd2c755945ec4fa"
+     "bd395da2e2e0e492c3aba76c6827a2099a016bf7"
     ],
     [
      "block",
      "_make_handler",
      "1/3",
-     60,
-     192,
-     "megabrain > megabrain/frontends/http.py > def _make_handler(repo: _Repo, cors: str | None, enable_llm: bool, token: str | None=None)",
-     "0498d20359a40f40079fc7a0cf6e324d2089502e"
+     54,
+     183,
+     "megabrain > megabrain/frontends/http.py > def _make_handler(repo: RepoSession, cors: str | None, enable_llm: bool, token: str | None=None)",
+     "c53c7119b1575f36d69d5665dfa6e48fc8aee09c"
     ],
     [
      "block",
      "_make_handler",
      "2/3",
-     193,
-     230,
-     "megabrain > megabrain/frontends/http.py > def _make_handler(repo: _Repo, cors: str | None, enable_llm: bool, token: str | None=None)",
-     "602c58b05423c35707e8ea3ac627e24a9d1e68b5"
+     184,
+     229,
+     "megabrain > megabrain/frontends/http.py > def _make_handler(repo: RepoSession, cors: str | None, enable_llm: bool, token: str | None=None)",
+     "598e3d7ff66a4e63cff812c2f5b4ae61f9fdfba8"
     ],
     [
      "block",
      "_make_handler",
      "3/3",
+     230,
      231,
-     232,
-     "megabrain > megabrain/frontends/http.py > def _make_handler(repo: _Repo, cors: str | None, enable_llm: bool, token: str | None=None)",
+     "megabrain > megabrain/frontends/http.py > def _make_handler(repo: RepoSession, cors: str | None, enable_llm: bool, token: str | None=None)",
      "5ebaec407bc18bc3fde033e8db1a20bf3e3ec3f8"
     ],
     [
      "function",
      "serve",
      null,
-     233,
-     257,
+     232,
+     256,
      "megabrain > megabrain/frontends/http.py > def serve(root, port: int=2134, host: str='127.0.0.1', cors: str | None=None, enable_llm: bool=True, token: str | None=None) -> None",
-     "204e3d1d7f9cc01ae66dc9db8b5f400259e6b33f"
+     "3514a9943673ba383c5f14554ebd7061ba4efa00"
     ]
    ],
-   "skeleton_sha": "3cbcc6f1ae8c2fd53afe43bf0b1a03372e33edcf",
+   "skeleton_sha": "c22af6a6dd99aa56077559630f74ef24d874c20b",
    "symbols": [
     [
      "log",
@@ -2732,24 +2725,17 @@
      "log = logging.getLogger(__name__)"
     ],
     [
-     "_Repo",
-     "constant",
-     59,
-     59,
-     "_Repo = RepoSession"
-    ],
-    [
      "_make_handler",
      "function",
-     64,
-     232,
-     "def _make_handler(repo: _Repo, cors: str | None, enable_llm: bool, token: str | None=None)"
+     63,
+     231,
+     "def _make_handler(repo: RepoSession, cors: str | None, enable_llm: bool, token: str | None=None)"
     ],
     [
      "serve",
      "function",
-     235,
-     257,
+     234,
+     256,
      "def serve(root, port: int=2134, host: str='127.0.0.1', cors: str | None=None, enable_llm: bool=True, token: str | None=None) -> None"
     ]
    ]
@@ -2790,7 +2776,7 @@
      199,
      298,
      "megabrain > megabrain/frontends/mcp.py > [_scope, _scope_root, call_tool]",
-     "55c938eb4185f3bda97a46b0fbbdae8313c098fd"
+     "350923b45a6a7bde7590c9382946a4dbd4644e66"
     ],
     [
      "function",
@@ -3972,12 +3958,12 @@
      "model_name, Embedder",
      null,
      1,
-     105,
+     97,
      "megabrain > megabrain/providers/embeddings.py > [model_name, Embedder]",
-     "da6d24c92e6d81e2d467dcc6cf54644fe8f199ba"
+     "84ee431463912eae518aa26d1b05a29be7e24439"
     ]
    ],
-   "skeleton_sha": "b99adc061ba8309f5e2098b4eab9ef4796b9b854",
+   "skeleton_sha": "19b13004583978af5e853420733b3e15c22a0396",
    "symbols": [
     [
      "model_name",
@@ -3987,53 +3973,39 @@
      "def model_name() -> str"
     ],
     [
-     "MODEL",
-     "constant",
-     33,
-     33,
-     "MODEL = model_name()"
-    ],
-    [
      "Embedder",
      "class",
-     36,
-     101,
+     32,
+     97,
      "class Embedder"
     ],
     [
      "Embedder.__init__",
      "method",
-     37,
-     54,
+     33,
+     50,
      "def __init__(self, api_key: str | None=None, model: str | None=None, dims: int | None=None, batch: int | None=None, cache_dir: Path | None=None)"
     ],
     [
      "Embedder._cpath",
      "method",
-     56,
-     58,
+     52,
+     54,
      "def _cpath(self, text: str) -> Path"
     ],
     [
      "Embedder.embed",
      "method",
-     60,
-     79,
+     56,
+     75,
      "def embed(self, texts: list[str], batch_size: int | None=None) -> np.ndarray"
     ],
     [
      "Embedder._request",
      "method",
-     81,
-     101,
+     77,
+     97,
      "def _request(self, batch: list[str]) -> list[np.ndarray]"
-    ],
-    [
-     "PplxEmbedder",
-     "constant",
-     105,
-     105,
-     "PplxEmbedder = Embedder"
     ]
    ]
   },
@@ -4105,7 +4077,7 @@
      1,
      27,
      "megabrain > megabrain/retrieval/bundle.py (module level)",
-     "d0c051f9d090dc1e19ddaf908b85eed2b71aafba"
+     "36c8a5f40fdc5b2670252e69fd5e82862855cd81"
     ],
     [
      "module",
@@ -4114,7 +4086,7 @@
      28,
      139,
      "megabrain > megabrain/retrieval/bundle.py > [search_with_state, search]",
-     "fae71d80103beb6abe408f5119799fac384ddefc"
+     "911e4d08b1e963bffd7aba67e1d8741362bb4d52"
     ],
     [
      "module",
@@ -4467,36 +4439,6 @@
     ]
    ]
   },
-  "megabrain/retrieval/query.py": {
-   "chunks": [
-    [
-     "module",
-     null,
-     null,
-     1,
-     57,
-     "megabrain > megabrain/retrieval/query.py (module level)",
-     "0d034b488b259aedfcc40f924b9ba77ee0ff783b"
-    ]
-   ],
-   "skeleton_sha": "b89934acc5866a821b658e978a33d4dc3e4395af",
-   "symbols": [
-    [
-     "_score_chunks",
-     "constant",
-     48,
-     48,
-     "_score_chunks = score_chunks"
-    ],
-    [
-     "__all__",
-     "constant",
-     50,
-     57,
-     "__all__ = ['SearchState', 'load_state', 'RetrievalParams', 'DEFAULT_PARAMS', 'score_chunks', '_score_chunks', 'ident_tok"
-    ]
-   ]
-  },
   "megabrain/retrieval/render.py": {
    "chunks": [
     [
@@ -4584,33 +4526,33 @@
    "chunks": [
     [
      "module",
-     "_is_test_path, _under_path, _apply_path_filter, _ident_tokens, QueryCtx",
+     "_is_test_path, under_path, apply_path_filter, ident_tokens, QueryCtx, ScoreLane",
      null,
      1,
-     117,
-     "megabrain > megabrain/retrieval/scoring.py > [_is_test_path, _under_path, _apply_path_filter, _ident_tokens, QueryCtx]",
-     "6f851277006201bdf68d722216020e9e477761c2"
+     124,
+     "megabrain > megabrain/retrieval/scoring.py > [_is_test_path, under_path, apply_path_filter, ident_tokens, QueryCtx, ScoreLane]",
+     "f238c63d55a958e6397f03fa4489fbd8829c4718"
     ],
     [
      "module",
-     "ScoreLane, DenseFileFusionLane, TestPenaltyLane, IssueLane",
+     "DenseFileFusionLane, TestPenaltyLane, IssueLane",
      null,
-     118,
-     242,
-     "megabrain > megabrain/retrieval/scoring.py > [ScoreLane, DenseFileFusionLane, TestPenaltyLane, IssueLane]",
-     "c922a74fde90f2ea4823941598103c0bb3b44788"
+     125,
+     237,
+     "megabrain > megabrain/retrieval/scoring.py > [DenseFileFusionLane, TestPenaltyLane, IssueLane]",
+     "b5314964c289931c65bb8a9bac4273840f2481da"
     ],
     [
      "module",
      "LexicalBoostLane, score_chunks",
      null,
-     243,
-     301,
+     238,
+     296,
      "megabrain > megabrain/retrieval/scoring.py > [LexicalBoostLane, score_chunks]",
-     "271d41b790c111e6a7ebcae79f121556ad5016eb"
+     "f2684deddc90fd181d1dcccbf40594a8f1ae7b0b"
     ]
    ],
-   "skeleton_sha": "87c434544b41fb97bb2a3e64bb4e9ba57c85e74f",
+   "skeleton_sha": "2d24ffc48f0403b3f48f4a27fd693be92923175d",
    "symbols": [
     [
      "TEST_DIR_SEGS",
@@ -4627,290 +4569,283 @@
      "def _is_test_path(relpath: str) -> bool"
     ],
     [
-     "_under_path",
+     "under_path",
      "function",
      52,
      59,
-     "def _under_path(relpath: str, path_filter: str) -> bool"
+     "def under_path(relpath: str, path_filter: str) -> bool"
     ],
     [
-     "_apply_path_filter",
+     "apply_path_filter",
      "function",
      62,
      73,
-     "def _apply_path_filter(metas: list, M: np.ndarray, path_filter: str | None)"
-    ],
-    [
-     "_ident_tokens",
-     "function",
-     76,
-     84,
-     "def _ident_tokens(text: str) -> set[str]"
+     "def apply_path_filter(metas: list, M: np.ndarray, path_filter: str | None)"
     ],
     [
      "ident_tokens",
-     "constant",
-     89,
-     89,
-     "ident_tokens = _ident_tokens"
+     "function",
+     76,
+     84,
+     "def ident_tokens(text: str) -> set[str]"
     ],
     [
      "QueryCtx",
      "class",
-     92,
-     117,
+     87,
+     112,
      "class QueryCtx"
     ],
     [
      "QueryCtx.st",
      "class_attr",
-     98,
-     98,
+     93,
+     93,
      "st: SearchState"
     ],
     [
      "QueryCtx.query",
      "class_attr",
-     99,
-     99,
+     94,
+     94,
      "query: str"
     ],
     [
      "QueryCtx.path_filter",
      "class_attr",
-     100,
-     100,
+     95,
+     95,
      "path_filter: str | None"
     ],
     [
      "QueryCtx.p",
      "class_attr",
-     101,
-     101,
+     96,
+     96,
      "p: RetrievalParams"
     ],
     [
      "QueryCtx.metas",
      "class_attr",
-     102,
-     102,
+     97,
+     97,
      "metas: list"
     ],
     [
      "QueryCtx.M",
      "class_attr",
-     103,
-     103,
+     98,
+     98,
      "M: np.ndarray"
     ],
     [
      "QueryCtx.fpaths",
      "class_attr",
-     104,
-     104,
+     99,
+     99,
      "fpaths: list"
     ],
     [
      "QueryCtx.F",
      "class_attr",
-     105,
-     105,
+     100,
+     100,
      "F: np.ndarray"
     ],
     [
      "QueryCtx.qv",
      "class_attr",
-     106,
-     106,
+     101,
+     101,
      "qv: np.ndarray"
     ],
     [
      "QueryCtx.cfi",
      "class_attr",
-     107,
-     107,
+     102,
+     102,
      "cfi: np.ndarray"
     ],
     [
      "QueryCtx.is_test",
      "class_attr",
-     108,
-     108,
+     103,
+     103,
      "is_test: np.ndarray"
     ],
     [
      "QueryCtx.qtok",
      "class_attr",
-     109,
-     109,
+     104,
+     104,
      "qtok: set"
     ],
     [
      "QueryCtx.store",
      "method",
-     111,
-     113,
+     106,
+     108,
      "def store(self)"
     ],
     [
      "QueryCtx.emb",
      "method",
-     115,
-     117,
+     110,
+     112,
      "def emb(self)"
     ],
     [
      "ScoreLane",
      "class",
-     120,
-     129,
+     115,
+     124,
      "class ScoreLane(Protocol)"
     ],
     [
      "ScoreLane.name",
      "class_attr",
-     125,
-     125,
+     120,
+     120,
      "name: str"
     ],
     [
      "ScoreLane.applies",
      "method",
-     127,
-     127,
+     122,
+     122,
      "def applies(self, ctx: QueryCtx) -> bool"
     ],
     [
      "ScoreLane.apply",
      "method",
-     129,
-     129,
+     124,
+     124,
      "def apply(self, ctx: QueryCtx, fused: np.ndarray | None) -> np.ndarray"
     ],
     [
      "DenseFileFusionLane",
      "class",
-     132,
-     143,
+     127,
+     138,
      "class DenseFileFusionLane"
     ],
     [
      "DenseFileFusionLane.name",
      "class_attr",
-     135,
-     135,
+     130,
+     130,
      "name = 'dense+file'"
     ],
     [
      "DenseFileFusionLane.applies",
      "method",
-     137,
-     138,
+     132,
+     133,
      "def applies(self, ctx: QueryCtx) -> bool"
     ],
     [
      "DenseFileFusionLane.apply",
      "method",
-     140,
-     143,
+     135,
+     138,
      "def apply(self, ctx: QueryCtx, fused: np.ndarray | None) -> np.ndarray"
     ],
     [
      "TestPenaltyLane",
      "class",
-     146,
-     155,
+     141,
+     150,
      "class TestPenaltyLane"
     ],
     [
      "TestPenaltyLane.name",
      "class_attr",
-     149,
-     149,
+     144,
+     144,
      "name = 'test-penalty'"
     ],
     [
      "TestPenaltyLane.applies",
      "method",
-     151,
-     152,
+     146,
+     147,
      "def applies(self, ctx: QueryCtx) -> bool"
     ],
     [
      "TestPenaltyLane.apply",
      "method",
-     154,
-     155,
+     149,
+     150,
      "def apply(self, ctx: QueryCtx, fused: np.ndarray) -> np.ndarray"
     ],
     [
      "IssueLane",
      "class",
-     158,
-     242,
+     153,
+     237,
      "class IssueLane"
     ],
     [
      "IssueLane.name",
      "class_attr",
-     163,
-     163,
+     158,
+     158,
      "name = 'issue'"
     ],
     [
      "IssueLane.applies",
      "method",
-     165,
-     166,
+     160,
+     161,
      "def applies(self, ctx: QueryCtx) -> bool"
     ],
     [
      "IssueLane.apply",
      "method",
-     168,
-     242,
+     163,
+     237,
      "def apply(self, ctx: QueryCtx, fused: np.ndarray) -> np.ndarray"
     ],
     [
      "LexicalBoostLane",
      "class",
-     245,
-     266,
+     240,
+     261,
      "class LexicalBoostLane"
     ],
     [
      "LexicalBoostLane.name",
      "class_attr",
-     252,
-     252,
+     247,
+     247,
      "name = 'lexical'"
     ],
     [
      "LexicalBoostLane.applies",
      "method",
-     254,
-     255,
+     249,
+     250,
      "def applies(self, ctx: QueryCtx) -> bool"
     ],
     [
      "LexicalBoostLane.apply",
      "method",
-     257,
-     266,
+     252,
+     261,
      "def apply(self, ctx: QueryCtx, fused: np.ndarray) -> np.ndarray"
     ],
     [
      "LANES",
      "constant",
-     271,
-     272,
+     266,
+     267,
      "LANES: tuple[ScoreLane, ...] = (DenseFileFusionLane(), TestPenaltyLane(), IssueLane(), LexicalBoostLane())"
     ],
     [
      "score_chunks",
      "function",
-     275,
-     301,
+     270,
+     296,
      "def score_chunks(st: SearchState, query: str, path_filter: str | None=None) -> tuple[list, np.ndarray]"
     ]
    ]

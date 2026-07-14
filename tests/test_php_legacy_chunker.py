@@ -164,7 +164,8 @@ def test_chunks_for_file_scores_and_selection(tmp_path, fake_embedder):
     from megabrain.indexing.indexer import index_repo
     index_repo(tmp_path, quiet=True)
 
-    from megabrain.retrieval.query import chunks_for_file_root, load_state, search_with_state
+    from megabrain.retrieval.bundle import chunks_for_file_root, search_with_state
+    from megabrain.retrieval.state import load_state
     res = chunks_for_file_root(tmp_path, "inc/funciones.php",
                                "calcular total factura IVA descuento")
     assert res["chunks"], "file must have chunks"

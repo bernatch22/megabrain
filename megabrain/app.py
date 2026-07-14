@@ -60,7 +60,7 @@ def _maybe_reindex(root: Path, reindex: bool) -> None:
 def query(root: Path, task: str, path_filter: str | None = None,
           rerank: bool = False, reindex: bool = True) -> dict:
     """Single-repo retrieval bundle."""
-    from .retrieval.query import search
+    from .retrieval.bundle import search
     _maybe_reindex(root, reindex)
     return search(root, task, rerank=rerank, path_filter=path_filter)
 
@@ -69,7 +69,7 @@ def query_multi(roots: list[Path], task: str,
                 path_filters: list[str | None] | None = None,
                 reindex: bool = True) -> dict:
     """Cross-repo retrieval (CLI comma-separated paths)."""
-    from .retrieval.query import search_multi
+    from .retrieval.bundle import search_multi
     if reindex:
         for r in dict.fromkeys(roots):
             _maybe_reindex(r, True)
@@ -80,7 +80,7 @@ def prune(root: Path, task: str, path_filter: str | None = None,
           with_text: bool = True, include_pruned: bool = False,
           reindex: bool = True) -> dict:
     """No-LLM noise pruning -> flat ranked signal chunks."""
-    from .retrieval.query import prune_search_root
+    from .retrieval.bundle import prune_search_root
     _maybe_reindex(root, reindex)
     return prune_search_root(root, task, path_filter=path_filter,
                              with_text=with_text, include_pruned=include_pruned)
@@ -102,14 +102,14 @@ def get(root: Path, sub: str | None, file: str, symbol: str | None = None) -> st
     """One file or symbol. Owns resolve+rel_join so a bare name under a scope
     resolves. NOTE: get does NOT auto-reindex — faithful to today's callers
     (CLI/MCP get skip the refresh; a raw file read doesn't need a fresh index)."""
-    from .retrieval.query import get_code
+    from .retrieval.files import get_code
     return get_code(root, rel_join(root, sub, file), symbol)
 
 
 def chunks(root: Path, sub: str | None, file: str, query_str: str,
            path_filter: str | None = None, reindex: bool = True) -> dict:
     """Every chunk of one file, scored + selected flags."""
-    from .retrieval.query import chunks_for_file_root
+    from .retrieval.bundle import chunks_for_file_root
     _maybe_reindex(root, reindex)
     return chunks_for_file_root(root, rel_join(root, sub, file), query_str,
                                 path_filter=path_filter)

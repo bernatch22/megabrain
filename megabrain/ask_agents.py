@@ -33,7 +33,10 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from . import providers
-from .retrieval.query import get_code, load_state, render, search_with_state
+from .retrieval.bundle import search_with_state
+from .retrieval.files import get_code
+from .retrieval.render import render
+from .retrieval.state import load_state
 
 log = logging.getLogger(__name__)
 
@@ -74,7 +77,7 @@ def classify_bundle(res: dict, question: str = "") -> dict:
         if near >= 4:
             reasons.append(f"{near} RELATED files near score parity")
     if question:
-        from .retrieval.query import ident_tokens
+        from .retrieval.scoring import ident_tokens
         if len(ident_tokens(question)) > 25:
             reasons.append("issue-length query")
     return {"broad": bool(reasons), "reasons": reasons}

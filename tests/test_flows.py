@@ -8,7 +8,9 @@ import pytest
 from megabrain import flows as flows_mod
 from megabrain.flows import cache_flow
 from megabrain.indexing.indexer import index_repo
-from megabrain.retrieval.query import load_state, render, search_with_state
+from megabrain.retrieval.bundle import search_with_state
+from megabrain.retrieval.render import render
+from megabrain.retrieval.state import load_state
 from megabrain.store import Store
 
 VAD = ('def detect_voice(frame):\n    """barge in detection threshold."""\n'

@@ -7,7 +7,7 @@ import re
 
 from megabrain import Chunk, ChunkStrategy, FileResult, Symbol, validate_partition
 from megabrain.indexing.indexer import index_repo
-from megabrain.retrieval.query import search
+from megabrain.retrieval.bundle import search
 from megabrain.store import Store
 
 SQL = (
