@@ -404,34 +404,22 @@ single-agent ask → full bundle.
 
 ## 6. Layout
 
-The tree mirrors the pipeline — content → index → retrieval → narration → surfaces:
+The tree mirrors the pipeline — content → index → retrieval → narration →
+surfaces — one subpackage per layer (src/ layout, PyPA standard). Loose files
+at the package root are only the cross-cutting spine:
 
 ```
-megabrain/
+src/megabrain/
   __init__.py        public API (lazy, typed)
-  flows.py           self-caching workflow retrieval: ask syntheses cached in the
-                     index (write: LLM+embed at ask time · read: cosine only ·
-                     invalidation: sha of every cited file · dedup by cosine)
-  forge.py           self-authored chunkers (coverage): uncovered-ext census · LLM
-                     generate · partition-oracle validate (repair loop) · trust install
-  forge_specialize.py  specialization TOOLKIT (no LLM): diagnose poorly-chunked
-                     covered files (table/blob/window) · lit_baseline (the recipe to
-                     beat) · gate_strategy installs a HAND-WRITTEN chunker only on a
-                     measured A/B win over the baseline
-  forge_eval.py      the empirical gate: neutral probe spans from file structure ·
-                     rank-aware span-IoU/hit@k on every changed file · ab_gate win/lose
-  ask.py             narrated walkthrough with verbatim splice (code/docs/code+docs modes)
-  ask_agents.py      ask v2: broad-query classifier · planner · parallel tool-enabled
-                     sub-agents · synthesizer · the stream_events event driver
+  __main__.py        python -m megabrain == the megabrain script
   errors.py          structured error taxonomy (MegabrainError → code + http_status)
   model.py           ChunkMeta — the frozen read-side chunk record
   app.py             application-service layer: one use-case per verb + the
                      shared pre-steps (resolve_scope · rel_join · normalize_agents
-                     · reindex policy) all frontends call
-  docsearch.py       docs-site search projection (was trapped in http)
-  session.py         RepoSession — warm, self-invalidating state (shared by http + mcp)
-  store.py           SQLite schema + loads + row packing + flow integrity (close/context-manager)
-  chunkers/          CONTENT → CHUNKS: base (contract) · cast (the shared cAST
+                     · reindex policy) every surface calls
+  mcp_server.py      launcher shim — keeps `python3 -m megabrain.mcp_server` registrations working
+
+  chunkers/          CONTENT → CHUNKS: base (contract) · cast (the ONE cAST
                      engine) · python · treesitter+LangSpec (TreeChunkerOps) · php · markdown
   indexing/          BUILD the index
     indexer.py         registry-driven incremental walk + maybe_reindex (60s TTL);
@@ -439,8 +427,11 @@ megabrain/
     strategies.py      ext → strategy registry + ChunkStrategy protocol (custom via
                        index_repo) + trust-gated repo-local loading (.megabrain/strategies)
     graph.py           import/call edges (py · ts/js · php)
+  storage/           PERSISTENCE
+    store.py           SQLite schema + loads + row packing + flow integrity
+    flows.py           flow-cache MECHANICS (write/dedupe · cosine read · verbatim
+                       serve · sha invalidation — no LLM; retrieval may import this)
   retrieval/         ANSWER queries (no LLM in this package — rule 1)
-    query.py           compatibility facade re-exporting the split modules below
     params.py          RetrievalParams — every tuning knob, frozen + injectable
     state.py           SearchState + load_state (warm state, lifecycle)
     scoring.py         score_chunks — self-gating lane pipeline (dense+fusion ·
@@ -448,17 +439,29 @@ megabrain/
     bundle.py          rank + tier (CORE/RELATED) · selection · prune · chunks_for_file · multi
     render.py          bundle → markdown (pure view)
     files.py           get_code — the file-serving containment boundary
+    docsearch.py       docs-site search projection
     issue.py           deterministic issue parsing (py + js/ts frames, variants)
     bm25.py            sparse entity-ID lane (postings)
     rerank.py          optional listwise LLM reorder (permute-only, --best)
+  ask/               NARRATE (the only layer that talks to an LLM at query time)
+    narrator.py        walkthrough with verbatim splice (code/docs/code+docs modes)
+    agents.py          ask v2: classifier · planner · parallel tool-enabled
+                       sub-agents · synthesizer · the stream_events event driver
+    warmup.py          flow-cache warm/refresh orchestration (the LLM half cut
+                       out of flows so storage never imports upward)
+  forge/             STRATEGY GENERATION & MEASUREMENT
+    coverage.py        uncovered-ext census · LLM generate · partition-oracle
+                       validate (repair loop) · trust install
+    ab_gate.py         the empirical gate: neutral probes · rank-aware
+                       span-IoU/hit@k · champion-vs-challenger win/lose
+    specialize.py      hand-written specialization, installed only on a measured win
   providers/         everything that talks to a model API
     base.py            ChatProvider Protocol (available/chat_text/stream_chat/agent_stream)
     __init__.py        provider registry + resolve() (auto claude/openrouter) + OpenAI-compat clients + keys
     claude.py          Claude Agent SDK transport (subscription credits / ANTHROPIC_API_KEY)
     embeddings.py      embed client (construction-time config; int8 decode, L2 norm, atomic disk cache)
-  frontends/         thin adapters over app.py (map transport args → use-case → render)
-    cli.py · mcp.py · http.py   (megabrain CLI · stdio MCP · serve-api)
-  mcp_server.py      launcher shim — keeps `python3 -m megabrain.mcp_server` registrations working
+  server/            SURFACES — thin adapters over app.py (map args → use-case → render)
+    cli.py · mcp.py · http.py · session.py (RepoSession warm state, shared)
 examples/            programmatic API · custom .sql chunker · chunk heatmap · web demo
 ```
 

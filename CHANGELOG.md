@@ -33,6 +33,18 @@ output are pinned byte-for-byte by new golden tests. See `REFACTOR.md`.
   (dense+fusion · test-penalty · issue · lexical) over one `QueryCtx` — adding a
   signal is one lane class + one entry (OCP). Bit-identical: a float-array
   differential harness (`tests/test_scoring_lanes.py`) proves no score moved.
+- **src/ layout + one subpackage per layer** (PyPA standard): `storage/`
+  (store + flow-cache mechanics), `ask/` (narrator · agents · warmup — the LLM
+  half of flows cut out so storage never imports upward), `forge/` (coverage ·
+  ab_gate · specialize), `server/` (cli · mcp · http · session),
+  `retrieval/docsearch`, `__main__.py`. Package root keeps only the
+  cross-cutting spine. `python3 -m megabrain.mcp_server` and the `megabrain`
+  script are unchanged; `from megabrain.ask import ask` still works (package
+  interface). No compatibility facades: every import names the real module.
+- **Anti-shadowing guard** (`tests/test_no_shadowing.py`): an editable install
+  of the old engine can silently fill in missing `megabrain.*` names via
+  setuptools' meta-path finder; the guard asserts every loaded module lives
+  under this repo's `src/` and retired names never resolve from here.
 - **`TreeChunkerOps`** public contract for the php→tree-sitter reuse seam.
 - **Lifecycle**: `SearchState`/`Store` close via context managers everywhere;
   `index_repo` owns its connection and returns stats (the library never prints).
