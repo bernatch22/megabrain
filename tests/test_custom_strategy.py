@@ -8,7 +8,7 @@ import re
 from megabrain import Chunk, ChunkStrategy, FileResult, Symbol, validate_partition
 from megabrain.indexing.indexer import index_repo
 from megabrain.retrieval.bundle import search
-from megabrain.store import Store
+from megabrain.storage.store import Store
 
 SQL = (
     "-- customers master table\n"

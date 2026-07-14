@@ -17,7 +17,7 @@ from pathlib import Path
 import numpy as np
 
 from ..providers.embeddings import Embedder
-from ..store import Store
+from ..storage.store import Store
 from .params import DEFAULT_PARAMS, RetrievalParams
 
 
@@ -76,7 +76,7 @@ def load_state(root: Path, check_same_thread: bool = True,
     # flow cache is opt-in and OFF by default: unless the mode is on for this
     # repo, flows stay empty and the read path below is a pure no-op — plain
     # query/ask behave exactly as before, at zero cost.
-    from ..flows import enabled as _flows_on
+    from ..storage.flows import enabled as _flows_on
     flows, FL, FLQ = store.load_flows() if _flows_on(root) else ([], None, None)
     return SearchState(store, Embedder(), metas, M, fpaths, fskels, F, repo,
                        flows=flows, FL=FL, FLQ=FLQ,

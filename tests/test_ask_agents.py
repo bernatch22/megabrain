@@ -3,8 +3,8 @@ fan-out event flow with a fake chat provider (offline; no SDK, no network)."""
 
 from types import SimpleNamespace
 
-from megabrain import ask_agents
-from megabrain.ask import _Splicer
+from megabrain.ask import agents as ask_agents
+from megabrain.ask.narrator import _Splicer
 
 
 def _t1(file, score):

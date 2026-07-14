@@ -22,7 +22,7 @@ import types
 import pytest
 
 from megabrain.ask import ask, render_ask
-from megabrain.ask_agents import stream_events
+from megabrain.ask.agents import stream_events
 
 QUESTION = "how do login auth, invoices and utils work together end to end"
 

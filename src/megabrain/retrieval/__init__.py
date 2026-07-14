@@ -1,7 +1,6 @@
 """Answering queries — no LLM in this package (locked rule #1).
 
-Layered by responsibility (import `megabrain.retrieval.query` for the stable
-surface, or the concrete modules directly):
+Layered by responsibility — import the concrete module you need:
 
     state    warm per-repo SearchState + load_state (lifecycle)
     scoring  score_chunks + path/test/ident helpers — the one scoring truth

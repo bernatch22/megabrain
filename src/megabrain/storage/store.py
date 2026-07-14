@@ -14,10 +14,10 @@ from typing import TYPE_CHECKING, Sequence
 
 import numpy as np
 
-from .model import ChunkMeta
+from ..model import ChunkMeta
 
 if TYPE_CHECKING:
-    from .chunkers import Chunk, Symbol
+    from ..chunkers import Chunk, Symbol
 
 
 def resolve_root(path: Path) -> tuple[Path, str]:
@@ -37,7 +37,7 @@ def resolve_root(path: Path) -> tuple[Path, str]:
         if (anc / ".megabrain" / "db.sqlite").exists():
             rel = p.relative_to(anc).as_posix()
             return anc, ("" if rel == "." else rel)
-    from .errors import IndexNotFound
+    from ..errors import IndexNotFound
     raise IndexNotFound.at(p)
 
 

@@ -185,7 +185,7 @@ def _make_handler(repo: RepoSession, cors: str | None, enable_llm: bool,
                     if not q:
                         return self._err(400, "missing question")
                     ag = body.get("agents", "auto")
-                    from ..ask_agents import stream_events
+                    from ..ask.agents import stream_events
                     self.send_response(200)
                     self.send_header("Content-Type",
                                      "text/event-stream; charset=utf-8")

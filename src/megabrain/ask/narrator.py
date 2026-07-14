@@ -13,10 +13,10 @@ import re
 import sys
 from pathlib import Path
 
-from . import providers
-from .indexing.strategies import MarkdownStrategy
-from .retrieval.render import lang_of, render
-from .retrieval.state import SearchState
+from .. import providers
+from ..indexing.strategies import MarkdownStrategy
+from ..retrieval.render import lang_of, render
+from ..retrieval.state import SearchState
 
 # ask is a CODE walkthrough: docs (markdown) are excluded from its candidates so a
 # code explanation isn't diluted with prose. docs_only flips it to a docs-only
@@ -75,7 +75,7 @@ def _flow_ctx(res: dict) -> str:
     flows = res.get("flows") or []
     if not flows:
         return ""
-    from .flows import strip_code
+    from ..storage.flows import strip_code
     parts = [f'(cached from: "{f["question"]}")\n{strip_code(f["text"])}' for f in flows]
     return ("\nKNOWN FLOW — a walkthrough of this workflow synthesized by a "
             "previous ask over the SAME code (context only; do NOT cite it — "
@@ -218,7 +218,7 @@ def ask(root: Path, question: str, rerank: bool = False,
     out only when ask_agents.classify_bundle says the question is broad),
     True = force the fan-out. Fan-out is fail-open: any error falls back to
     the single-agent call, then to the bundle."""
-    from .ask_agents import stream_events
+    from .agents import stream_events
     out = stream_events(Path(root), question, lambda ev: None, agents=agents,
                         rerank=rerank, docs_only=docs_only,
                         include_docs=include_docs, path_filter=path_filter,
@@ -307,7 +307,7 @@ def stream_ask(root: Path, question: str, out=None, rerank: bool = False,
     keep using ask()/render_ask()."""
     import json as _json
 
-    from .ask_agents import stream_events
+    from .agents import stream_events
     out = out or sys.stdout
 
     def write(s: str):

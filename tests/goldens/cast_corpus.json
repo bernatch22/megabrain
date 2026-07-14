@@ -60,7 +60,7 @@
      1,
      106,
      "megabrain > megabrain/app.py > [resolve_scope, rel_join, normalize_agents, _maybe_reindex, query, query_multi, prune, ask, get]",
-     "41a0e0413186930cec7ffcbceb9ce653a8d0b921"
+     "db6777c28a06fa16bc94e55b92888b9190588c93"
     ],
     [
      "module",
@@ -69,7 +69,7 @@
      107,
      128,
      "megabrain > megabrain/app.py > [chunks, index, stats]",
-     "404bc705738a8d1ee100f00617c8498199c10cfe"
+     "e3d5400d3e71b7a1af7fb3fb2c25890aefd701a9"
     ]
    ],
    "skeleton_sha": "d3a3e2d7ed25b847786d1c8f45f0c8675c5cc889",
@@ -160,197 +160,30 @@
     ]
    ]
   },
-  "megabrain/ask.py": {
+  "megabrain/ask/__init__.py": {
    "chunks": [
     [
      "module",
-     "_candidates, _flow_ctx",
+     null,
      null,
      1,
-     83,
-     "megabrain > megabrain/ask.py > [_candidates, _flow_ctx]",
-     "a263ef6b506a848ee4af2c0314c18c2ad15e60f0"
-    ],
-    [
-     "module",
-     "_numbered, _build_body, _code_block",
-     null,
-     84,
-     165,
-     "megabrain > megabrain/ask.py > [_numbered, _build_body, _code_block]",
-     "5e02c5b734c8a5144c7b4d776d080c2041b88f06"
-    ],
-    [
-     "module",
-     "_Splicer, ask, cited_files, _splice",
-     null,
-     166,
-     267,
-     "megabrain > megabrain/ask.py > [_Splicer, ask, cited_files, _splice]",
-     "5960b3adabd3124f465963f6ccc10293521803ef"
-    ],
-    [
-     "module",
-     "render_ask, stream_ask",
-     null,
-     268,
-     370,
-     "megabrain > megabrain/ask.py > [render_ask, stream_ask]",
-     "77dc9057a351321a1ffbf2131e0853eda5a1536b"
+     17,
+     "megabrain > megabrain/ask/__init__.py (module level)",
+     "3fdeec263f0ec45a8551d53839be283c947f8bc5"
     ]
    ],
-   "skeleton_sha": "f46919598a135d08528fe9d6edd4aeff45a16a98",
+   "skeleton_sha": "346bb7a9eda81abe7cb8f6bfd93d3bc19624b021",
    "symbols": [
     [
-     "DOC_EXTS",
+     "__all__",
      "constant",
-     24,
-     24,
-     "DOC_EXTS = MarkdownStrategy.exts"
-    ],
-    [
-     "MAX_CTX_CHARS",
-     "constant",
-     26,
-     26,
-     "MAX_CTX_CHARS = 200000"
-    ],
-    [
-     "_SEL",
-     "constant",
-     31,
-     31,
-     "_SEL = re.compile('\\\\[\\\\[(\\\\d+)(?::\\\\s*[Ll]?(\\\\d+)\\\\s*-\\\\s*[Ll]?(\\\\d+))?\\\\s*\\\\]\\\\]')"
-    ],
-    [
-     "_candidates",
-     "function",
-     34,
-     59,
-     "def _candidates(res: dict, docs_only: bool=False, include_docs: bool=False) -> list[dict]"
-    ],
-    [
-     "_RULES",
-     "constant",
-     62,
-     68,
-     "_RULES = '- NEVER paste or quote code. Cite it with DOUBLE brackets: [[3]] (whole chunk) or [[3:705-731]] (file lines 70"
-    ],
-    [
-     "_flow_ctx",
-     "function",
-     71,
-     83,
-     "def _flow_ctx(res: dict) -> str"
-    ],
-    [
-     "_numbered",
-     "function",
-     86,
-     93,
-     "def _numbered(c: dict) -> str"
-    ],
-    [
-     "_build_body",
-     "function",
-     96,
-     118,
-     "def _build_body(question: str, cands: list[dict], flow_ctx: str='') -> dict"
-    ],
-    [
-     "_code_block",
-     "function",
-     121,
-     158,
-     "def _code_block(c: dict, lo: int | None, hi: int | None, seen: set, file_syms: dict[str, list[dict]]) -> str"
-    ],
-    [
-     "_PARTIAL",
-     "constant",
-     165,
-     165,
-     "_PARTIAL = re.compile('\\\\[(?:\\\\[(?:\\\\d+(?::\\\\s*[Ll]?\\\\d*(?:-\\\\s*[Ll]?\\\\d*)?)?\\\\]?)?)?$')"
-    ],
-    [
-     "_Splicer",
-     "class",
-     168,
-     206,
-     "class _Splicer"
-    ],
-    [
-     "_Splicer.__init__",
-     "method",
-     176,
-     180,
-     "def __init__(self, cands: list[dict], file_syms: dict[str, list[dict]])"
-    ],
-    [
-     "_Splicer._sub",
-     "method",
-     182,
-     189,
-     "def _sub(self, m)"
-    ],
-    [
-     "_Splicer.feed",
-     "method",
-     191,
-     198,
-     "def feed(self, d: str) -> str"
-    ],
-    [
-     "_Splicer.flush",
-     "method",
-     200,
-     202,
-     "def flush(self) -> str"
-    ],
-    [
-     "_Splicer.files",
-     "method",
-     204,
-     206,
-     "def files(self) -> int"
-    ],
-    [
-     "ask",
-     "function",
-     209,
-     234,
-     "def ask(root: Path, question: str, rerank: bool=False, docs_only: bool=False, path_filter: str | None=None, state: SearchState | None=None, include_docs: bool=False, agents: bool | None=False) -> dict"
-    ],
-    [
-     "cited_files",
-     "function",
-     237,
-     247,
-     "def cited_files(out: dict) -> list[str]"
-    ],
-    [
-     "_splice",
-     "function",
-     250,
-     267,
-     "def _splice(out: dict) -> tuple[str, set, set]"
-    ],
-    [
-     "render_ask",
-     "function",
-     270,
-     293,
-     "def render_ask(out: dict) -> str"
-    ],
-    [
-     "stream_ask",
-     "function",
-     296,
-     370,
-     "def stream_ask(root: Path, question: str, out=None, rerank: bool=False, show_map: bool=True, docs_only: bool=False, path_filter: str | None=None, include_docs: bool=False, agents: bool | None=None) -> None"
+     17,
+     17,
+     "__all__ = ['ask', 'render_ask', 'stream_ask', 'cited_files']"
     ]
    ]
   },
-  "megabrain/ask_agents.py": {
+  "megabrain/ask/agents.py": {
    "chunks": [
     [
      "module",
@@ -358,8 +191,8 @@
      null,
      1,
      115,
-     "megabrain > megabrain/ask_agents.py > [_top_dir, classify_bundle, repo_map, _chunk_lines]",
-     "b78b75e9fd1fd329cbbfb48a4ab1a17da8f7b0a7"
+     "megabrain > megabrain/ask/agents.py > [_top_dir, classify_bundle, repo_map, _chunk_lines]",
+     "11886141bf670ce3ddc503616195a08020711fea"
     ],
     [
      "module",
@@ -367,7 +200,7 @@
      null,
      116,
      239,
-     "megabrain > megabrain/ask_agents.py > [_plan_llm, _plan_cluster, _plan, _tools]",
+     "megabrain > megabrain/ask/agents.py > [_plan_llm, _plan_cluster, _plan, _tools]",
      "0607f75a489f585cee8d585b7a469f9170d65148"
     ],
     [
@@ -376,8 +209,8 @@
      null,
      240,
      346,
-     "megabrain > megabrain/ask_agents.py > [_wrap_tools, _openrouter_agent, _agent_llm, _sub_rules, _subagent_prompt]",
-     "b444961a7bdbf3446be62fa2e1537a0038f5b785"
+     "megabrain > megabrain/ask/agents.py > [_wrap_tools, _openrouter_agent, _agent_llm, _sub_rules, _subagent_prompt]",
+     "1cf9dffbaccadfebad2fc8032ff3d605e701466d"
     ],
     [
      "module",
@@ -385,8 +218,8 @@
      null,
      347,
      458,
-     "megabrain > megabrain/ask_agents.py > [_synth_body, run_agents]",
-     "30b2276809ad03a3343a60dc6090f2badc6c211b"
+     "megabrain > megabrain/ask/agents.py > [_synth_body, run_agents]",
+     "d5ca1f099a6c3d6207f678a62624e3ef42e1895b"
     ],
     [
      "block",
@@ -394,8 +227,8 @@
      "1/2",
      459,
      565,
-     "megabrain > megabrain/ask_agents.py > def stream_events(root, question: str, on_event, *, agents: bool | None=None, rerank: bool=False, show_map: bool=True, docs_only: bool=False, include_docs: bool=False, path_filter: str | None=None, state=None) -> dict",
-     "be2057cad076f4435c4770c2d391445a29ac717c"
+     "megabrain > megabrain/ask/agents.py > def stream_events(root, question: str, on_event, *, agents: bool | None=None, rerank: bool=False, show_map: bool=True, docs_only: bool=False, include_docs: bool=False, path_filter: str | None=None, state=None) -> dict",
+     "a97432054a8f9bc1cc33a550bfcb84eacd6efb67"
     ],
     [
      "block",
@@ -403,11 +236,11 @@
      "2/2",
      566,
      577,
-     "megabrain > megabrain/ask_agents.py > def stream_events(root, question: str, on_event, *, agents: bool | None=None, rerank: bool=False, show_map: bool=True, docs_only: bool=False, include_docs: bool=False, path_filter: str | None=None, state=None) -> dict",
-     "1e147ac631bf0e8ee3aee9987d036778604c43ec"
+     "megabrain > megabrain/ask/agents.py > def stream_events(root, question: str, on_event, *, agents: bool | None=None, rerank: bool=False, show_map: bool=True, docs_only: bool=False, include_docs: bool=False, path_filter: str | None=None, state=None) -> dict",
+     "5a741f82421f0497ac76c212f02bbd51ffc3663d"
     ]
    ],
-   "skeleton_sha": "9e7eeb0813bd55d8d2ebc2e642f4fb683d3bf582",
+   "skeleton_sha": "dfbaa70ae5555072c8deb4d6e3fe6bf4b910f629",
    "symbols": [
     [
      "log",
@@ -583,6 +416,249 @@
      463,
      577,
      "def stream_events(root, question: str, on_event, *, agents: bool | None=None, rerank: bool=False, show_map: bool=True, docs_only: bool=False, include_docs: bool=False, path_filter: str | None=None, state=None) -> dict"
+    ]
+   ]
+  },
+  "megabrain/ask/narrator.py": {
+   "chunks": [
+    [
+     "module",
+     "_candidates, _flow_ctx",
+     null,
+     1,
+     83,
+     "megabrain > megabrain/ask/narrator.py > [_candidates, _flow_ctx]",
+     "6a82c3ec5347b9270ffa658e1a11bb3cbbf72de0"
+    ],
+    [
+     "module",
+     "_numbered, _build_body, _code_block",
+     null,
+     84,
+     165,
+     "megabrain > megabrain/ask/narrator.py > [_numbered, _build_body, _code_block]",
+     "5e02c5b734c8a5144c7b4d776d080c2041b88f06"
+    ],
+    [
+     "module",
+     "_Splicer, ask, cited_files, _splice",
+     null,
+     166,
+     267,
+     "megabrain > megabrain/ask/narrator.py > [_Splicer, ask, cited_files, _splice]",
+     "4ab8a80e1b18055b2c3f6768c136d985360e4ac7"
+    ],
+    [
+     "module",
+     "render_ask, stream_ask",
+     null,
+     268,
+     370,
+     "megabrain > megabrain/ask/narrator.py > [render_ask, stream_ask]",
+     "028d2a3fcab98415aa8105dcdf8b9602a57e6419"
+    ]
+   ],
+   "skeleton_sha": "42410aa5e2df9bd02bc835afd718cee30095b706",
+   "symbols": [
+    [
+     "DOC_EXTS",
+     "constant",
+     24,
+     24,
+     "DOC_EXTS = MarkdownStrategy.exts"
+    ],
+    [
+     "MAX_CTX_CHARS",
+     "constant",
+     26,
+     26,
+     "MAX_CTX_CHARS = 200000"
+    ],
+    [
+     "_SEL",
+     "constant",
+     31,
+     31,
+     "_SEL = re.compile('\\\\[\\\\[(\\\\d+)(?::\\\\s*[Ll]?(\\\\d+)\\\\s*-\\\\s*[Ll]?(\\\\d+))?\\\\s*\\\\]\\\\]')"
+    ],
+    [
+     "_candidates",
+     "function",
+     34,
+     59,
+     "def _candidates(res: dict, docs_only: bool=False, include_docs: bool=False) -> list[dict]"
+    ],
+    [
+     "_RULES",
+     "constant",
+     62,
+     68,
+     "_RULES = '- NEVER paste or quote code. Cite it with DOUBLE brackets: [[3]] (whole chunk) or [[3:705-731]] (file lines 70"
+    ],
+    [
+     "_flow_ctx",
+     "function",
+     71,
+     83,
+     "def _flow_ctx(res: dict) -> str"
+    ],
+    [
+     "_numbered",
+     "function",
+     86,
+     93,
+     "def _numbered(c: dict) -> str"
+    ],
+    [
+     "_build_body",
+     "function",
+     96,
+     118,
+     "def _build_body(question: str, cands: list[dict], flow_ctx: str='') -> dict"
+    ],
+    [
+     "_code_block",
+     "function",
+     121,
+     158,
+     "def _code_block(c: dict, lo: int | None, hi: int | None, seen: set, file_syms: dict[str, list[dict]]) -> str"
+    ],
+    [
+     "_PARTIAL",
+     "constant",
+     165,
+     165,
+     "_PARTIAL = re.compile('\\\\[(?:\\\\[(?:\\\\d+(?::\\\\s*[Ll]?\\\\d*(?:-\\\\s*[Ll]?\\\\d*)?)?\\\\]?)?)?$')"
+    ],
+    [
+     "_Splicer",
+     "class",
+     168,
+     206,
+     "class _Splicer"
+    ],
+    [
+     "_Splicer.__init__",
+     "method",
+     176,
+     180,
+     "def __init__(self, cands: list[dict], file_syms: dict[str, list[dict]])"
+    ],
+    [
+     "_Splicer._sub",
+     "method",
+     182,
+     189,
+     "def _sub(self, m)"
+    ],
+    [
+     "_Splicer.feed",
+     "method",
+     191,
+     198,
+     "def feed(self, d: str) -> str"
+    ],
+    [
+     "_Splicer.flush",
+     "method",
+     200,
+     202,
+     "def flush(self) -> str"
+    ],
+    [
+     "_Splicer.files",
+     "method",
+     204,
+     206,
+     "def files(self) -> int"
+    ],
+    [
+     "ask",
+     "function",
+     209,
+     234,
+     "def ask(root: Path, question: str, rerank: bool=False, docs_only: bool=False, path_filter: str | None=None, state: SearchState | None=None, include_docs: bool=False, agents: bool | None=False) -> dict"
+    ],
+    [
+     "cited_files",
+     "function",
+     237,
+     247,
+     "def cited_files(out: dict) -> list[str]"
+    ],
+    [
+     "_splice",
+     "function",
+     250,
+     267,
+     "def _splice(out: dict) -> tuple[str, set, set]"
+    ],
+    [
+     "render_ask",
+     "function",
+     270,
+     293,
+     "def render_ask(out: dict) -> str"
+    ],
+    [
+     "stream_ask",
+     "function",
+     296,
+     370,
+     "def stream_ask(root: Path, question: str, out=None, rerank: bool=False, show_map: bool=True, docs_only: bool=False, path_filter: str | None=None, include_docs: bool=False, agents: bool | None=None) -> None"
+    ]
+   ]
+  },
+  "megabrain/ask/warmup.py": {
+   "chunks": [
+    [
+     "module",
+     "_research_questions, warm_flows",
+     null,
+     1,
+     92,
+     "megabrain > megabrain/ask/warmup.py > [_research_questions, warm_flows]",
+     "5111057d43afeb62c8ab8deb566f5d5206b974ae"
+    ],
+    [
+     "function",
+     "refresh_stale",
+     null,
+     93,
+     125,
+     "megabrain > megabrain/ask/warmup.py > def refresh_stale(root, ask_fn=None, quiet: bool=False) -> dict",
+     "e22b03c6089fbfa46bfa986b81468e45b6b1b0df"
+    ]
+   ],
+   "skeleton_sha": "3da64eed9c657c96776ed77eba35a49bb4665da3",
+   "symbols": [
+    [
+     "log",
+     "constant",
+     23,
+     23,
+     "log = logging.getLogger(__name__)"
+    ],
+    [
+     "_research_questions",
+     "function",
+     26,
+     61,
+     "def _research_questions(root: Path, limit: int) -> list[str]"
+    ],
+    [
+     "warm_flows",
+     "function",
+     64,
+     92,
+     "def warm_flows(root: Path, limit: int=6, ask_fn=None, quiet: bool=False) -> dict"
+    ],
+    [
+     "refresh_stale",
+     "function",
+     95,
+     125,
+     "def refresh_stale(root, ask_fn=None, quiet: bool=False) -> dict"
     ]
    ]
   },
@@ -2019,173 +2095,6 @@
     ]
    ]
   },
-  "megabrain/flows.py": {
-   "chunks": [
-    [
-     "module",
-     "strip_code, enabled, set_enabled",
-     null,
-     1,
-     99,
-     "megabrain > megabrain/flows.py > [strip_code, enabled, set_enabled]",
-     "261884452f1bbc5ec6234152594cbcaa6a4459d6"
-    ],
-    [
-     "module",
-     "cache_flow, match_flows, serve_verbatim",
-     null,
-     100,
-     186,
-     "megabrain > megabrain/flows.py > [cache_flow, match_flows, serve_verbatim]",
-     "09fc95349f06671fc55c12e915223aa60550bc8e"
-    ],
-    [
-     "module",
-     "_research_questions, warm_flows, refresh_stale",
-     null,
-     187,
-     288,
-     "megabrain > megabrain/flows.py > [_research_questions, warm_flows, refresh_stale]",
-     "3829235cb9f15da52a2ec3de56ec1cd3dc49ab0e"
-    ]
-   ],
-   "skeleton_sha": "a1fc6a1a409488c96106d05a0d6b91b7bb8ed4e3",
-   "symbols": [
-    [
-     "log",
-     "constant",
-     58,
-     58,
-     "log = logging.getLogger(__name__)"
-    ],
-    [
-     "FLOW_MIN_SIM",
-     "constant",
-     60,
-     60,
-     "FLOW_MIN_SIM = 0.62"
-    ],
-    [
-     "FLOW_SERVE_SIM",
-     "constant",
-     61,
-     61,
-     "FLOW_SERVE_SIM = 0.88"
-    ],
-    [
-     "FLOW_TOP_K",
-     "constant",
-     62,
-     62,
-     "FLOW_TOP_K = 2"
-    ],
-    [
-     "FLOW_DEDUP_SIM",
-     "constant",
-     63,
-     63,
-     "FLOW_DEDUP_SIM = 0.92"
-    ],
-    [
-     "FLOW_TEXT_CAP",
-     "constant",
-     64,
-     64,
-     "FLOW_TEXT_CAP = 14000"
-    ],
-    [
-     "FLOW_FILE_ADDS",
-     "constant",
-     65,
-     65,
-     "FLOW_FILE_ADDS = 3"
-    ],
-    [
-     "_CITE",
-     "constant",
-     67,
-     67,
-     "_CITE = re.compile('\\\\[\\\\[[^\\\\]]*\\\\]\\\\]')"
-    ],
-    [
-     "_CODE",
-     "constant",
-     68,
-     68,
-     "_CODE = re.compile('```.*?```', re.S)"
-    ],
-    [
-     "_META",
-     "constant",
-     69,
-     69,
-     "_META = 'flow_cache'"
-    ],
-    [
-     "strip_code",
-     "function",
-     72,
-     75,
-     "def strip_code(text: str) -> str"
-    ],
-    [
-     "enabled",
-     "function",
-     78,
-     93,
-     "def enabled(root=None) -> bool"
-    ],
-    [
-     "set_enabled",
-     "function",
-     96,
-     99,
-     "def set_enabled(root, on: bool) -> None"
-    ],
-    [
-     "cache_flow",
-     "function",
-     102,
-     144,
-     "def cache_flow(root: Path, question: str, answer: str, cited_files: list[str], emb=None) -> int | None"
-    ],
-    [
-     "match_flows",
-     "function",
-     147,
-     167,
-     "def match_flows(flow_metas: list[dict], FL: np.ndarray, qv: np.ndarray, FLQ: np.ndarray | None=None) -> list[dict]"
-    ],
-    [
-     "serve_verbatim",
-     "function",
-     170,
-     186,
-     "def serve_verbatim(root, flows: list[dict]) -> dict | None"
-    ],
-    [
-     "_research_questions",
-     "function",
-     189,
-     224,
-     "def _research_questions(root: Path, limit: int) -> list[str]"
-    ],
-    [
-     "warm_flows",
-     "function",
-     227,
-     255,
-     "def warm_flows(root: Path, limit: int=6, ask_fn=None, quiet: bool=False) -> dict"
-    ],
-    [
-     "refresh_stale",
-     "function",
-     258,
-     288,
-     "def refresh_stale(root, ask_fn=None, quiet: bool=False) -> dict"
-    ]
-   ]
-  },
   "megabrain/forge.py": {
    "chunks": [
     [
@@ -2626,18 +2535,18 @@
      "_dispatch",
      "1/2",
      154,
-     290,
+     286,
      "megabrain > megabrain/frontends/cli.py > def _dispatch(a, raw: list[Path], root: Path) -> None",
-     "e67d7ecd47e9f7fa135cbe6b578e188b212be030"
+     "c098eda276756d1548fb09ab81e7543c20545e66"
     ],
     [
      "block",
      "_dispatch",
      "2/2",
-     291,
+     287,
      292,
      "megabrain > megabrain/frontends/cli.py > def _dispatch(a, raw: list[Path], root: Path) -> None",
-     "585dc7bcd4098af3445c9bda6537abebcc3dadab"
+     "f9b5858ba21e2432c8ffd536f47e6f62e3835082"
     ],
     [
      "module",
@@ -2694,7 +2603,7 @@
      184,
      229,
      "megabrain > megabrain/frontends/http.py > def _make_handler(repo: RepoSession, cors: str | None, enable_llm: bool, token: str | None=None)",
-     "59a7e2dd9f88c0ba35b768e8d9a2885d724d6144"
+     "c3f362b8ce1b1ff29022667019fa3927025cb459"
     ],
     [
      "block",
@@ -2774,16 +2683,16 @@
      "_scope, _scope_root, call_tool",
      null,
      199,
-     298,
+     302,
      "megabrain > megabrain/frontends/mcp.py > [_scope, _scope_root, call_tool]",
-     "01ffaa6104e6a8a4e411aa67dbd756c5bf750f95"
+     "c86ef4bdd06663c467819890dd0a3441a70a4515"
     ],
     [
      "function",
      "main",
      null,
-     299,
-     340,
+     303,
+     344,
      "megabrain > megabrain/frontends/mcp.py > def main()",
      "494cf17f80c3e1afe9632a2577e0beb051e44aa6"
     ]
@@ -2822,14 +2731,14 @@
      "call_tool",
      "function",
      221,
-     298,
+     302,
      "def call_tool(name: str, args: dict) -> str"
     ],
     [
      "main",
      "function",
-     301,
-     336,
+     305,
+     340,
      "def main()"
     ]
    ]
@@ -2953,7 +2862,7 @@
      1,
      116,
      "megabrain > megabrain/indexing/indexer.py > [load_ignore, _split_patterns, _excluded, discover, maybe_reindex, index_repo]",
-     "3cecc8e17c4bfdc080df269007f04f83c95438d7"
+     "606cc6aaef642e307209d4c7dbbad7fdb7e061bf"
     ],
     [
      "function",
@@ -4016,9 +3925,9 @@
      null,
      null,
      1,
-     14,
+     13,
      "megabrain > megabrain/retrieval/__init__.py (module level)",
-     "95ac198a816a9101c93c2640a9afcd2e442e3bd4"
+     "f701c8bb45743db1d9edd198e2bfffc854a555df"
     ]
    ],
    "skeleton_sha": "30715f2d01dadfc4ae06f0b1f1c00ccf938e6539",
@@ -4086,7 +3995,7 @@
      28,
      139,
      "megabrain > megabrain/retrieval/bundle.py > [search_with_state, search]",
-     "911e4d08b1e963bffd7aba67e1d8741362bb4d52"
+     "149db69a261c3f75ec403b24298db633afb1a9f4"
     ],
     [
      "module",
@@ -4183,7 +4092,7 @@
      1,
      39,
      "megabrain > megabrain/retrieval/files.py > def get_code(root: Path, relpath: str, symbol: str | None=None) -> str",
-     "8e3d2d130503c6e9b964944b050d3203886ccf26"
+     "1933bdae97fc6eefee015fd5ee2978c6cf61fa22"
     ]
    ],
    "skeleton_sha": "424a357179c7517efa6c3281938b6bbc79c504de",
@@ -4859,7 +4768,7 @@
      1,
      83,
      "megabrain > megabrain/retrieval/state.py > [SearchState, load_state]",
-     "6ac59dbd98dc6a49bfe89ab8ced0a903e9eeabf4"
+     "6b3c75627634e6f723b4cad6dbca2cd3a068603f"
     ]
    ],
    "skeleton_sha": "17819be2034b50b85673e98b524aa3b922dc1a57",
@@ -5057,7 +4966,159 @@
     ]
    ]
   },
-  "megabrain/store.py": {
+  "megabrain/storage/__init__.py": {
+   "chunks": [
+    [
+     "module",
+     null,
+     null,
+     1,
+     1,
+     "megabrain > megabrain/storage/__init__.py (module level)",
+     "a50baceccfcb8a80cfb6389a30c36527cb12ab39"
+    ]
+   ],
+   "skeleton_sha": "09e22f3ddda81f5a47fd080bc2f554be8ff792e3",
+   "symbols": []
+  },
+  "megabrain/storage/flows.py": {
+   "chunks": [
+    [
+     "module",
+     "strip_code, enabled, set_enabled",
+     null,
+     1,
+     99,
+     "megabrain > megabrain/storage/flows.py > [strip_code, enabled, set_enabled]",
+     "261884452f1bbc5ec6234152594cbcaa6a4459d6"
+    ],
+    [
+     "module",
+     "cache_flow, match_flows, serve_verbatim",
+     null,
+     100,
+     186,
+     "megabrain > megabrain/storage/flows.py > [cache_flow, match_flows, serve_verbatim]",
+     "34bb5bf976e5e757d2410b62e58b42910d1efb22"
+    ]
+   ],
+   "skeleton_sha": "0ad5f351c42c0addb6fcad4a0923216d24171bb2",
+   "symbols": [
+    [
+     "log",
+     "constant",
+     58,
+     58,
+     "log = logging.getLogger(__name__)"
+    ],
+    [
+     "FLOW_MIN_SIM",
+     "constant",
+     60,
+     60,
+     "FLOW_MIN_SIM = 0.62"
+    ],
+    [
+     "FLOW_SERVE_SIM",
+     "constant",
+     61,
+     61,
+     "FLOW_SERVE_SIM = 0.88"
+    ],
+    [
+     "FLOW_TOP_K",
+     "constant",
+     62,
+     62,
+     "FLOW_TOP_K = 2"
+    ],
+    [
+     "FLOW_DEDUP_SIM",
+     "constant",
+     63,
+     63,
+     "FLOW_DEDUP_SIM = 0.92"
+    ],
+    [
+     "FLOW_TEXT_CAP",
+     "constant",
+     64,
+     64,
+     "FLOW_TEXT_CAP = 14000"
+    ],
+    [
+     "FLOW_FILE_ADDS",
+     "constant",
+     65,
+     65,
+     "FLOW_FILE_ADDS = 3"
+    ],
+    [
+     "_CITE",
+     "constant",
+     67,
+     67,
+     "_CITE = re.compile('\\\\[\\\\[[^\\\\]]*\\\\]\\\\]')"
+    ],
+    [
+     "_CODE",
+     "constant",
+     68,
+     68,
+     "_CODE = re.compile('```.*?```', re.S)"
+    ],
+    [
+     "_META",
+     "constant",
+     69,
+     69,
+     "_META = 'flow_cache'"
+    ],
+    [
+     "strip_code",
+     "function",
+     72,
+     75,
+     "def strip_code(text: str) -> str"
+    ],
+    [
+     "enabled",
+     "function",
+     78,
+     93,
+     "def enabled(root=None) -> bool"
+    ],
+    [
+     "set_enabled",
+     "function",
+     96,
+     99,
+     "def set_enabled(root, on: bool) -> None"
+    ],
+    [
+     "cache_flow",
+     "function",
+     102,
+     144,
+     "def cache_flow(root: Path, question: str, answer: str, cited_files: list[str], emb=None) -> int | None"
+    ],
+    [
+     "match_flows",
+     "function",
+     147,
+     167,
+     "def match_flows(flow_metas: list[dict], FL: np.ndarray, qv: np.ndarray, FLQ: np.ndarray | None=None) -> list[dict]"
+    ],
+    [
+     "serve_verbatim",
+     "function",
+     170,
+     186,
+     "def serve_verbatim(root, flows: list[dict]) -> dict | None"
+    ]
+   ]
+  },
+  "megabrain/storage/store.py": {
    "chunks": [
     [
      "function",
@@ -5065,8 +5126,8 @@
      null,
      1,
      80,
-     "megabrain > megabrain/store.py > def resolve_root(path: Path) -> tuple[Path, str]",
-     "745967434f6554c69e27f33b96f198a7c81d87b5"
+     "megabrain > megabrain/storage/store.py > def resolve_root(path: Path) -> tuple[Path, str]",
+     "40500df3f6c6acd925566c62dec7617dbb6752ba"
     ],
     [
      "method",
@@ -5074,7 +5135,7 @@
      null,
      81,
      194,
-     "megabrain > megabrain/store.py > class Store > [Store.__init__, Store.close, Store.__enter__, Store.__exit__, Store.file_sha, Store.delete_file, Store.upsert_file, Store.insert_chunks, Store.insert_symbols, Store.replace_edges, Store.all_paths, Store.commit, Store.load_matrix, Store.load_file_matrix, Store.neighbors]",
+     "megabrain > megabrain/storage/store.py > class Store > [Store.__init__, Store.close, Store.__enter__, Store.__exit__, Store.file_sha, Store.delete_file, Store.upsert_file, Store.insert_chunks, Store.insert_symbols, Store.replace_edges, Store.all_paths, Store.commit, Store.load_matrix, Store.load_file_matrix, Store.neighbors]",
      "455153eb437f17e89cf8e4829701991eb530e6e6"
     ],
     [
@@ -5083,11 +5144,11 @@
      null,
      195,
      264,
-     "megabrain > megabrain/store.py > class Store > [Store.symbols_for, Store.stats, Store.set_meta, Store.get_meta, Store.insert_flow, Store.delete_flow, Store.stale_flows, Store.prune_stale_flows, Store.load_flows]",
+     "megabrain > megabrain/storage/store.py > class Store > [Store.symbols_for, Store.stats, Store.set_meta, Store.get_meta, Store.insert_flow, Store.delete_flow, Store.stale_flows, Store.prune_stale_flows, Store.load_flows]",
      "bd531497da1452b8d65c9eb7180d5a3e8d6cf1c7"
     ]
    ],
-   "skeleton_sha": "8b1d0df9b954f72ecc34b8d07c0265cced4ded29",
+   "skeleton_sha": "26ace08e1f531bbf0d9dee2a58b4aeca8db768ad",
    "symbols": [
     [
      "resolve_root",

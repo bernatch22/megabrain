@@ -10,7 +10,7 @@ ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT))
 from megabrain.retrieval.bundle import search
 from megabrain.retrieval.render import render
-from megabrain.store import Store
+from megabrain.storage.store import Store
 
 REPO = Path.home() / "vscode-js-debug"
 

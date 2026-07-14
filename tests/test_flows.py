@@ -5,13 +5,13 @@ cosine-only by design — hard rule 1)."""
 
 import pytest
 
-from megabrain import flows as flows_mod
-from megabrain.flows import cache_flow
 from megabrain.indexing.indexer import index_repo
 from megabrain.retrieval.bundle import search_with_state
 from megabrain.retrieval.render import render
 from megabrain.retrieval.state import load_state
-from megabrain.store import Store
+from megabrain.storage import flows as flows_mod
+from megabrain.storage.flows import cache_flow
+from megabrain.storage.store import Store
 
 VAD = ('def detect_voice(frame):\n    """barge in detection threshold."""\n'
        "    return frame.energy > 300\n")
@@ -75,7 +75,7 @@ def _matched_flow(repo, score):
 
 def test_near_exact_question_is_served_without_llm(repo):
     """score >= FLOW_SERVE_SIM + unchanged code -> served verbatim, no LLM."""
-    from megabrain.flows import serve_verbatim
+    from megabrain.storage.flows import serve_verbatim
     served = serve_verbatim(repo, _matched_flow(repo, 0.93))
     assert served is not None and "```" in served["text"]
 
@@ -83,14 +83,14 @@ def test_near_exact_question_is_served_without_llm(repo):
 def test_paraphrase_attaches_but_is_not_served(repo):
     """score in the attach band (0.62-0.88) must NOT serve — it narrates fresh
     with the flow as context."""
-    from megabrain.flows import serve_verbatim
+    from megabrain.storage.flows import serve_verbatim
     assert serve_verbatim(repo, _matched_flow(repo, 0.70)) is None
 
 
 def test_serve_refuses_when_code_changed(repo):
     """The sha recheck: even at serve-level similarity, a cited file that
     changed since caching means NO verbatim serve — never stale code."""
-    from megabrain.flows import serve_verbatim
+    from megabrain.storage.flows import serve_verbatim
     flows = _matched_flow(repo, 0.93)
     (repo / "turn.py").write_text(TURN + "\n    x = 1\n")   # code moved on
     assert serve_verbatim(repo, flows) is None
@@ -109,7 +109,7 @@ def test_flow_files_are_pure_additions(repo):
 def test_refresh_updates_instead_of_expiring(repo, monkeypatch):
     """A changed file: --refresh re-asks the flow's ORIGINAL question against the
     new code and re-caches it, rather than just dropping it."""
-    from megabrain.flows import refresh_stale
+    from megabrain.ask.warmup import refresh_stale
     _cache(repo)
     (repo / "turn.py").write_text(TURN + "\n    state.log('changed')\n")
     index_repo(repo, prune_flows=False)  # update shas, keep the stale flow
@@ -170,7 +170,7 @@ def test_unrelated_query_attaches_no_flow(repo):
 def test_warm_flows_pre_caches_the_system(repo, monkeypatch):
     """Opt-in warmup: planner (LLM at index time) yields research questions;
     each ask's write path fills the cache — here both are injected fakes."""
-    from megabrain.flows import warm_flows
+    from megabrain.ask.warmup import warm_flows
     monkeypatch.setattr(
         "megabrain.providers.chat_text",
         lambda *a, **k: "how does barge in interrupt the bot end to end\n"
@@ -188,7 +188,7 @@ def test_warm_flows_pre_caches_the_system(repo, monkeypatch):
 
 
 def test_warm_flows_respects_kill_switch(repo, monkeypatch):
-    from megabrain.flows import warm_flows
+    from megabrain.ask.warmup import warm_flows
     monkeypatch.setenv("MEGABRAIN_FLOW_CACHE", "0")
     rep = warm_flows(repo, limit=2, ask_fn=lambda r, q: {"text": "x"}, quiet=True)
     assert rep["warmed"] == 0 and rep["skipped"]

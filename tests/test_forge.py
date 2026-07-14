@@ -14,7 +14,7 @@ from megabrain.forge import detect, forge, validate_strategy
 from megabrain.indexing import strategies as strat_mod
 from megabrain.indexing.indexer import index_repo, maybe_reindex
 from megabrain.indexing.strategies import load_repo_strategies, trust_file
-from megabrain.store import Store
+from megabrain.storage.store import Store
 
 SQL = "-- users\nCREATE TABLE users (id INTEGER);\n\n-- orders\nCREATE TABLE orders (id INTEGER);\n"
 

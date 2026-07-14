@@ -104,7 +104,7 @@ def search_with_state(st: SearchState, query: str, rerank: bool = False,
     # only when missing entirely — pure additions, bundle_full can only rise.
     flows_out = []
     if st.flows and st.qv is not None:
-        from ..flows import FLOW_FILE_ADDS, match_flows
+        from ..storage.flows import FLOW_FILE_ADDS, match_flows
         flows_out = match_flows(st.flows, st.FL, st.qv, st.FLQ)
         have = {t["file"] for t in out_t1} | {t["file"] for t in out_t2}
         adds = 0

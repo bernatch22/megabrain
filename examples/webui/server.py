@@ -36,8 +36,9 @@ import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from megabrain.ask import DOC_EXTS, ask, render_ask
-from megabrain.ask_agents import stream_events
+from megabrain.ask import ask, render_ask
+from megabrain.ask.agents import stream_events
+from megabrain.ask.narrator import DOC_EXTS
 from megabrain.frontends.http import _Repo
 from megabrain.indexing.indexer import index_repo
 from megabrain.providers import chat_provider

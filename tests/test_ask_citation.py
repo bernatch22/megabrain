@@ -11,7 +11,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT))
-from megabrain.ask import _SEL, _candidates, cited_files, render_ask
+from megabrain.ask.narrator import _SEL, _candidates, cited_files, render_ask
 
 
 def test_sel_accepts_plain_l_prefix_and_spaces():

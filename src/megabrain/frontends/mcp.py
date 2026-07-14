@@ -213,7 +213,7 @@ def _scope_root(args: dict) -> tuple[Path, str | None]:
     + the sub the bare `file` arg is joined onto (app.rel_join) — NO scope_path
     append (those tools take an explicit file, not a folder scope). Faithful to
     the pre-refactor resolve_root(repo_path) path."""
-    from ..store import resolve_root
+    from ..storage.store import resolve_root
     root, sub = resolve_root(Path(args["repo_path"]).expanduser())
     return root, (sub or None)
 
@@ -276,22 +276,26 @@ def call_tool(name: str, args: dict) -> str:
                 text += f"\n\n--- generated {e['ext']} strategy ---\n{e['code']}"
         return text
     if name == "megabrain_flows":
-        from .. import flows as _flows
-        from ..store import Store
+        # cache MECHANICS live in storage.flows; the LLM warm/refresh
+        # orchestration lives up in ask.warmup (storage never imports upward)
+        from ..storage.flows import enabled, set_enabled
+        from ..storage.store import Store
         root = Path(args["repo_path"]).expanduser().resolve()
         action = args.get("action", "list")
         if action == "warm":
-            return json.dumps(_flows.warm_flows(root, limit=int(args.get("n", 6))), indent=1)
+            from ..ask.warmup import warm_flows
+            return json.dumps(warm_flows(root, limit=int(args.get("n", 6))), indent=1)
         if action == "refresh":
+            from ..ask.warmup import refresh_stale
             from ..indexing.indexer import index_repo
             index_repo(root, prune_flows=False)
-            return json.dumps(_flows.refresh_stale(root), indent=1)
+            return json.dumps(refresh_stale(root), indent=1)
         if action in ("enable", "disable"):
-            _flows.set_enabled(root, action == "enable")
+            set_enabled(root, action == "enable")
             return json.dumps({"flow_cache": action == "enable", "repo": root.as_posix()})
         with Store(Path(root)) as s:
             metas, _, _ = s.load_flows()
-        return json.dumps({"enabled": _flows.enabled(root),
+        return json.dumps({"enabled": enabled(root),
                            "flows": [{"question": m["question"],
                                       "files": sorted(m["files"])} for m in metas]}, indent=1)
     from ..errors import UnknownTool

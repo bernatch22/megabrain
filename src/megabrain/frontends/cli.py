@@ -164,14 +164,14 @@ def _dispatch(a, raw: list[Path], root: Path) -> None:
             if a.warm_flows:
                 import json as _json
 
-                from ..flows import warm_flows
+                from ..ask.warmup import warm_flows
                 print(_json.dumps(warm_flows(r, limit=a.warm_flows), indent=1))
     elif a.cmd == "query":
         import json as _json
 
         from .. import app
         from ..retrieval.render import render, render_pruned
-        from ..store import resolve_root
+        from ..storage.store import resolve_root
         scoped = [resolve_root(p) for p in raw]           # [(root, subpath), …]
         roots = [r for r, _ in scoped]
         pfs = [sp or None for _, sp in scoped]
@@ -202,14 +202,14 @@ def _dispatch(a, raw: list[Path], root: Path) -> None:
                    agents=True if a.agents else (False if a.no_agents else None))
     elif a.cmd == "get":
         from .. import app
-        from ..store import resolve_root
+        from ..storage.store import resolve_root
         r0, sp = resolve_root(root)
         print(app.get(r0, sp or None, a.file, a.symbol))
     elif a.cmd == "chunks":
         import json as _json
 
         from .. import app
-        from ..store import resolve_root
+        from ..storage.store import resolve_root
         r0, sp = resolve_root(root)
         print(_json.dumps(app.chunks(r0, sp or None, a.file, a.query,
                                      path_filter=sp or None), indent=1))
@@ -238,9 +238,9 @@ def _dispatch(a, raw: list[Path], root: Path) -> None:
             from ..forge import forge, render_report
             print(render_report(forge(root, ext=a.ext, dry_run=a.dry_run)))
     elif a.cmd == "flows":
-        from ..flows import enabled as _flows_on
-        from ..flows import set_enabled
-        from ..store import Store
+        from ..storage.flows import enabled as _flows_on
+        from ..storage.flows import set_enabled
+        from ..storage.store import Store
         if a.enable or a.disable:
             set_enabled(root, a.enable)
             print(f"flow cache {'ENABLED' if a.enable else 'disabled'} for {root}")
@@ -248,13 +248,13 @@ def _dispatch(a, raw: list[Path], root: Path) -> None:
         if a.warm:
             import json as _json
 
-            from ..flows import warm_flows
+            from ..ask.warmup import warm_flows
             print(_json.dumps(warm_flows(root, limit=a.warm), indent=1))
             return
         if a.refresh:
             import json as _json
 
-            from ..flows import refresh_stale
+            from ..ask.warmup import refresh_stale
             from ..indexing.indexer import index_repo
             index_repo(root, prune_flows=False)   # update shas, keep flows
             print(_json.dumps(refresh_stale(root), indent=1))

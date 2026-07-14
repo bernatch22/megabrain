@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from ..store import Store
+from ..storage.store import Store
 from .render import lang_of
 
 

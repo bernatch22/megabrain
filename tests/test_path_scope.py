@@ -15,7 +15,7 @@ import pytest
 
 from megabrain.retrieval.bundle import search
 from megabrain.retrieval.scoring import apply_path_filter, under_path
-from megabrain.store import resolve_root
+from megabrain.storage.store import resolve_root
 
 SDK = Path("~/pinecall/sdk").expanduser()
 HAS_SDK = (SDK / ".megabrain" / "db.sqlite").exists()

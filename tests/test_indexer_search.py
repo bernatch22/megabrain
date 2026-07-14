@@ -3,7 +3,7 @@ No network, no corpus — this is what contributors/CI can always run."""
 
 from megabrain.indexing.indexer import index_repo
 from megabrain.retrieval.bundle import search
-from megabrain.store import Store
+from megabrain.storage.store import Store
 
 
 def _bundle_files(res):
@@ -149,7 +149,7 @@ def test_discover_honors_exclude_and_ignorefile(tmp_path, fake_embedder):
     (tmp_path / "vendor" / "lib.py").write_text("def v():\n    return 3\n")
     (tmp_path / ".megabrainignore").write_text("vendor\n")
     from megabrain.indexing.indexer import discover, index_repo
-    from megabrain.store import Store
+    from megabrain.storage.store import Store
     # discover() applies the patterns it's handed (+ built-ins):
     found = {p.relative_to(tmp_path).as_posix()
              for p in discover(tmp_path, (".py",), ["generated", "vendor"])}

@@ -21,7 +21,7 @@ def resolve_scope(path: str | Path, scope_path: str | None = None) -> tuple[Path
     """(repo_root, path_filter) for PATH-SCOPE. `path` may be a sub-path inside
     an indexed repo; an explicit `scope_path` is appended to it. path_filter is
     None at the root. Raises IndexNotFound when no index is found up the tree."""
-    from .store import resolve_root
+    from .storage.store import resolve_root
     p = Path(path).expanduser()
     sub = (scope_path or "").strip().strip("/")
     if sub:
@@ -123,6 +123,6 @@ def index(root: Path, force: bool = False, exclude=()) -> dict:
 
 def stats(root: Path) -> dict:
     """Index shape counts (no raw SQL in the frontend — Store owns it)."""
-    from .store import Store
+    from .storage.store import Store
     with Store(root) as s:
         return s.stats()

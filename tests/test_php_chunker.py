@@ -143,7 +143,7 @@ def test_full_index_keeps_edges_regardless_of_file_order(tmp_path, fake_embedder
     (tmp_path / "src" / "ZRepo.php").write_text(
         "<?php\nnamespace App;\nclass ZRepo {}\n")
     from megabrain.indexing.indexer import index_repo
-    from megabrain.store import Store
+    from megabrain.storage.store import Store
     index_repo(tmp_path)
     rows = Store(tmp_path).db.execute("SELECT src,dst FROM edges").fetchall()
     assert ("src/AController.php", "src/ZRepo.php") in rows

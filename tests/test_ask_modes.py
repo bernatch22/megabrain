@@ -1,7 +1,7 @@
 """ask content modes: code-only (default) · --docs (docs only) · --with-docs
 (code + docs). Pure candidate-selection tests, no network."""
 
-from megabrain.ask import _candidates
+from megabrain.ask.narrator import _candidates
 
 
 def _chunk(name="f"):

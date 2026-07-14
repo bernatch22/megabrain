@@ -32,11 +32,11 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from . import providers
-from .retrieval.bundle import search_with_state
-from .retrieval.files import get_code
-from .retrieval.render import render
-from .retrieval.state import load_state
+from .. import providers
+from ..retrieval.bundle import search_with_state
+from ..retrieval.files import get_code
+from ..retrieval.render import render
+from ..retrieval.state import load_state
 
 log = logging.getLogger(__name__)
 
@@ -77,7 +77,7 @@ def classify_bundle(res: dict, question: str = "") -> dict:
         if near >= 4:
             reasons.append(f"{near} RELATED files near score parity")
     if question:
-        from .retrieval.scoring import ident_tokens
+        from ..retrieval.scoring import ident_tokens
         if len(ident_tokens(question)) > 25:
             reasons.append("issue-length query")
     return {"broad": bool(reasons), "reasons": reasons}
@@ -313,14 +313,14 @@ def _agent_llm(prompt: str, tools: list[dict], key: str | None,
 # ── prompts ────────────────────────────────────────────────────────────────
 
 def _sub_rules() -> str:
-    from .ask import _RULES
+    from .narrator import _RULES
     # sub-agents skip the "## Summary" closer — the synthesizer writes it once
     return "\n".join(ln for ln in _RULES.splitlines() if "## Summary" not in ln)
 
 
 def _subagent_prompt(question: str, agent: dict, cands: list[dict], rmap: str,
                      repo: str, n: int) -> str:
-    from .ask import _numbered
+    from .narrator import _numbered
     ids = ", ".join(f"[[{k}]]" for k in agent["chunks"])
     blocks = []
     for k in agent["chunks"]:
@@ -348,7 +348,7 @@ YOUR CHUNKS:
 
 def _synth_body(question: str, partials: list[tuple[dict, str]],
                 cands: list[dict]) -> dict:
-    from .ask import _RULES
+    from .narrator import _RULES
     idx = "\n".join(_chunk_lines(cands))
     parts = [f'--- sub-agent {a["id"] + 1} · {a["label"]} · "{a["sub_query"]}" ---\n'
              f'{t.strip()}' for a, t in partials]
@@ -469,7 +469,7 @@ def stream_events(root, question: str, on_event, *, agents: bool | None = None,
     out only when classify_bundle says broad), True = force, False = never.
     on_event is called under a lock (sub-agents emit from worker threads).
     Returns the ask()-shaped summary dict for buffered reuse."""
-    from .ask import _build_body, _candidates, _flow_ctx, _Splicer
+    from .narrator import _build_body, _candidates, _flow_ctx, _Splicer
     lock = threading.Lock()
 
     def emit(ev: dict):
@@ -491,7 +491,7 @@ def stream_events(root, question: str, on_event, *, agents: bool | None = None,
     # pipeline, so every surface (CLI stream, SSE, MCP, library ask()) gets the
     # same behavior from the single retrieval above.
     if not docs_only and not include_docs:
-        from .flows import serve_verbatim
+        from ..storage.flows import serve_verbatim
         served = serve_verbatim(root, res.get("flows") or [])
         if served:
             emit({"type": "cached", "repo": res["repo"], "ms": retrieval_ms,
@@ -568,9 +568,9 @@ def stream_events(root, question: str, on_event, *, agents: bool | None = None,
     # surface accumulates flows (the old buffered-only write meant CLI/SSE
     # asks never populated the cache). cache_flow gates on enabled(root) and
     # is fail-open by construction; reuses st.emb.
-    from .ask import _SEL, _splice, cited_files
+    from .narrator import _SEL, _splice, cited_files
     if text and _SEL.search(text):
-        from .flows import cache_flow
+        from ..storage.flows import cache_flow
         body, _, _ = _splice(out)
         cache_flow(Path(root), question, body, cited_files(out),
                    emb=getattr(st, "emb", None))
