@@ -102,6 +102,53 @@ export MEGABRAIN_EMBED_MODEL=perplexity/pplx-embed-v1-0.6b         # the embeddi
 The full provider matrix — native APIs, hybrid, fully-local GPU, per-provider defaults —
 is in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
+## 100% open-source stack (measured, no closed-weight anything)
+
+Every default above uses a proprietary model somewhere (pplx embeddings, Gemini/Claude
+narration). If you want zero closed weights — private code, an air-gapped box, or just
+principle — this combo is **measured, not a guess**, and holds up:
+
+```bash
+# 1. embeddings — Apache 2.0, code-tuned, runs on your machine, $0
+ollama serve
+ollama pull unclemusclez/jina-embeddings-v2-base-code    # 322 MB, one time
+export MEGABRAIN_EMBED_BASE_URL=http://localhost:11434/v1
+export MEGABRAIN_EMBED_MODEL=unclemusclez/jina-embeddings-v2-base-code
+
+# 2. narration — Apache 2.0 (Qwen), via OpenRouter (or self-host on the same Ollama)
+export MEGABRAIN_CHAT_PROVIDER=openrouter
+export MEGABRAIN_ASK_MODEL=qwen/qwen3-coder
+
+megabrain index ~/your/repo --force
+megabrain ask   ~/your/repo "how does X work"
+```
+
+**Retrieval recall** (R@1 on a 22-question golden set, sdk-server — does the right
+file land #1):
+
+| stack | R@1 | weights | cost |
+|---|---|---|---|
+| pplx + closed narrator *(the cloud default above)* | 0.591 | closed | ~$0.01/ask |
+| **jina-code (local) + qwen3-coder** *(this section)* | 0.455 | **all open** | **$0 embed** + ~$0.01/ask on OpenRouter, or $0 fully self-hosted |
+
+**Does `ask` actually still work?** Ran the same two real questions against
+sdk-server with this exact stack:
+
+- *"where is barge-in handled when the user interrupts mid-speech"* → correctly
+  narrated from `turn_controller.py`, citing 4 files total (`event_bus.py`,
+  `bot_handler.py`, `webhooks.py` too) — broader than the closed-default run.
+- *"how does an inbound websocket client get authenticated"* → correctly
+  narrated from `transports/client/handler.py`, the same file the closed stack found.
+
+Both answers were grounded (every code block spliced verbatim, nothing invented) and
+landed on the right file — the open stack is a **real, usable** alternative, not a
+token gesture. The one real cost: `qwen/qwen3-coder` narrates in **~20-25 s** per ask
+vs ~6 s for Gemini Flash — output-bound, not retrieval-bound, so it's the same
+trade-off as the cloud cheap-vs-fast pick. `qwen3-coder` also runs on the *same*
+local Ollama for a fully air-gapped setup (no OpenRouter call at all) — just slower
+without a GPU. Full comparison + a weaker general-purpose local embedder (e5-large,
+0.364 R@1) in [docs/GUIDE.md §2b](docs/GUIDE.md#2b-local-embeddings-ollama-0-code-never-leaves-your-machine).
+
 ## How it works
 
 | stage | what happens |
