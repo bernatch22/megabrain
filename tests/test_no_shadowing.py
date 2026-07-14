@@ -25,7 +25,9 @@ SRC = (Path(__file__).parent.parent / "src").resolve()
 
 # modules that no longer exist in v2 — resolving means the installed old engine
 LEGACY = ["megabrain.store", "megabrain.flows", "megabrain.ask_agents",
-          "megabrain.retrieval.query"]
+          "megabrain.retrieval.query", "megabrain.forge_eval",
+          "megabrain.forge_specialize", "megabrain.frontends",
+          "megabrain.session", "megabrain.docsearch"]
 
 
 def test_every_loaded_megabrain_module_is_ours():

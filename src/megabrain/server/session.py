@@ -18,7 +18,7 @@ import threading
 import time
 from pathlib import Path
 
-from .docsearch import load_groups
+from ..retrieval.docsearch import load_groups
 from .retrieval.state import SearchState, load_state
 
 

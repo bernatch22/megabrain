@@ -4,14 +4,14 @@ and descriptions. This pins them byte-for-byte against a committed golden so a
 frontend refactor can never silently drift the wire schema.
 
 Regenerate ONLY on an intended schema change:
-    python3 -c "import json;from megabrain.frontends.mcp import TOOLS;\
+    python3 -c "import json;from megabrain.server.mcp import TOOLS;\
 json.dump(TOOLS,open('tests/goldens/mcp_tools.json','w'),indent=1,sort_keys=True)"
 """
 
 import json
 from pathlib import Path
 
-from megabrain.frontends.mcp import TOOLS
+from megabrain.server.mcp import TOOLS
 
 GOLDEN = Path(__file__).parent / "goldens" / "mcp_tools.json"
 

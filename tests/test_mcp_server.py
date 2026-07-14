@@ -2,7 +2,7 @@
 
 import pytest
 
-from megabrain.frontends.mcp import TOOLS, _scope, call_tool
+from megabrain.server.mcp import TOOLS, _scope, call_tool
 
 
 def test_tool_schemas_are_wellformed():

@@ -45,10 +45,10 @@ import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from ..docsearch import docsearch
 from ..errors import MegabrainError
 from ..retrieval.bundle import search_with_state
-from ..session import RepoSession
+from ..retrieval.docsearch import docsearch
+from .session import RepoSession
 
 log = logging.getLogger(__name__)
 

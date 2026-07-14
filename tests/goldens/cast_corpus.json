@@ -51,6 +51,21 @@
     ]
    ]
   },
+  "megabrain/__main__.py": {
+   "chunks": [
+    [
+     "module",
+     null,
+     null,
+     1,
+     6,
+     "megabrain > megabrain/__main__.py (module level)",
+     "b10eddb0804f4d53806bb18acd9401ce603cf5f7"
+    ]
+   ],
+   "skeleton_sha": "1883ac27b0412ddfe6858ce316851f3638dd7722",
+   "symbols": []
+  },
   "megabrain/app.py": {
    "chunks": [
     [
@@ -1830,101 +1845,6 @@
     ]
    ]
   },
-  "megabrain/docsearch.py": {
-   "chunks": [
-    [
-     "module",
-     "load_groups, _strip_fm, _clean_inline, _snippet, _context, _group, _slug, _title",
-     null,
-     1,
-     119,
-     "megabrain > megabrain/docsearch.py > [load_groups, _strip_fm, _clean_inline, _snippet, _context, _group, _slug, _title]",
-     "ddef64bd34ccc7d1eeac760c48a866d5c0f8ba42"
-    ],
-    [
-     "function",
-     "docsearch",
-     null,
-     120,
-     153,
-     "megabrain > megabrain/docsearch.py > def docsearch(state: SearchState, q: str, limit: int=15, groups: tuple[tuple[str, str], ...]=()) -> list[dict]",
-     "7a624ae943482fff806821b650e9febea0a97bd8"
-    ]
-   ],
-   "skeleton_sha": "fc8afa17140943b983d0734dd7f35a1e20555fd8",
-   "symbols": [
-    [
-     "load_groups",
-     "function",
-     26,
-     39,
-     "def load_groups(root: Path) -> tuple[tuple[str, str], ...]"
-    ],
-    [
-     "_FM",
-     "constant",
-     44,
-     44,
-     "_FM = re.compile('\\\\A\\ufeff?---[ \\\\t]*\\\\n.*?\\\\n---[ \\\\t]*\\\\n+', re.S)"
-    ],
-    [
-     "_strip_fm",
-     "function",
-     47,
-     48,
-     "def _strip_fm(text: str) -> str"
-    ],
-    [
-     "_clean_inline",
-     "function",
-     51,
-     55,
-     "def _clean_inline(t: str) -> str"
-    ],
-    [
-     "_snippet",
-     "function",
-     58,
-     67,
-     "def _snippet(text: str, n: int=160) -> str"
-    ],
-    [
-     "_context",
-     "function",
-     70,
-     75,
-     "def _context(text: str, n: int=2000) -> str"
-    ],
-    [
-     "_group",
-     "function",
-     78,
-     83,
-     "def _group(slug: str, groups: tuple[tuple[str, str], ...]) -> str"
-    ],
-    [
-     "_slug",
-     "function",
-     86,
-     97,
-     "def _slug(relpath: str) -> str"
-    ],
-    [
-     "_title",
-     "function",
-     100,
-     119,
-     "def _title(relpath: str, chunk: dict) -> str"
-    ],
-    [
-     "docsearch",
-     "function",
-     122,
-     153,
-     "def docsearch(state: SearchState, q: str, limit: int=15, groups: tuple[tuple[str, str], ...]=()) -> list[dict]"
-    ]
-   ]
-  },
   "megabrain/errors.py": {
    "chunks": [
     [
@@ -2506,263 +2426,6 @@
      226,
      248,
      "def render_report(report: dict) -> str"
-    ]
-   ]
-  },
-  "megabrain/frontends/__init__.py": {
-   "chunks": [
-    [
-     "module",
-     null,
-     null,
-     1,
-     2,
-     "megabrain > megabrain/frontends/__init__.py (module level)",
-     "544507ce3654f1fba3e274188ccc421a2e5a549a"
-    ]
-   ],
-   "skeleton_sha": "ba8b5304354dd8933218ae499572510d3348585f",
-   "symbols": []
-  },
-  "megabrain/frontends/cli.py": {
-   "chunks": [
-    [
-     "module",
-     null,
-     null,
-     1,
-     22,
-     "megabrain > megabrain/frontends/cli.py (module level)",
-     "087b78ef00b03ab54f54920e1318704e6d03158a"
-    ],
-    [
-     "block",
-     "main",
-     "1/2",
-     23,
-     120,
-     "megabrain > megabrain/frontends/cli.py > def main(argv=None)",
-     "7e590189fb9a0b9b7cf05d9086e7df5ba97826ac"
-    ],
-    [
-     "block",
-     "main",
-     "2/2",
-     121,
-     153,
-     "megabrain > megabrain/frontends/cli.py > def main(argv=None)",
-     "018172f3ad588108986064ae913e095cc20c3768"
-    ],
-    [
-     "block",
-     "_dispatch",
-     "1/2",
-     154,
-     286,
-     "megabrain > megabrain/frontends/cli.py > def _dispatch(a, raw: list[Path], root: Path) -> None",
-     "5844ea830d58d4b77bc830a6c33fc4ba69829c44"
-    ],
-    [
-     "block",
-     "_dispatch",
-     "2/2",
-     287,
-     292,
-     "megabrain > megabrain/frontends/cli.py > def _dispatch(a, raw: list[Path], root: Path) -> None",
-     "f9b5858ba21e2432c8ffd536f47e6f62e3835082"
-    ],
-    [
-     "module",
-     null,
-     null,
-     293,
-     296,
-     "megabrain > megabrain/frontends/cli.py (module level)",
-     "494c28ef72c62a5924f4316a400d4193725ae15a"
-    ]
-   ],
-   "skeleton_sha": "263d465bce990aff80347f885cea0ba9800748a1",
-   "symbols": [
-    [
-     "main",
-     "function",
-     25,
-     153,
-     "def main(argv=None)"
-    ],
-    [
-     "_dispatch",
-     "function",
-     156,
-     292,
-     "def _dispatch(a, raw: list[Path], root: Path) -> None"
-    ]
-   ]
-  },
-  "megabrain/frontends/http.py": {
-   "chunks": [
-    [
-     "module",
-     null,
-     null,
-     1,
-     53,
-     "megabrain > megabrain/frontends/http.py (module level)",
-     "bd395da2e2e0e492c3aba76c6827a2099a016bf7"
-    ],
-    [
-     "block",
-     "_make_handler",
-     "1/3",
-     54,
-     183,
-     "megabrain > megabrain/frontends/http.py > def _make_handler(repo: RepoSession, cors: str | None, enable_llm: bool, token: str | None=None)",
-     "c53c7119b1575f36d69d5665dfa6e48fc8aee09c"
-    ],
-    [
-     "block",
-     "_make_handler",
-     "2/3",
-     184,
-     229,
-     "megabrain > megabrain/frontends/http.py > def _make_handler(repo: RepoSession, cors: str | None, enable_llm: bool, token: str | None=None)",
-     "c3f362b8ce1b1ff29022667019fa3927025cb459"
-    ],
-    [
-     "block",
-     "_make_handler",
-     "3/3",
-     230,
-     231,
-     "megabrain > megabrain/frontends/http.py > def _make_handler(repo: RepoSession, cors: str | None, enable_llm: bool, token: str | None=None)",
-     "5ebaec407bc18bc3fde033e8db1a20bf3e3ec3f8"
-    ],
-    [
-     "function",
-     "serve",
-     null,
-     232,
-     256,
-     "megabrain > megabrain/frontends/http.py > def serve(root, port: int=2134, host: str='127.0.0.1', cors: str | None=None, enable_llm: bool=True, token: str | None=None) -> None",
-     "3514a9943673ba383c5f14554ebd7061ba4efa00"
-    ]
-   ],
-   "skeleton_sha": "c22af6a6dd99aa56077559630f74ef24d874c20b",
-   "symbols": [
-    [
-     "log",
-     "constant",
-     53,
-     53,
-     "log = logging.getLogger(__name__)"
-    ],
-    [
-     "_make_handler",
-     "function",
-     63,
-     231,
-     "def _make_handler(repo: RepoSession, cors: str | None, enable_llm: bool, token: str | None=None)"
-    ],
-    [
-     "serve",
-     "function",
-     234,
-     256,
-     "def serve(root, port: int=2134, host: str='127.0.0.1', cors: str | None=None, enable_llm: bool=True, token: str | None=None) -> None"
-    ]
-   ]
-  },
-  "megabrain/frontends/mcp.py": {
-   "chunks": [
-    [
-     "module",
-     null,
-     null,
-     1,
-     34,
-     "megabrain > megabrain/frontends/mcp.py (module level)",
-     "3df76afe1caf3835a1d41af80711deb0d9afb2e8"
-    ],
-    [
-     "block",
-     null,
-     "1/2",
-     35,
-     133,
-     "megabrain > megabrain/frontends/mcp.py (module level)",
-     "b4d951c3c34e5e0d5cbc644e1183726495bd4d15"
-    ],
-    [
-     "block",
-     null,
-     "2/2",
-     134,
-     198,
-     "megabrain > megabrain/frontends/mcp.py (module level)",
-     "2c68c5ecf3d9e9b00e867cd02c5f69a6a6f42d8f"
-    ],
-    [
-     "module",
-     "_scope, _scope_root, call_tool",
-     null,
-     199,
-     302,
-     "megabrain > megabrain/frontends/mcp.py > [_scope, _scope_root, call_tool]",
-     "311ab129dea5baab5c0383b79cdca7eb3ddda9c9"
-    ],
-    [
-     "function",
-     "main",
-     null,
-     303,
-     344,
-     "megabrain > megabrain/frontends/mcp.py > def main()",
-     "494cf17f80c3e1afe9632a2577e0beb051e44aa6"
-    ]
-   ],
-   "skeleton_sha": "e8c7bbd1a5fe03ea764470b33918dee6ef43f765",
-   "symbols": [
-    [
-     "PROTOCOL",
-     "constant",
-     34,
-     34,
-     "PROTOCOL = '2024-11-05'"
-    ],
-    [
-     "TOOLS",
-     "constant",
-     36,
-     198,
-     "TOOLS = [{'name': 'megabrain_ask', 'description': 'THE primary tool for any how/where/why question about an indexed repo"
-    ],
-    [
-     "_scope",
-     "function",
-     201,
-     208,
-     "def _scope(args: dict) -> tuple[Path, str | None]"
-    ],
-    [
-     "_scope_root",
-     "function",
-     211,
-     218,
-     "def _scope_root(args: dict) -> tuple[Path, str | None]"
-    ],
-    [
-     "call_tool",
-     "function",
-     221,
-     302,
-     "def call_tool(name: str, args: dict) -> str"
-    ],
-    [
-     "main",
-     "function",
-     305,
-     340,
-     "def main()"
     ]
    ]
   },
@@ -3350,10 +3013,10 @@
      1,
      8,
      "megabrain > megabrain/mcp_server.py (module level)",
-     "9ae9ac280deb18e69ea01a5c3cae0324cf5057e8"
+     "531915e87ad7a2a05f13eb0271ce006363b96c12"
     ]
    ],
-   "skeleton_sha": "3578db20ddc18d4f57232db4d951b2c6d4e4d59e",
+   "skeleton_sha": "aaeee07673276419cdea6d239fd24149efa4fb51",
    "symbols": []
   },
   "megabrain/model.py": {
@@ -4103,6 +3766,101 @@
      256,
      287,
      "def search_multi(roots: list[Path], query: str, path_filters: list[str | None] | None=None) -> dict"
+    ]
+   ]
+  },
+  "megabrain/retrieval/docsearch.py": {
+   "chunks": [
+    [
+     "module",
+     "load_groups, _strip_fm, _clean_inline, _snippet, _context, _group, _slug, _title",
+     null,
+     1,
+     119,
+     "megabrain > megabrain/retrieval/docsearch.py > [load_groups, _strip_fm, _clean_inline, _snippet, _context, _group, _slug, _title]",
+     "ddef64bd34ccc7d1eeac760c48a866d5c0f8ba42"
+    ],
+    [
+     "function",
+     "docsearch",
+     null,
+     120,
+     153,
+     "megabrain > megabrain/retrieval/docsearch.py > def docsearch(state: SearchState, q: str, limit: int=15, groups: tuple[tuple[str, str], ...]=()) -> list[dict]",
+     "7a624ae943482fff806821b650e9febea0a97bd8"
+    ]
+   ],
+   "skeleton_sha": "dc48e345bd486f744ba62693cc800a81d2a04ed8",
+   "symbols": [
+    [
+     "load_groups",
+     "function",
+     26,
+     39,
+     "def load_groups(root: Path) -> tuple[tuple[str, str], ...]"
+    ],
+    [
+     "_FM",
+     "constant",
+     44,
+     44,
+     "_FM = re.compile('\\\\A\\ufeff?---[ \\\\t]*\\\\n.*?\\\\n---[ \\\\t]*\\\\n+', re.S)"
+    ],
+    [
+     "_strip_fm",
+     "function",
+     47,
+     48,
+     "def _strip_fm(text: str) -> str"
+    ],
+    [
+     "_clean_inline",
+     "function",
+     51,
+     55,
+     "def _clean_inline(t: str) -> str"
+    ],
+    [
+     "_snippet",
+     "function",
+     58,
+     67,
+     "def _snippet(text: str, n: int=160) -> str"
+    ],
+    [
+     "_context",
+     "function",
+     70,
+     75,
+     "def _context(text: str, n: int=2000) -> str"
+    ],
+    [
+     "_group",
+     "function",
+     78,
+     83,
+     "def _group(slug: str, groups: tuple[tuple[str, str], ...]) -> str"
+    ],
+    [
+     "_slug",
+     "function",
+     86,
+     97,
+     "def _slug(relpath: str) -> str"
+    ],
+    [
+     "_title",
+     "function",
+     100,
+     119,
+     "def _title(relpath: str, chunk: dict) -> str"
+    ],
+    [
+     "docsearch",
+     "function",
+     122,
+     153,
+     "def docsearch(state: SearchState, q: str, limit: int=15, groups: tuple[tuple[str, str], ...]=()) -> list[dict]"
     ]
    ]
   },
@@ -4945,7 +4703,264 @@
     ]
    ]
   },
-  "megabrain/session.py": {
+  "megabrain/server/__init__.py": {
+   "chunks": [
+    [
+     "module",
+     null,
+     null,
+     1,
+     2,
+     "megabrain > megabrain/server/__init__.py (module level)",
+     "544507ce3654f1fba3e274188ccc421a2e5a549a"
+    ]
+   ],
+   "skeleton_sha": "364a446a41ea63fcbaa6944e0f011df73f42de1b",
+   "symbols": []
+  },
+  "megabrain/server/cli.py": {
+   "chunks": [
+    [
+     "module",
+     null,
+     null,
+     1,
+     22,
+     "megabrain > megabrain/server/cli.py (module level)",
+     "087b78ef00b03ab54f54920e1318704e6d03158a"
+    ],
+    [
+     "block",
+     "main",
+     "1/2",
+     23,
+     120,
+     "megabrain > megabrain/server/cli.py > def main(argv=None)",
+     "7e590189fb9a0b9b7cf05d9086e7df5ba97826ac"
+    ],
+    [
+     "block",
+     "main",
+     "2/2",
+     121,
+     153,
+     "megabrain > megabrain/server/cli.py > def main(argv=None)",
+     "018172f3ad588108986064ae913e095cc20c3768"
+    ],
+    [
+     "block",
+     "_dispatch",
+     "1/2",
+     154,
+     286,
+     "megabrain > megabrain/server/cli.py > def _dispatch(a, raw: list[Path], root: Path) -> None",
+     "5844ea830d58d4b77bc830a6c33fc4ba69829c44"
+    ],
+    [
+     "block",
+     "_dispatch",
+     "2/2",
+     287,
+     292,
+     "megabrain > megabrain/server/cli.py > def _dispatch(a, raw: list[Path], root: Path) -> None",
+     "f9b5858ba21e2432c8ffd536f47e6f62e3835082"
+    ],
+    [
+     "module",
+     null,
+     null,
+     293,
+     296,
+     "megabrain > megabrain/server/cli.py (module level)",
+     "494c28ef72c62a5924f4316a400d4193725ae15a"
+    ]
+   ],
+   "skeleton_sha": "6fe33baccfe83f918af72a3a6c08ff866bc28318",
+   "symbols": [
+    [
+     "main",
+     "function",
+     25,
+     153,
+     "def main(argv=None)"
+    ],
+    [
+     "_dispatch",
+     "function",
+     156,
+     292,
+     "def _dispatch(a, raw: list[Path], root: Path) -> None"
+    ]
+   ]
+  },
+  "megabrain/server/http.py": {
+   "chunks": [
+    [
+     "module",
+     null,
+     null,
+     1,
+     53,
+     "megabrain > megabrain/server/http.py (module level)",
+     "12832b369163f0131e453c0a5880b6d1cacfe58f"
+    ],
+    [
+     "block",
+     "_make_handler",
+     "1/3",
+     54,
+     183,
+     "megabrain > megabrain/server/http.py > def _make_handler(repo: RepoSession, cors: str | None, enable_llm: bool, token: str | None=None)",
+     "c53c7119b1575f36d69d5665dfa6e48fc8aee09c"
+    ],
+    [
+     "block",
+     "_make_handler",
+     "2/3",
+     184,
+     229,
+     "megabrain > megabrain/server/http.py > def _make_handler(repo: RepoSession, cors: str | None, enable_llm: bool, token: str | None=None)",
+     "c3f362b8ce1b1ff29022667019fa3927025cb459"
+    ],
+    [
+     "block",
+     "_make_handler",
+     "3/3",
+     230,
+     231,
+     "megabrain > megabrain/server/http.py > def _make_handler(repo: RepoSession, cors: str | None, enable_llm: bool, token: str | None=None)",
+     "5ebaec407bc18bc3fde033e8db1a20bf3e3ec3f8"
+    ],
+    [
+     "function",
+     "serve",
+     null,
+     232,
+     256,
+     "megabrain > megabrain/server/http.py > def serve(root, port: int=2134, host: str='127.0.0.1', cors: str | None=None, enable_llm: bool=True, token: str | None=None) -> None",
+     "3514a9943673ba383c5f14554ebd7061ba4efa00"
+    ]
+   ],
+   "skeleton_sha": "ff3b51f7948e13500f6a381860e4fcab223b9bd4",
+   "symbols": [
+    [
+     "log",
+     "constant",
+     53,
+     53,
+     "log = logging.getLogger(__name__)"
+    ],
+    [
+     "_make_handler",
+     "function",
+     63,
+     231,
+     "def _make_handler(repo: RepoSession, cors: str | None, enable_llm: bool, token: str | None=None)"
+    ],
+    [
+     "serve",
+     "function",
+     234,
+     256,
+     "def serve(root, port: int=2134, host: str='127.0.0.1', cors: str | None=None, enable_llm: bool=True, token: str | None=None) -> None"
+    ]
+   ]
+  },
+  "megabrain/server/mcp.py": {
+   "chunks": [
+    [
+     "module",
+     null,
+     null,
+     1,
+     34,
+     "megabrain > megabrain/server/mcp.py (module level)",
+     "3df76afe1caf3835a1d41af80711deb0d9afb2e8"
+    ],
+    [
+     "block",
+     null,
+     "1/2",
+     35,
+     133,
+     "megabrain > megabrain/server/mcp.py (module level)",
+     "b4d951c3c34e5e0d5cbc644e1183726495bd4d15"
+    ],
+    [
+     "block",
+     null,
+     "2/2",
+     134,
+     198,
+     "megabrain > megabrain/server/mcp.py (module level)",
+     "2c68c5ecf3d9e9b00e867cd02c5f69a6a6f42d8f"
+    ],
+    [
+     "module",
+     "_scope, _scope_root, call_tool",
+     null,
+     199,
+     302,
+     "megabrain > megabrain/server/mcp.py > [_scope, _scope_root, call_tool]",
+     "311ab129dea5baab5c0383b79cdca7eb3ddda9c9"
+    ],
+    [
+     "function",
+     "main",
+     null,
+     303,
+     344,
+     "megabrain > megabrain/server/mcp.py > def main()",
+     "494cf17f80c3e1afe9632a2577e0beb051e44aa6"
+    ]
+   ],
+   "skeleton_sha": "11225ace8c852ebc98460e14a77dbea8d9714331",
+   "symbols": [
+    [
+     "PROTOCOL",
+     "constant",
+     34,
+     34,
+     "PROTOCOL = '2024-11-05'"
+    ],
+    [
+     "TOOLS",
+     "constant",
+     36,
+     198,
+     "TOOLS = [{'name': 'megabrain_ask', 'description': 'THE primary tool for any how/where/why question about an indexed repo"
+    ],
+    [
+     "_scope",
+     "function",
+     201,
+     208,
+     "def _scope(args: dict) -> tuple[Path, str | None]"
+    ],
+    [
+     "_scope_root",
+     "function",
+     211,
+     218,
+     "def _scope_root(args: dict) -> tuple[Path, str | None]"
+    ],
+    [
+     "call_tool",
+     "function",
+     221,
+     302,
+     "def call_tool(name: str, args: dict) -> str"
+    ],
+    [
+     "main",
+     "function",
+     305,
+     340,
+     "def main()"
+    ]
+   ]
+  },
+  "megabrain/server/session.py": {
    "chunks": [
     [
      "class",
@@ -4953,11 +4968,11 @@
      null,
      1,
      52,
-     "megabrain > megabrain/session.py > class RepoSession",
-     "d1ba71f6c62f429566f0480baa7d8cee1d6118e5"
+     "megabrain > megabrain/server/session.py > class RepoSession",
+     "261bc2920fad25c91c1cbff68c98baa57262b84c"
     ]
    ],
-   "skeleton_sha": "d734247e62b9cca55801a8c443fdae08259f5b20",
+   "skeleton_sha": "bdeb323362782ec6a28a701ecf95960d0f4d6f77",
    "symbols": [
     [
      "RepoSession",

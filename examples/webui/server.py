@@ -39,10 +39,10 @@ from pathlib import Path
 from megabrain.ask import ask, render_ask
 from megabrain.ask.agents import stream_events
 from megabrain.ask.narrator import DOC_EXTS
-from megabrain.frontends.http import _Repo
 from megabrain.indexing.indexer import index_repo
 from megabrain.providers import chat_provider
 from megabrain.retrieval.bundle import chunks_for_file, search_with_state
+from megabrain.server.session import RepoSession
 
 PORT = 8688
 HERE = Path(__file__).parent
@@ -60,7 +60,7 @@ SUGGESTED = {
     ],
 }
 
-_repos: dict[str, _Repo] = {}
+_repos: dict[str, RepoSession] = {}
 _lock = threading.Lock()
 _ask_lock = threading.Lock()   # guards the MEGABRAIN_CHAT_PROVIDER env write
 
@@ -80,7 +80,7 @@ def claude_available() -> bool:
     return importlib.util.find_spec("claude_agent_sdk") is not None
 
 
-def run_ask(repo: _Repo, q: str, provider: str) -> dict:
+def run_ask(repo: RepoSession, q: str, provider: str) -> dict:
     """Run the LLM walkthrough for the demo's provider A/B. ask() builds its
     own SQLite connection (like serve-api /ask), so it never races the warm
     search state. Returns rendered markdown + per-stage timings."""
@@ -91,7 +91,7 @@ def run_ask(repo: _Repo, q: str, provider: str) -> dict:
             "grounded": bool(out["text"])}
 
 
-def run_ask_stream(repo: _Repo, q: str, provider: str, agents, on_event) -> None:
+def run_ask_stream(repo: RepoSession, q: str, provider: str, agents, on_event) -> None:
     """SSE variant of run_ask (ask v2): same provider A/B, but the whole
     multi-agent event stream (plan, per-agent deltas/tools, spliced synthesis)
     flows to the browser as it happens. No lock held during the stream — a
@@ -152,7 +152,7 @@ def add_repo(path_str: str) -> str:
         name = root.name
         while name in _repos:                     # disambiguate same basename
             name += "·"
-        _repos[name] = _Repo(root)
+        _repos[name] = RepoSession(root)
         return name
 
 

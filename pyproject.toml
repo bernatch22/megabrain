@@ -42,7 +42,7 @@ languages = ["tree_sitter_ruby>=0.23", "tree_sitter_go>=0.23",
 claude = ["claude-agent-sdk>=0.1.0"]
 
 [project.scripts]
-megabrain = "megabrain.frontends.cli:main"
+megabrain = "megabrain.server.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/bernatch22/megabrain"

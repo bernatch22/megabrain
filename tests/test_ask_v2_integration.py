@@ -145,7 +145,7 @@ def test_openrouter_buffered_ask_and_mcp_footer(tiny_repo, fake_openrouter):
     assert out["agents"] and len(out["agents"]) >= 2
     rendered = render_ask(out)
     assert "def create_invoice" in rendered
-    from megabrain.frontends.mcp import call_tool
+    from megabrain.server.mcp import call_tool
     text = call_tool("megabrain_ask", {"repo_path": str(tiny_repo),
                                        "question": QUESTION, "agents": True})
     assert "— multi-agent: " in text
