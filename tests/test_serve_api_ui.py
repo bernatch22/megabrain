@@ -89,6 +89,9 @@ def test_scan_census(server):
     assert ".py" in body["by_ext"]
     assert isinstance(body["flagged"], list)
     assert "proposed_ignore" in body
+    # indexable paths drive the studio's add-repo tree
+    assert isinstance(body["paths"], list) and len(body["paths"]) == body["would_index"]
+    assert all("/" in p or p.endswith(".py") for p in body["paths"])
 
 
 def test_scan_flags_gitignored(server):
@@ -205,6 +208,23 @@ def test_index_stream_switches_embedding(server):
         else:
             os.environ["MEGABRAIN_EMBED_MODEL"] = old_model
         providers.EMBED_BASE_URL = old_base
+
+
+def test_repos_add_honors_tree_exclusions(server, tmp_path, fake_embedder):
+    """The studio tree sends excluded paths as .megabrainignore lines; a
+    re-index must then skip them — end-to-end proof the selector works."""
+    base, _ = server
+    repo = tmp_path / "sel"
+    (repo / "keep").mkdir(parents=True)
+    (repo / "drop").mkdir()
+    (repo / "keep" / "a.py").write_text("def a():\n    return 1\n")
+    (repo / "drop" / "b.py").write_text("def b():\n    return 2\n")
+    # add with the tree having excluded the `drop/` folder
+    _post(base, "/repos/add", {"path": str(repo), "ignore": "drop/"})
+    events = _sse(base, "/index/stream", {"repo": "sel", "scan_filters": True})
+    indexed = {e["file"] for e in events if e["type"] == "file"}
+    assert any("keep/a.py" in f for f in indexed)
+    assert not any("drop/b.py" in f for f in indexed)   # excluded by the tree
 
 
 def test_unknown_repo_404(server):

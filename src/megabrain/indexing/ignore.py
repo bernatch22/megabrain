@@ -214,6 +214,7 @@ def scan(root: Path, exts: tuple[str, ...], exclude=(),
     dir_files: dict[str, int] = {}
     dir_bytes: dict[str, int] = {}
     flagged: list[dict] = []
+    paths: list[str] = []            # indexable rel paths (for the UI tree)
     skip_dirs: set[str] = set()      # for the proposed ignore
 
     for p in sorted(root.rglob("*")):
@@ -243,6 +244,7 @@ def scan(root: Path, exts: tuple[str, ...], exclude=(),
             continue
 
         would += 1
+        paths.append(rel)
         by_ext[p.suffix] = by_ext.get(p.suffix, 0) + 1
         dir_files[top] = dir_files.get(top, 0) + 1
         try:
@@ -254,11 +256,14 @@ def scan(root: Path, exts: tuple[str, ...], exclude=(),
                        for d, n in dir_files.items()),
                       key=lambda x: -x["files"])[:10]
     proposed = _proposed_ignore(skip_dirs, flagged)
+    PATHS_CAP = 6000                 # keep the add-repo payload bounded
     return {
         "would_index": would,
         "by_ext": dict(sorted(by_ext.items(), key=lambda kv: -kv[1])),
         "top_dirs": top_dirs,
         "flagged": flagged,
+        "paths": paths[:PATHS_CAP],
+        "paths_truncated": len(paths) > PATHS_CAP,
         "proposed_ignore": proposed,
     }
 

@@ -30,6 +30,15 @@
     check: I('<path d="M20 6L9 17l-5-5"/>', 11),
     x: I('<path d="M18 6L6 18M6 6l12 12"/>', 10),
     folder: I('<path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>', 13),
+    // lucide-accurate glyphs for the scan tree
+    chevronR: I('<path d="m9 18 6-6-6-6"/>', 14),
+    folderL: I('<path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>', 15),
+    folderOpen: I('<path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/>', 15),
+    fileL: I('<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/>', 14),
+    checked: I('<rect width="18" height="18" x="3" y="3" rx="2"/><path d="m9 12 2 2 4-4"/>', 16),
+    unchecked: I('<rect width="18" height="18" x="3" y="3" rx="2"/>', 16),
+    indeterminate: I('<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M8 12h8"/>', 16),
+    hardDrive: I('<line x1="22" x2="2" y1="12" y2="12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>', 14),
   };
 
   // ── state ────────────────────────────────────────────────────────────
@@ -526,22 +535,107 @@
   }
 
   // ── add-repo flow (scan → progress) ──────────────────────────────────
-  function openAdd() { st.overlay = "add"; st.add = { step: "path", path: "", scan: null, ignore: "", scanning: false, index: null }; renderOverlays(); bindOverlay(); }
+  function openAdd() { st.overlay = "add"; st.add = { step: "path", path: "", scan: null, ignore: "", scanning: false, index: null, excluded: null, expanded: null }; renderOverlays(); bindOverlay(); }
+  async function pickFolder() {
+    // opens the OS-native folder dialog on the machine serve-api runs on
+    let r; try { r = await api.fsPick(); } catch (e) { toast(e.message); return; }
+    if (!r || r.cancelled) return;
+    if (r.path) { st.add.path = r.path; doScan(); }   // census the picked folder
+  }
   async function doScan() {
     const p = st.add.path.trim(); if (!p) return;
     st.add.scanning = true; renderOverlays(); bindOverlay();
     try {
       const rep = await api.scan(p);
-      st.add.scan = rep; st.add.ignore = rep.proposed_ignore || ""; st.add.step = "review";
+      st.add.scan = rep;
+      st.add.ignore = rep.proposed_ignore || "";
+      st.add.tree = buildTree(rep.paths || []);
+      st.add.excluded = new Set();
+      st.add.expanded = new Set(Object.values(st.add.tree.children)
+        .filter((c) => c.dir).map((c) => c.path));   // top-level dirs open
+      st.add.step = "review";
     } catch (e) { toast(e.message); }
     st.add.scanning = false; renderOverlays(); bindOverlay();
   }
+
+  // ── scan tree (choose what indexes / what's ignored) ─────────────────
+  function buildTree(paths) {
+    const root = { name: "", path: "", dir: true, count: 0, children: {} };
+    for (const p of paths) {
+      const parts = p.split("/");
+      let node = root, acc = "";
+      for (let i = 0; i < parts.length; i++) {
+        const isFile = i === parts.length - 1;
+        acc = acc ? acc + "/" + parts[i] : parts[i];
+        if (!node.children[parts[i]]) node.children[parts[i]] =
+          { name: parts[i], path: acc, dir: !isFile, count: 0, children: {} };
+        const child = node.children[parts[i]];
+        if (!isFile) child.count++;              // file counts toward each ancestor dir
+        node = child;
+      }
+    }
+    return root;
+  }
+  const sortedChildren = (node) => Object.values(node.children)
+    .sort((a, b) => (a.dir === b.dir ? a.name.localeCompare(b.name) : a.dir ? -1 : 1));
+  function isExcluded(path) {
+    const ex = st.add.excluded;
+    if (ex.has(path)) return true;
+    for (const e of ex) if (path.startsWith(e + "/")) return true;
+    return false;
+  }
+  const descendantExcluded = (path) => {
+    for (const e of st.add.excluded) if (e.startsWith(path + "/")) return true;
+    return false;
+  };
+  function includedCount() {
+    return (st.add.scan.paths || []).filter((p) => !isExcluded(p)).length;
+  }
+  function excludedIgnoreLines() {
+    // one .megabrainignore line per user-excluded node (dir → `path/`, file → `path`)
+    const dirSet = new Set();
+    (st.add.scan.paths || []).forEach((p) => { const parts = p.split("/"); for (let i = 1; i < parts.length; i++) dirSet.add(parts.slice(0, i).join("/")); });
+    return [...st.add.excluded].map((e) => (dirSet.has(e) ? e + "/" : e));
+  }
+  function treeToggleExpand(path) {
+    const ex = st.add.expanded;
+    if (ex.has(path)) ex.delete(path); else ex.add(path);
+    renderOverlays(); bindOverlay();
+  }
+  function treeToggleInclude(path) {
+    const ex = st.add.excluded;
+    if (ex.has(path)) ex.delete(path);
+    else if (isExcluded(path)) { /* excluded via ancestor — re-include ancestor first */ toast("re-include the parent folder first"); return; }
+    else ex.add(path);
+    renderOverlays(); bindOverlay();
+  }
+  function treeRows(node, depth) {
+    let out = "";
+    for (const c of sortedChildren(node)) {
+      const excl = isExcluded(c.path);
+      const box = excl ? "unchecked" : (c.dir && descendantExcluded(c.path) ? "indeterminate" : "checked");
+      const open = c.dir && st.add.expanded.has(c.path);
+      out += `<div style="display:flex;align-items:center;gap:7px;padding:3px 6px;border-radius:6px;padding-left:${8 + depth * 16}px" class="tree-row">
+        <button data-act="tree-check" data-path="${esc(c.path)}" style="display:flex;color:${excl ? "var(--muted)" : box === "indeterminate" ? "var(--accent)" : "var(--accent)"};flex-shrink:0" title="${excl ? "excluded" : "included"}">${ico[box]}</button>
+        ${c.dir
+          ? `<button data-act="tree-toggle" data-path="${esc(c.path)}" style="display:flex;color:var(--muted);flex-shrink:0;transition:transform 150ms;transform:rotate(${open ? 90 : 0}deg)">${ico.chevronR}</button>
+             <span style="display:flex;color:${excl ? "var(--muted)" : "var(--accent)"};flex-shrink:0">${open ? ico.folderOpen : ico.folderL}</span>`
+          : `<span style="width:14px;flex-shrink:0"></span><span style="display:flex;color:var(--muted);flex-shrink:0">${ico.fileL}</span>`}
+        <span class="mono" style="font-size:12px;color:${excl ? "var(--muted)" : "var(--text)"};text-decoration:${excl ? "line-through" : "none"};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${esc(c.name)}</span>
+        ${c.dir ? `<span class="mono" style="font-size:10px;color:var(--muted);flex-shrink:0">${c.count}</span>` : ""}
+      </div>`;
+      if (open) out += treeRows(c, depth + 1);
+    }
+    return out;
+  }
   async function doAddIndex() {
     const p = st.add.path.trim();
+    // the ignore sent = the tree's user-excluded paths + any advanced patterns
+    const ignore = [...excludedIgnoreLines(), st.add.ignore].filter((x) => x && x.trim()).join("\n");
     st.add.step = "index"; st.add.index = { i: 0, n: 0, file: "", changed: false, ticker: [], done: null };
     renderOverlays(); bindOverlay();
     try {
-      await api.reposAdd(p, st.add.ignore);
+      await api.reposAdd(p, ignore);
     } catch (e) { toast(e.message); }
     const ctl = api.indexStream({ path: p, scan_filters: true }, (ev) => {
       const ix = st.add.index; if (!ix) return;
@@ -602,35 +696,45 @@
         <div class="mono" style="font-size:10px;color:var(--muted);letter-spacing:.06em;margin:6px 0 8px">REPOSITORY PATH</div>
         <div style="display:flex;gap:8px">
           <input id="add-path" class="field mono" placeholder="/Users/you/code/some-repo" value="${esc(a.path)}"/>
+          <button class="btn-ghost" data-act="add-browse" style="margin:0;flex-shrink:0">${ico.folder}<span>Browse…</span></button>
           <button class="btn-primary" data-act="do-scan" ${a.scanning ? "disabled" : ""} style="flex-shrink:0">${a.scanning ? '<span class="spinner"></span>' : ico.search}<span>Scan</span></button>
         </div>
-        <div style="font-size:11.5px;color:var(--muted);margin-top:10px;line-height:1.5">megabrain will census the repo first — you SEE exactly what indexes (and what's skipped, and why) before committing.</div>
+        <div style="font-size:11.5px;color:var(--muted);margin-top:10px;line-height:1.5">Pick a folder or paste a path — megabrain censuses it first, so you SEE exactly what indexes (and what's skipped, and why) before committing.</div>
       </div>`;
     } else if (a.step === "review") {
       const s = a.scan;
-      const byExt = Object.entries(s.by_ext || {}).slice(0, 8).map(([e, n]) => `<span class="file-pill mono">${esc(e)} ${n}</span>`).join("");
-      const dirs = (s.top_dirs || []).slice(0, 5).map((d) => `<div class="flag-row" style="justify-content:space-between"><span class="mono" style="color:var(--text)">${esc(d.dir)}</span><span class="mono">${d.files} files · ${(d.bytes / 1024 | 0)} KB</span></div>`).join("");
+      const byExt = Object.entries(s.by_ext || {}).slice(0, 6).map(([e, n]) => `<span class="file-pill mono">${esc(e)} ${n}</span>`).join("");
+      const inc = includedCount();
+      const excl = s.would_index - inc;
       const reasons = {};
       (s.flagged || []).forEach((f) => reasons[f.reason] = (reasons[f.reason] || 0) + 1);
       const rsum = Object.entries(reasons).map(([r, n]) => `${n} ${r}`).join(" · ");
-      const flags = (s.flagged || []).slice(0, 40).map((f) => `<div class="flag-row"><div class="flag-reason">${esc(f.reason)}</div><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f.path)}</span></div>`).join("");
+      const flags = (s.flagged || []).slice(0, 60).map((f) => `<div class="flag-row"><div class="flag-reason">${esc(f.reason)}</div><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f.path)}</span></div>`).join("");
       body = `<div style="padding:0 24px 22px;overflow-y:auto">
-        <div style="display:flex;align-items:baseline;gap:10px;margin:4px 0 12px">
-          <div style="font-size:26px;font-weight:700;letter-spacing:-.02em">${s.would_index}</div>
-          <div style="font-size:12.5px;color:var(--muted)">files would index</div>
+        <div style="display:flex;align-items:baseline;gap:10px;margin:4px 0 14px">
+          <div style="font-size:28px;font-weight:700;letter-spacing:-.02em;color:var(--accent)">${inc}</div>
+          <div style="font-size:12.5px;color:var(--muted)">files will index${excl ? ` · <span style="color:var(--text)">${excl}</span> excluded by you` : ""}</div>
           <div style="flex:1"></div><div style="display:flex;gap:6px;flex-wrap:wrap">${byExt}</div>
         </div>
-        <div style="background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:14px">${dirs}</div>
-        <details ${(s.flagged || []).length ? "" : "hidden"}>
-          <summary class="mono" style="cursor:pointer;font-size:11px;color:var(--muted);padding:4px 0">${(s.flagged || []).length} files skipped${rsum ? " — " + rsum : ""}</summary>
-          <div style="max-height:150px;overflow-y:auto;margin-top:6px;border:1px solid var(--border);border-radius:6px;padding:4px">${flags}${(s.flagged || []).length > 40 ? `<div class="flag-row" style="opacity:.6">… +${s.flagged.length - 40} more</div>` : ""}</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          <div class="mono" style="font-size:10px;color:var(--muted);letter-spacing:.06em">CHOOSE WHAT INDEXES</div>
+          <div class="section-rule"></div>
+          <button class="chip" data-act="tree-all">All</button>
+          <button class="chip" data-act="tree-none">None</button>
+        </div>
+        <div style="max-height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:6px 4px;background:var(--panel2)">${treeRows(a.tree, 0)}${s.paths_truncated ? '<div class="flag-row" style="opacity:.6;padding-left:8px">… tree truncated (very large repo)</div>' : ""}</div>
+        <details ${(s.flagged || []).length ? "" : "hidden"} style="margin-top:12px">
+          <summary class="mono" style="cursor:pointer;font-size:11px;color:var(--muted);padding:4px 0">${(s.flagged || []).length} auto-skipped${rsum ? " — " + rsum : ""}</summary>
+          <div style="max-height:150px;overflow-y:auto;margin-top:6px;border:1px solid var(--border);border-radius:6px;padding:4px">${flags}${(s.flagged || []).length > 60 ? `<div class="flag-row" style="opacity:.6">… +${s.flagged.length - 60} more</div>` : ""}</div>
         </details>
-        <div class="mono" style="font-size:10px;color:var(--muted);letter-spacing:.06em;margin:16px 0 8px">.megabrainignore (editable — applied before indexing)</div>
-        <textarea id="add-ignore" class="field mono">${esc(a.ignore)}</textarea>
-        <div style="display:flex;gap:8px;margin-top:14px">
+        <details style="margin-top:8px">
+          <summary class="mono" style="cursor:pointer;font-size:11px;color:var(--muted);padding:4px 0">Advanced — extra .megabrainignore patterns</summary>
+          <textarea id="add-ignore" class="field mono" style="margin-top:6px">${esc(a.ignore)}</textarea>
+        </details>
+        <div style="display:flex;gap:8px;margin-top:16px;align-items:center">
           <button class="btn-ghost" data-act="add-back" style="margin:0">Back</button>
           <div style="flex:1"></div>
-          <button class="btn-primary" data-act="do-index">${ico.folder}<span>Index ${s.would_index} files</span></button>
+          <button class="btn-primary" data-act="do-index" ${inc ? "" : "disabled"}>${ico.hardDrive}<span>Index ${inc} files</span></button>
         </div>
       </div>`;
     } else {
@@ -847,7 +951,12 @@
     else if (act === "add-open") { openAdd(); }
     else if (act === "add-close" || act === "add-close-bg") { if (act === "add-close-bg" && !e.target.classList.contains("overlay-bg")) return; st.overlay = null; st.add = null; renderOverlays(); }
     else if (act === "do-scan") { doScan(); }
+    else if (act === "add-browse") { pickFolder(); }
     else if (act === "add-back") { st.add.step = "path"; renderOverlays(); bindOverlay(); }
+    else if (act === "tree-toggle") { treeToggleExpand(t.dataset.path); }
+    else if (act === "tree-check") { treeToggleInclude(t.dataset.path); }
+    else if (act === "tree-all") { st.add.excluded.clear(); renderOverlays(); bindOverlay(); }
+    else if (act === "tree-none") { st.add.excluded = new Set(sortedChildren(st.add.tree).map((c) => c.path)); renderOverlays(); bindOverlay(); }
     else if (act === "do-index") { doAddIndex(); }
     else if (act === "add-done") { st.overlay = null; st.repo = st.add.scan ? st.add.scan.name : st.repo; st.add = null; render(); }
     else if (act === "model") { doSelect(t.dataset.provider, t.dataset.model); }

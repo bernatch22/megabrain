@@ -9,17 +9,17 @@
      1,
      72,
      "megabrain > megabrain/__init__.py > [__getattr__, __dir__]",
-     "6761152b5821fe57af762676545fa4dcc9697909"
+     "193e5062cb92102c901941f0b8d5cb4901bb908c"
     ]
    ],
-   "skeleton_sha": "0e9ecff443cbf56a9dfca11d15f9605637f4fddc",
+   "skeleton_sha": "b785643f5e7a6a5163522303f9a60141b316af23",
    "symbols": [
     [
      "__version__",
      "constant",
      34,
      34,
-     "__version__ = '0.8.0'"
+     "__version__ = '0.8.1'"
     ],
     [
      "_EXPORTS",
@@ -2571,16 +2571,16 @@
      "is_vendored, is_generated, scan",
      null,
      139,
-     263,
+     268,
      "megabrain > megabrain/indexing/ignore.py > [is_vendored, is_generated, scan]",
-     "5c43e043f9f5a7c319add8293396636e48d1b988"
+     "7cb9b889efcbc09326d0b2f27b395a0e6bd5fc23"
     ],
     [
      "function",
      "_proposed_ignore",
      null,
-     264,
-     281,
+     269,
+     286,
      "megabrain > megabrain/indexing/ignore.py > def _proposed_ignore(skip_dirs: set[str], flagged: list[dict]) -> str",
      "4a8074db623f413c8fff7ccd3cf6a5576ee7e0fc"
     ]
@@ -2696,14 +2696,14 @@
      "scan",
      "function",
      199,
-     263,
+     268,
      "def scan(root: Path, exts: tuple[str, ...], exclude=(), extra_names: set[str] | None=None) -> dict"
     ],
     [
      "_proposed_ignore",
      "function",
-     266,
-     281,
+     271,
+     286,
      "def _proposed_ignore(skip_dirs: set[str], flagged: list[dict]) -> str"
     ]
    ]
@@ -5022,48 +5022,48 @@
      "_make_handler",
      "1/4",
      110,
-     242,
+     241,
      "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True)",
-     "243d8857ebb1e452b31c63285a7e06793be90a3a"
+     "9faa130b9efd3cf0a654806635c37cb3357a763c"
     ],
     [
      "block",
      "_make_handler",
      "2/4",
-     243,
-     368,
+     242,
+     367,
      "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True)",
-     "96d8be1c43e5a94b41c7c7225239df0ec6e02cdc"
+     "3924c7e3bec57f4fdb55326114f68d88753c7161"
     ],
     [
      "block",
      "_make_handler",
      "3/4",
-     369,
-     418,
+     368,
+     420,
      "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True)",
-     "9fdc28db2b661d3f775768c2438d6c15dff1ae19"
+     "b5faa010ad936a375ca6e7bef73ebd5f370018c0"
     ],
     [
      "block",
      "_make_handler",
      "4/4",
-     419,
-     420,
+     421,
+     422,
      "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True)",
      "5ebaec407bc18bc3fde033e8db1a20bf3e3ec3f8"
     ],
     [
      "module",
-     "_valid_model, _scan_report, _merge_ignore, serve",
+     "_valid_model, _native_pick_folder, _scan_report, _merge_ignore, serve",
      null,
-     421,
-     494,
-     "megabrain > megabrain/server/http.py > [_valid_model, _scan_report, _merge_ignore, serve]",
-     "0af4b92f93e85d18f303ff8efd8af807b4f06311"
+     423,
+     535,
+     "megabrain > megabrain/server/http.py > [_valid_model, _native_pick_folder, _scan_report, _merge_ignore, serve]",
+     "1f21645fd4d2c7bb616d7e7a55ed67123048de19"
     ]
    ],
-   "skeleton_sha": "69569dc17b0e8f071ac398e14c818ed3e96b1b2e",
+   "skeleton_sha": "7f896c364d5f34bfcff96883ecd3b2e8a80a1f87",
    "symbols": [
     [
      "log",
@@ -5139,35 +5139,42 @@
      "_make_handler",
      "function",
      114,
-     420,
+     422,
      "def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True)"
     ],
     [
      "_valid_model",
      "function",
-     423,
-     434,
+     425,
+     436,
      "def _valid_model(model) -> str | None"
+    ],
+    [
+     "_native_pick_folder",
+     "function",
+     439,
+     475,
+     "def _native_pick_folder() -> dict"
     ],
     [
      "_scan_report",
      "function",
-     437,
-     443,
+     478,
+     484,
      "def _scan_report(path: str) -> dict"
     ],
     [
      "_merge_ignore",
      "function",
-     446,
-     456,
+     487,
+     497,
      "def _merge_ignore(root: Path, ignore: str) -> None"
     ],
     [
      "serve",
      "function",
-     459,
-     494,
+     500,
+     535,
      "def serve(root, port: int=2134, host: str='127.0.0.1', cors: str | None=None, enable_llm: bool=True, token: str | None=None, serve_ui: bool=True) -> None"
     ]
    ]

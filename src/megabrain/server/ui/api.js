@@ -13,8 +13,23 @@
   const MOCK = false;                 // ← flip to true for offline/design mode
   const BASE = "";                    // same-origin (served by serve-api)
 
+  // When serve-api runs with --token (e.g. a public demo box), the API routes
+  // require `Authorization: Bearer <token>`. The studio reads it once from
+  // ?token= in the URL (then stashes it in localStorage) and sends it on every
+  // request — so a tokenized link is all you share.
+  const TOKEN = (() => {
+    try {
+      const t = new URL(location.href).searchParams.get("token");
+      if (t) { localStorage.setItem("mb-token", t); return t; }
+      return localStorage.getItem("mb-token") || "";
+    } catch (e) { return ""; }
+  })();
+  const authHeaders = (h) => (TOKEN ? { ...(h || {}), Authorization: "Bearer " + TOKEN } : (h || {}));
+
   async function j(path, opts) {
-    const r = await fetch(BASE + path, opts);
+    const o = opts || {};
+    o.headers = authHeaders(o.headers);
+    const r = await fetch(BASE + path, o);
     const ct = r.headers.get("content-type") || "";
     const body = ct.includes("json") ? await r.json() : await r.text();
     if (!r.ok) throw new Error((body && body.error) || r.statusText || ("HTTP " + r.status));
@@ -29,7 +44,7 @@
     const ctrl = new AbortController();
     const done = (async () => {
       const r = await fetch(BASE + path, {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST", headers: authHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify(obj || {}), signal: ctrl.signal,
       });
       if (!r.ok || !r.body) {
@@ -67,6 +82,7 @@
     startOllama: () => post("/providers/ollama/serve", {}),
     health: (repo) => j("/health" + (repo ? "?repo=" + encodeURIComponent(repo) : "")),
     scan: (path) => j("/scan?path=" + encodeURIComponent(path)),
+    fsPick: () => j("/fs/pick"),          // opens the OS-native folder dialog
     search: (query, repo) => post("/search", { query, repo }),
     chunks: (file, q, repo) =>
       j("/chunks?file=" + encodeURIComponent(file) + "&q=" + encodeURIComponent(q) +

@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.8.1 — studio add-repo: native folder dialog + interactive file tree
+
+- **Native OS folder picker.** Add-repo's "Browse…" opens the operating
+  system's OWN folder dialog (`GET /fs/pick` → Finder on macOS via `osascript`,
+  GTK/KDE on Linux, folders-only) and returns the absolute path — the one thing
+  a browser will never hand over. Falls back to the manual path field on a
+  headless box. (Replaces the earlier server-side HTML browser.)
+- **Choose what indexes, as a tree.** The scan review is now an interactive
+  file tree (lucide-style icons, expand/collapse, per-node checkboxes with an
+  indeterminate state, All/None) built from the scan's new `paths`. The
+  "N files will index" count updates live; excluded nodes become
+  `.megabrainignore` lines applied before indexing. Auto-skipped
+  (gitignore/vendored/generated) stays in a collapsible detail.
+- **Tokened demo.** The studio reads `?token=` from its URL (then localStorage)
+  and sends `Authorization: Bearer` on every request, so serve-api can run with
+  `--token` behind a public port and a tokenized link is all you share.
+- `scan()` returns `paths` (indexable rel paths, capped) for the tree.
+
 ## 0.8.0 — megabrain studio (serve-api web UI) + scan
 
 - **megabrain studio.** `megabrain serve-api ~/repo` serves a local web UI at

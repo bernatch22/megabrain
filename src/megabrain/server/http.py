@@ -238,6 +238,8 @@ def _make_handler(reg: Registry, cors: str | None, enable_llm: bool,
                     if not p:
                         return self._err(400, "missing path")
                     return self._send(200, _scan_report(p))
+                if path == "/fs/pick":
+                    return self._send(200, _native_pick_folder())
                 if path == "/docsearch":
                     repo = reg.get(repo_name)
                     q = (qs.get("q") or [""])[0].strip()
@@ -432,6 +434,45 @@ def _valid_model(model) -> str | None:
     if providers.resolve().name == "claude" and "/" in m:
         return None
     return m
+
+
+def _native_pick_folder() -> dict:
+    """`GET /fs/pick` — open the OPERATING SYSTEM's own native folder dialog on
+    the machine serve-api runs on, restricted to folders, and return the chosen
+    absolute path. This is the real system chooser (Finder on macOS, GTK/KDE on
+    Linux), not an HTML re-creation — and it's the only way to get an absolute
+    path a browser will never hand over. Blocks until the user picks or cancels.
+    `{path}` on pick · `{cancelled: true}` on cancel. Raises 400 with a clear
+    message on a headless box (no display / no picker) so the UI falls back to
+    the manual path field."""
+    import shutil
+    import subprocess
+    import sys
+    try:
+        if sys.platform == "darwin":
+            script = ('POSIX path of (choose folder with prompt '
+                      '"Select a repository to index with megabrain")')
+            r = subprocess.run(["osascript", "-e", script],
+                               capture_output=True, text=True, timeout=300)
+            if r.returncode != 0:                 # user hit Cancel (or no GUI)
+                if "User canceled" in (r.stderr or ""):
+                    return {"cancelled": True}
+                raise _http_error("no native folder dialog available on this host", 400)
+            return {"path": r.stdout.strip().rstrip("/")}
+        for cmd in (["zenity", "--file-selection", "--directory",
+                     "--title=Select a repository to index"],
+                    ["kdialog", "--getexistingdirectory", str(Path.home())]):
+            if shutil.which(cmd[0]):
+                r = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+                if r.returncode != 0:
+                    return {"cancelled": True}
+                return {"path": r.stdout.strip().rstrip("/")}
+        raise _http_error("no native folder picker found (install zenity/kdialog, "
+                          "or paste the path)", 400)
+    except FileNotFoundError as e:
+        raise _http_error("native folder picker not available — paste the path", 400) from e
+    except subprocess.TimeoutExpired:
+        return {"cancelled": True}
 
 
 def _scan_report(path: str) -> dict:

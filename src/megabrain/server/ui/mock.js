@@ -69,6 +69,12 @@ window.mockApi = function () {
     scan: async (path) => (await wait(300), {
       path, name: path.split("/").pop() || "repo", would_index: 128,
       by_ext: { ".py": 94, ".md": 22, ".toml": 8, ".yml": 4 },
+      paths: [].concat(
+        ["src/app.py", "src/http.py", "src/cli.py", "src/indexer.py", "src/chunker.py"],
+        ["src/ask/agents.py", "src/ask/narrator.py", "src/ask/warmup.py"],
+        ["src/retrieval/bundle.py", "src/retrieval/state.py", "src/retrieval/scoring.py"],
+        ["tests/test_app.py", "tests/test_http.py", "tests/test_ask.py"],
+        ["docs/GUIDE.md", "docs/ARCHITECTURE.md", "README.md", "pyproject.toml"]),
       top_dirs: [
         { dir: "src", files: 71, bytes: 421000 },
         { dir: "tests", files: 38, bytes: 143000 },
@@ -84,6 +90,7 @@ window.mockApi = function () {
       ],
       proposed_ignore: "# proposed by scan — review before indexing\nnode_modules/    # vendored\ndist/    # vendored\n",
     }),
+    fsPick: async () => (await wait(400), { path: "/Users/you/code/some-repo" }),
     reposAdd: async (path) => (await wait(150), { name: path.split("/").pop(), root: path, files: 0, chunks: 0 }),
     indexStream: (body, onEvent) => {
       const files = ["src/app.py", "src/http.py", "src/indexer.py", "src/chunker.py",
