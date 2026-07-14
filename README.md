@@ -84,8 +84,19 @@ megabrain ask ~/repo "how does X work"
 
 megabrain auto-picks the narrator: **Claude** when its SDK is installed, otherwise
 OpenRouter. Embeddings always go through OpenRouter or a local endpoint (Anthropic has no
-embeddings API). The full provider matrix — native APIs, hybrid, fully-local GPU — is in
-[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+embeddings API).
+
+Pin the provider and models with env vars (any OpenRouter slug):
+
+```bash
+export MEGABRAIN_CHAT_PROVIDER=openrouter                          # pin openrouter (skip claude auto-pick)
+export MEGABRAIN_ASK_MODEL=google/gemini-3.1-flash-lite-preview    # the `ask` narration model
+export MEGABRAIN_RERANK_MODEL=google/gemini-3.1-flash-lite-preview # ask fan-out PLANNER + `--best` reorder
+export MEGABRAIN_EMBED_MODEL=perplexity/pplx-embed-v1-0.6b         # the embedding model
+```
+
+The full provider matrix — native APIs, hybrid, fully-local GPU, per-provider defaults —
+is in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## How it works
 
