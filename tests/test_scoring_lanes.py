@@ -93,7 +93,7 @@ def indexed(tmp_path, monkeypatch):
         (tmp_path / rel).parent.mkdir(parents=True, exist_ok=True)
         (tmp_path / rel).write_text(src)
     from megabrain.indexing.indexer import index_repo
-    index_repo(tmp_path, quiet=True)
+    index_repo(tmp_path)
     return tmp_path
 
 

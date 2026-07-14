@@ -256,7 +256,7 @@ def _dispatch(a, raw: list[Path], root: Path) -> None:
 
             from ..flows import refresh_stale
             from ..indexing.indexer import index_repo
-            index_repo(root, quiet=True, prune_flows=False)   # update shas, keep flows
+            index_repo(root, prune_flows=False)   # update shas, keep flows
             print(_json.dumps(refresh_stale(root), indent=1))
             return
         if not _flows_on(root):

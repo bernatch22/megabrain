@@ -160,7 +160,7 @@ def main():
             '    return db.execute("SELECT * FROM customer_revenue '
             'ORDER BY revenue_cents DESC")\n')
 
-        index_repo(repo, quiet=True, strategies=[SqlStrategy(repo="shop")])
+        index_repo(repo, strategies=[SqlStrategy(repo="shop")])
         res = search(repo, "where does customer revenue come from")
         print("\n" + render(res, compact=True))
 

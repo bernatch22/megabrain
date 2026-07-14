@@ -93,5 +93,5 @@ def tiny_repo(tmp_path, fake_embedder):
         '    """Flatten a nested list one level."""\n'
         '    return [y for x in xs for y in x]\n')
     from megabrain.indexing.indexer import index_repo
-    index_repo(tmp_path, quiet=True)
+    index_repo(tmp_path)
     return tmp_path

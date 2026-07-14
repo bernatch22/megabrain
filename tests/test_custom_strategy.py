@@ -72,7 +72,7 @@ def test_partition_and_symbols():
 def test_index_and_search_with_custom_strategy(tmp_path, fake_embedder):
     (tmp_path / "schema.sql").write_text(SQL)
     (tmp_path / "app.py").write_text("def unrelated():\n    return 1\n")
-    index_repo(tmp_path, quiet=True, strategies=[SqlStrategy()])
+    index_repo(tmp_path, strategies=[SqlStrategy()])
     with Store(tmp_path) as st:
         assert "schema.sql" in st.all_paths()
         kinds = {r[0] for r in st.db.execute(
@@ -101,7 +101,7 @@ def test_custom_strategy_overrides_builtin(tmp_path, fake_embedder):
 
     (tmp_path / "app.py").write_text(
         "def a():\n    return 1\n\n\ndef b():\n    return 2\n")
-    index_repo(tmp_path, quiet=True, strategies=[WholeFilePy()])
+    index_repo(tmp_path, strategies=[WholeFilePy()])
     with Store(tmp_path) as st:
         kinds = [r[0] for r in st.db.execute(
             "SELECT kind FROM chunks WHERE file='app.py'")]

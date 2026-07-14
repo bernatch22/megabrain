@@ -126,7 +126,7 @@ def test_auto_refresh_keeps_custom_extensions(repo, fake_embedder):
     sdir.mkdir(parents=True)
     (sdir / "sql.py").write_text(GOOD)
     trust_file(sdir / "sql.py")
-    index_repo(repo, quiet=True)
+    index_repo(repo)
     with Store(repo) as s:
         assert "a.sql" in s.all_paths()
         s.set_meta("last_index", {"t": time.time() - 3600, "files": 0})  # go stale

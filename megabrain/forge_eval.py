@@ -195,7 +195,7 @@ def _index_copy(root: Path, strategy):
     dst = tmp / root.name
     shutil.copytree(root, dst, ignore=shutil.ignore_patterns(
         ".megabrain", ".git", "node_modules", "__pycache__"))
-    index_repo(dst, quiet=True, strategies=[strategy] if strategy else [])
+    index_repo(dst, strategies=[strategy] if strategy else [])
     return tmp, dst
 
 

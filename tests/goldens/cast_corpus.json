@@ -2213,7 +2213,7 @@
      209,
      314,
      "megabrain > megabrain/forge.py > [validate_strategy, install, forge]",
-     "c70a84db79fe91352b3cfcafdfce34a7f69328b6"
+     "e4301b69c0ea55f91d0af4b231bf70e166fa6850"
     ],
     [
      "function",
@@ -2352,7 +2352,7 @@
      120,
      239,
      "megabrain > megabrain/forge_eval.py > [_measure, changed_files, _index_copy, _granularity_violation]",
-     "a4fbdd63bb9e5f48fdbcecb97031304f415178fd"
+     "53c9999b4ac9a0408a89116a65c5f39677bee5a5"
     ],
     [
      "function",
@@ -2470,7 +2470,7 @@
      101,
      223,
      "megabrain > megabrain/forge_specialize.py > [detect_specialization, lit_baseline, gate_strategy, _load]",
-     "3b3f94330f321d5f05193e5be3e8a3df6ba46a5a"
+     "3280a8e430985658ffe71b20641abdc2b1d2e471"
     ],
     [
      "function",
@@ -2626,18 +2626,18 @@
      "_dispatch",
      "1/2",
      154,
-     289,
+     290,
      "megabrain > megabrain/frontends/cli.py > def _dispatch(a, raw: list[Path], root: Path) -> None",
-     "7b77330425236730195e685e39d92f1fedf94903"
+     "e67d7ecd47e9f7fa135cbe6b578e188b212be030"
     ],
     [
      "block",
      "_dispatch",
      "2/2",
-     290,
+     291,
      292,
      "megabrain > megabrain/frontends/cli.py > def _dispatch(a, raw: list[Path], root: Path) -> None",
-     "5a3b594881c5508ef31dbf7a07e68914e132df6e"
+     "585dc7bcd4098af3445c9bda6537abebcc3dadab"
     ],
     [
      "module",
@@ -2694,7 +2694,7 @@
      184,
      229,
      "megabrain > megabrain/frontends/http.py > def _make_handler(repo: RepoSession, cors: str | None, enable_llm: bool, token: str | None=None)",
-     "598e3d7ff66a4e63cff812c2f5b4ae61f9fdfba8"
+     "59a7e2dd9f88c0ba35b768e8d9a2885d724d6144"
     ],
     [
      "block",
@@ -2776,7 +2776,7 @@
      199,
      298,
      "megabrain > megabrain/frontends/mcp.py > [_scope, _scope_root, call_tool]",
-     "350923b45a6a7bde7590c9382946a4dbd4644e66"
+     "01ffaa6104e6a8a4e411aa67dbd756c5bf750f95"
     ],
     [
      "function",
@@ -2951,21 +2951,21 @@
      "load_ignore, _split_patterns, _excluded, discover, maybe_reindex, index_repo",
      null,
      1,
-     117,
+     116,
      "megabrain > megabrain/indexing/indexer.py > [load_ignore, _split_patterns, _excluded, discover, maybe_reindex, index_repo]",
-     "6eb05f7bdad59c8b2091939e24582e07c721de26"
+     "3cecc8e17c4bfdc080df269007f04f83c95438d7"
     ],
     [
      "function",
      "_index_into",
      null,
-     118,
-     199,
+     117,
+     198,
      "megabrain > megabrain/indexing/indexer.py > def _index_into(store: Store, emb: Embedder, root: Path, name: str, *, force, exclude, strategies, prune_flows, t0) -> dict",
      "d2325a56aa457349a14e2163a1d8f785cb7f33be"
     ]
    ],
-   "skeleton_sha": "a7310bca476d40c32febe58023ea8fb2249b8a9b",
+   "skeleton_sha": "a69af42dfe683200c5c59d17b6200ddab38e3659",
    "symbols": [
     [
      "EXCLUDE_DIRS",
@@ -3034,14 +3034,14 @@
      "index_repo",
      "function",
      100,
-     117,
-     "def index_repo(root: Path, repo_name: str | None=None, quiet: bool=True, force: bool=False, exclude=(), strategies=(), prune_flows: bool=True) -> dict"
+     116,
+     "def index_repo(root: Path, repo_name: str | None=None, force: bool=False, exclude=(), strategies=(), prune_flows: bool=True) -> dict"
     ],
     [
      "_index_into",
      "function",
-     120,
-     199,
+     119,
+     198,
      "def _index_into(store: Store, emb: Embedder, root: Path, name: str, *, force, exclude, strategies, prune_flows, t0) -> dict"
     ]
    ]

@@ -16,12 +16,12 @@ def test_index_counts_and_incremental(tiny_repo):
     st = Store(tiny_repo)
     assert st.get_meta("repo_name") == tiny_repo.name
     assert st.get_meta("embed_model")            # recorded for drift detection
-    r2 = index_repo(tiny_repo, quiet=True)       # nothing changed
+    r2 = index_repo(tiny_repo)       # nothing changed
     assert r2["changed"] == 0 and r2["unchanged"] == 3
 
 
 def test_force_reembeds_everything(tiny_repo):
-    r = index_repo(tiny_repo, quiet=True, force=True)
+    r = index_repo(tiny_repo, force=True)
     assert r["changed"] == 3 and r["unchanged"] == 0
 
 
@@ -29,14 +29,14 @@ def test_embed_model_change_triggers_full_reembed(tiny_repo, monkeypatch):
     # construction-time config: the Embedder reads MEGABRAIN_EMBED_MODEL when
     # built, and index_repo trusts the instance's .model (no module globals)
     monkeypatch.setenv("MEGABRAIN_EMBED_MODEL", "other/model")
-    r = index_repo(tiny_repo, quiet=True)        # no force asked — auto-detected
+    r = index_repo(tiny_repo)        # no force asked — auto-detected
     assert r["changed"] == 3
     assert Store(tiny_repo).get_meta("embed_model") == "other/model"
 
 
 def test_orphan_files_are_pruned(tiny_repo):
     (tiny_repo / "util.py").unlink()
-    r = index_repo(tiny_repo, quiet=True)
+    r = index_repo(tiny_repo)
     assert r["removed"] == 1
     assert "util.py" not in Store(tiny_repo).all_paths()
 
@@ -44,7 +44,7 @@ def test_orphan_files_are_pruned(tiny_repo):
 def test_changed_file_reindexed_alone(tiny_repo):
     p = tiny_repo / "util.py"
     p.write_text(p.read_text() + "\n\ndef extra():\n    return 1\n")
-    r = index_repo(tiny_repo, quiet=True)
+    r = index_repo(tiny_repo)
     assert r["changed"] == 1 and r["unchanged"] == 2
 
 
@@ -155,7 +155,7 @@ def test_discover_honors_exclude_and_ignorefile(tmp_path, fake_embedder):
              for p in discover(tmp_path, (".py",), ["generated", "vendor"])}
     assert found == {"src/keep.py"}
     # index_repo() merges .megabrainignore (vendor) with the --exclude flag (generated):
-    index_repo(tmp_path, quiet=True, exclude=["generated"])
+    index_repo(tmp_path, exclude=["generated"])
     assert Store(tmp_path).all_paths() == {"src/keep.py"}
 
 

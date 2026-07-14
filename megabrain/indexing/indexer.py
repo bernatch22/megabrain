@@ -90,19 +90,18 @@ def maybe_reindex(root: Path, ttl: int = AUTO_REFRESH_TTL) -> bool:
             meta = s.get_meta("last_index")
         if meta and time.time() - meta["t"] <= ttl:
             return False
-        index_repo(root, quiet=True)
+        index_repo(root)
         return True
     except Exception:
         logging.getLogger(__name__).debug("index auto-refresh skipped", exc_info=True)
         return False
 
 
-def index_repo(root: Path, repo_name: str | None = None, quiet: bool = True,
+def index_repo(root: Path, repo_name: str | None = None,
                force: bool = False, exclude=(), strategies=(),
                prune_flows: bool = True) -> dict:
     """Index/update a repo and RETURN the stats dict — the library never prints
-    (rendering the result is the frontend's job; `quiet` is accepted for
-    backward compatibility and ignored). `strategies` injects custom
+    (rendering the result is the frontend's job). `strategies` injects custom
     ChunkStrategy instances (checked before the built-ins, so they can claim new
     extensions or override existing ones) — see examples/02_custom_chunker.py.
     Trusted repo-local strategies (`.megabrain/strategies/*.py`) load

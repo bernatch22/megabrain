@@ -219,7 +219,7 @@ def _make_handler(repo: RepoSession, cors: str | None, enable_llm: bool,
                     return
                 if path == "/index":
                     from ..indexing.indexer import index_repo
-                    return self._send(200, index_repo(repo.root, quiet=True,
+                    return self._send(200, index_repo(repo.root,
                                                       force=bool(body.get("force"))))
                 return self._err(404, "not found")
             except MegabrainError as e:  # typed engine error -> mapped status

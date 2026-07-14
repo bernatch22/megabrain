@@ -34,7 +34,7 @@ def repo(tmp_path, fake_embedder):
     (tmp_path / "vad.py").write_text(VAD)
     (tmp_path / "turn.py").write_text(TURN)
     (tmp_path / "billing.py").write_text(OTHER)
-    index_repo(tmp_path, quiet=True)
+    index_repo(tmp_path)
     flows_mod.set_enabled(tmp_path, True)     # opt-in mode; off by default
     return tmp_path
 
@@ -112,7 +112,7 @@ def test_refresh_updates_instead_of_expiring(repo, monkeypatch):
     from megabrain.flows import refresh_stale
     _cache(repo)
     (repo / "turn.py").write_text(TURN + "\n    state.log('changed')\n")
-    index_repo(repo, quiet=True, prune_flows=False)  # update shas, keep the stale flow
+    index_repo(repo, prune_flows=False)  # update shas, keep the stale flow
 
     asked = []
 
@@ -135,7 +135,7 @@ def test_refresh_updates_instead_of_expiring(repo, monkeypatch):
 def test_sha_invalidation_on_reindex(repo):
     _cache(repo)
     (repo / "turn.py").write_text(TURN + "\n# changed\n")
-    stats = index_repo(repo, quiet=True)
+    stats = index_repo(repo)
     assert stats["stale_flows_pruned"] == 1
     with Store(repo) as s:
         metas, _, _ = s.load_flows()
@@ -199,7 +199,7 @@ def test_mode_off_by_default_is_a_total_noop(tmp_path, fake_embedder):
     as before — no flow written, none loaded, no flows in the result."""
     (tmp_path / "vad.py").write_text(VAD)
     (tmp_path / "turn.py").write_text(TURN)
-    index_repo(tmp_path, quiet=True)
+    index_repo(tmp_path)
     assert not flows_mod.enabled(tmp_path)          # off by default
     from tests.conftest import FakeEmbedder
     assert cache_flow(tmp_path, FLOW_Q, FLOW_TEXT, ["vad.py"],

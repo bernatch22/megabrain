@@ -144,7 +144,7 @@ def add_repo(path_str: str) -> str:
                 return name
     if not (root / ".megabrain" / "db.sqlite").exists():
         print(f"indexing {root} (first run)…", flush=True)
-        stats = index_repo(root, quiet=True)
+        stats = index_repo(root)
         if stats["files"] == 0:
             raise ValueError(f"no indexable source files under {root}")
     with _lock:

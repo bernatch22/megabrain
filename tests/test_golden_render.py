@@ -92,7 +92,7 @@ def golden_repo(tmp_path, monkeypatch):
         '    return [y for x in xs for y in x]\n')
 
     from megabrain.indexing.indexer import index_repo
-    index_repo(tmp_path, quiet=True)
+    index_repo(tmp_path)
     return tmp_path
 
 

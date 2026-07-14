@@ -162,7 +162,7 @@ def test_chunks_for_file_scores_and_selection(tmp_path, fake_embedder):
     (tmp_path / "otros.php").write_text(
         "<?php\nfunction sumar($a, $b) { return $a + $b; }\n")
     from megabrain.indexing.indexer import index_repo
-    index_repo(tmp_path, quiet=True)
+    index_repo(tmp_path)
 
     from megabrain.retrieval.bundle import chunks_for_file_root, search_with_state
     from megabrain.retrieval.state import load_state

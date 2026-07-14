@@ -284,7 +284,7 @@ def call_tool(name: str, args: dict) -> str:
             return json.dumps(_flows.warm_flows(root, limit=int(args.get("n", 6))), indent=1)
         if action == "refresh":
             from ..indexing.indexer import index_repo
-            index_repo(root, quiet=True, prune_flows=False)
+            index_repo(root, prune_flows=False)
             return json.dumps(_flows.refresh_stale(root), indent=1)
         if action in ("enable", "disable"):
             _flows.set_enabled(root, action == "enable")

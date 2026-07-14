@@ -14,7 +14,7 @@ root = sys.argv[1] if len(sys.argv) > 1 else "."
 question = sys.argv[2] if len(sys.argv) > 2 else "where is the main entry point"
 
 # 1. Index (incremental by sha256 — instant when nothing changed).
-stats = megabrain.index_repo(root, quiet=True)
+stats = megabrain.index_repo(root)
 print(f"indexed: {stats['files']} files, {stats['changed']} changed, "
       f"{stats['seconds']}s\n")
 

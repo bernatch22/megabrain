@@ -309,7 +309,7 @@ def forge(root, ext: str | None = None, dry_run: bool = False,
 
     if not dry_run and any(e["ok"] for e in report["forged"]):
         from .indexing.indexer import index_repo
-        report["index"] = index_repo(root, quiet=True)
+        report["index"] = index_repo(root)
     report["seconds"] = round(time.time() - t0, 2)
     return report
 

@@ -213,7 +213,7 @@ def gate_strategy(root, strategy, ext: str, dry_run: bool = False,
     if gate.get("win") and not dry_run and code is not None:
         report["installed"] = install(root, ext, code).as_posix()
         from .indexing.indexer import index_repo
-        report["index"] = index_repo(root, quiet=True)
+        report["index"] = index_repo(root)
     return report
 
 
