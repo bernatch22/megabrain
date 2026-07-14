@@ -54,8 +54,55 @@ flow cache on, a **repeated question costs $0 and ~0 ms** (next up).
 | **Claude to narrate** (subscription credits, zero keys) | `pip install 'megabrain[claude]'` + be logged into Claude Code → auto-detected. Or `ANTHROPIC_API_KEY=…` to bill the API. Embeddings still need OpenRouter/local (Anthropic has no embeddings API). |
 | **A specific model** | `MEGABRAIN_ASK_MODEL=anthropic/claude-haiku-4.5` (any OpenRouter slug) |
 | **Gemini 3 Flash for ask (fast)** | `MEGABRAIN_ASK_MODEL=google/gemini-3-flash-preview` — **measured ~2× faster**: a real walkthrough in ~6-7 s vs qwen3-coder's ~14 s, clean and correct (cites a bit more tersely — ~3 files vs 7). Great default when you want snappy `ask`. Caveat: it's a *preview* slug (may change); `google/gemini-2.5-flash` is the stable fallback but only marginally faster than qwen (~13 s) since `ask` is output-bound. |
-| **Fully local, no keys** (Ollama/LM Studio/vLLM) | `MEGABRAIN_EMBED_BASE_URL=http://localhost:11434/v1 MEGABRAIN_EMBED_MODEL=embeddinggemma` + `MEGABRAIN_CHAT_BASE_URL=…`. Localhost needs no key. ⚠️ measured caveat: small general embedders (embeddinggemma) are noticeably weaker on code than pplx — good for offline, not for best recall. |
+| **Fully local, no keys** (Ollama/LM Studio/vLLM) | see §2b below — `MEGABRAIN_EMBED_BASE_URL` + `MEGABRAIN_EMBED_MODEL` (+ `MEGABRAIN_CHAT_BASE_URL` for a local narrator too). Localhost needs no key. |
 | **Perplexity direct** (not via OpenRouter) | `MEGABRAIN_EMBED_BASE_URL=https://api.perplexity.ai` + `PERPLEXITY_API_KEY=…` (auto-picked) |
+
+## 2b. Local embeddings (Ollama, $0, code never leaves your machine)
+
+For a private repo, or to run with zero API keys: point `MEGABRAIN_EMBED_MODEL`
+at any model served by an OpenAI-compatible local endpoint. Two real options,
+**measured** against the same 22-query golden set (sdk-server, R@1 = does the
+single best file for a question land in the #1 slot):
+
+```bash
+ollama serve                                   # once, keep running
+ollama pull unclemusclez/jina-embeddings-v2-base-code   # 322 MB, one time
+
+export MEGABRAIN_EMBED_BASE_URL=http://localhost:11434/v1
+export MEGABRAIN_EMBED_MODEL=unclemusclez/jina-embeddings-v2-base-code
+megabrain index ~/your/repo --force            # re-embed with the new model
+```
+
+| embedding | R@1 (retrieval) | open weights? | cost | index (575 chunks) |
+|---|---|---|---|---|
+| `perplexity/pplx-embed-v1-0.6b` *(cloud default)* | **0.591** | no (API-only) | $0.003 | fast |
+| `unclemusclez/jina-embeddings-v2-base-code` *(local, code-tuned)* | **0.455** | **yes — Apache 2.0** | **$0.00** | ~165 s (CPU) |
+| `intfloat/multilingual-e5-large` (general-purpose, local) | 0.364 | yes | $0.00 | ~590 s (needs OpenRouter-hosted; slow + weaker — not code-tuned) |
+
+**`jina-embeddings-v2-base-code` is the one worth using locally** — it's the
+only embedder here that is both genuinely open-weight AND code-specialized.
+`embeddinggemma`/general local embedders (e5, bge, etc.) measure noticeably
+worse on code because they weren't trained on it.
+
+### Does it change what `ask` actually tells you?
+
+Retrieval R@1 is one number; what matters is whether the narrated walkthrough
+still finds the right code. Ran the same two questions against sdk-server,
+narrated by the same model (`gemini-3.1-flash-lite-preview`), swapping only
+the embedding:
+
+| query | pplx (cloud) cites | jina-local cites |
+|---|---|---|
+| *"where is barge-in handled when the user interrupts mid-speech"* | `turn_controller.py`, `bot_handler.py`, `realtime_engine.py` | `turn_controller.py`, `webhooks.py` |
+| *"how does an inbound websocket client get authenticated"* | `handler.py`, `manager.py` | `handler.py` only |
+
+Both **found the same core answer file** (`turn_controller.py` / `handler.py`)
+and gave a correct, coherent walkthrough in both cases — but pplx pulled in
+**more of the surrounding context** (the auth flow's `manager.py`, barge-in's
+`bot_handler.py`) that jina-local missed. In practice: jina-local is good
+enough to get the right answer on a focused question; pplx is more complete on
+questions that span a couple of related files. Neither hallucinated — `ask`'s
+splice guarantee holds regardless of which embedding retrieved the bundle.
 
 ## 3. Index and ask
 
@@ -343,6 +390,7 @@ megabrain flows ~/repo --refresh           # after big changes, update the cache
 # provider knobs (env or ~/.zshrc)
 OPENROUTER_API_KEY=…                        # recommended, one key for both
 MEGABRAIN_ASK_MODEL=anthropic/claude-haiku-4.5
-MEGABRAIN_EMBED_BASE_URL=http://localhost:11434/v1   # local embeddings
+MEGABRAIN_EMBED_BASE_URL=http://localhost:11434/v1   # local embeddings (§2b)
+MEGABRAIN_EMBED_MODEL=unclemusclez/jina-embeddings-v2-base-code   # code-tuned, open weights, $0
 MEGABRAIN_FLOW_CACHE=0                      # hard-off the flow cache
 ```
