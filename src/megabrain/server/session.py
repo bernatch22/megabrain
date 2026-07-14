@@ -19,7 +19,7 @@ import time
 from pathlib import Path
 
 from ..retrieval.docsearch import load_groups
-from .retrieval.state import SearchState, load_state
+from ..retrieval.state import SearchState, load_state
 
 
 class RepoSession:

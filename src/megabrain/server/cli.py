@@ -41,6 +41,22 @@ def main(argv=None):
                    help="OPT-IN: after indexing, discover the system's main workflows "
                         "and pre-cache them as flows — N research asks (default 6), "
                         "so the flow cache starts full instead of building up lazily")
+    p.add_argument("--scan", action="store_true", dest="index_scan",
+                   help="print the scan census (what will index + what's skipped and "
+                        "why: .gitignore/vendored/generated), THEN index honoring those "
+                        "smart filters")
+    p.add_argument("--dry-run", action="store_true",
+                   help="census only — alias of `megabrain scan`: show what WOULD index, "
+                        "no embedding, no writes")
+
+    p = sub.add_parser("scan",
+                       help="index-intelligence census: what WOULD index + every "
+                            "candidate skipped with the reason "
+                            "(.gitignore/vendored/generated/too-big). No indexing.")
+    p.add_argument("path", nargs="?", default=".")
+    p.add_argument("--json", action="store_true")
+    p.add_argument("--write", action="store_true",
+                   help="write the proposed .megabrainignore (deterministic skips only)")
 
     p = sub.add_parser("query")
     p.add_argument("path")
@@ -88,6 +104,8 @@ def main(argv=None):
     p.add_argument("--token", default=os.environ.get("MEGABRAIN_API_TOKEN"),
                    help="require `Authorization: Bearer <token>` on every request except "
                         "/health (default: $MEGABRAIN_API_TOKEN; recommended off-localhost)")
+    p.add_argument("--no-ui", action="store_true",
+                   help="do not serve the studio web UI at / (JSON API only)")
 
     p = sub.add_parser("stats")
     p.add_argument("path", nargs="?", default=".")
@@ -151,19 +169,66 @@ def main(argv=None):
         raise SystemExit(2) from None
 
 
+def _scan(root: Path) -> dict:
+    from .. import app
+    return app.scan(root)
+
+
+def _render_scan(rep: dict) -> str:
+    """Human census: totals, by-extension, top dirs, and the flagged list
+    grouped by reason (why each file was skipped) + the proposed ignore."""
+    L = [f'# scan — {rep["would_index"]} files would index']
+    if rep["by_ext"]:
+        L.append("  by ext: " + "  ".join(f'{e} {n}' for e, n in
+                                          list(rep["by_ext"].items())[:12]))
+    if rep["top_dirs"]:
+        L.append("  top dirs:")
+        for d in rep["top_dirs"][:8]:
+            L.append(f'    {d["dir"]:<24} {d["files"]:>5} files  '
+                     f'{d["bytes"] // 1024:>6} KB')
+    flagged = rep["flagged"]
+    if flagged:
+        by_reason: dict[str, int] = {}
+        for f in flagged:
+            by_reason[f["reason"]] = by_reason.get(f["reason"], 0) + 1
+        L.append(f'\n# skipped {len(flagged)} candidates: '
+                 + ", ".join(f"{n} {r}" for r, n in sorted(by_reason.items())))
+        for f in flagged[:20]:
+            L.append(f'    [{f["reason"]:<10}] {f["path"]}')
+        if len(flagged) > 20:
+            L.append(f'    … +{len(flagged) - 20} more')
+    if rep["proposed_ignore"]:
+        L.append("\n# proposed .megabrainignore (megabrain scan --write to apply):")
+        L.append("".join(f"    {ln}\n" for ln in rep["proposed_ignore"].splitlines()))
+    return "\n".join(L)
+
+
 def _dispatch(a, raw: list[Path], root: Path) -> None:
     if a.cmd == "index":
         import json as _json
 
         from .. import app
         exclude = [x for item in a.exclude for x in item.split(",") if x.strip()]
+        if a.dry_run:                     # census only — alias of `scan`
+            for r in raw:
+                print(_render_scan(_scan(r)))
+            return
         for r in raw:
-            print(_json.dumps(app.index(r, force=a.force, exclude=exclude), indent=1))
+            if a.index_scan:              # show the census, then index with the filters
+                print(_render_scan(_scan(r)))
+            print(_json.dumps(app.index(r, force=a.force, exclude=exclude,
+                                        scan_filters=a.index_scan), indent=1))
             if a.warm_flows:
-                import json as _json
-
                 from ..ask.warmup import warm_flows
                 print(_json.dumps(warm_flows(r, limit=a.warm_flows), indent=1))
+    elif a.cmd == "scan":
+        import json as _json
+        rep = _scan(root)
+        if a.write and rep["proposed_ignore"]:
+            from ..server.http import _merge_ignore
+            _merge_ignore(root, rep["proposed_ignore"])
+            print(f"# wrote proposed skips to {root}/.megabrainignore\n")
+        print(_json.dumps(rep, indent=1) if a.json else _render_scan(rep))
     elif a.cmd == "query":
         import json as _json
 
@@ -214,7 +279,7 @@ def _dispatch(a, raw: list[Path], root: Path) -> None:
     elif a.cmd == "serve-api":
         from .http import serve
         serve(root, port=a.port, host=a.host, cors=a.cors, enable_llm=not a.no_llm,
-              token=a.token)
+              token=a.token, serve_ui=not a.no_ui)
     elif a.cmd == "forge":
         import json as _json
         if a.specialize:

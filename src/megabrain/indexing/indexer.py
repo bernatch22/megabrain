@@ -63,17 +63,44 @@ def _excluded(rel: str, names: set[str], globs: list[str]) -> bool:
     return False
 
 
-def discover(root: Path, exts: tuple[str, ...], exclude=()) -> list[Path]:
+def discover(root: Path, exts: tuple[str, ...], exclude=(), *,
+             use_scan_filters: bool = False, report: list | None = None) -> list[Path]:
+    """Walk the repo for indexable files. `use_scan_filters` (opt-in, off by
+    default so a plain `index` stays byte-identical) additionally honors
+    `.gitignore` and skips Linguist-style vendored/generated files — the studio
+    add-repo flow and `index --scan` turn it on. `report` collects one
+    {path, reason} per SKIPPED candidate (for `scan`/dry-run transparency)."""
     names, globs = _split_patterns(exclude)
     names |= EXCLUDE_DIRS
+    gi = None
+    if use_scan_filters:
+        from .ignore import GitignoreMatcher, is_generated, is_vendored
+        gi = GitignoreMatcher.load(root)
     out = []
     for p in sorted(root.rglob("*")):
         if p.suffix not in exts or not p.is_file():
             continue
         rel = p.relative_to(root).as_posix()
         if _excluded(rel, names, globs):
+            if report is not None:
+                report.append({"path": rel, "reason": "excluded"})
             continue
+        if gi is not None:
+            if gi.ignored(rel):
+                if report is not None:
+                    report.append({"path": rel, "reason": "gitignored"})
+                continue
+            if is_vendored(rel):
+                if report is not None:
+                    report.append({"path": rel, "reason": "vendored"})
+                continue
+            if is_generated(p, rel):
+                if report is not None:
+                    report.append({"path": rel, "reason": "generated"})
+                continue
         if p.stat().st_size > MAX_FILE_BYTES:
+            if report is not None:
+                report.append({"path": rel, "reason": "too-big"})
             continue
         out.append(p)
     return out
@@ -99,7 +126,8 @@ def maybe_reindex(root: Path, ttl: int = AUTO_REFRESH_TTL) -> bool:
 
 def index_repo(root: Path, repo_name: str | None = None,
                force: bool = False, exclude=(), strategies=(),
-               prune_flows: bool = True) -> dict:
+               prune_flows: bool = True, scan_filters: bool = False,
+               on_progress=None) -> dict:
     """Index/update a repo and RETURN the stats dict — the library never prints
     (rendering the result is the frontend's job). `strategies` injects custom
     ChunkStrategy instances (checked before the built-ins, so they can claim new
@@ -113,11 +141,13 @@ def index_repo(root: Path, repo_name: str | None = None,
     with Store(root) as store:
         return _index_into(store, emb, root, name, force=force,
                            exclude=exclude, strategies=strategies,
-                           prune_flows=prune_flows, t0=t0)
+                           prune_flows=prune_flows, t0=t0,
+                           scan_filters=scan_filters, on_progress=on_progress)
 
 
 def _index_into(store: Store, emb: Embedder, root: Path, name: str, *,
-                force, exclude, strategies, prune_flows, t0) -> dict:
+                force, exclude, strategies, prune_flows, t0,
+                scan_filters=False, on_progress=None) -> dict:
     """The indexing pipeline against an OPEN store — index_repo owns the
     connection lifecycle (with Store(...)), this owns the work."""
     registry = build_registry(name, extra=(*strategies,
@@ -135,7 +165,7 @@ def _index_into(store: Store, emb: Embedder, root: Path, name: str, *,
         logging.getLogger(__name__).info(
             "embed model changed (%s -> %s); re-embedding all", prev_model, emb.model)
 
-    paths = discover(root, all_exts(registry), excludes)
+    paths = discover(root, all_exts(registry), excludes, use_scan_filters=scan_filters)
     # POSIX relpaths everywhere: they're the DB keys and the engine matches
     # them with "/" (excludes, path filters, graph). str() yields "\" on
     # Windows — the source of cross-platform index corruption. Keep as_posix.
@@ -147,15 +177,23 @@ def _index_into(store: Store, emb: Embedder, root: Path, name: str, *,
 
     changed, unchanged, removed = 0, 0, 0
     stats = {"chunks": 0, "violations": 0}
-    for p in paths:
+    n = len(paths)
+
+    def _tick(i: int, rel: str, was_changed: bool) -> None:
+        if on_progress is not None:
+            on_progress({"file": rel, "i": i, "n": n, "changed": was_changed})
+
+    for i, p in enumerate(paths, 1):
         rel = rels[p]
         src = sources[rel]
         strat = strategy_for(registry, rel)
         if strat is None:
+            _tick(i, rel, False)
             continue
         sha = hashlib.sha256(src.encode()).hexdigest()
         if not force and store.file_sha(rel) == sha:
             unchanged += 1
+            _tick(i, rel, False)
             continue
         store.delete_file(rel)
         r = strat.chunk_file(rel, src)
@@ -172,6 +210,7 @@ def _index_into(store: Store, emb: Embedder, root: Path, name: str, *,
             store.replace_edges(rel, edges)
         stats["chunks"] += len(r.chunks)
         changed += 1
+        _tick(i, rel, True)
 
     # orphans: indexed files no longer on disk — here incoming edges die too
     for gone in store.all_paths() - set(rels.values()):
@@ -193,6 +232,6 @@ def _index_into(store: Store, emb: Embedder, root: Path, name: str, *,
     return {"files": len(paths), "changed": changed, "unchanged": unchanged,
             "removed": removed, "new_chunks": stats["chunks"],
             "partition_violations": stats["violations"],
-            "stale_flows_pruned": stale_flows,
+            "stale_flows_pruned": stale_flows, "embed_model": emb.model,
             "embed_tokens": emb.tokens, "embed_cost_usd": round(emb.cost, 6),
             "seconds": round(time.time() - t0, 2)}

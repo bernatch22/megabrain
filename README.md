@@ -13,6 +13,7 @@
   <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="MIT">
   <img src="https://img.shields.io/badge/retrieval-no%20LLM%20·%20~200ms-2ea44f?style=flat-square" alt="No LLM in the retrieval path">
   <img src="https://img.shields.io/badge/MCP-ready-000000?style=flat-square" alt="MCP ready">
+  <img src="https://img.shields.io/badge/studio-web%20UI-ff8c3a?style=flat-square" alt="Studio web UI">
 </p>
 
 ---
@@ -22,7 +23,35 @@ Point megabrain at a repo and ask **"how does auth work"** in plain English. It 
 LLM narrates a walkthrough with the **real code spliced in from disk**. Nothing is
 invented: every line shown is copied verbatim.
 
-Use it from the terminal, as an **MCP server inside Claude Code**, or as a Python library.
+Use it from the terminal, as an **MCP server inside Claude Code**, as a Python library,
+or as a full **local web app**.
+
+## 🖥️ megabrain studio — the whole engine, in your browser
+
+One command turns megabrain into a local studio — nothing canned, every pixel driven by
+the live engine:
+
+```bash
+megabrain serve-api ~/repo        #  → open http://localhost:2134
+```
+
+- **Search** — every related file ranked in ~200 ms; click one for a **chunk heatmap**
+  where signal glows and noise dims, code syntax-highlighted.
+- **Prune** — the money shot: what the engine **read** vs what it **ignored**, side by side.
+- **Ask** — watch a broad question **fan out into parallel sub-agents**, their tool calls
+  and prose streaming into per-agent cards, then a synthesis with the **real code spliced
+  in** as it types.
+- **Providers, live** — Claude SDK · OpenRouter · Ollama, auto-detected. **Switch the
+  narrator without leaving the page**, pick the model, and **start `ollama serve` in one
+  click** to go fully local.
+- **Add a repo → it scans first** — you SEE exactly what will index and what's skipped and
+  *why* (`.gitignore` · vendored · generated · too-big), edit the `.megabrainignore`, then a
+  **live progress bar** indexes it file by file.
+- **Embeddings you can see** — which model each index used, and **re-index with another**
+  (cloud pplx or a local, code-tuned jina) behind the same bar — the query embedding
+  switches to match, so search keeps working.
+
+Keyboard-driven, dark/light, zero build step, no CDN. `--no-ui` serves the JSON API only.
 
 ## Quickstart — the easy path, no API keys
 
@@ -32,9 +61,9 @@ embeddings run locally on **Ollama**. No cloud keys.
 ```bash
 pip install 'megabrain[claude]'                      # engine + Claude Code narration
 
-ollama pull nomic-embed-text                          # local embeddings, one time
+ollama pull unclemusclez/jina-embeddings-v2-base-code # local, code-tuned embeddings, one time
 export MEGABRAIN_EMBED_BASE_URL=http://localhost:11434/v1
-export MEGABRAIN_EMBED_MODEL=nomic-embed-text
+export MEGABRAIN_EMBED_MODEL=unclemusclez/jina-embeddings-v2-base-code
 
 megabrain index ~/your/repo                           # once — incremental after
 megabrain ask   ~/your/repo "how does auth work end to end"
@@ -66,16 +95,24 @@ signal chunks worth reading, ranked flat), `megabrain_get`, `megabrain_chunks`,
 
 ```bash
 megabrain index  ~/repo                          # build / update the index
+megabrain scan   ~/repo                          # census: what WOULD index + what's skipped & why
 megabrain ask    ~/repo "how does X work"        # narrated walkthrough + real code
 megabrain query  ~/repo "retry logic"            # raw code map, no LLM (~200 ms)
 megabrain query  ~/repo "retry logic" --prune    # flat signal-only chunks, no LLM (drops the noise)
 megabrain get    ~/repo src/x.py --symbol Foo    # one file or symbol
 megabrain forge  ~/repo                          # teach it your repo's file types (below)
-megabrain serve-api ~/repo                       # long-running HTTP API (warm state)
+megabrain serve-api ~/repo                       # HTTP API + the studio web UI at /
 ```
 
 Scope to a sub-folder (`~/repo/src/auth`), search several repos at once
 (`~/a,~/b`), and the index auto-refreshes when files change on disk.
+
+`megabrain serve-api ~/repo` also serves **[megabrain studio](#️-megabrain-studio--the-whole-engine-in-your-browser)**
+(the web UI, above) at `/`. And `megabrain scan` is the studio's add-repo census on the
+CLI — what *would* index and everything skipped with a reason (`.gitignore` · vendored ·
+generated · too-big): `--write` applies the proposed `.megabrainignore`, and
+`megabrain index --scan` indexes with those smart filters on (a plain `index` stays
+byte-identical).
 
 ## Rather use the cloud?
 

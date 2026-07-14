@@ -28,3 +28,6 @@ evals/
 
 # examples live in their own repo now (~/megabrain-examples)
 examples/
+
+# local brainbank MCP index (private)
+.brainbank/

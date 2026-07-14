@@ -88,13 +88,17 @@ def prune(root: Path, task: str, path_filter: str | None = None,
 
 def ask(root: Path, question: str, path_filter: str | None = None,
         docs_only: bool = False, include_docs: bool = False,
-        agents: Any = None, reindex: bool = True) -> dict:
+        agents: Any = None, reindex: bool = True,
+        model: str | None = None) -> dict:
     """Buffered ask (MCP / POST /ask). `agents` accepts the raw transport value;
-    normalized here. Returns the ask() out dict (render with ask.render_ask)."""
+    normalized here. `model` overrides the narrator model for this call (the UI
+    model picker); None = the provider default. Returns the ask() out dict
+    (render with ask.render_ask)."""
     from .ask import ask as _ask
     _maybe_reindex(root, reindex)
     return _ask(root, question, docs_only=docs_only, include_docs=include_docs,
-                path_filter=path_filter, agents=normalize_agents(agents))
+                path_filter=path_filter, agents=normalize_agents(agents),
+                model=model)
 
 
 def get(root: Path, sub: str | None, file: str, symbol: str | None = None) -> str:
@@ -114,10 +118,24 @@ def chunks(root: Path, sub: str | None, file: str, query_str: str,
                                 path_filter=path_filter)
 
 
-def index(root: Path, force: bool = False, exclude=()) -> dict:
-    """Incremental index/update — returns stats; the caller renders them."""
+def index(root: Path, force: bool = False, exclude=(),
+          scan_filters: bool = False) -> dict:
+    """Incremental index/update — returns stats; the caller renders them.
+    `scan_filters` (opt-in) honors .gitignore + skips vendored/generated."""
     from .indexing.indexer import index_repo
-    return index_repo(root, force=force, exclude=exclude)
+    return index_repo(root, force=force, exclude=exclude, scan_filters=scan_filters)
+
+
+def scan(root: Path) -> dict:
+    """Index-intelligence census (no indexing): what WOULD index + every
+    skipped candidate with its reason. Powers `megabrain scan` and GET /scan."""
+    from .indexing.ignore import scan as _scan_census
+    from .indexing.indexer import EXCLUDE_DIRS, load_ignore
+    from .indexing.strategies import all_exts, build_registry, load_repo_strategies
+    root = Path(root).resolve()
+    reg = build_registry(root.name, extra=tuple(load_repo_strategies(root, root.name)))
+    return _scan_census(root, all_exts(reg), exclude=load_ignore(root),
+                        extra_names=EXCLUDE_DIRS)
 
 
 def stats(root: Path) -> dict:

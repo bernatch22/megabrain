@@ -42,7 +42,13 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-from ..errors import MissingAPIKey, ProviderError
+from ..errors import MegabrainError, MissingAPIKey, ProviderError
+
+
+def _bad_request(msg: str) -> MegabrainError:
+    e = MegabrainError(msg)
+    e.http_status = 400
+    return e
 
 BASE_URL = os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1").rstrip("/")
 
@@ -330,6 +336,102 @@ class ClaudeProvider:
 _REGISTRY: dict[str, object] = {"openrouter": OpenRouterProvider(),
                                 "claude": ClaudeProvider()}
 _PRIORITY = ("claude", "openrouter")
+
+
+OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434").rstrip("/")
+OLLAMA_OPENAI = OLLAMA_HOST + "/v1"
+_select_lock = __import__("threading").Lock()
+
+
+def _ollama_probe(timeout: float = 0.3) -> dict:
+    """Ollama's local HTTP API — up? which models? is the binary installed?
+    Never hangs (short budget: a settings panel must not block on a dead port)."""
+    import shutil
+    installed = bool(shutil.which("ollama"))
+    try:
+        with urllib.request.urlopen(OLLAMA_HOST + "/api/tags", timeout=timeout) as r:
+            models = json.load(r).get("models") or []
+            return {"up": True, "installed": True,
+                    "models": [m["name"] for m in models]}
+    except Exception:
+        return {"up": False, "installed": installed, "models": []}
+
+
+def _active_label() -> str:
+    """The LOGICAL active chat provider for the UI (claude / openrouter /
+    ollama). resolve() only knows the transport ('openrouter' covers any
+    OpenAI-compatible endpoint), so a localhost CHAT_BASE_URL reads as
+    ollama — the distinction the settings panel needs to highlight the card."""
+    if _is_local(CHAT_BASE_URL):
+        return "ollama"
+    return resolve().name
+
+
+def detect() -> dict:
+    """What can narrate on this machine — the UI's settings/providers panel.
+    Composes the existing detectors (Claude SDK importable · OPENROUTER_API_KEY)
+    with an Ollama probe. `active` is what resolve()/ask_model() pick right now
+    (plus the logical `label`)."""
+    return {
+        "claude": {"available": _REGISTRY["claude"].available(),
+                   "default_model": "haiku"},
+        "openrouter": {"available": bool(find_key(required=False)),
+                       "default_model": "google/gemini-3-flash-preview"},
+        "ollama": _ollama_probe(),
+        "active": {"provider": resolve().name, "label": _active_label(),
+                   "model": ask_model()},
+    }
+
+
+def select(provider: str, model: str | None = None) -> dict:
+    """Point the engine's CHAT (ask/narration) role at a provider for every
+    SUBSEQUENT call — the studio's provider switch. Single-user serve-api:
+    set-and-leave under a lock (the reference webui pattern), never mutating
+    embeddings. Ollama = the OpenAI-compatible transport aimed at :11434.
+    Returns the fresh detect()."""
+    global CHAT_BASE_URL
+    p = (provider or "").strip().lower()
+    with _select_lock:
+        if p == "ollama":
+            os.environ["MEGABRAIN_CHAT_PROVIDER"] = "openrouter"   # OpenAI-compat
+            CHAT_BASE_URL = OLLAMA_OPENAI
+            os.environ["MEGABRAIN_CHAT_BASE_URL"] = CHAT_BASE_URL
+        elif p in ("openrouter", "claude"):
+            os.environ["MEGABRAIN_CHAT_PROVIDER"] = p
+            CHAT_BASE_URL = BASE_URL
+            os.environ.pop("MEGABRAIN_CHAT_BASE_URL", None)
+        else:
+            raise _bad_request(f"unknown provider: {provider}")
+        if model:
+            os.environ["MEGABRAIN_ASK_MODEL"] = model
+        else:
+            os.environ.pop("MEGABRAIN_ASK_MODEL", None)
+    return detect()
+
+
+def start_ollama(wait_s: float = 6.0) -> dict:
+    """Best-effort `ollama serve` when the binary is installed but the server
+    is down — the studio's one-click start. Spawns detached, then polls until
+    the API answers or the budget runs out. Returns the fresh detect()."""
+    import shutil
+    import subprocess
+    import time as _t
+    probe = _ollama_probe()
+    if probe["up"]:
+        return detect()
+    if not shutil.which("ollama"):
+        raise _bad_request("ollama is not installed — see https://ollama.com")
+    try:
+        subprocess.Popen(["ollama", "serve"], stdout=subprocess.DEVNULL,
+                         stderr=subprocess.DEVNULL, start_new_session=True)
+    except Exception as e:  # noqa: BLE001
+        raise ProviderError(f"could not start ollama: {e}") from e
+    deadline = _t.time() + wait_s
+    while _t.time() < deadline:
+        if _ollama_probe(timeout=0.5)["up"]:
+            break
+        _t.sleep(0.4)
+    return detect()
 
 
 def resolve():

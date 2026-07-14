@@ -19,8 +19,8 @@ import os
 import re
 from pathlib import Path
 
-from .retrieval.bundle import search_with_state
-from .retrieval.state import SearchState
+from .bundle import search_with_state
+from .state import SearchState
 
 
 def load_groups(root: Path) -> tuple[tuple[str, str], ...]:

@@ -128,7 +128,7 @@ def test_run_agents_events_and_global_citations(monkeypatch):
         {"label": "prov", "sub_query": "q2", "chunks": [1]}])
     monkeypatch.setattr(ask_agents, "repo_map", lambda st, max_chars=0: "MAP")
 
-    def fake_agent_llm(prompt, tools, key, on_delta, max_tokens):
+    def fake_agent_llm(prompt, tools, key, on_delta, max_tokens, model=None):
         k = 0 if "q1" in prompt else 1
         on_delta(f"part {k}\n")
         return f"Explains slice {k}.\n[[{k}]]\n"
@@ -167,7 +167,7 @@ def test_run_agents_survives_one_failed_agent(monkeypatch):
         {"label": "boom", "sub_query": "q2", "chunks": [1]}])
     monkeypatch.setattr(ask_agents, "repo_map", lambda st, max_chars=0: "MAP")
 
-    def fake_agent_llm(prompt, tools, key, on_delta, max_tokens):
+    def fake_agent_llm(prompt, tools, key, on_delta, max_tokens, model=None):
         if "q2" in prompt:
             raise RuntimeError("provider down")
         return "Only slice.\n[[0]]\n"

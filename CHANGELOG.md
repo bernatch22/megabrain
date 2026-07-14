@@ -1,5 +1,48 @@
 # Changelog
 
+## 0.8.0 — megabrain studio (serve-api web UI) + scan
+
+- **megabrain studio.** `megabrain serve-api ~/repo` serves a local web UI at
+  `/` (`server/ui/`, vanilla + system fonts, no CDN): search with the chunk
+  heatmap, the prune signal/noise view, the multi-agent `ask` live-view, a
+  providers panel (Claude SDK · OpenRouter · Ollama, auto-detected) with a
+  model picker, and an **add-repo flow that scans first** then indexes behind a
+  **live progress bar**. `--no-ui` for JSON-only.
+- **Live provider switching + local Ollama.** `POST /providers/select
+  {provider, model?}` repoints the CHAT role at Claude/OpenRouter/Ollama for
+  subsequent calls (`providers.select()`, set-and-leave under a lock — never
+  touches embeddings); `POST /providers/ollama/serve` starts `ollama serve`
+  when the binary is present but the server is down (`providers.start_ollama()`).
+  `detect()` now reports `ollama.installed` + `active.label` (the logical
+  provider — a localhost chat base reads as ollama). serve-api **defaults to
+  OpenRouter** when `OPENROUTER_API_KEY` is present (env or `~/.zshrc`) and the
+  provider isn't explicitly pinned. The studio hides embedding models from the
+  Ollama *chat* picker (they can't narrate) and hints `ollama pull` when only
+  embeddings are local.
+- **Re-index with a different embedding.** `POST /index/stream` accepts
+  `embed_model` (+ `embed_base` for a local endpoint): sets the model so BOTH
+  the re-index AND subsequent query embedding use it (a model change re-embeds
+  every file). `/repos` + `/health` + the index `done` event now carry
+  `embed_model` so you always know which embedding an index used. The studio's
+  local embedding preset is **jina-code** (`unclemusclez/jina-embeddings-v2-
+  base-code` via Ollama) — verified indexing + search on a fully-local repo.
+- **Syntax highlighting** in the studio — a small dependency-free scanner
+  (Python/JS/Go/Rust + a generic fallback), applied to the search chunk
+  heatmap, the prune signal chunks, and the `ask` spliced code blocks.
+- **New serve-api routes:** `GET /providers` (`providers.detect()`),
+  `GET /scan?path=`, `GET /prune`, `GET /repos`, `POST /repos/add`,
+  `POST /index/stream` (SSE per-file progress via a new `on_progress` indexer
+  hook). Every route accepts an optional `?repo=`/`"repo"` (multi-repo
+  registry). `POST /ask` + `/ask/stream` accept an optional `model`, threaded
+  cleanly through the ask pipeline (no env mutation).
+- **`scan` — index intelligence** (`indexing/ignore.py`): a stdlib `.gitignore`
+  matcher + Linguist-style vendored/generated detection + a census. CLI
+  `megabrain scan [--write]`, `index --scan|--dry-run`; the studio add-repo
+  flow shows it before committing. Deterministic and opt-in — a plain `index`
+  is byte-identical.
+- **Fix:** broken relative imports from the `arch(D)` refactor
+  (`docsearch.py`, `session.py`) that crashed `serve-api` at boot.
+
 ## Unreleased — art-of-code refactor (v2)
 
 Internal architecture pass toward the "art of code" layering. **No public

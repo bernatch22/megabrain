@@ -93,7 +93,8 @@ def _numbered(c: dict) -> str:
                    for i, ln in enumerate(c["text"].splitlines(keepends=True)))
 
 
-def _build_body(question: str, cands: list[dict], flow_ctx: str = "") -> dict:
+def _build_body(question: str, cands: list[dict], flow_ctx: str = "",
+                model: str | None = None) -> dict:
     """Chat request body (OpenAI schema): the cite-only walkthrough prompt over numbered chunks."""
     blocks, used = [], 0
     for i, c in enumerate(cands):
@@ -114,8 +115,9 @@ QUERY: {question}
 RETRIEVED CHUNKS:
 
 {chr(10).join(blocks)}"""
-    return {"model": providers.ask_model(), "max_tokens": 2400, "temperature": 0,
-            "stream": True, "messages": [{"role": "user", "content": prompt}]}
+    return {"model": model or providers.ask_model(), "max_tokens": 2400,
+            "temperature": 0, "stream": True,
+            "messages": [{"role": "user", "content": prompt}]}
 
 
 def _code_block(c: dict, lo: int | None, hi: int | None, seen: set,
@@ -209,7 +211,7 @@ class _Splicer:
 def ask(root: Path, question: str,
         docs_only: bool = False, path_filter: str | None = None,
         state: SearchState | None = None, include_docs: bool = False,
-        agents: bool | None = False) -> dict:
+        agents: bool | None = False, model: str | None = None) -> dict:
     """One-shot ask: a buffered COLLECTOR over ask_agents.stream_events — the
     single pipeline every surface shares (retrieve -> serve-from-cache ->
     classify -> fan-out or single agent -> splice -> flow-cache write), with
@@ -221,7 +223,7 @@ def ask(root: Path, question: str,
     from .agents import stream_events
     out = stream_events(Path(root), question, lambda ev: None, agents=agents,
                         docs_only=docs_only, include_docs=include_docs,
-                        path_filter=path_filter, state=state)
+                        path_filter=path_filter, state=state, model=model)
     # buffered parity with the old single-agent path: a length-stopped answer
     # is trimmed to the last complete sentence + a truncation note. (Streaming
     # sinks get the same signal as the "length" event instead.)
@@ -295,7 +297,7 @@ def render_ask(out: dict) -> str:
 def stream_ask(root: Path, question: str, out=None,
                show_map: bool = True, docs_only: bool = False,
                path_filter: str | None = None, include_docs: bool = False,
-               agents: bool | None = None) -> None:
+               agents: bool | None = None, model: str | None = None) -> None:
     """Live-streaming `ask` for the terminal — a sink over
     ask_agents.stream_events: prose appears token by token, each
     [[k]]/[[k:lo-hi]] citation is spliced into its real code block as its line
@@ -366,4 +368,4 @@ def stream_ask(root: Path, question: str, out=None,
 
     stream_events(Path(root), question, sink, agents=agents,
                   show_map=show_map, docs_only=docs_only,
-                  include_docs=include_docs, path_filter=path_filter)
+                  include_docs=include_docs, path_filter=path_filter, model=model)

@@ -118,7 +118,7 @@ def _chunk_lines(cands: list[dict]) -> list[str]:
 # ── planner ────────────────────────────────────────────────────────────────
 
 def _plan_llm(question: str, cands: list[dict], rmap: str,
-              max_agents: int) -> list[dict] | None:
+              max_agents: int, model: str) -> list[dict] | None:
     """One cheap LLM call (the ask model) -> [{label, sub_query, chunks}].
     JSON-parse fail-open: any problem -> None."""
     idx = "\n".join(_chunk_lines(cands))
@@ -135,7 +135,7 @@ RETRIEVED CHUNKS (number · file · lines · symbol):
 Reply ONLY JSON: {{"agents": [{{"label": "short-kebab-name", "sub_query": "...", "chunks": [0, 2]}}]}}
 Rules: 2-{max_agents} agents, grouped by subsystem/theme; every agent gets >=1 chunk; assign each chunk to AT MOST one agent (drop only chunks irrelevant to the question); sub_query is a scoped version of the question, answerable from that agent's chunks alone."""
     try:
-        text = providers.chat_text(providers.ask_model(), prompt,
+        text = providers.chat_text(model, prompt,
                                    max_tokens=600, timeout=PLAN_TIMEOUT)
         m = re.search(r"\{.*\}", text, re.S)
         if not m:
@@ -180,8 +180,9 @@ def _plan_cluster(question: str, cands: list[dict],
 
 
 def _plan(question: str, cands: list[dict], rmap: str, key: str | None,
-          max_agents: int = MAX_AGENTS) -> list[dict] | None:
-    plan = _plan_llm(question, cands, rmap, max_agents) if key else None
+          model: str | None = None, max_agents: int = MAX_AGENTS) -> list[dict] | None:
+    model = model or providers.ask_model()
+    plan = _plan_llm(question, cands, rmap, max_agents, model) if key else None
     return plan or _plan_cluster(question, cands, max_agents)
 
 
@@ -260,7 +261,7 @@ def _wrap_tools(tools: list[dict], emit, aid: int) -> list[dict]:
 # ── LLM transports for one tool-enabled agent turn ─────────────────────────
 
 def _openrouter_agent(prompt: str, tools: list[dict], key: str | None,
-                      on_delta, max_tokens: int) -> str:
+                      on_delta, max_tokens: int, model: str) -> str:
     """OpenAI function-calling loop: stream, execute tool_calls, feed results
     back, repeat (<=TOOL_ROUNDS); the final round carries no tools so the
     model must answer."""
@@ -271,7 +272,7 @@ def _openrouter_agent(prompt: str, tools: list[dict], key: str | None,
     msgs: list[dict] = [{"role": "user", "content": prompt}]
     total = ""
     for rnd in range(TOOL_ROUNDS + 1):
-        body = {"model": providers.ask_model(), "max_tokens": max_tokens,
+        body = {"model": model, "max_tokens": max_tokens,
                 "temperature": 0, "stream": True, "messages": msgs}
         if rnd < TOOL_ROUNDS:
             body["tools"] = spec
@@ -298,16 +299,16 @@ def _openrouter_agent(prompt: str, tools: list[dict], key: str | None,
 
 
 def _agent_llm(prompt: str, tools: list[dict], key: str | None,
-               on_delta, max_tokens: int) -> str:
+               on_delta, max_tokens: int, model: str) -> str:
     """One tool-enabled agent turn. CAPABILITY PROBE, not a name switch: a
     provider with a native tool loop (p.agent_stream — e.g. the Claude Agent
     SDK registers the tools as an in-process MCP server) runs it itself; any
     OpenAI-compatible provider gets the function-calling loop here."""
     p = providers.resolve()
     if p.agent_stream is not None:
-        return p.agent_stream(prompt, model=providers.ask_model(), tools=tools,
+        return p.agent_stream(prompt, model=model, tools=tools,
                               on_delta=on_delta, timeout=AGENT_TIMEOUT)
-    return _openrouter_agent(prompt, tools, key, on_delta, max_tokens)
+    return _openrouter_agent(prompt, tools, key, on_delta, max_tokens, model)
 
 
 # ── prompts ────────────────────────────────────────────────────────────────
@@ -347,7 +348,7 @@ YOUR CHUNKS:
 
 
 def _synth_body(question: str, partials: list[tuple[dict, str]],
-                cands: list[dict]) -> dict:
+                cands: list[dict], model: str) -> dict:
     from .narrator import _RULES
     idx = "\n".join(_chunk_lines(cands))
     parts = [f'--- sub-agent {a["id"] + 1} · {a["label"]} · "{a["sub_query"]}" ---\n'
@@ -367,7 +368,7 @@ SHARED CHUNK INDEX (number · file · lines · symbol — reference only; the re
 PARTIAL WALKTHROUGHS:
 
 {chr(10).join(parts)}"""
-    return {"model": providers.ask_model(), "max_tokens": SYNTH_MAX_TOKENS,
+    return {"model": model, "max_tokens": SYNTH_MAX_TOKENS,
             "temperature": 0, "stream": True,
             "messages": [{"role": "user", "content": prompt}]}
 
@@ -375,7 +376,7 @@ PARTIAL WALKTHROUGHS:
 # ── orchestrator ───────────────────────────────────────────────────────────
 
 def run_agents(root, question: str, *, res: dict, cands: list[dict], st,
-               key: str | None, emit=None, splicer=None,
+               key: str | None, emit=None, splicer=None, model: str | None = None,
                max_agents: int = MAX_AGENTS) -> dict:
     """Fan out over an ALREADY-RETRIEVED bundle: plan -> parallel sub-agents
     (a ThreadPool over the sub-agents) -> streamed synthesis. Returns
@@ -385,11 +386,11 @@ def run_agents(root, question: str, *, res: dict, cands: list[dict], st,
     carry spliced markdown; without it (buffered callers) no synthesis events
     are emitted and the raw text is simply returned."""
     emit = emit or (lambda ev: None)
+    model = model or providers.ask_model()
     t0 = time.time()
     rmap = repo_map(st)
-    emit({"type": "planning", "model": providers.ask_model(),
-          "timeout_s": PLAN_TIMEOUT})
-    plan = _plan(question, cands, rmap, key, max_agents)
+    emit({"type": "planning", "model": model, "timeout_s": PLAN_TIMEOUT})
+    plan = _plan(question, cands, rmap, key, model, max_agents)
     if not plan or len(plan) < 2:
         raise RuntimeError("no fan-out plan (bundle too narrow)")
     for i, a in enumerate(plan):
@@ -417,7 +418,7 @@ def run_agents(root, question: str, *, res: dict, cands: list[dict], st,
                               _wrap_tools(tools, emit, aid), key,
                               on_delta=lambda d: emit({"type": "agent_delta",
                                                        "id": aid, "text": d}),
-                              max_tokens=SUB_MAX_TOKENS)
+                              max_tokens=SUB_MAX_TOKENS, model=model)
         except Exception as e:  # noqa: BLE001 — one agent down, the rest proceed
             log.debug("sub-agent %s failed", aid, exc_info=True)
             emit({"type": "agent_error", "id": aid, "msg": str(e)})
@@ -448,7 +449,7 @@ def run_agents(root, question: str, *, res: dict, cands: list[dict], st,
         text = partials[0][1]
         synth_delta(text)
     else:
-        text, stop = providers.stream_chat(_synth_body(question, partials, cands),
+        text, stop = providers.stream_chat(_synth_body(question, partials, cands, model),
                                            key, on_delta=synth_delta)
         truncated = stop == "length"
     if splicer is not None:
@@ -463,7 +464,8 @@ def run_agents(root, question: str, *, res: dict, cands: list[dict], st,
 def stream_events(root, question: str, on_event, *, agents: bool | None = None,
                   show_map: bool = True,
                   docs_only: bool = False, include_docs: bool = False,
-                  path_filter: str | None = None, state=None) -> dict:
+                  path_filter: str | None = None, state=None,
+                  model: str | None = None) -> dict:
     """Run the whole ask flow (retrieval -> classify -> fan-out or single
     agent -> splice) emitting events to on_event. `agents`: None = auto (fan
     out only when classify_bundle says broad), True = force, False = never.
@@ -477,6 +479,7 @@ def stream_events(root, question: str, on_event, *, agents: bool | None = None,
             on_event(ev)
 
     t0 = time.time()
+    model = model or providers.ask_model()
     st = state or load_state(Path(root))
     res = search_with_state(st, question, path_filter=path_filter)
     retrieval_ms = int((time.time() - t0) * 1000)
@@ -501,7 +504,7 @@ def stream_events(root, question: str, on_event, *, agents: bool | None = None,
 
     emit({"type": "retrieval", "repo": res["repo"], "ms": retrieval_ms,
           "files": len(res["tier1"]) + len(res["tier2"]),
-          "model": providers.ask_model(), "llm": bool(key and cands)})
+          "model": model, "llm": bool(key and cands)})
     if not key or not cands:
         emit({"type": "bundle", "note": None, "text": render(res)})
         return {**base, "text": "", "llm_ms": 0}
@@ -520,7 +523,7 @@ def stream_events(root, question: str, on_event, *, agents: bool | None = None,
     if agents is True or (agents is None and cls["broad"]):
         try:
             o = run_agents(root, question, res=res, cands=cands, st=st, key=key,
-                           emit=emit, splicer=splicer)
+                           emit=emit, splicer=splicer, model=model)
             text, trace, truncated = o["text"], o["agents"], o["truncated"]
         except Exception as e:  # noqa: BLE001 — fail-open to single-agent
             log.debug("fan-out failed; single-agent fallback", exc_info=True)
@@ -540,7 +543,7 @@ def stream_events(root, question: str, on_event, *, agents: bool | None = None,
             # KNOWN-FLOW context for the narrator (non-citable) — the buffered
             # ask always passed it; the unified pipeline keeps that behavior.
             text, stop = providers.stream_chat(
-                _build_body(question, cands, _flow_ctx(res)), key, on_delta=od)
+                _build_body(question, cands, _flow_ctx(res), model), key, on_delta=od)
         except Exception:
             log.debug("ask stream interrupted", exc_info=True)
         s = splicer.flush()
