@@ -86,10 +86,12 @@ claude mcp add megabrain -- python3 -m megabrain.mcp_server
 ```
 
 Then use `megabrain_ask` / `megabrain_query` instead of grep + Read chains — one call
-replaces minutes of file-crawling. Tools: **`megabrain_ask`** (narrated walkthrough),
-**`megabrain_query`** (raw code map, no LLM — pass `prune_noise: true` for just the
-signal chunks worth reading, ranked flat), `megabrain_get`, `megabrain_chunks`,
-`megabrain_index`.
+replaces minutes of file-crawling. Five tools, deliberately lean — megabrain exposes
+only what it alone can do (your agent already has Read/Grep for single files):
+**`megabrain_ask`** (narrated walkthrough, real code spliced),
+**`megabrain_query`** (no LLM, ~200 ms — a flat, relevance-ranked list of exactly the
+chunks worth reading, with the code, noise dropped), `megabrain_index`, plus `megabrain_forge`
+(teach it a new file type) and `megabrain_flows` (the opt-in workflow cache).
 
 ## Commands
 
@@ -185,6 +187,43 @@ trade-off as the cloud cheap-vs-fast pick. `qwen3-coder` also runs on the *same*
 local Ollama for a fully air-gapped setup (no OpenRouter call at all) — just slower
 without a GPU. Full comparison + a weaker general-purpose local embedder (e5-large,
 0.364 R@1) in [docs/GUIDE.md §2b](docs/GUIDE.md#2b-local-embeddings-ollama-0-code-never-leaves-your-machine).
+
+## Compared to claude-context (measured, not vibes)
+
+[claude-context](https://github.com/zilliztech/claude-context) (Zilliz) is the closest
+open-source peer: an MCP server that also does AST-chunked, no-LLM semantic retrieval
+over a repo. We actually ran it — same repo, same questions, both at their best.
+
+**Setup:** `pinecall/sdk-server` (173 source files) · 22 natural-language questions with
+hand-labelled ground-truth files (barge-in, VAD, turn control, billing…) · R@1 = the
+right file ranked #1, R@5 = a right file in the top 5 unique files.
+
+| | **megabrain** | claude-context |
+|---|---|---|
+| **R@1** | **0.864** | 0.818 |
+| **R@5** | **1.000** | 0.909 |
+| Search latency | **~22 ms** warm · ~370 ms cold | ~1400 ms |
+| Vector store | **SQLite file** (zero infra) | Milvus + etcd + MinIO (3 containers) |
+| Chunks for the repo | 575 | 1400 |
+| LLM in the retrieval path | no | no |
+| Narrated answer (`ask`) | **yes** — real code spliced in | no (returns chunks; your agent synthesizes) |
+
+Both were given their own default embedder (megabrain: `pplx-embed-v1-0.6b`;
+claude-context: `text-embedding-3-small`). To check the gap wasn't just the embedder, we
+re-ran claude-context on **megabrain's exact embedder** — it scored **0.727 R@1**, i.e.
+*lower*. So the difference comes from the retrieval design (tiered CORE/RELATED, import-graph
+expansion, 4000-char AST merge), not from which embedding model was picked. Fine-grained
+chunking (2.4× more chunks) also means its top-1 is a *fragment*, where megabrain's is a
+whole file with its symbol index.
+
+**Caveats, honestly:** one repo, 22 questions — this is an indicative result, not a
+benchmark suite. More importantly, **the golden set is ours**, on a corpus megabrain has
+been tuned against, so treat the absolute numbers as home-field. The reproducible parts are
+the *qualitative* ones: claude-context needs a Milvus stack, returns chunks rather than a
+grounded walkthrough, mixes `README.md`/`PROTOCOL.md` into code answers (it doesn't separate
+docs from code), and its `get_indexing_status` reported `✅ fully indexed` while the index was
+still growing in the background (200 → 1400 chunks), so an agent that trusts it will silently
+search a partial index. Run it yourself before believing either of us.
 
 ## How it works
 

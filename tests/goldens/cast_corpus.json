@@ -9,17 +9,17 @@
      1,
      72,
      "megabrain > megabrain/__init__.py > [__getattr__, __dir__]",
-     "193e5062cb92102c901941f0b8d5cb4901bb908c"
+     "2b2cf2bef1a346c0438d7209a8f1953a02993a85"
     ]
    ],
-   "skeleton_sha": "b785643f5e7a6a5163522303f9a60141b316af23",
+   "skeleton_sha": "d6c952b3683d3e96a8cc50a1cab59ba79abd7454",
    "symbols": [
     [
      "__version__",
      "constant",
      34,
      34,
-     "__version__ = '0.8.1'"
+     "__version__ = '0.9.0'"
     ],
     [
      "_EXPORTS",
@@ -5188,46 +5188,46 @@
      1,
      34,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "3df76afe1caf3835a1d41af80711deb0d9afb2e8"
+     "8459a199657a4f42bbfb677d5aa8aaa4b167d2eb"
     ],
     [
      "block",
      null,
      "1/2",
      35,
-     133,
+     125,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "b4d951c3c34e5e0d5cbc644e1183726495bd4d15"
+     "cff9e76afc71d757301c0ce6c459a89ee74827a1"
     ],
     [
      "block",
      null,
      "2/2",
-     134,
-     198,
+     126,
+     161,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "2c68c5ecf3d9e9b00e867cd02c5f69a6a6f42d8f"
+     "7875cdd13ba4d06530e677a4d9cbb0a89535f73a"
     ],
     [
      "module",
-     "_scope, _scope_root, call_tool",
+     "_scope, call_tool",
      null,
-     199,
-     302,
-     "megabrain > megabrain/server/mcp.py > [_scope, _scope_root, call_tool]",
-     "311ab129dea5baab5c0383b79cdca7eb3ddda9c9"
+     162,
+     249,
+     "megabrain > megabrain/server/mcp.py > [_scope, call_tool]",
+     "b7877bad0261101bb7f256e1572c5b0aa85ca655"
     ],
     [
      "function",
      "main",
      null,
-     303,
-     344,
+     250,
+     291,
      "megabrain > megabrain/server/mcp.py > def main()",
      "494cf17f80c3e1afe9632a2577e0beb051e44aa6"
     ]
    ],
-   "skeleton_sha": "11225ace8c852ebc98460e14a77dbea8d9714331",
+   "skeleton_sha": "03c9141c5e5df88a28765c40754a472b6b12e9b2",
    "symbols": [
     [
      "PROTOCOL",
@@ -5240,35 +5240,28 @@
      "TOOLS",
      "constant",
      36,
-     198,
+     161,
      "TOOLS = [{'name': 'megabrain_ask', 'description': 'THE primary tool for any how/where/why question about an indexed repo"
     ],
     [
      "_scope",
      "function",
-     201,
-     208,
+     164,
+     171,
      "def _scope(args: dict) -> tuple[Path, str | None]"
-    ],
-    [
-     "_scope_root",
-     "function",
-     211,
-     218,
-     "def _scope_root(args: dict) -> tuple[Path, str | None]"
     ],
     [
      "call_tool",
      "function",
-     221,
-     302,
+     174,
+     249,
      "def call_tool(name: str, args: dict) -> str"
     ],
     [
      "main",
      "function",
-     305,
-     340,
+     252,
+     287,
      "def main()"
     ]
    ]

@@ -1,13 +1,13 @@
 """Minimal MCP stdio server for megabrain (no external deps).
 
-Tools:
+Tools (deliberately few — every tool costs the calling agent context and a
+decision; the host already has Read/Grep for single files, so megabrain only
+exposes what it alone can do):
   megabrain_ask(repo_path, question, scope_path?, docs?, include_docs?)
       -> explained answer, real code spliced (docs=true -> docs-only walkthrough;
          include_docs=true -> code + docs)
   megabrain_query(repo_path, task, scope_path?, compact?, full?)
       -> complete bundle: CORE full code + RELATED map (full=true adds RELATED code bodies)
-  megabrain_get(repo_path, file, symbol?)     -> one file or symbol
-  megabrain_chunks(repo_path, file, query)    -> every chunk of one file, scored + selected flags
   megabrain_index(repo_path)                  -> incremental index
   megabrain_forge(repo_path, ext?, list_only?, dry_run?, specialize?)
       -> COVERAGE: detect uncovered file types; LLM-generate + partition-validate
@@ -70,11 +70,13 @@ TOOLS = [
     {
         "name": "megabrain_query",
         "description": (
-            "The same retrieval as megabrain_ask but UNFILTERED and with NO LLM "
-            "(~200ms): returns ALL related code as a map — CORE (full code of the top "
-            "files + symbol index) and RELATED (every connected file with its best "
-            "chunk). Use when you want the raw complete bundle, when ask might have "
-            "skipped something, or for speed."),
+            "The same retrieval as megabrain_ask but with NO LLM (~200ms): a flat, "
+            "relevance-ranked list of exactly the chunks worth reading "
+            "([id] file:lines · score + CODE), with the noise dropped. EVERY related "
+            "file still appears (each contributes its best chunk) — only the noisy "
+            "chunks INSIDE files are cut, so nothing relevant is lost. One call hands "
+            "you the real code, no follow-up fetch needed. Use it when you want the "
+            "exact code to read rather than a narration — deterministic, no LLM."),
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -82,51 +84,12 @@ TOOLS = [
                 "task": {"type": "string", "description": "feature/question, natural language"},
                 "scope_path": {"type": "string",
                                "description": "optional repo-relative folder (e.g. src/dispatch) to scope the bundle to files under it; omit for the whole repo"},
-                "compact": {"type": "boolean", "description": "signatures only, no code bodies"},
-                "full": {"type": "boolean",
-                         "description": "include RELATED best-chunk code bodies (default false: "
-                                        "RELATED renders as a map — file, match span, symbols — "
-                                        "so the bundle stays context-friendly)"},
-                "prune_noise": {"type": "boolean",
-                                "description": "NO-LLM noise pruning: instead of the file-grouped "
-                                               "bundle, return ONLY the signal chunks as a flat list "
-                                               "ranked by relevance ([id] file:lines · score + code), "
-                                               "noise dropped. The lean alternative to megabrain_ask "
-                                               "when you just need the exact code to read, not a "
-                                               "narration — deterministic, no LLM, no tokens."},
+                "compact": {"type": "boolean", "default": False,
+                            "description": "default false (code bodies included). Set true for "
+                                           "signatures only — drop the code bodies, keep the "
+                                           "ranked spans (ids/files/lines/scores)."},
             },
             "required": ["repo_path", "task"],
-        },
-    },
-    {
-        "name": "megabrain_get",
-        "description": "Fetch the full code of one file, or one symbol (e.g. Service.handle). Use to expand a RELATED entry or follow up after ask/query.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "repo_path": {"type": "string"},
-                "file": {"type": "string", "description": "repo-relative path"},
-                "symbol": {"type": "string", "description": "optional symbol name, e.g. Service.handle"},
-            },
-            "required": ["repo_path", "file"],
-        },
-    },
-    {
-        "name": "megabrain_chunks",
-        "description": (
-            "Score EVERY chunk of ONE file against a query: each chunk's span "
-            "(start/end line), relevance score, and whether the full retrieval "
-            "actually SELECTED it into the bundle. Shows signal-vs-noise inside a "
-            "file (what retrieval reads vs ignores); powers chunk-selection "
-            "visualizations."),
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "repo_path": {"type": "string", "description": "path to the indexed repo root (a sub-path also works — the root is auto-detected from .megabrain)"},
-                "file": {"type": "string", "description": "repo-relative path of the file to map"},
-                "query": {"type": "string", "description": "the retrieval query to score chunks against"},
-            },
-            "required": ["repo_path", "file", "query"],
         },
     },
     {
@@ -208,28 +171,18 @@ def _scope(args: dict) -> tuple[Path, str | None]:
                              args.get("scope_path") or args.get("subpath"))
 
 
-def _scope_root(args: dict) -> tuple[Path, str | None]:
-    """(repo_root, subpath) for get/chunks: repo_path alone resolves to the root
-    + the sub the bare `file` arg is joined onto (app.rel_join) — NO scope_path
-    append (those tools take an explicit file, not a folder scope). Faithful to
-    the pre-refactor resolve_root(repo_path) path."""
-    from ..storage.store import resolve_root
-    root, sub = resolve_root(Path(args["repo_path"]).expanduser())
-    return root, (sub or None)
-
-
 def call_tool(name: str, args: dict) -> str:
     from .. import app
     if name == "megabrain_query":
-        from ..retrieval.render import render, render_pruned
+        # ALWAYS the pruned, flat signal list. The file-grouped bundle rendered
+        # RELATED as a code-less map, which is a dead end over MCP (there is no
+        # get/chunks tool to expand it) — and pruning keeps every bundle file
+        # anyway (each contributes its best chunk), so nothing relevant is lost.
+        from ..retrieval.render import render_pruned
         root, pf = _scope(args)
-        if args.get("prune_noise"):
-            with_text = not bool(args.get("compact"))
-            res = app.prune(root, args["task"], path_filter=pf, with_text=with_text)
-            return render_pruned(res, with_text=with_text)
-        return render(app.query(root, args["task"], path_filter=pf),
-                      compact=bool(args.get("compact")),
-                      related_code=bool(args.get("full")))
+        with_text = not bool(args.get("compact"))
+        res = app.prune(root, args["task"], path_filter=pf, with_text=with_text)
+        return render_pruned(res, with_text=with_text)
     if name == "megabrain_ask":
         from ..ask import render_ask
         root, pf = _scope(args)
@@ -246,12 +199,6 @@ def call_tool(name: str, args: dict) -> str:
                             for a in out["agents"])
             text += f"\n\n— multi-agent: {tr}"
         return text
-    if name == "megabrain_get":
-        root, sub = _scope_root(args)
-        return app.get(root, sub, args["file"], args.get("symbol"))
-    if name == "megabrain_chunks":
-        root, sub = _scope_root(args)
-        return json.dumps(app.chunks(root, sub, args["file"], args["query"]))
     if name == "megabrain_index":
         root = Path(args["repo_path"]).expanduser().resolve()
         return json.dumps(app.index(root))

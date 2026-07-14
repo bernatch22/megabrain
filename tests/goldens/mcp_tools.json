@@ -37,19 +37,12 @@
   "name": "megabrain_ask"
  },
  {
-  "description": "The same retrieval as megabrain_ask but UNFILTERED and with NO LLM (~200ms): returns ALL related code as a map \u2014 CORE (full code of the top files + symbol index) and RELATED (every connected file with its best chunk). Use when you want the raw complete bundle, when ask might have skipped something, or for speed.",
+  "description": "The same retrieval as megabrain_ask but with NO LLM (~200ms): a flat, relevance-ranked list of exactly the chunks worth reading ([id] file:lines \u00b7 score + CODE), with the noise dropped. EVERY related file still appears (each contributes its best chunk) \u2014 only the noisy chunks INSIDE files are cut, so nothing relevant is lost. One call hands you the real code, no follow-up fetch needed. Use it when you want the exact code to read rather than a narration \u2014 deterministic, no LLM.",
   "inputSchema": {
    "properties": {
     "compact": {
-     "description": "signatures only, no code bodies",
-     "type": "boolean"
-    },
-    "full": {
-     "description": "include RELATED best-chunk code bodies (default false: RELATED renders as a map \u2014 file, match span, symbols \u2014 so the bundle stays context-friendly)",
-     "type": "boolean"
-    },
-    "prune_noise": {
-     "description": "NO-LLM noise pruning: instead of the file-grouped bundle, return ONLY the signal chunks as a flat list ranked by relevance ([id] file:lines \u00b7 score + code), noise dropped. The lean alternative to megabrain_ask when you just need the exact code to read, not a narration \u2014 deterministic, no LLM, no tokens.",
+     "default": false,
+     "description": "default false (code bodies included). Set true for signatures only \u2014 drop the code bodies, keep the ranked spans (ids/files/lines/scores).",
      "type": "boolean"
     },
     "repo_path": {
@@ -72,56 +65,6 @@
    "type": "object"
   },
   "name": "megabrain_query"
- },
- {
-  "description": "Fetch the full code of one file, or one symbol (e.g. Service.handle). Use to expand a RELATED entry or follow up after ask/query.",
-  "inputSchema": {
-   "properties": {
-    "file": {
-     "description": "repo-relative path",
-     "type": "string"
-    },
-    "repo_path": {
-     "type": "string"
-    },
-    "symbol": {
-     "description": "optional symbol name, e.g. Service.handle",
-     "type": "string"
-    }
-   },
-   "required": [
-    "repo_path",
-    "file"
-   ],
-   "type": "object"
-  },
-  "name": "megabrain_get"
- },
- {
-  "description": "Score EVERY chunk of ONE file against a query: each chunk's span (start/end line), relevance score, and whether the full retrieval actually SELECTED it into the bundle. Shows signal-vs-noise inside a file (what retrieval reads vs ignores); powers chunk-selection visualizations.",
-  "inputSchema": {
-   "properties": {
-    "file": {
-     "description": "repo-relative path of the file to map",
-     "type": "string"
-    },
-    "query": {
-     "description": "the retrieval query to score chunks against",
-     "type": "string"
-    },
-    "repo_path": {
-     "description": "path to the indexed repo root (a sub-path also works \u2014 the root is auto-detected from .megabrain)",
-     "type": "string"
-    }
-   },
-   "required": [
-    "repo_path",
-    "file",
-    "query"
-   ],
-   "type": "object"
-  },
-  "name": "megabrain_chunks"
  },
  {
   "description": "Index or incrementally update a repo before querying a NEW one (fast: only changed files are re-embedded; ask/query auto-refresh a stale index).",

@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.9.0 — MCP surface: lean, and `megabrain_query` is always signal-only
+
+**BREAKING (MCP tool contract):**
+
+- **Removed `megabrain_get` and `megabrain_chunks`.** Every tool costs the
+  calling agent context and a routing decision, so the MCP surface now exposes
+  only what megabrain alone can do — pulling a single file or symbol is the
+  host's own Read/Grep job (and `ask`'s sub-agents already fetch files
+  internally via their own tools). Five tools remain: `megabrain_ask`,
+  `megabrain_query`, `megabrain_index`, `megabrain_forge`, `megabrain_flows`.
+  The underlying `app.get`/`app.chunks` are unaffected — the CLI and serve-api
+  (`/get`, `/chunks`) still use them.
+- **`megabrain_query` always returns the pruned signal list now** — the
+  `prune_noise` and `full` params are gone. The file-grouped bundle's RELATED
+  section was a code-less map, a dead end over MCP once `get`/`chunks` were
+  removed (no tool to expand it). Pruning has no such gap: every file in the
+  bundle still contributes its best chunk *with code* — only the noisy chunks
+  inside files are cut, so nothing relevant is lost, and one call now always
+  hands the agent real code. The CLI (`query` vs `query --prune`) and HTTP API
+  still expose both shapes.
+- `megabrain_query`'s `compact` param now declares its default explicitly
+  (`false` — code bodies included) instead of leaving it implicit.
+
+No engine/CLI/HTTP changes — this release is MCP-contract-only.
+
 ## 0.8.1 — studio add-repo: native folder dialog + interactive file tree
 
 - **Native OS folder picker.** Add-repo's "Browse…" opens the operating

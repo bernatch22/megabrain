@@ -134,17 +134,17 @@ The decision rule — for a human OR an LLM agent calling megabrain:
 | your question is… | use | why |
 |---|---|---|
 | "**how/why** does X work" — a flow, a mechanism, cross-file behavior | **ask** | you want the *connected* story; retrieval alone gives you the pieces, ask assembles them (and with flows on, the assembly gets cached) |
-| "just give me the **code worth reading**" — you'll reason over it yourself, no narration | **query + prune_noise** | flat, relevance-ranked signal chunks, noise dropped, **zero LLM cost**; a modern LLM agent doesn't need pre-chewed prose, only the exact code |
-| "**where** is Y" — locate a symbol/handler/config, browse the whole map | **query** | free, instant, complete; the full CORE+RELATED bundle when you want everything, not just the top signal |
-| you're an agent about to **edit** code | **query → get** | you need exact current bytes and spans, not prose |
+| "just give me the **code worth reading**" — you'll reason over it yourself, no narration | **query** (pruned) | flat, relevance-ranked signal chunks *with the code*, noise dropped, **zero LLM cost**; a modern LLM agent doesn't need pre-chewed prose, only the exact code |
+| "**where** is Y" — locate a symbol/handler/config | **query** | free, instant; every related file still shows up (each contributes its best chunk) |
+| you want the raw file-grouped bundle (CORE code + RELATED map) | **CLI `query`** (no `--prune`) | CLI/HTTP only — see the note below on why MCP doesn't expose it |
 | the same how/why might be asked again (team repo, agents) | **ask with flows on** | first ask pays once; repeats are served free |
 
-Rule of thumb for an agent: **prune_noise when you want just the code to read at
-zero LLM cost; ask when you want a narrated cross-file walkthrough.** Never chain
-`query` + your own summarization to imitate `ask` — ask's splice guarantees the
-code shown is verbatim; your own summary doesn't.
+Rule of thumb for an agent: **query when you want just the code to read at zero LLM
+cost; ask when you want a narrated cross-file walkthrough.** Never chain `query` +
+your own summarization to imitate `ask` — ask's splice guarantees the code shown is
+verbatim; your own summary doesn't.
 
-#### Using prune_noise
+#### The pruned (signal-only) shape
 
 ```bash
 megabrain query ~/repo "retry logic" --prune            # flat signal chunks, ranked, with code
@@ -152,11 +152,19 @@ megabrain query ~/repo "retry logic" --prune --compact  # same, code bodies drop
 megabrain query ~/repo "retry logic" --prune --json     # machine-readable
 ```
 
-MCP: pass `prune_noise: true` to `megabrain_query` — it returns the flat ranked
-signal list instead of the file-grouped bundle. It reuses the engine's existing
-signal/noise selection (a tier-1 chunk that survives the keep-ratio cut, or a
-related file's best chunk) — no new scoring, no LLM, no token cost. Use it when a
-coding agent just needs the exact code to READ; reach for `ask` when it needs the
+**Over MCP this is the ONLY shape `megabrain_query` returns** — there is no
+`prune_noise` switch and no file-grouped-bundle mode. Why: the bundle renders
+RELATED as a *code-less map* (file, span, symbols), which is a dead end for an
+agent over MCP — there is no `get`/`chunks` tool to expand it, so the map just
+tells it code exists somewhere. Pruning has no such gap: **every file in the bundle
+still appears** (each contributes its best chunk, with code), and only the noisy
+chunks *inside* files are cut — so one call hands the agent real code and nothing
+relevant is lost. The CLI and HTTP API still expose the full bundle.
+
+It reuses the engine's existing signal/noise selection (a tier-1 chunk that
+survives the keep-ratio cut, or a related file's best chunk) — no new scoring, no
+LLM, no token cost. Use it when a coding agent just needs the exact code to READ;
+reach for `ask` when it needs the
 narrated story across files.
 
 > Note: `ask` deliberately has **no** pre-filter step — filter-then-narrate would
@@ -193,12 +201,16 @@ before answering.
 | tool | when the agent should reach for it |
 |---|---|
 | **`megabrain_ask`** | **the default.** Any "how/where/why does X work" — returns a senior-engineer walkthrough with the REAL code spliced in, tracing the whole cross-file flow. One call instead of crawling files. |
-| `megabrain_query` | the raw bundle, no LLM (~200 ms) — when the agent wants every related file fast, or to feed its own reasoning. Pass **`prune_noise: true`** to get back only the flat, relevance-ranked **signal** chunks (noise dropped) — just the code worth reading, still zero LLM. |
-| `megabrain_get` | pull one full file or symbol to expand a citation. |
-| `megabrain_chunks` | every chunk of one file, scored + a "selected" flag — signal-vs-noise inside a file. |
+| `megabrain_query` | no LLM (~200 ms) — a flat, relevance-ranked list of exactly the **signal** chunks **with their code** (noise dropped, every related file still represented). When the agent wants the code to read and will reason over it itself, at zero LLM cost. |
 | `megabrain_index` | index/refresh a repo the agent hasn't seen. |
 | `megabrain_forge` | make a file type the engine can't read yet (`.toml`, `.astro`) searchable. |
 | `megabrain_flows` | manage the opt-in flow cache: `action: "warm"` pre-caches the repo's workflows, `"refresh"` updates stale ones, `"list"` / `"enable"`. |
+
+Five tools, on purpose. Every tool costs the calling agent context and a routing
+decision, so megabrain exposes only what it alone can do — pulling a single file or
+symbol is left to the host's own Read/Grep (and to `ask`'s sub-agents, which fetch
+files internally). Deleting an index is a `rm -rf .megabrain` away, so there's no tool
+for it either.
 
 `scope_path` on `ask`/`query` confines the answer to a sub-folder
 (`src/auth`); pass comma-separated roots to search several repos at once.

@@ -244,10 +244,10 @@ bodies. The bundle **data** always carries `best_chunk` — ask, serve-api and t
 webui consume it unchanged. Expansion is multi-turn: `megabrain get <file>
 [--symbol N]`.
 
-**Noise pruning (`prune_search`, opt-in, no LLM).** The bundle already marks which
+**Noise pruning (`prune_search`, no LLM).** The bundle already marks which
 chunks are *signal* — a tier-1 chunk that survives the `CHUNK_KEEP_RATIO` cut, or a
-related file's best chunk. `prune_search` (CLI `query --prune`, MCP
-`prune_noise: true`) simply **projects that existing selection into a flat list
+related file's best chunk. `prune_search` (CLI `query --prune`, and the ONLY shape
+`megabrain_query` returns over MCP) simply **projects that existing selection into a flat list
 ranked by relevance** — each `[id] file:Lstart-end · score` with its code, the noise
 chunks dropped. No new scoring, no LLM, no token cost: it reuses the same
 signal/noise call the full bundle makes, just rendering the signal alone (with
@@ -373,9 +373,14 @@ single-agent ask → full bundle.
 - **MCP** (`mcp_server.py`, stdio, no deps): `megabrain_ask` (primary; `docs`,
   `include_docs`, `scope_path`, `agents` — omit for auto fan-out on broad
   questions; MCP is request/response, so the fan-out runs buffered and the trace
-  lands as a footer), `megabrain_query` (`compact`, `full`, `scope_path`,
-  `prune_noise` — flat signal-only chunks, no LLM),
-  `megabrain_get`, `megabrain_chunks`, `megabrain_index`. Auto-refreshes stale
+  lands as a footer), `megabrain_query` (`scope_path`, `compact` — ALWAYS the flat
+  signal-only chunk list with code, no LLM; the file-grouped bundle is deliberately
+  not exposed, since its code-less RELATED map is a dead end without a get/chunks
+  tool, while pruning still keeps every bundle file),
+  `megabrain_index`, `megabrain_forge`, `megabrain_flows`. Five tools on purpose:
+  a tool costs the caller context + a routing decision, so the MCP surface carries
+  only what megabrain alone can do (single-file/symbol fetches are the host's
+  Read/Grep job; `ask`'s sub-agents fetch files internally). Auto-refreshes stale
   indexes before answering.
 - **HTTP** (`frontends/http.py`, stdlib `http.server`, warm state, db-mtime auto-reload):
   `/search` `/docsearch` `/chunks` `/ask` `/ask/stream` (SSE: the ask v2 event
