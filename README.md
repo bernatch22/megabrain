@@ -43,6 +43,11 @@ megabrain ask   ~/your/repo "how does auth work end to end"
 `ask` uses your logged-in `claude` CLI (free on your plan); embeddings never leave your
 machine. No OpenRouter, no Anthropic key.
 
+**Which model?** On Claude Code, `ask` narrates with **Haiku** by default (fast + cheap
+on your plan). Bump it with a Claude alias — `export MEGABRAIN_ASK_MODEL=sonnet` (or
+`opus`). ⚠️ On the `claude` provider this must be a **Claude** model (`haiku`/`sonnet`/
+`opus`/a `claude-*` id), not an OpenRouter slug like `google/…`.
+
 ## Inside Claude Code
 
 Register it as an MCP server and research any indexed repo without leaving Claude Code:
