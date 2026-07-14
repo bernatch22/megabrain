@@ -25,3 +25,6 @@ evals/swebench/out/
 
 # benchmarks / evals — kept local, never committed
 evals/
+
+# examples live in their own repo now (~/megabrain-examples)
+examples/

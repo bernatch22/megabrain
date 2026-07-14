@@ -17,7 +17,7 @@ tree_sitter_<lang>": the entry is always here; it activates when the grammar is.
 
 CUSTOM strategies plug in WITHOUT forking: `index_repo(root,
 strategies=[MyStrategy()])`. They are checked FIRST, so a custom strategy can
-also override a built-in extension. See examples/02_custom_chunker.py.
+also override a built-in extension. See the megabrain-examples repo.
 """
 
 from __future__ import annotations

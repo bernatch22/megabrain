@@ -84,7 +84,7 @@ giants → line windows). Every chunk carries a **breadcrumb**
 `ChunkStrategy` protocol; `index_repo(root, strategies=[MyStrategy()])` injects
 caller strategies ahead of the built-ins — claim a new content type (`.sql`,
 `.proto`, `.ipynb`…) or override an existing one without forking. Partition is the
-only hard requirement. Runnable demo: `examples/02_custom_chunker.py`.
+only hard requirement. Runnable demo: the megabrain-examples repo.
 
 ### 2.2 Two embedded granularities
 
@@ -110,7 +110,7 @@ auto-triggers a full re-embed on the next `index` so vectors never silently mism
   side-effect imports. PHP: `use` statements resolved against a namespace+declaration
   FQCN index (PSR-4-agnostic). Edges feed **candidates and annotations only** (rule 3).
 
-### 2.4 Storage, incrementality, freshness (`store.py`, `indexing/indexer.py`)
+### 2.4 Storage, incrementality, freshness (`storage/store.py`, `indexing/indexer.py`)
 
 One SQLite file per repo at `<repo>/.megabrain/db.sqlite` (`chunks`, `files`,
 `symbols`, `edges`, `meta`). Indexing is incremental by SHA-256; orphans are pruned
@@ -122,7 +122,7 @@ fail-open without a key)** before answering, so results always match disk. Vecto
 load into one NumPy matrix; brute-force cosine is <2 ms up to ~50 K chunks, so ANN
 indexing is deliberately deferred.
 
-### 2.5 forge — self-authored chunkers (`forge.py`, repo-local strategies)
+### 2.5 forge — self-authored chunkers (`forge/`, repo-local strategies)
 
 `megabrain forge <repo>` closes the custom-strategy loop: the engine detects the
 repo's uncovered text extensions (deterministic census — no LLM), has an LLM
@@ -392,7 +392,7 @@ single-agent ask → full bundle.
   confined to files under it; the repo root is auto-detected from `.megabrain` up
   the tree. Multi-repo: comma-separated roots, searched concurrently, merged by
   score.
-- **Web demo** (`examples/webui/`, stdlib, one port): live file ranking → per-chunk
+- **Web demo** (the megabrain-examples repo, stdlib, one port): live file ranking → per-chunk
   heatmap (`chunks_for_file` — span, score, *selected by the real cross-file
   retrieval* flag), native folder picker, doc-mode toggle, and an **Explain** overlay
   that A/Bs the same question on Claude vs OpenRouter with per-stage timings —
@@ -462,8 +462,11 @@ src/megabrain/
     embeddings.py      embed client (construction-time config; int8 decode, L2 norm, atomic disk cache)
   server/            SURFACES — thin adapters over app.py (map args → use-case → render)
     cli.py · mcp.py · http.py · session.py (RepoSession warm state, shared)
-examples/            programmatic API · custom .sql chunker · chunk heatmap · web demo
 ```
+
+Runnable examples (programmatic API · custom .sql chunker · chunk heatmap ·
+web demo) live in their own repo, `~/megabrain-examples` — they need the engine
+installed (`pip install megabrain`).
 
 Public API (lazy, typed): `megabrain.{index_repo, search, render, get_code,
 load_state, search_with_state, prune_search, prune_search_root, render_pruned,

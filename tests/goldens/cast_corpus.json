@@ -9,7 +9,7 @@
      1,
      72,
      "megabrain > megabrain/__init__.py > [__getattr__, __dir__]",
-     "e0bd6768a7026851ea0c05950e4737b253229dfa"
+     "cff67e87aa1e07a53697b28cab765592b2603580"
     ]
    ],
    "skeleton_sha": "920d887edc28e9293ef8fae8b7e7f60c9ff8d7c0",
@@ -2165,7 +2165,7 @@
      1,
      118,
      "megabrain > megabrain/forge/coverage.py > [forge_model, detect]",
-     "9a69ea6f1c7464cd5db9aac68b0c96629c829c00"
+     "43ceff2e85859d4f8567e447a90712606ee97032"
     ],
     [
      "module",
@@ -2548,7 +2548,7 @@
      1,
      116,
      "megabrain > megabrain/indexing/indexer.py > [load_ignore, _split_patterns, _excluded, discover, maybe_reindex, index_repo]",
-     "606cc6aaef642e307209d4c7dbbad7fdb7e061bf"
+     "46d3ed66be6b36081c69dd58e018cdab40ab191f"
     ],
     [
      "function",
@@ -2650,7 +2650,7 @@
      1,
      126,
      "megabrain > megabrain/indexing/strategies.py > [ChunkStrategy, PythonStrategy, TsJsStrategy, TreeSitterStrategy]",
-     "35cad4592820e7d741bc487cd2379df291d75966"
+     "ea6c52f5b48d34eba2ec942e845204679b3a3b92"
     ],
     [
      "module",

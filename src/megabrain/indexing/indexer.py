@@ -103,7 +103,7 @@ def index_repo(root: Path, repo_name: str | None = None,
     """Index/update a repo and RETURN the stats dict — the library never prints
     (rendering the result is the frontend's job). `strategies` injects custom
     ChunkStrategy instances (checked before the built-ins, so they can claim new
-    extensions or override existing ones) — see examples/02_custom_chunker.py.
+    extensions or override existing ones) — see the megabrain-examples repo.
     Trusted repo-local strategies (`.megabrain/strategies/*.py`) load
     automatically after them, so custom extensions survive every reindex."""
     root = Path(root).resolve()

@@ -14,7 +14,7 @@ Public API (lazy — numpy/tree_sitter load on first use, not at import):
 Custom chunkers: implement ChunkStrategy (exts + chunk_file -> FileResult made
 of Chunk/Symbol, partition-checked by validate_partition) and pass it to
 index_repo(root, strategies=[MyStrategy()]) — custom strategies are checked
-before the built-ins. See examples/02_custom_chunker.py.
+before the built-ins. See the megabrain-examples repo.
 
 For the LLM walkthrough import the module: `from megabrain.ask import ask,
 render_ask, stream_ask` (kept off the top level so the `ask` submodule and the
@@ -51,7 +51,7 @@ _EXPORTS = {
     "EmptyIndex": ".errors",
     "MissingAPIKey": ".errors",
     "ProviderError": ".errors",
-    # custom-chunker surface (see examples/02_custom_chunker.py):
+    # custom-chunker surface (see the megabrain-examples repo):
     "ChunkStrategy": ".indexing.strategies",
     "Chunk": ".chunkers",
     "Symbol": ".chunkers",

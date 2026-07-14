@@ -1,6 +1,6 @@
 """forge — megabrain writes its own chunkers.
 
-`forge(root)` closes the loop that custom strategies opened (examples/02):
+`forge(root)` closes the loop that custom strategies opened (see megabrain-examples):
 
   1. DETECT   — census the repo for text content the active registry cannot
                 index (uncovered extensions), deterministically. No LLM.
