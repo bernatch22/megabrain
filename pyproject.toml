@@ -51,6 +51,7 @@ Issues = "https://github.com/bernatch22/megabrain/issues"
 Changelog = "https://github.com/bernatch22/megabrain/blob/master/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
+where = ["src"]
 include = ["megabrain*"]
 
 [tool.setuptools.package-data]

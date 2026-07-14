@@ -21,7 +21,7 @@ from pathlib import Path
 import pytest
 
 GOLDEN = Path(__file__).parent / "goldens" / "cast_corpus.json"
-ENGINE = Path(__file__).parent.parent / "megabrain"
+ENGINE = Path(__file__).parent.parent / "src" / "megabrain"
 
 
 def _fingerprint(fr) -> dict:
