@@ -109,8 +109,8 @@ def main(argv=None):
                         "poorly (data tables, blobs). NOTE: LLM-generated "
                         "specialization was removed (it lost to a deterministic "
                         "recipe); write the strategy into .megabrain/strategies/ by "
-                        "hand and gate it with the Python API forge_specialize."
-                        "gate_strategy(). This flag now only lists opportunities.")
+                        "hand and gate it with the Python API megabrain.forge."
+                        "specialize.gate_strategy(). This flag now only lists opportunities.")
 
     p = sub.add_parser("flows",
                        help="list this repo's cached ask flows (self-caching workflow "
@@ -220,14 +220,14 @@ def _dispatch(a, raw: list[Path], root: Path) -> None:
     elif a.cmd == "forge":
         import json as _json
         if a.specialize:
-            from ..forge_specialize import detect_specialization
+            from ..forge.specialize import detect_specialization
             opps = detect_specialization(root)
             print(_json.dumps(opps, indent=1) if opps
                   else "no specialization opportunities found")
             if opps:
                 print("\n# LLM generation was removed. Write a strategy into "
                       ".megabrain/strategies/ and gate it:\n"
-                      "#   from megabrain.forge_specialize import gate_strategy\n"
+                      "#   from megabrain.forge.specialize import gate_strategy\n"
                       "#   gate_strategy(root, open('strat.py').read(), '.py')")
         elif a.list_only:
             from ..forge import detect

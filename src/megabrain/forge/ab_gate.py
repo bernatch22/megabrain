@@ -132,8 +132,8 @@ def _measure(root: Path, target: str, probes) -> dict:
       while embedding as noise).
     - hit@k = an overlapping chunk sits within the top-k GLOBALLY (rank across
       the whole repo, all files competing)."""
-    from .retrieval.scoring import score_chunks
-    from .retrieval.state import load_state
+    from ..retrieval.scoring import score_chunks
+    from ..retrieval.state import load_state
     st = load_state(root)
     ious = []
     hits = {k: 0 for k in TOPK}
@@ -168,7 +168,7 @@ def changed_files(root: Path, candidate, baseline=None) -> list[str]:
     (`baseline` strategy, default the built-in) — exactly the files whose
     retrieval could move, so exactly what the gate must measure (a shape-router
     touches a family, not just the one target)."""
-    from .indexing.strategies import builtin_strategy_for
+    from ..indexing.strategies import builtin_strategy_for
     root = Path(root).resolve()
     names = {".git", "node_modules", "__pycache__", ".megabrain", "dist", "build"}
     out = []
@@ -190,7 +190,7 @@ def changed_files(root: Path, candidate, baseline=None) -> list[str]:
 
 
 def _index_copy(root: Path, strategy):
-    from .indexing.indexer import index_repo
+    from ..indexing.indexer import index_repo
     tmp = Path(tempfile.mkdtemp(prefix="mb-forge-eval-"))
     dst = tmp / root.name
     shutil.copytree(root, dst, ignore=shutil.ignore_patterns(
@@ -209,8 +209,8 @@ def _granularity_violation(root: Path, candidate, files: list[str]) -> str | Non
     than the BUILT-IN's median on the same file — a small file whose chunks
     are naturally small is not the candidate's doing and must not veto the
     whole strategy. Checked before any indexing (cheap)."""
-    from .chunkers.base import nws
-    from .indexing.strategies import builtin_strategy_for
+    from ..chunkers.base import nws
+    from ..indexing.strategies import builtin_strategy_for
 
     def median_nws(strat, f, src):
         r = strat.chunk_file(f, src)

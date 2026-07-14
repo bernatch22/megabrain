@@ -13,7 +13,7 @@ Tools:
       -> COVERAGE: detect uncovered file types; LLM-generate + partition-validate
          + install a chunker per type (repo-local, trust-gated). specialize=true
          only lists poorly-chunked covered files (LLM specialization was removed;
-         hand-write + gate via forge_specialize.gate_strategy)
+         hand-write + gate via megabrain.forge.specialize.gate_strategy)
   megabrain_flows(repo_path, action?, n?)   -> manage the opt-in flow cache
       -> action list|warm|refresh|enable|disable (warm pre-caches N workflows)
 
@@ -153,8 +153,8 @@ TOOLS = [
             "the census of poorly-chunked ALREADY-covered files (NOTE: the LLM path "
             "for specialization was removed — it lost to a deterministic recipe; "
             "hand-write a strategy into .megabrain/strategies/ and gate it with the "
-            "Python API forge_specialize.gate_strategy, which installs it only on a "
-            "measured retrieval win). ~10-60s per extension when generating."),
+            "Python API megabrain.forge.specialize.gate_strategy, which installs it "
+            "only on a measured retrieval win). ~10-60s per extension when generating."),
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -260,11 +260,11 @@ def call_tool(name: str, args: dict) -> str:
         if args.get("specialize"):
             # LLM specialization was removed (it lost to a deterministic recipe).
             # Report opportunities; strategies are hand-written + gate_strategy().
-            from ..forge_specialize import detect_specialization
+            from ..forge.specialize import detect_specialization
             return json.dumps({"opportunities": detect_specialization(root),
                                "note": "LLM specialization removed; write the "
                                "strategy into .megabrain/strategies/ and gate it "
-                               "with forge_specialize.gate_strategy()"}, indent=1)
+                               "with megabrain.forge.specialize.gate_strategy()"}, indent=1)
         from ..forge import detect, forge, render_report
         if args.get("list_only"):
             return json.dumps(detect(root), indent=1)

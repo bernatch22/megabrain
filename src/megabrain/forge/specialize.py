@@ -29,9 +29,9 @@ import ast
 import logging
 from pathlib import Path
 
-from .forge import install
-from .indexing.indexer import EXCLUDE_DIRS, MAX_FILE_BYTES, load_ignore
-from .indexing.strategies import build_registry, strategy_for
+from ..indexing.indexer import EXCLUDE_DIRS, MAX_FILE_BYTES, load_ignore
+from ..indexing.strategies import build_registry, strategy_for
+from .coverage import install
 
 log = logging.getLogger(__name__)
 
@@ -150,7 +150,7 @@ def lit_baseline(ext: str, repo: str = ""):
     4000 default. Free, deterministic, repo-agnostic — so an LLM strategy that
     can't beat it adds nothing and must not install. Returns None when the
     ext's chunker can't be re-budgeted (the gate then falls back to built-in)."""
-    from .indexing.strategies import builtin_strategy_for
+    from ..indexing.strategies import builtin_strategy_for
 
     lit = builtin_strategy_for(ext, repo)
     fallback = builtin_strategy_for(ext, repo)
@@ -193,7 +193,7 @@ def gate_strategy(root, strategy, ext: str, dry_run: bool = False,
     writes the chunker, the machine decides whether it earns a place."""
     import time
 
-    from .forge_eval import ab_gate
+    from .ab_gate import ab_gate
     root = Path(root).resolve()
     t0 = time.time()
     code = None
@@ -212,13 +212,13 @@ def gate_strategy(root, strategy, ext: str, dry_run: bool = False,
               "gate": gate, "seconds": round(time.time() - t0, 2)}
     if gate.get("win") and not dry_run and code is not None:
         report["installed"] = install(root, ext, code).as_posix()
-        from .indexing.indexer import index_repo
+        from ..indexing.indexer import index_repo
         report["index"] = index_repo(root)
     return report
 
 
 def _load(code: str, repo: str, ext: str):
-    from .indexing.strategies import instantiate_strategies
+    from ..indexing.strategies import instantiate_strategies
     strats = instantiate_strategies(code, repo, origin=f"<specialize {ext}>")
     return next(s for s in strats if ext in s.exts)
 

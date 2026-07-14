@@ -32,9 +32,9 @@ import re
 import time
 from pathlib import Path
 
-from .chunkers import base as chunkers_base
-from .indexing.indexer import EXCLUDE_DIRS, MAX_FILE_BYTES, load_ignore
-from .indexing.strategies import (
+from ..chunkers import base as chunkers_base
+from ..indexing.indexer import EXCLUDE_DIRS, MAX_FILE_BYTES, load_ignore
+from ..indexing.strategies import (
     STRATEGY_DIR,
     all_exts,
     build_registry,
@@ -63,7 +63,7 @@ def forge_model() -> str:
     on OpenRouter / haiku alias on claude) — both fine at ~100-line codegen."""
     import os
 
-    from . import providers
+    from .. import providers
     return os.environ.get("MEGABRAIN_FORGE_MODEL") or providers.ask_model()
 
 
@@ -75,7 +75,7 @@ def detect(root: Path, exclude=()) -> list[dict]:
     index, with file count, size and sample paths. Deterministic, no LLM."""
     root = Path(root).resolve()
     covered = set(all_exts(build_registry(root.name)))
-    from .indexing.strategies import load_repo_strategies
+    from ..indexing.strategies import load_repo_strategies
     for s in load_repo_strategies(root, root.name):
         covered.update(s.exts)
 
@@ -268,7 +268,7 @@ def forge(root, ext: str | None = None, dry_run: bool = False,
           quiet: bool = False) -> dict:
     """Detect → generate → validate (repair loop) → install → reindex.
     `ext` limits the run to one extension; `dry_run` stops before install."""
-    from . import providers
+    from .. import providers
 
     root = Path(root).resolve()
     t0 = time.time()
@@ -308,7 +308,7 @@ def forge(root, ext: str | None = None, dry_run: bool = False,
         report["forged"].append(entry)
 
     if not dry_run and any(e["ok"] for e in report["forged"]):
-        from .indexing.indexer import index_repo
+        from ..indexing.indexer import index_repo
         report["index"] = index_repo(root)
     report["seconds"] = round(time.time() - t0, 2)
     return report

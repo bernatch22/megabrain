@@ -2095,7 +2095,148 @@
     ]
    ]
   },
-  "megabrain/forge.py": {
+  "megabrain/forge/__init__.py": {
+   "chunks": [
+    [
+     "module",
+     null,
+     null,
+     1,
+     17,
+     "megabrain > megabrain/forge/__init__.py (module level)",
+     "56c1d251a0bfa2a6cebea9514d07721523ef77ac"
+    ]
+   ],
+   "skeleton_sha": "e1012bb4b7d7db00fb12f95d8b02cd0b0c3464d8",
+   "symbols": [
+    [
+     "__all__",
+     "constant",
+     17,
+     17,
+     "__all__ = ['forge', 'detect', 'install', 'render_report', 'validate_strategy']"
+    ]
+   ]
+  },
+  "megabrain/forge/ab_gate.py": {
+   "chunks": [
+    [
+     "module",
+     "_py_probes, _generic_probes, probe_spans",
+     null,
+     1,
+     119,
+     "megabrain > megabrain/forge/ab_gate.py > [_py_probes, _generic_probes, probe_spans]",
+     "1bdf656b6ddf0ff38510b21fdb801386c3efaf29"
+    ],
+    [
+     "module",
+     "_measure, changed_files, _index_copy, _granularity_violation",
+     null,
+     120,
+     239,
+     "megabrain > megabrain/forge/ab_gate.py > [_measure, changed_files, _index_copy, _granularity_violation]",
+     "325948126f6769a0d663cd04dba502d098c22017"
+    ],
+    [
+     "function",
+     "ab_gate",
+     null,
+     240,
+     298,
+     "megabrain > megabrain/forge/ab_gate.py > def ab_gate(root: Path, candidate, targets=None, margin: float=IOU_MARGIN, regress_tol: float=0.01, baseline=None) -> dict",
+     "c09660f0e66280b81b918dc4cd5b1ab959d5bc90"
+    ]
+   ],
+   "skeleton_sha": "1b6c75b07552ba51e2434166457b78f5256c4de1",
+   "symbols": [
+    [
+     "IOU_MARGIN",
+     "constant",
+     43,
+     43,
+     "IOU_MARGIN = 0.01"
+    ],
+    [
+     "MAX_PROBES",
+     "constant",
+     44,
+     44,
+     "MAX_PROBES = 60"
+    ],
+    [
+     "TOPK",
+     "constant",
+     45,
+     45,
+     "TOPK = (1, 5)"
+    ],
+    [
+     "_py_probes",
+     "function",
+     50,
+     85,
+     "def _py_probes(source: str) -> list[tuple[str, int, int]]"
+    ],
+    [
+     "_generic_probes",
+     "function",
+     88,
+     108,
+     "def _generic_probes(source: str) -> list[tuple[str, int, int]]"
+    ],
+    [
+     "probe_spans",
+     "function",
+     111,
+     119,
+     "def probe_spans(path: Path) -> list[tuple[str, int, int]]"
+    ],
+    [
+     "_measure",
+     "function",
+     124,
+     163,
+     "def _measure(root: Path, target: str, probes) -> dict"
+    ],
+    [
+     "changed_files",
+     "function",
+     166,
+     189,
+     "def changed_files(root: Path, candidate, baseline=None) -> list[str]"
+    ],
+    [
+     "_index_copy",
+     "function",
+     192,
+     199,
+     "def _index_copy(root: Path, strategy)"
+    ],
+    [
+     "MIN_MEDIAN_NWS",
+     "constant",
+     202,
+     202,
+     "MIN_MEDIAN_NWS = 100"
+    ],
+    [
+     "_granularity_violation",
+     "function",
+     205,
+     239,
+     "def _granularity_violation(root: Path, candidate, files: list[str]) -> str | None"
+    ],
+    [
+     "ab_gate",
+     "function",
+     242,
+     298,
+     "def ab_gate(root: Path, candidate, targets=None, margin: float=IOU_MARGIN, regress_tol: float=0.01, baseline=None) -> dict"
+    ]
+   ]
+  },
+  "megabrain/forge/coverage.py": {
    "chunks": [
     [
      "module",
@@ -2103,8 +2244,8 @@
      null,
      1,
      118,
-     "megabrain > megabrain/forge.py > [forge_model, detect]",
-     "d53a94e02190cce1bb1f2ca0161b60674fd24792"
+     "megabrain > megabrain/forge/coverage.py > [forge_model, detect]",
+     "9a69ea6f1c7464cd5db9aac68b0c96629c829c00"
     ],
     [
      "module",
@@ -2112,7 +2253,7 @@
      null,
      119,
      208,
-     "megabrain > megabrain/forge.py > [_prompt, _extract_code]",
+     "megabrain > megabrain/forge/coverage.py > [_prompt, _extract_code]",
      "e4465a016411e0421cc03da8bfe55d8d01fa4df2"
     ],
     [
@@ -2121,8 +2262,8 @@
      null,
      209,
      314,
-     "megabrain > megabrain/forge.py > [validate_strategy, install, forge]",
-     "e4301b69c0ea55f91d0af4b231bf70e166fa6850"
+     "megabrain > megabrain/forge/coverage.py > [validate_strategy, install, forge]",
+     "bfb098ded356edea5b1e03a950b9cf400efb524d"
     ],
     [
      "function",
@@ -2130,11 +2271,11 @@
      null,
      315,
      342,
-     "megabrain > megabrain/forge.py > def render_report(report: dict) -> str",
+     "megabrain > megabrain/forge/coverage.py > def render_report(report: dict) -> str",
      "332fe1ad455c3c420e49afe52dfcc659cf9ed509"
     ]
    ],
-   "skeleton_sha": "405a1c8f1ec6aef8a15ad1dcc967e1588482af10",
+   "skeleton_sha": "2ec23d9739a1803f7ea848d79ea87a5acb09504a",
    "symbols": [
     [
      "log",
@@ -2243,125 +2384,7 @@
     ]
    ]
   },
-  "megabrain/forge_eval.py": {
-   "chunks": [
-    [
-     "module",
-     "_py_probes, _generic_probes, probe_spans",
-     null,
-     1,
-     119,
-     "megabrain > megabrain/forge_eval.py > [_py_probes, _generic_probes, probe_spans]",
-     "1bdf656b6ddf0ff38510b21fdb801386c3efaf29"
-    ],
-    [
-     "module",
-     "_measure, changed_files, _index_copy, _granularity_violation",
-     null,
-     120,
-     239,
-     "megabrain > megabrain/forge_eval.py > [_measure, changed_files, _index_copy, _granularity_violation]",
-     "53c9999b4ac9a0408a89116a65c5f39677bee5a5"
-    ],
-    [
-     "function",
-     "ab_gate",
-     null,
-     240,
-     298,
-     "megabrain > megabrain/forge_eval.py > def ab_gate(root: Path, candidate, targets=None, margin: float=IOU_MARGIN, regress_tol: float=0.01, baseline=None) -> dict",
-     "c09660f0e66280b81b918dc4cd5b1ab959d5bc90"
-    ]
-   ],
-   "skeleton_sha": "e68d603c582d32e6616ea23094cecbde727fbb9d",
-   "symbols": [
-    [
-     "IOU_MARGIN",
-     "constant",
-     43,
-     43,
-     "IOU_MARGIN = 0.01"
-    ],
-    [
-     "MAX_PROBES",
-     "constant",
-     44,
-     44,
-     "MAX_PROBES = 60"
-    ],
-    [
-     "TOPK",
-     "constant",
-     45,
-     45,
-     "TOPK = (1, 5)"
-    ],
-    [
-     "_py_probes",
-     "function",
-     50,
-     85,
-     "def _py_probes(source: str) -> list[tuple[str, int, int]]"
-    ],
-    [
-     "_generic_probes",
-     "function",
-     88,
-     108,
-     "def _generic_probes(source: str) -> list[tuple[str, int, int]]"
-    ],
-    [
-     "probe_spans",
-     "function",
-     111,
-     119,
-     "def probe_spans(path: Path) -> list[tuple[str, int, int]]"
-    ],
-    [
-     "_measure",
-     "function",
-     124,
-     163,
-     "def _measure(root: Path, target: str, probes) -> dict"
-    ],
-    [
-     "changed_files",
-     "function",
-     166,
-     189,
-     "def changed_files(root: Path, candidate, baseline=None) -> list[str]"
-    ],
-    [
-     "_index_copy",
-     "function",
-     192,
-     199,
-     "def _index_copy(root: Path, strategy)"
-    ],
-    [
-     "MIN_MEDIAN_NWS",
-     "constant",
-     202,
-     202,
-     "MIN_MEDIAN_NWS = 100"
-    ],
-    [
-     "_granularity_violation",
-     "function",
-     205,
-     239,
-     "def _granularity_violation(root: Path, candidate, files: list[str]) -> str | None"
-    ],
-    [
-     "ab_gate",
-     "function",
-     242,
-     298,
-     "def ab_gate(root: Path, candidate, targets=None, margin: float=IOU_MARGIN, regress_tol: float=0.01, baseline=None) -> dict"
-    ]
-   ]
-  },
-  "megabrain/forge_specialize.py": {
+  "megabrain/forge/specialize.py": {
    "chunks": [
     [
      "module",
@@ -2369,8 +2392,8 @@
      null,
      1,
      100,
-     "megabrain > megabrain/forge_specialize.py > [_dominant_collection, _diagnose]",
-     "2b93708766aef197b1c45b41997db6d266090cc3"
+     "megabrain > megabrain/forge/specialize.py > [_dominant_collection, _diagnose]",
+     "dea00491dbfdf405b8cc9610af058535b5404700"
     ],
     [
      "module",
@@ -2378,8 +2401,8 @@
      null,
      101,
      223,
-     "megabrain > megabrain/forge_specialize.py > [detect_specialization, lit_baseline, gate_strategy, _load]",
-     "3280a8e430985658ffe71b20641abdc2b1d2e471"
+     "megabrain > megabrain/forge/specialize.py > [detect_specialization, lit_baseline, gate_strategy, _load]",
+     "cc0d22efe78d1e62fbfb83c51c4c4ab84beb61fa"
     ],
     [
      "function",
@@ -2387,11 +2410,11 @@
      null,
      224,
      248,
-     "megabrain > megabrain/forge_specialize.py > def render_report(report: dict) -> str",
+     "megabrain > megabrain/forge/specialize.py > def render_report(report: dict) -> str",
      "1eb78d489d37fa31912bb05f18326deee0794594"
     ]
    ],
-   "skeleton_sha": "933590aeaa92ebcf42277a417c79ef8b4318e463",
+   "skeleton_sha": "75462ce53da4ce2499773a66c5f2104cf2f14cb6",
    "symbols": [
     [
      "log",
@@ -2519,7 +2542,7 @@
      23,
      120,
      "megabrain > megabrain/frontends/cli.py > def main(argv=None)",
-     "a16c4299d55f2897296a4ed00e2b95b5d0d9552a"
+     "7e590189fb9a0b9b7cf05d9086e7df5ba97826ac"
     ],
     [
      "block",
@@ -2537,7 +2560,7 @@
      154,
      286,
      "megabrain > megabrain/frontends/cli.py > def _dispatch(a, raw: list[Path], root: Path) -> None",
-     "c098eda276756d1548fb09ab81e7543c20545e66"
+     "5844ea830d58d4b77bc830a6c33fc4ba69829c44"
     ],
     [
      "block",
@@ -2658,7 +2681,7 @@
      1,
      34,
      "megabrain > megabrain/frontends/mcp.py (module level)",
-     "0d12784588b404c30fa722b145e2bbf0057e1238"
+     "3df76afe1caf3835a1d41af80711deb0d9afb2e8"
     ],
     [
      "block",
@@ -2676,7 +2699,7 @@
      134,
      198,
      "megabrain > megabrain/frontends/mcp.py (module level)",
-     "3867594f3da9fc52424244daaea4b2eea4b7735a"
+     "2c68c5ecf3d9e9b00e867cd02c5f69a6a6f42d8f"
     ],
     [
      "module",
@@ -2685,7 +2708,7 @@
      199,
      302,
      "megabrain > megabrain/frontends/mcp.py > [_scope, _scope_root, call_tool]",
-     "c86ef4bdd06663c467819890dd0a3441a70a4515"
+     "311ab129dea5baab5c0383b79cdca7eb3ddda9c9"
     ],
     [
      "function",

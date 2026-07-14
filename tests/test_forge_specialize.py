@@ -4,8 +4,8 @@ strategy. Offline via conftest's FakeEmbedder (token-hash → deterministic)."""
 
 import pytest
 
-from megabrain.forge_eval import ab_gate, changed_files, probe_spans
-from megabrain.forge_specialize import detect_specialization, gate_strategy
+from megabrain.forge.ab_gate import ab_gate, changed_files, probe_spans
+from megabrain.forge.specialize import detect_specialization, gate_strategy
 from megabrain.indexing import strategies as strat_mod
 
 # A data-table module: >120 lines, one dict dominating the file. Entry values
