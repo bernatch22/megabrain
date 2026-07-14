@@ -1373,16 +1373,16 @@
      "LangSpec, _ts_grammar, _ruby_grammar, _go_grammar, _rust_grammar, _php_grammar",
      null,
      1,
-     132,
+     133,
      "megabrain > megabrain/chunkers/treesitter.py > [LangSpec, _ts_grammar, _ruby_grammar, _go_grammar, _rust_grammar, _php_grammar]",
-     "961d6dbb82c3c78c53de76e799128f39db41074c"
+     "c204eb39b2457198e37f7cdc8742a3b2a1a4f41a"
     ],
     [
      "module",
      "parser_for, first_line_signature, TreeChunkerOps",
      null,
-     133,
-     229,
+     134,
+     230,
      "megabrain > megabrain/chunkers/treesitter.py > [parser_for, first_line_signature, TreeChunkerOps]",
      "3d10e6f2a479ce90d59c7aace4259c18457fb031"
     ],
@@ -1390,8 +1390,8 @@
      "method",
      "TreeSitterChunker.__init__, TreeSitterChunker.name_of, TreeSitterChunker._unwrap, TreeSitterChunker.chunk_file, TreeSitterChunker.segment, TreeSitterChunker._usize, TreeSitterChunker._merge, TreeSitterChunker._describe",
      null,
-     230,
-     361,
+     231,
+     362,
      "megabrain > megabrain/chunkers/treesitter.py > class TreeSitterChunker > [TreeSitterChunker.__init__, TreeSitterChunker.name_of, TreeSitterChunker._unwrap, TreeSitterChunker.chunk_file, TreeSitterChunker.segment, TreeSitterChunker._usize, TreeSitterChunker._merge, TreeSitterChunker._describe]",
      "dff8b9a9d2563cd25e1a09663f39745300e6dcd4"
     ],
@@ -1399,8 +1399,8 @@
      "method",
      "TreeSitterChunker.split_unit, TreeSitterChunker._pack, TreeSitterChunker.lines_fallback, TreeSitterChunker._assign_symbol, TreeSitterChunker.symbols_of, TreeSitterChunker._skeleton",
      null,
-     362,
-     461,
+     363,
+     462,
      "megabrain > megabrain/chunkers/treesitter.py > class TreeSitterChunker > [TreeSitterChunker.split_unit, TreeSitterChunker._pack, TreeSitterChunker.lines_fallback, TreeSitterChunker._assign_symbol, TreeSitterChunker.symbols_of, TreeSitterChunker._skeleton]",
      "fddd96f86e37c48cb34ddeccaaaa8754857f7bad"
     ],
@@ -1408,348 +1408,348 @@
      "class",
      "TsChunker",
      null,
-     462,
-     468,
+     463,
+     470,
      "megabrain > megabrain/chunkers/treesitter.py > class TsChunker(TreeSitterChunker)",
-     "8d7d58a119177df50e931e84db7ffadbeabdd5d2"
+     "98677fa4c2238e7b5fbe825c6bfa13266859d3b1"
     ]
    ],
-   "skeleton_sha": "125ec058dd167845c41e7784ceb5ae5941702164",
+   "skeleton_sha": "687ce3d2a593fb48e4a29e759b39f5d9919b747d",
    "symbols": [
     [
      "LangSpec",
      "class",
-     32,
-     46,
+     33,
+     47,
      "class LangSpec"
     ],
     [
      "LangSpec.name",
      "class_attr",
-     35,
-     35,
+     36,
+     36,
      "name: str"
     ],
     [
      "LangSpec.grammar",
      "class_attr",
-     36,
-     36,
+     37,
+     37,
      "grammar: Callable[[str], object]"
     ],
     [
      "LangSpec.def_types",
      "class_attr",
-     37,
-     37,
+     38,
+     38,
      "def_types: dict[str, str]"
     ],
     [
      "LangSpec.container_types",
      "class_attr",
-     38,
-     38,
+     39,
+     39,
      "container_types: frozenset[str] = frozenset()"
     ],
     [
      "LangSpec.name_field",
      "class_attr",
-     39,
-     39,
+     40,
+     40,
      "name_field: str = 'name'"
     ],
     [
      "LangSpec.extra_name_fields",
      "class_attr",
-     40,
-     40,
+     41,
+     41,
      "extra_name_fields: tuple[str, ...] = ()"
     ],
     [
      "LangSpec.name_via",
      "class_attr",
-     42,
-     42,
+     43,
+     43,
      "name_via: dict[str, tuple[str, str]] = field(default_factory=dict)"
     ],
     [
      "LangSpec.body_field",
      "class_attr",
-     44,
-     44,
+     45,
+     45,
      "body_field: str = 'body'"
     ],
     [
      "LangSpec.unwrap_exports",
      "class_attr",
-     45,
-     45,
+     46,
+     46,
      "unwrap_exports: bool = False"
     ],
     [
      "LangSpec.assign_defs",
      "class_attr",
-     46,
-     46,
+     47,
+     47,
      "assign_defs: bool = False"
     ],
     [
      "_ts_grammar",
      "function",
-     51,
-     53,
+     52,
+     54,
      "def _ts_grammar(ext: str)"
     ],
     [
      "_ruby_grammar",
      "function",
-     56,
-     58,
+     57,
+     59,
      "def _ruby_grammar(ext: str)"
     ],
     [
      "_go_grammar",
      "function",
-     61,
-     63,
+     62,
+     64,
      "def _go_grammar(ext: str)"
     ],
     [
      "_rust_grammar",
      "function",
-     66,
-     68,
+     67,
+     69,
      "def _rust_grammar(ext: str)"
     ],
     [
      "_php_grammar",
      "function",
-     71,
-     73,
+     72,
+     74,
      "def _php_grammar(ext: str)"
     ],
     [
      "TS_SPEC",
      "constant",
-     76,
-     98,
+     77,
+     99,
      "TS_SPEC = LangSpec(name='ts', grammar=_ts_grammar, def_types={'function_declaration': 'function', 'generator_function_de"
     ],
     [
      "RUBY_SPEC",
      "constant",
-     100,
-     115,
+     101,
+     116,
      "RUBY_SPEC = LangSpec(name='ruby', grammar=_ruby_grammar, def_types={'method': 'method', 'singleton_method': 'method', 'c"
     ],
     [
      "GO_SPEC",
      "constant",
-     117,
-     132,
+     118,
+     133,
      "GO_SPEC = LangSpec(name='go', grammar=_go_grammar, def_types={'function_declaration': 'function', 'method_declaration': "
     ],
     [
      "RUST_SPEC",
      "constant",
-     134,
-     156,
+     135,
+     157,
      "RUST_SPEC = LangSpec(name='rust', grammar=_rust_grammar, def_types={'function_item': 'function', 'function_signature_ite"
     ],
     [
      "PHP_SPEC",
      "constant",
-     158,
-     176,
+     159,
+     177,
      "PHP_SPEC = LangSpec(name='php', grammar=_php_grammar, def_types={'function_definition': 'function', 'method_declaration'"
     ],
     [
      "_parsers",
      "constant",
-     179,
-     179,
+     180,
+     180,
      "_parsers: dict[tuple[str, str], Parser] = {}"
     ],
     [
      "parser_for",
      "function",
-     182,
-     186,
+     183,
+     187,
      "def parser_for(spec: LangSpec, ext: str) -> Parser"
     ],
     [
      "first_line_signature",
      "function",
-     189,
-     192,
+     190,
+     193,
      "def first_line_signature(node, source: bytes) -> str"
     ],
     [
      "TreeChunkerOps",
      "class",
-     198,
-     229,
+     199,
+     230,
      "class TreeChunkerOps(Protocol)"
     ],
     [
      "TreeChunkerOps.spec",
      "class_attr",
-     209,
-     209,
+     210,
+     210,
      "spec: LangSpec"
     ],
     [
      "TreeChunkerOps.segment",
      "method",
-     211,
-     213,
+     212,
+     214,
      "def segment(self, nodes, region_start: int, region_end: int)"
     ],
     [
      "TreeChunkerOps.split_unit",
      "method",
-     215,
-     217,
+     216,
+     218,
      "def split_unit(self, u, lines, relpath, crumb, src)"
     ],
     [
      "TreeChunkerOps.symbols_of",
      "method",
-     219,
-     221,
+     220,
+     222,
      "def symbols_of(self, relpath, root, src) -> list"
     ],
     [
      "TreeChunkerOps.lines_fallback",
      "method",
-     223,
-     225,
+     224,
+     226,
      "def lines_fallback(self, relpath, lines, crumb, start=1, end=None)"
     ],
     [
      "TreeChunkerOps.name_of",
      "method",
-     227,
-     229,
+     228,
+     230,
      "def name_of(self, node) -> str | None"
     ],
     [
      "TreeSitterChunker",
      "class",
-     235,
-     461,
+     236,
+     462,
      "class TreeSitterChunker"
     ],
     [
      "TreeSitterChunker.__init__",
      "method",
-     236,
-     239,
+     237,
+     240,
      "def __init__(self, spec: LangSpec, budget: int=DEFAULT_BUDGET, repo: str='')"
     ],
     [
      "TreeSitterChunker.name_of",
      "method",
-     243,
-     263,
+     244,
+     264,
      "def name_of(self, node) -> str | None"
     ],
     [
      "TreeSitterChunker._unwrap",
      "method",
-     265,
-     276,
+     266,
+     277,
      "def _unwrap(self, node)"
     ],
     [
      "TreeSitterChunker.chunk_file",
      "method",
-     280,
-     302,
+     281,
+     303,
      "def chunk_file(self, relpath: str, source: str) -> FileResult"
     ],
     [
      "TreeSitterChunker.segment",
      "method",
-     306,
-     321,
+     307,
+     322,
      "def segment(self, nodes, region_start: int, region_end: int)"
     ],
     [
      "TreeSitterChunker._usize",
      "method",
-     323,
      324,
+     325,
      "def _usize(self, lines, s, e)"
     ],
     [
      "TreeSitterChunker._merge",
      "method",
-     326,
-     337,
+     327,
+     338,
      "def _merge(self, units, lines, relpath, crumb, parent, src)"
     ],
     [
      "TreeSitterChunker._describe",
      "method",
-     339,
-     361,
+     340,
+     362,
      "def _describe(self, buf, crumb, parent, src)"
     ],
     [
      "TreeSitterChunker.split_unit",
      "method",
-     363,
-     384,
+     364,
+     385,
      "def split_unit(self, u, lines, relpath, crumb, src)"
     ],
     [
      "TreeSitterChunker._pack",
      "method",
-     386,
-     390,
+     387,
+     391,
      "def _pack(self, units, lines)"
     ],
     [
      "TreeSitterChunker.lines_fallback",
      "method",
-     392,
-     401,
+     393,
+     402,
      "def lines_fallback(self, relpath, lines, crumb, start=1, end=None)"
     ],
     [
      "TreeSitterChunker._assign_symbol",
      "method",
-     405,
-     427,
+     406,
+     428,
      "def _assign_symbol(self, node)"
     ],
     [
      "TreeSitterChunker.symbols_of",
      "method",
-     429,
-     454,
+     430,
+     455,
      "def symbols_of(self, relpath, root, src) -> list[Symbol]"
     ],
     [
      "TreeSitterChunker._skeleton",
      "method",
-     456,
-     461,
+     457,
+     462,
      "def _skeleton(self, relpath, root, src) -> str"
     ],
     [
      "TsChunker",
      "class",
-     464,
-     468,
+     465,
+     470,
      "class TsChunker(TreeSitterChunker)"
     ],
     [
      "TsChunker.__init__",
      "method",
-     467,
-     468,
+     469,
+     470,
      "def __init__(self, budget: int=DEFAULT_BUDGET, repo: str='')"
     ]
    ]

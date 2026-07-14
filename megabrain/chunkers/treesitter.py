@@ -12,8 +12,9 @@ fields, export-unwrapping). Adding a language = one `LangSpec` entry + the
   Ruby           -> RUBY_SPEC
   Go             -> GO_SPEC
 
-`TsChunker` is kept as a thin alias (TS_SPEC) for back-compat with existing
-imports and the gate tests — its output is byte-identical to before the refactor.
+`TsChunker` is the TypeScript/JS-configured constructor (TreeSitterChunker +
+TS_SPEC) — the one the TS/JS strategy instantiates; the other languages build
+`TreeSitterChunker(SPEC)` directly.
 """
 
 from __future__ import annotations
@@ -462,7 +463,8 @@ class TreeSitterChunker:
 
 
 class TsChunker(TreeSitterChunker):
-    """TypeScript/TSX/JS/JSX chunker (back-compat alias over TS_SPEC)."""
+    """TypeScript/TSX/JS/JSX chunker — TreeSitterChunker preconfigured with
+    TS_SPEC (the TS grammar is a JS superset). The TS/JS strategy uses this."""
 
     def __init__(self, budget: int = DEFAULT_BUDGET, repo: str = ""):
         super().__init__(TS_SPEC, budget=budget, repo=repo)
