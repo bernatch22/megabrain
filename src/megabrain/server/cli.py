@@ -4,7 +4,8 @@
   megabrain query  [path] "task" [--compact]   one-shot code map
   megabrain ask    [path] "question"           explained walkthrough
   megabrain get    [path] <file> [--symbol N]  pull code for navigation
-  megabrain serve-api [path] --port N          long-running JSON API (warm state)
+  megabrain serve    [path] --port N           studio web UI + JSON API (warm state)
+  megabrain serve-api [path] --port N          JSON API only, no UI (warm state)
   megabrain stats  [path]                      index stats
 
 PATH-SCOPE: for query/ask/get, `path` may be the repo root OR a sub-path inside
@@ -95,17 +96,31 @@ def main(argv=None):
     p.add_argument("file")
     p.add_argument("query")
 
-    p = sub.add_parser("serve-api")
-    p.add_argument("path", nargs="?", default=".")
-    p.add_argument("--port", type=int, default=2134)
-    p.add_argument("--host", default="127.0.0.1")
-    p.add_argument("--cors", help="allowed browser origin, e.g. https://docs.example.com")
-    p.add_argument("--no-llm", action="store_true", help="disable the /ask endpoint")
-    p.add_argument("--token", default=os.environ.get("MEGABRAIN_API_TOKEN"),
-                   help="require `Authorization: Bearer <token>` on every request except "
-                        "/health (default: $MEGABRAIN_API_TOKEN; recommended off-localhost)")
-    p.add_argument("--no-ui", action="store_true",
-                   help="do not serve the studio web UI at / (JSON API only)")
+    # serve-api = JSON API ONLY; serve = the same API + the studio web UI at /.
+    # Same options either way — the only difference is whether the UI is mounted.
+    def _add_serve_args(p):
+        p.add_argument("path", nargs="?", default=".")
+        p.add_argument("--port", type=int, default=2134)
+        p.add_argument("--host", default="127.0.0.1")
+        p.add_argument("--cors", help="allowed browser origin, e.g. https://docs.example.com")
+        p.add_argument("--no-llm", action="store_true", help="disable the /ask endpoint")
+        p.add_argument("--token", default=os.environ.get("MEGABRAIN_API_TOKEN"),
+                       help="require `Authorization: Bearer <token>` on every request except "
+                            "/health (default: $MEGABRAIN_API_TOKEN; recommended off-localhost)")
+    _add_serve_args(sub.add_parser("serve-api",
+                                   help="long-running JSON API only (warm state, no UI)"))
+    _add_serve_args(sub.add_parser("serve",
+                                   help="the studio web UI at / + the JSON API (warm state)"))
+
+    p = sub.add_parser("install",
+                       help="register the MCP server with your AI coding assistants "
+                            "(Claude Code, Codex, Antigravity, Cursor, Windsurf, "
+                            "Gemini CLI) — detected automatically")
+    p.add_argument("--platform", help="only this one (default: every platform detected)")
+    p.add_argument("--list", action="store_true", dest="list_only",
+                   help="show what's detected and where, change nothing")
+    p.add_argument("--remove", action="store_true",
+                   help="unregister megabrain instead of registering it")
 
     p = sub.add_parser("stats")
     p.add_argument("path", nargs="?", default=".")
@@ -148,12 +163,14 @@ def main(argv=None):
     p.add_argument("path", nargs="?", default=".")
 
     a = ap.parse_args(argv)
-    # index/serve-api/stats take repo roots verbatim (index may have no db yet).
+    # index/serve-api/serve/stats take repo roots verbatim (index may have no db yet).
     # query/ask/get support PATH-SCOPE: each comma-separated token may be a repo
     # root OR a sub-path inside one — resolve_root() finds the .megabrain root and
     # the sub-path used to scope retrieval to files under it.
-    raw = [Path(p).resolve() for p in a.path.split(",")]
-    root = raw[0]
+    # `install` is machine-level (it configures assistants), not repo-level — it
+    # is the one verb that takes no path.
+    raw = [Path(p).resolve() for p in a.path.split(",")] if hasattr(a, "path") else []
+    root = raw[0] if raw else None
     if len(raw) > 1 and a.cmd not in ("index", "query"):
         ap.error(f"`{a.cmd}` takes a single path — comma-separated multi-path "
                  f"applies to `index` and `query` only")
@@ -276,10 +293,21 @@ def _dispatch(a, raw: list[Path], root: Path) -> None:
         r0, sp = resolve_root(root)
         print(_json.dumps(app.chunks(r0, sp or None, a.file, a.query,
                                      path_filter=sp or None), indent=1))
-    elif a.cmd == "serve-api":
+    elif a.cmd == "install":
+        from .install import apply, detect, render
+        if a.list_only:
+            print("Detected AI coding assistants on this machine:")
+            for r in detect():
+                state = ("registered" if r["registered"] else
+                         "not registered" if r["installed"] else "not installed")
+                print(f"  {'✓' if r['installed'] else '·'} {r['label']:<12} "
+                      f"{state:<16} {r['path']}")
+            return
+        print(render(apply(platform=a.platform, remove=a.remove), remove=a.remove))
+    elif a.cmd in ("serve-api", "serve"):
         from .http import serve
         serve(root, port=a.port, host=a.host, cors=a.cors, enable_llm=not a.no_llm,
-              token=a.token, serve_ui=not a.no_ui)
+              token=a.token, serve_ui=(a.cmd == "serve"))
     elif a.cmd == "forge":
         import json as _json
         if a.specialize:

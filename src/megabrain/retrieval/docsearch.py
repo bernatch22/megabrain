@@ -27,7 +27,7 @@ def load_groups(root: Path) -> tuple[tuple[str, str], ...]:
     raw = None
     cfg = root / ".megabrain" / "docsearch.json"
     if cfg.exists():
-        raw = cfg.read_text(errors="replace")
+        raw = cfg.read_text(encoding="utf-8", errors="replace")
     elif os.environ.get("MEGABRAIN_DOCSEARCH_GROUPS"):
         raw = os.environ["MEGABRAIN_DOCSEARCH_GROUPS"]
     if not raw:

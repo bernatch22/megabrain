@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.9.1 — Windows: stop silently corrupting non-ASCII code · `megabrain install`
+
+- **Fix (Windows, silent data corruption): every file read is now explicitly
+  UTF-8.** The engine read source with `read_text(errors="replace")` and no
+  `encoding=`, so it decoded with the *platform default* — cp1252 on Windows.
+  It never raised (`errors="replace"` swallowed it), it just indexed mojibake:
+  a file containing `# año` was chunked, embedded and returned as `# aÃ±o`.
+  Every non-ASCII comment, string, or identifier (accents, CJK, emoji, em-dashes)
+  was silently corrupted for Windows users, in the index AND in what `ask`/`query`
+  handed back. All 27 read/write sites across the indexer, retrieval, forge,
+  flows, strategies and the servers now pin `encoding="utf-8"` (keeping
+  `errors="replace"` so a genuinely broken file still can't crash a run).
+  Windows CI was red on this since 0.8.0 — it's green again.
+- **`megabrain install`** registers the MCP server with every AI coding assistant
+
+- **`megabrain install`** registers the MCP server with every AI coding assistant
+  detected on the machine — **Claude Code, Codex, Antigravity, Cursor, Windsurf,
+  Gemini CLI**. MCP is portable, so the same stdio server runs in all of them;
+  only the config file (path/format/key) differs, and that table now lives in
+  `server/install.py`. `--list` previews, `--platform` narrows, `--remove`
+  unregisters. It writes **only** the `megabrain` key (other servers survive) and
+  pins the entry to `sys.executable`, so re-running repairs a config that drifted
+  to a stale checkout/PYTHONPATH. Codex's TOML gets a targeted section
+  replace/append so comments and other servers survive (no TOML writer in the
+  stdlib, and megabrain still takes no dependencies).
+- **`megabrain serve` is the studio** (web UI at `/` **+** the JSON API);
+  **`megabrain serve-api` is now the JSON API ONLY**, no UI mounted. Previously
+  `serve-api` served both and `--no-ui` opted out — that conflated two concerns
+  (the name says "api", so it shouldn't ship a UI). The `--no-ui` flag is gone;
+  pick the command that matches what you want. Both share every option
+  (`--port/--host/--cors/--no-llm/--token`) and drive the same `serve()`.
+
 ## 0.9.0 — MCP surface: lean, and `megabrain_query` is always signal-only
 
 **BREAKING (MCP tool contract):**

@@ -120,7 +120,7 @@ def cache_flow(root: Path, question: str, answer: str, cited_files: list[str],
                 p = Path(root) / f
                 if p.is_file():
                     files[f] = hashlib.sha256(
-                        p.read_text(errors="replace").encode()).hexdigest()
+                        p.read_text(encoding="utf-8", errors="replace").encode()).hexdigest()
             if not files:
                 return None
             # two lanes, one batch call: attach vector (question+prose, semantic
@@ -179,7 +179,7 @@ def serve_verbatim(root, flows: list[dict]) -> dict | None:
             continue
         root = Path(root)
         ok = all((root / f).is_file() and hashlib.sha256(
-                 (root / f).read_text(errors="replace").encode()).hexdigest() == sha
+                 (root / f).read_text(encoding="utf-8", errors="replace").encode()).hexdigest() == sha
                  for f, sha in top["sha"].items())
         if ok:
             return top

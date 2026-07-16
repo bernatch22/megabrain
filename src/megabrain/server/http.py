@@ -1,16 +1,18 @@
-"""serve.py — long-running JSON API over indexed repos + the studio web UI.
+"""serve.py — long-running JSON API over indexed repos (+ the studio web UI).
 
-    megabrain serve-api ~/repo --port 2134   # then open http://localhost:2134/
+    megabrain serve     ~/repo --port 2134   # UI + API; open http://localhost:2134/
+    megabrain serve-api ~/repo --port 2134   # JSON API only, no UI
 
-One repo is pinned at boot (warm state — the embedding matrix loads once, not
-per request), but the server holds a REGISTRY of repos so the studio UI can
-switch between several and add new ones at runtime; every route accepts an
-optional `?repo=`/`"repo"` (absent = the boot repo). Pure stdlib
-`http.server` — no framework — matching the engine's no-dependency stance.
+Both drive serve() below; `serve` mounts the studio (serve_ui=True), `serve-api`
+does not. One repo is pinned at boot (warm state — the embedding matrix loads
+once, not per request), but the server holds a REGISTRY of repos so the studio
+can switch between several and add new ones at runtime; every route accepts an
+optional `?repo=`/`"repo"` (absent = the boot repo). Pure stdlib `http.server` —
+no framework — matching the engine's no-dependency stance.
 
 Endpoints:
-    GET  /                             -> studio UI (index.html; --no-ui to skip)
-    GET  /ui/*                         -> UI static assets
+    GET  /                             -> studio UI (index.html; `serve` only)
+    GET  /ui/*                         -> UI static assets (`serve` only)
     GET  /health        ?repo=         -> {ok, repo, files, chunks, uptime}
     GET  /repos                        -> [{name, root, files, chunks, active}]
     GET  /providers                    -> what can narrate here (settings panel)
@@ -488,13 +490,13 @@ def _merge_ignore(root: Path, ignore: str) -> None:
     """Merge the user-confirmed ignore lines into <root>/.megabrainignore,
     APPENDING only lines not already present (never clobber existing content)."""
     f = root / ".megabrainignore"
-    existing = f.read_text(errors="replace").splitlines() if f.exists() else []
+    existing = f.read_text(encoding="utf-8", errors="replace").splitlines() if f.exists() else []
     have = {ln.strip() for ln in existing}
     add = [ln for ln in ignore.splitlines() if ln.strip() and ln.strip() not in have]
     if not add:
         return
     out = existing + ([""] if existing and existing[-1].strip() else []) + add
-    f.write_text("\n".join(out) + "\n")
+    f.write_text("\n".join(out) + "\n", encoding="utf-8")
 
 
 def serve(root, port: int = 2134, host: str = "127.0.0.1",
@@ -524,7 +526,8 @@ def serve(root, port: int = 2134, host: str = "127.0.0.1",
                                 _make_handler(reg, cors, enable_llm, token, serve_ui))
     httpd.daemon_threads = True
     ui = "on" if (serve_ui and (UI_DIR / "index.html").is_file()) else "off"
-    print(f"megabrain serve-api → http://{host}:{port}  repo={boot.root.name} "
+    verb = "serve" if serve_ui else "serve-api"
+    print(f"megabrain {verb} → http://{host}:{port}  repo={boot.root.name} "
           f"chunks={chunks} cors={cors or 'off'} llm={'on' if enable_llm else 'off'} "
           f"auth={'bearer' if token else 'off'} ui={ui}")
     try:

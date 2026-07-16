@@ -92,7 +92,8 @@ def _resolve(name: str, required: bool = True) -> str | None:
         return v
     zshrc = Path.home() / ".zshrc"
     if zshrc.exists():
-        m = re.search(rf'^export {name}=["\']?([^"\'\s#]+)', zshrc.read_text(), re.M)
+        m = re.search(rf'^export {name}=["\']?([^"\'\s#]+)',
+                      zshrc.read_text(encoding="utf-8", errors="replace"), re.M)
         if m:
             return m.group(1)
     if required:

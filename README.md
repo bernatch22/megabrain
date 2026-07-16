@@ -23,8 +23,9 @@ Point megabrain at a repo and ask **"how does auth work"** in plain English. It 
 LLM narrates a walkthrough with the **real code spliced in from disk**. Nothing is
 invented: every line shown is copied verbatim.
 
-Use it from the terminal, as an **MCP server inside Claude Code**, as a Python library,
-or as a full **local web app**.
+Use it from the terminal, as an **MCP server inside Claude Code, Codex, Antigravity,
+Cursor, Windsurf or Gemini CLI** (`megabrain install` wires up whichever you have), as a
+Python library, or as a full **local web app**.
 
 ## 🖥️ megabrain studio — the whole engine, in your browser
 
@@ -32,7 +33,7 @@ One command turns megabrain into a local studio — nothing canned, every pixel 
 the live engine:
 
 ```bash
-megabrain serve-api ~/repo        #  → open http://localhost:2134
+megabrain serve ~/repo        #  → open http://localhost:2134
 ```
 
 - **Search** — every related file ranked in ~200 ms; click one for a **chunk heatmap**
@@ -51,7 +52,8 @@ megabrain serve-api ~/repo        #  → open http://localhost:2134
   (cloud pplx or a local, code-tuned jina) behind the same bar — the query embedding
   switches to match, so search keeps working.
 
-Keyboard-driven, dark/light, zero build step, no CDN. `--no-ui` serves the JSON API only.
+Keyboard-driven, dark/light, zero build step, no CDN. Want the JSON API without the UI?
+`megabrain serve-api ~/repo` mounts the exact same endpoints, no studio.
 
 ## Quickstart — the easy path, no API keys
 
@@ -77,13 +79,29 @@ on your plan). Bump it with a Claude alias — `export MEGABRAIN_ASK_MODEL=sonne
 `opus`). ⚠️ On the `claude` provider this must be a **Claude** model (`haiku`/`sonnet`/
 `opus`/a `claude-*` id), not an OpenRouter slug like `google/…`.
 
-## Inside Claude Code
+## Inside your AI coding assistant
 
-Register it as an MCP server and research any indexed repo without leaving Claude Code:
+megabrain speaks **MCP**, and MCP is portable — the same stdio server runs in every
+assistant. One command wires up whichever ones you have installed:
 
 ```bash
-claude mcp add megabrain -- python3 -m megabrain.mcp_server
+megabrain install            # detects + registers; --list to preview, --remove to undo
 ```
+
+```text
+Registered megabrain in 3 platform(s):
+  ✓ Claude Code  registered   ~/.claude.json
+  ✓ Codex        registered   ~/.codex/config.toml
+  ✓ Antigravity  registered   ~/.gemini/antigravity/mcp_config.json
+  · Cursor       skipped (not installed)
+```
+
+Supported: **Claude Code · Codex · Antigravity · Cursor · Windsurf · Gemini CLI**
+(`--platform <name>` for just one). It only ever writes the `megabrain` key — your other
+MCP servers are left alone — and it pins the entry to the interpreter megabrain is
+installed in, so re-running it repairs a config that drifted to an old checkout. Prefer
+to do it by hand? `claude mcp add megabrain -- python3 -m megabrain.mcp_server`, or copy
+the equivalent entry into your assistant's MCP config.
 
 Then use `megabrain_ask` / `megabrain_query` instead of grep + Read chains — one call
 replaces minutes of file-crawling. Five tools, deliberately lean — megabrain exposes
@@ -96,6 +114,7 @@ chunks worth reading, with the code, noise dropped), `megabrain_index`, plus `me
 ## Commands
 
 ```bash
+megabrain install                                # register the MCP server with your assistants
 megabrain index  ~/repo                          # build / update the index
 megabrain scan   ~/repo                          # census: what WOULD index + what's skipped & why
 megabrain ask    ~/repo "how does X work"        # narrated walkthrough + real code
@@ -103,14 +122,16 @@ megabrain query  ~/repo "retry logic"            # raw code map, no LLM (~200 ms
 megabrain query  ~/repo "retry logic" --prune    # flat signal-only chunks, no LLM (drops the noise)
 megabrain get    ~/repo src/x.py --symbol Foo    # one file or symbol
 megabrain forge  ~/repo                          # teach it your repo's file types (below)
-megabrain serve-api ~/repo                       # HTTP API + the studio web UI at /
+megabrain serve  ~/repo                          # studio web UI at / + the JSON API
+megabrain serve-api ~/repo                       # the JSON API only, no UI
 ```
 
 Scope to a sub-folder (`~/repo/src/auth`), search several repos at once
 (`~/a,~/b`), and the index auto-refreshes when files change on disk.
 
-`megabrain serve-api ~/repo` also serves **[megabrain studio](#️-megabrain-studio--the-whole-engine-in-your-browser)**
-(the web UI, above) at `/`. And `megabrain scan` is the studio's add-repo census on the
+`megabrain serve ~/repo` serves **[megabrain studio](#️-megabrain-studio--the-whole-engine-in-your-browser)**
+(the web UI, above) at `/`, and `megabrain serve-api ~/repo` exposes the same JSON API
+with no UI mounted. And `megabrain scan` is the studio's add-repo census on the
 CLI — what *would* index and everything skipped with a reason (`.gitignore` · vendored ·
 generated · too-big): `--write` applies the proposed `.megabrainignore`, and
 `megabrain index --scan` indexes with those smart filters on (a plain `index` stays

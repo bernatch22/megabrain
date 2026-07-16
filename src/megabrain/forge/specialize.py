@@ -117,7 +117,7 @@ def detect_specialization(root: Path, exclude=()) -> list[dict]:
         if strat is None:
             continue
         try:
-            src = p.read_text(errors="replace")
+            src = p.read_text(encoding="utf-8", errors="replace")
         except OSError:
             continue
         diag = _diagnose(rel, src, strat)

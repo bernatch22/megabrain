@@ -227,7 +227,7 @@ def validate_strategy(root: Path, code: str, ext: str,
     errs: list[str] = []
     stats = {"files": 0, "chunks": 0, "symbols": 0}
     for rel in paths:
-        src = (root / rel).read_text(errors="replace")
+        src = (root / rel).read_text(encoding="utf-8", errors="replace")
         try:
             r = strat.chunk_file(rel, src)
         except Exception as e:                              # noqa: BLE001
@@ -256,7 +256,7 @@ def install(root: Path, ext: str, code: str) -> Path:
     root = Path(root).resolve()
     dst = root / STRATEGY_DIR / f"{ext.lstrip('.')}.py"
     dst.parent.mkdir(parents=True, exist_ok=True)
-    dst.write_text(code)
+    dst.write_text(code, encoding="utf-8")
     trust_file(dst)
     return dst
 
@@ -283,7 +283,7 @@ def forge(root, ext: str | None = None, dry_run: bool = False,
     mdl = model or forge_model()
 
     for c in cands:
-        samples = [(rel, (root / rel).read_text(errors="replace"))
+        samples = [(rel, (root / rel).read_text(encoding="utf-8", errors="replace"))
                    for rel in c["samples"]]
         feedback, entry = "", {"ext": c["ext"], "files": c["files"],
                                "attempts": 0, "ok": False}

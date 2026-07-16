@@ -116,7 +116,7 @@ class GitignoreMatcher:
             base = gi.parent.relative_to(root).as_posix()
             base = "" if base == "." else base
             try:
-                text = gi.read_text(errors="replace")
+                text = gi.read_text(encoding="utf-8", errors="replace")
             except OSError:
                 continue
             for raw in text.splitlines():

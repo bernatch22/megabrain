@@ -238,7 +238,7 @@ def _sha256(path: Path) -> str:
 
 def _read_trust() -> dict:
     try:
-        return json.loads(TRUST_STORE.read_text())
+        return json.loads(TRUST_STORE.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return {}
 
@@ -248,7 +248,7 @@ def trust_file(path: Path) -> None:
     trust = _read_trust()
     trust[Path(path).resolve().as_posix()] = _sha256(Path(path))
     TRUST_STORE.parent.mkdir(parents=True, exist_ok=True)
-    TRUST_STORE.write_text(json.dumps(trust, indent=1, sort_keys=True))
+    TRUST_STORE.write_text(json.dumps(trust, indent=1, sort_keys=True), encoding="utf-8")
 
 
 def is_trusted(path: Path) -> bool:
@@ -294,7 +294,8 @@ def load_repo_strategies(root: Path, repo: str = "") -> list:
                         f, Path(root))
             continue
         try:
-            out.extend(instantiate_strategies(f.read_text(), repo, f.as_posix()))
+            out.extend(instantiate_strategies(f.read_text(encoding="utf-8"), repo,
+                                              f.as_posix()))
         except Exception:                                   # noqa: BLE001
             log.warning("repo strategy %s failed to load — skipped", f, exc_info=True)
     return out

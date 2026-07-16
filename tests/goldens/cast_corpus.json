@@ -2063,7 +2063,7 @@
      1,
      119,
      "megabrain > megabrain/forge/ab_gate.py > [_py_probes, _generic_probes, probe_spans]",
-     "1bdf656b6ddf0ff38510b21fdb801386c3efaf29"
+     "88ccf7cdd4dbfb8319715b0de6fba41663619695"
     ],
     [
      "module",
@@ -2072,7 +2072,7 @@
      120,
      239,
      "megabrain > megabrain/forge/ab_gate.py > [_measure, changed_files, _index_copy, _granularity_violation]",
-     "325948126f6769a0d663cd04dba502d098c22017"
+     "e02f876fffa001bd5d25e469c6a6d9b3f82190f5"
     ],
     [
      "function",
@@ -2199,7 +2199,7 @@
      209,
      314,
      "megabrain > megabrain/forge/coverage.py > [validate_strategy, install, forge]",
-     "bfb098ded356edea5b1e03a950b9cf400efb524d"
+     "b3566634926d3baf33fd6eaca04ce031efe36a19"
     ],
     [
      "function",
@@ -2338,7 +2338,7 @@
      101,
      223,
      "megabrain > megabrain/forge/specialize.py > [detect_specialization, lit_baseline, gate_strategy, _load]",
-     "cc0d22efe78d1e62fbfb83c51c4c4ab84beb61fa"
+     "de99ea0dc107c5d8ed9228fbc55759d4ba975336"
     ],
     [
      "function",
@@ -2564,7 +2564,7 @@
      1,
      138,
      "megabrain > megabrain/indexing/ignore.py > [_translate, _Rule, GitignoreMatcher]",
-     "26a52d18a56f7abe9d2c5b2fbb5064d4db07ede9"
+     "26c9f8e963103f1ad683db45c4aecf087e7bf20c"
     ],
     [
      "module",
@@ -2717,7 +2717,7 @@
      1,
      124,
      "megabrain > megabrain/indexing/indexer.py > [load_ignore, _split_patterns, _excluded, discover, maybe_reindex]",
-     "9492453e3ddb7d0b64fee69ed6688bfac6d01e53"
+     "e46b18feaff23baf6db779f4389e50d849ec560d"
     ],
     [
      "function",
@@ -2735,7 +2735,7 @@
      146,
      237,
      "megabrain > megabrain/indexing/indexer.py > def _index_into(store: Store, emb: Embedder, root: Path, name: str, *, force, exclude, strategies, prune_flows, t0, scan_filters=False, on_progress=None) -> dict",
-     "b97bfb8ad242e021515f0e696c10a0d9d3f0095f"
+     "7e3a0b398a6ff5587da2f0a7d84c3f7388a711f5"
     ]
    ],
    "skeleton_sha": "7ae8a342b52176099e2b1bf0e1b5364e75de5e2a",
@@ -2837,16 +2837,16 @@
      127,
      251,
      "megabrain > megabrain/indexing/strategies.py > [MarkdownStrategy, PhpStrategy, _grammar_available, build_registry, builtin_strategy_for, strategy_for, all_exts, _sha256, _read_trust, trust_file]",
-     "9e34c930103d1960423efdcaa5ac6c79abcdb037"
+     "2009469c401131c180d913628c014b6aba93cfb7"
     ],
     [
      "module",
      "is_trusted, instantiate_strategies, load_repo_strategies",
      null,
      252,
-     300,
+     301,
      "megabrain > megabrain/indexing/strategies.py > [is_trusted, instantiate_strategies, load_repo_strategies]",
-     "c6ce6d31c7ec393ea7fc738505c777a9536a5fe6"
+     "f86d367cf2aafcff79703c78d3ed4ee4df5d975d"
     ]
    ],
    "skeleton_sha": "cb936fdc8c5597f78570793498208a2a80a4a2b4",
@@ -3177,7 +3177,7 @@
      "load_repo_strategies",
      "function",
      281,
-     300,
+     301,
      "def load_repo_strategies(root: Path, repo: str='') -> list"
     ]
    ]
@@ -3297,16 +3297,16 @@
      "_bad_request, chat_provider, ask_model, _resolve, find_key",
      null,
      1,
-     104,
+     105,
      "megabrain > megabrain/providers/__init__.py > [_bad_request, chat_provider, ask_model, _resolve, find_key]",
-     "4da6754a2232e2df2331f93b897ed2e084bb6660"
+     "a7d6f0f33370d2b1f6bb74fbd4b2d964652b463b"
     ],
     [
      "module",
      "_is_local, _key_for, find_embed_key, find_chat_key, _headers, post_json, chat_text, stream_chat",
      null,
-     105,
-     192,
+     106,
+     193,
      "megabrain > megabrain/providers/__init__.py > [_is_local, _key_for, find_embed_key, find_chat_key, _headers, post_json, chat_text, stream_chat]",
      "61d050fd3e320a07acf012c338ac4a1e7e4b3758"
     ],
@@ -3314,8 +3314,8 @@
      "module",
      "_or_stream_chat, OpenRouterProvider",
      null,
-     193,
-     303,
+     194,
+     304,
      "megabrain > megabrain/providers/__init__.py > [_or_stream_chat, OpenRouterProvider]",
      "708cee4511a3c61edcf2bdcb80b711bd260766ce"
     ],
@@ -3323,8 +3323,8 @@
      "module",
      "ClaudeProvider, _ollama_probe, _active_label, detect, select",
      null,
-     304,
-     409,
+     305,
+     410,
      "megabrain > megabrain/providers/__init__.py > [ClaudeProvider, _ollama_probe, _active_label, detect, select]",
      "b525b952df736ed614ae1972645f2b90c0a7157d"
     ],
@@ -3332,8 +3332,8 @@
      "module",
      "start_ollama, resolve",
      null,
-     410,
-     451,
+     411,
+     452,
      "megabrain > megabrain/providers/__init__.py > [start_ollama, resolve]",
      "4f53dec70f88f1f570ff85f414a10414cad1af3b"
     ]
@@ -3407,252 +3407,252 @@
      "_resolve",
      "function",
      88,
-     100,
+     101,
      "def _resolve(name: str, required: bool=True) -> str | None"
     ],
     [
      "find_key",
      "function",
-     103,
      104,
+     105,
      "def find_key(required: bool=True) -> str | None"
     ],
     [
      "EMBED_BASE_URL",
      "constant",
-     110,
-     110,
+     111,
+     111,
      "EMBED_BASE_URL = os.environ.get('MEGABRAIN_EMBED_BASE_URL', BASE_URL).rstrip('/')"
     ],
     [
      "CHAT_BASE_URL",
      "constant",
-     111,
-     111,
+     112,
+     112,
      "CHAT_BASE_URL = os.environ.get('MEGABRAIN_CHAT_BASE_URL', BASE_URL).rstrip('/')"
     ],
     [
      "_is_local",
      "function",
-     114,
-     117,
+     115,
+     118,
      "def _is_local(url: str) -> bool"
     ],
     [
      "_key_for",
      "function",
-     120,
-     127,
+     121,
+     128,
      "def _key_for(base_url: str, explicit: str | None, required: bool) -> str | None"
     ],
     [
      "find_embed_key",
      "function",
-     130,
-     133,
+     131,
+     134,
      "def find_embed_key(required: bool=True) -> str | None"
     ],
     [
      "find_chat_key",
      "function",
-     136,
-     142,
+     137,
+     143,
      "def find_chat_key(required: bool=True) -> str | None"
     ],
     [
      "_headers",
      "function",
-     145,
-     150,
+     146,
+     151,
      "def _headers(key: str, base_url: str=BASE_URL) -> dict"
     ],
     [
      "post_json",
      "function",
-     153,
-     172,
+     154,
+     173,
      "def post_json(path: str, body: dict, key: str | None=None, retries: int=5, timeout: int=120, base_url: str | None=None) -> dict"
     ],
     [
      "chat_text",
      "function",
-     175,
-     181,
+     176,
+     182,
      "def chat_text(model: str, prompt: str, max_tokens: int, temperature: float=0.0, key: str | None=None, retries: int=5, timeout: int=45) -> str"
     ],
     [
      "stream_chat",
      "function",
-     184,
-     192,
+     185,
+     193,
      "def stream_chat(body: dict, key: str | None=None, retries: int=4, on_delta=None, timeout: int=90, with_tools: bool=False)"
     ],
     [
      "_or_stream_chat",
      "function",
-     195,
-     270,
+     196,
+     271,
      "def _or_stream_chat(body: dict, key: str | None=None, retries: int=4, on_delta=None, timeout: int=90, with_tools: bool=False)"
     ],
     [
      "OpenRouterProvider",
      "class",
-     280,
-     303,
+     281,
+     304,
      "class OpenRouterProvider"
     ],
     [
      "OpenRouterProvider.name",
      "class_attr",
-     284,
-     284,
+     285,
+     285,
      "name = 'openrouter'"
     ],
     [
      "OpenRouterProvider.agent_stream",
      "class_attr",
-     285,
-     285,
+     286,
+     286,
      "agent_stream = None"
     ],
     [
      "OpenRouterProvider.available",
      "method",
-     287,
      288,
+     289,
      "def available(self) -> bool"
     ],
     [
      "OpenRouterProvider.chat_text",
      "method",
-     290,
-     298,
+     291,
+     299,
      "def chat_text(self, model: str, prompt: str, max_tokens: int, temperature: float=0.0, key: str | None=None, retries: int=5, timeout: int=45) -> str"
     ],
     [
      "OpenRouterProvider.stream_chat",
      "method",
-     300,
-     303,
+     301,
+     304,
      "def stream_chat(self, body: dict, key: str | None=None, retries: int=4, on_delta=None, timeout: int=90, with_tools: bool=False)"
     ],
     [
      "ClaudeProvider",
      "class",
-     306,
-     333,
+     307,
+     334,
      "class ClaudeProvider"
     ],
     [
      "ClaudeProvider.name",
      "class_attr",
-     311,
-     311,
+     312,
+     312,
      "name = 'claude'"
     ],
     [
      "ClaudeProvider.available",
      "method",
-     313,
-     315,
+     314,
+     316,
      "def available(self) -> bool"
     ],
     [
      "ClaudeProvider.chat_text",
      "method",
-     317,
-     321,
+     318,
+     322,
      "def chat_text(self, model: str, prompt: str, max_tokens: int, temperature: float=0.0, key: str | None=None, retries: int=5, timeout: int=45) -> str"
     ],
     [
      "ClaudeProvider.stream_chat",
      "method",
-     323,
-     328,
+     324,
+     329,
      "def stream_chat(self, body: dict, key: str | None=None, retries: int=4, on_delta=None, timeout: int=90, with_tools: bool=False)"
     ],
     [
      "ClaudeProvider.agent_stream",
      "method",
-     330,
-     333,
+     331,
+     334,
      "def agent_stream(self)"
     ],
     [
      "_REGISTRY",
      "constant",
-     336,
      337,
+     338,
      "_REGISTRY: dict[str, object] = {'openrouter': OpenRouterProvider(), 'claude': ClaudeProvider()}"
     ],
     [
      "_PRIORITY",
      "constant",
-     338,
-     338,
+     339,
+     339,
      "_PRIORITY = ('claude', 'openrouter')"
     ],
     [
      "OLLAMA_HOST",
      "constant",
-     341,
-     341,
+     342,
+     342,
      "OLLAMA_HOST = os.environ.get('OLLAMA_HOST', 'http://localhost:11434').rstrip('/')"
     ],
     [
      "OLLAMA_OPENAI",
      "constant",
-     342,
-     342,
+     343,
+     343,
      "OLLAMA_OPENAI = OLLAMA_HOST + '/v1'"
     ],
     [
      "_select_lock",
      "constant",
-     343,
-     343,
+     344,
+     344,
      "_select_lock = __import__('threading').Lock()"
     ],
     [
      "_ollama_probe",
      "function",
-     346,
-     357,
+     347,
+     358,
      "def _ollama_probe(timeout: float=0.3) -> dict"
     ],
     [
      "_active_label",
      "function",
-     360,
-     367,
+     361,
+     368,
      "def _active_label() -> str"
     ],
     [
      "detect",
      "function",
-     370,
-     383,
+     371,
+     384,
      "def detect() -> dict"
     ],
     [
      "select",
      "function",
-     386,
-     409,
+     387,
+     410,
      "def select(provider: str, model: str | None=None) -> dict"
     ],
     [
      "start_ollama",
      "function",
-     412,
-     434,
+     413,
+     435,
      "def start_ollama(wait_s: float=6.0) -> dict"
     ],
     [
      "resolve",
      "function",
-     437,
-     451,
+     438,
+     452,
      "def resolve()"
     ]
    ]
@@ -4005,7 +4005,7 @@
      1,
      119,
      "megabrain > megabrain/retrieval/docsearch.py > [load_groups, _strip_fm, _clean_inline, _snippet, _context, _group, _slug, _title]",
-     "7a0088f9ce247aaef583882468a21d9142acc2c5"
+     "251526b6d19017abc8c2dcb67e5611727b3142ae"
     ],
     [
      "function",
@@ -4100,7 +4100,7 @@
      1,
      39,
      "megabrain > megabrain/retrieval/files.py > def get_code(root: Path, relpath: str, symbol: str | None=None) -> str",
-     "1933bdae97fc6eefee015fd5ee2978c6cf61fa22"
+     "8923b090f6ba80b999cd41685fbc8c70efc99732"
     ]
    ],
    "skeleton_sha": "424a357179c7517efa6c3281938b6bbc79c504de",
@@ -4915,34 +4915,34 @@
      null,
      null,
      1,
-     22,
+     23,
      "megabrain > megabrain/server/cli.py (module level)",
-     "087b78ef00b03ab54f54920e1318704e6d03158a"
+     "247c6d5a8030ca78b6eaf7a54ffa81cf6b26feb4"
     ],
     [
      "block",
      "main",
      "1/2",
-     23,
-     122,
+     24,
+     121,
      "megabrain > megabrain/server/cli.py > def main(argv=None)",
-     "31eec99db7ed762639dde0fc13408cf3e5ef78f8"
+     "4b73dd652732f8b6220e3422d0febf27f405f734"
     ],
     [
      "block",
      "main",
      "2/2",
-     123,
-     169,
+     122,
+     186,
      "megabrain > megabrain/server/cli.py > def main(argv=None)",
-     "15e774fd15f90981f345ab5a02960034f02df2bc"
+     "09716de800d6c06f3c3480eaead0277911bd730e"
     ],
     [
      "module",
      "_scan, _render_scan",
      null,
-     170,
-     203,
+     187,
+     220,
      "megabrain > megabrain/server/cli.py > [_scan, _render_scan]",
      "6c4d106b3f64799ed33c25ecfbc89235a70f8628"
     ],
@@ -4950,26 +4950,26 @@
      "block",
      "_dispatch",
      "1/2",
-     204,
-     334,
+     221,
+     348,
      "megabrain > megabrain/server/cli.py > def _dispatch(a, raw: list[Path], root: Path) -> None",
-     "1194c670b21d82127fd6ed718c53621118c37a50"
+     "f0579b8470c1ca5d929d13eca47f5d16865767ea"
     ],
     [
      "block",
      "_dispatch",
      "2/2",
-     335,
-     355,
+     349,
+     383,
      "megabrain > megabrain/server/cli.py > def _dispatch(a, raw: list[Path], root: Path) -> None",
-     "9868e94c094c1ef4f873801a928fabdaef9eca64"
+     "2216dbd5f9366460478779ea8800f7d60d60478b"
     ],
     [
      "module",
      null,
      null,
-     356,
-     359,
+     384,
+     387,
      "megabrain > megabrain/server/cli.py (module level)",
      "494c28ef72c62a5924f4316a400d4193725ae15a"
     ]
@@ -4979,29 +4979,29 @@
     [
      "main",
      "function",
-     25,
-     169,
+     26,
+     186,
      "def main(argv=None)"
     ],
     [
      "_scan",
      "function",
-     172,
-     174,
+     189,
+     191,
      "def _scan(root: Path) -> dict"
     ],
     [
      "_render_scan",
      "function",
-     177,
-     203,
+     194,
+     220,
      "def _render_scan(rep: dict) -> str"
     ],
     [
      "_dispatch",
      "function",
-     206,
-     355,
+     223,
+     383,
      "def _dispatch(a, raw: list[Path], root: Path) -> None"
     ]
    ]
@@ -5013,16 +5013,16 @@
      "_http_error, Registry, _repo_stats",
      null,
      1,
-     109,
+     111,
      "megabrain > megabrain/server/http.py > [_http_error, Registry, _repo_stats]",
-     "257bdaf893bce20a078cb047f15ce00f33f9b7b6"
+     "978b327657f3b92f257ab0202a8ba765de18a915"
     ],
     [
      "block",
      "_make_handler",
      "1/4",
-     110,
-     241,
+     112,
+     243,
      "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True)",
      "9faa130b9efd3cf0a654806635c37cb3357a763c"
     ],
@@ -5030,8 +5030,8 @@
      "block",
      "_make_handler",
      "2/4",
-     242,
-     367,
+     244,
+     369,
      "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True)",
      "3924c7e3bec57f4fdb55326114f68d88753c7161"
     ],
@@ -5039,8 +5039,8 @@
      "block",
      "_make_handler",
      "3/4",
-     368,
-     420,
+     370,
+     422,
      "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True)",
      "b5faa010ad936a375ca6e7bef73ebd5f370018c0"
     ],
@@ -5048,134 +5048,238 @@
      "block",
      "_make_handler",
      "4/4",
-     421,
-     422,
+     423,
+     424,
      "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True)",
      "5ebaec407bc18bc3fde033e8db1a20bf3e3ec3f8"
     ],
     [
      "module",
-     "_valid_model, _native_pick_folder, _scan_report, _merge_ignore, serve",
+     "_valid_model, _native_pick_folder, _scan_report, _merge_ignore",
      null,
-     423,
-     535,
-     "megabrain > megabrain/server/http.py > [_valid_model, _native_pick_folder, _scan_report, _merge_ignore, serve]",
-     "1f21645fd4d2c7bb616d7e7a55ed67123048de19"
+     425,
+     499,
+     "megabrain > megabrain/server/http.py > [_valid_model, _native_pick_folder, _scan_report, _merge_ignore]",
+     "1a60519fd169e3894bbb17ae8e132a99f7846295"
+    ],
+    [
+     "function",
+     "serve",
+     null,
+     500,
+     538,
+     "megabrain > megabrain/server/http.py > def serve(root, port: int=2134, host: str='127.0.0.1', cors: str | None=None, enable_llm: bool=True, token: str | None=None, serve_ui: bool=True) -> None",
+     "9393f03c5365edc0ede85801e1abc3467d166008"
     ]
    ],
-   "skeleton_sha": "7f896c364d5f34bfcff96883ecd3b2e8a80a1f87",
+   "skeleton_sha": "482ae91f0f38763657a0845da2cdfede505c8464",
    "symbols": [
     [
      "log",
      "constant",
-     50,
-     50,
+     52,
+     52,
      "log = logging.getLogger(__name__)"
     ],
     [
      "UI_DIR",
      "constant",
-     52,
-     52,
+     54,
+     54,
      "UI_DIR = Path(__file__).parent / 'ui'"
     ],
     [
      "_CTYPES",
      "constant",
-     53,
-     56,
+     55,
+     58,
      "_CTYPES = {'.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json"
     ],
     [
      "_http_error",
      "function",
-     59,
-     64,
+     61,
+     66,
      "def _http_error(msg: str, status: int) -> MegabrainError"
     ],
     [
      "Registry",
      "class",
-     67,
-     96,
+     69,
+     98,
      "class Registry"
     ],
     [
      "Registry.__init__",
      "method",
-     73,
-     76,
+     75,
+     78,
      "def __init__(self, boot: RepoSession)"
     ],
     [
      "Registry.get",
      "method",
-     78,
-     83,
+     80,
+     85,
      "def get(self, name: str | None) -> RepoSession"
     ],
     [
      "Registry.add",
      "method",
-     85,
-     92,
+     87,
+     94,
      "def add(self, root: Path) -> RepoSession"
     ],
     [
      "Registry.list",
      "method",
-     94,
      96,
+     98,
      "def list(self) -> list[RepoSession]"
     ],
     [
      "_repo_stats",
      "function",
-     99,
-     109,
+     101,
+     111,
      "def _repo_stats(s: RepoSession) -> dict"
     ],
     [
      "_make_handler",
      "function",
-     114,
-     422,
+     116,
+     424,
      "def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True)"
     ],
     [
      "_valid_model",
      "function",
-     425,
-     436,
+     427,
+     438,
      "def _valid_model(model) -> str | None"
     ],
     [
      "_native_pick_folder",
      "function",
-     439,
-     475,
+     441,
+     477,
      "def _native_pick_folder() -> dict"
     ],
     [
      "_scan_report",
      "function",
-     478,
-     484,
+     480,
+     486,
      "def _scan_report(path: str) -> dict"
     ],
     [
      "_merge_ignore",
      "function",
-     487,
-     497,
+     489,
+     499,
      "def _merge_ignore(root: Path, ignore: str) -> None"
     ],
     [
      "serve",
      "function",
-     500,
-     535,
+     502,
+     538,
      "def serve(root, port: int=2134, host: str='127.0.0.1', cors: str | None=None, enable_llm: bool=True, token: str | None=None, serve_ui: bool=True) -> None"
+    ]
+   ]
+  },
+  "megabrain/server/install.py": {
+   "chunks": [
+    [
+     "module",
+     "_entry, detect, _is_registered, _write_json",
+     null,
+     1,
+     98,
+     "megabrain > megabrain/server/install.py > [_entry, detect, _is_registered, _write_json]",
+     "b422dddecae794e47018f56c54a6ea4f929eb472"
+    ],
+    [
+     "module",
+     "_write_toml, apply, render",
+     null,
+     99,
+     160,
+     "megabrain > megabrain/server/install.py > [_write_toml, apply, render]",
+     "60034d20a5f197b23d8d47840a2b3ed6799cfdc7"
+    ]
+   ],
+   "skeleton_sha": "8de8a070858eabaac11f232bd914c590cbc8b981",
+   "symbols": [
+    [
+     "SERVER_NAME",
+     "constant",
+     25,
+     25,
+     "SERVER_NAME = 'megabrain'"
+    ],
+    [
+     "PLATFORMS",
+     "constant",
+     29,
+     47,
+     "PLATFORMS: dict[str, dict] = {'claude': {'path': '.claude.json', 'fmt': 'json', 'key': 'mcpServers', 'dir_hint': '.claud"
+    ],
+    [
+     "_entry",
+     "function",
+     50,
+     53,
+     "def _entry() -> dict"
+    ],
+    [
+     "detect",
+     "function",
+     56,
+     65,
+     "def detect() -> list[dict]"
+    ],
+    [
+     "_is_registered",
+     "function",
+     68,
+     77,
+     "def _is_registered(path: Path, cfg: dict) -> bool"
+    ],
+    [
+     "_write_json",
+     "function",
+     80,
+     94,
+     "def _write_json(path: Path, key: str, entry: dict | None) -> None"
+    ],
+    [
+     "_TOML_BLOCK",
+     "constant",
+     97,
+     98,
+     "_TOML_BLOCK = re.compile(f'^\\\\[{{key}}\\\\.{SERVER_NAME}\\\\]\\\\n(?:(?!^\\\\[).*\\\\n?)*', re.M)"
+    ],
+    [
+     "_write_toml",
+     "function",
+     101,
+     117,
+     "def _write_toml(path: Path, key: str, entry: dict | None) -> None"
+    ],
+    [
+     "apply",
+     "function",
+     120,
+     145,
+     "def apply(platform: str | None=None, remove: bool=False) -> list[dict]"
+    ],
+    [
+     "render",
+     "function",
+     148,
+     160,
+     "def render(results: list[dict], remove: bool=False) -> str"
     ]
    ]
   },
@@ -5343,7 +5447,7 @@
      100,
      186,
      "megabrain > megabrain/storage/flows.py > [cache_flow, match_flows, serve_verbatim]",
-     "34bb5bf976e5e757d2410b62e58b42910d1efb22"
+     "72b999bcc686a114a2c16e936dfca487a38aca84"
     ]
    ],
    "skeleton_sha": "0ad5f351c42c0addb6fcad4a0923216d24171bb2",

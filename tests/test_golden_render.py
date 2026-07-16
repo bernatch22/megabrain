@@ -108,10 +108,12 @@ def _check(name: str, text: str) -> None:
     path = GOLDEN_DIR / name
     if os.environ.get("RESET_GOLDENS"):
         GOLDEN_DIR.mkdir(exist_ok=True)
-        path.write_text(text)
+        path.write_text(text, encoding="utf-8")
         return
     assert path.exists(), f"golden missing: {path} — run RESET_GOLDENS=1 to create"
-    expected = path.read_text()
+    # encoding is explicit: the goldens carry em-dashes, and Windows' default
+    # cp1252 would decode them into mojibake and fail the compare (CI #29373306002).
+    expected = path.read_text(encoding="utf-8")
     assert text == expected, (
         f"golden mismatch: {name}\n"
         f"--- expected ---\n{expected}\n--- got ---\n{text}\n"

@@ -109,7 +109,7 @@ def _generic_probes(source: str) -> list[tuple[str, int, int]]:
 
 
 def probe_spans(path: Path) -> list[tuple[str, int, int]]:
-    source = Path(path).read_text(errors="replace")
+    source = Path(path).read_text(encoding="utf-8", errors="replace")
     probes = _py_probes(source) if str(path).endswith(".py") else []
     if not probes:
         probes = _generic_probes(source)
@@ -179,7 +179,7 @@ def changed_files(root: Path, candidate, baseline=None) -> list[str]:
                 continue
             rel = p.relative_to(root).as_posix()
             try:
-                src = p.read_text(errors="replace")
+                src = p.read_text(encoding="utf-8", errors="replace")
                 a = [(c.start_line, c.end_line) for c in candidate.chunk_file(rel, src).chunks]
                 b = [(c.start_line, c.end_line) for c in builtin.chunk_file(rel, src).chunks]
             except Exception:
@@ -221,7 +221,7 @@ def _granularity_violation(root: Path, candidate, files: list[str]) -> str | Non
 
     builtins = {ext: builtin_strategy_for(ext, root.name) for ext in candidate.exts}
     for f in files:
-        src = (root / f).read_text(errors="replace")
+        src = (root / f).read_text(encoding="utf-8", errors="replace")
         try:
             med = median_nws(candidate, f, src)
         except Exception as e:                              # noqa: BLE001

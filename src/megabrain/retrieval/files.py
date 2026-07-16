@@ -22,7 +22,7 @@ def get_code(root: Path, relpath: str, symbol: str | None = None) -> str:
     # (serve.py /get) or MCP — `../../etc/passwd` must never escape the repo.
     if not p.is_relative_to(root) or not p.exists():
         return f"not found: {relpath}"
-    src = p.read_text(errors="replace")
+    src = p.read_text(encoding="utf-8", errors="replace")
     if not symbol:
         return f"```{lang_of(relpath)}\n{src}\n```"
     with Store(Path(root)) as store:

@@ -41,7 +41,7 @@ def _python_corpus() -> dict:
     out = {}
     for p in sorted(ENGINE.rglob("*.py")):
         rel = p.relative_to(ENGINE.parent).as_posix()
-        out[rel] = _fingerprint(ch.chunk_file(rel, p.read_text()))
+        out[rel] = _fingerprint(ch.chunk_file(rel, p.read_text(encoding="utf-8")))
     return out
 
 
@@ -105,10 +105,10 @@ def test_cast_output_is_byte_stable():
     got = _capture()
     if os.environ.get("RESET_CAST"):
         GOLDEN.parent.mkdir(exist_ok=True)
-        GOLDEN.write_text(json.dumps(got, indent=1, sort_keys=True))
+        GOLDEN.write_text(json.dumps(got, indent=1, sort_keys=True), encoding="utf-8")
         pytest.skip("golden regenerated")
     assert GOLDEN.exists(), "run RESET_CAST=1 to create the golden"
-    expected = json.loads(GOLDEN.read_text())
+    expected = json.loads(GOLDEN.read_text(encoding="utf-8"))
     # compare python corpus per-file for a readable diff
     assert set(got["python"]) == set(expected["python"]), "corpus file set changed"
     for rel in expected["python"]:

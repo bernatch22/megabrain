@@ -31,7 +31,7 @@ def load_ignore(root: Path) -> list[str]:
     if not f.exists():
         return []
     out = []
-    for ln in f.read_text(errors="replace").splitlines():
+    for ln in f.read_text(encoding="utf-8", errors="replace").splitlines():
         ln = ln.split("#", 1)[0].strip()
         if ln:
             out.append(ln)
@@ -170,7 +170,7 @@ def _index_into(store: Store, emb: Embedder, root: Path, name: str, *,
     # them with "/" (excludes, path filters, graph). str() yields "\" on
     # Windows — the source of cross-platform index corruption. Keep as_posix.
     rels = {p: p.relative_to(root).as_posix() for p in paths}
-    sources = {rels[p]: p.read_text(errors="replace") for p in paths}
+    sources = {rels[p]: p.read_text(encoding="utf-8", errors="replace") for p in paths}
 
     # per-strategy whole-repo graph prepass (cheap; None for content with no graph)
     edge_ctx = {strat: strat.build_edge_ctx(sources, name) for strat in registry}
