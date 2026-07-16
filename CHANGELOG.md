@@ -118,7 +118,7 @@ No engine/CLI/HTTP changes — this release is MCP-contract-only.
 - **Fix:** broken relative imports from the `arch(D)` refactor
   (`docsearch.py`, `session.py`) that crashed `serve-api` at boot.
 
-## Unreleased — art-of-code refactor (v2)
+### Also shipped in 0.8.0 — the art-of-code refactor (v2)
 
 Internal architecture pass toward the "art of code" layering. **No public
 contract changed**: the CLI/MCP/serve-api surfaces, the on-disk index + trust
