@@ -9,17 +9,17 @@
      1,
      72,
      "megabrain > megabrain/__init__.py > [__getattr__, __dir__]",
-     "2b2cf2bef1a346c0438d7209a8f1953a02993a85"
+     "f69418f2571401329e8c1d048ec2e0c4ffad90c8"
     ]
    ],
-   "skeleton_sha": "d6c952b3683d3e96a8cc50a1cab59ba79abd7454",
+   "skeleton_sha": "5923e7b07b445ba80e93f2e098fafc8adad4f49b",
    "symbols": [
     [
      "__version__",
      "constant",
      34,
      34,
-     "__version__ = '0.9.0'"
+     "__version__ = '0.0.0'"
     ],
     [
      "_EXPORTS",

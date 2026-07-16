@@ -16,6 +16,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 
 import pytest
@@ -41,7 +42,12 @@ def _python_corpus() -> dict:
     out = {}
     for p in sorted(ENGINE.rglob("*.py")):
         rel = p.relative_to(ENGINE.parent).as_posix()
-        out[rel] = _fingerprint(ch.chunk_file(rel, p.read_text(encoding="utf-8")))
+        src = p.read_text(encoding="utf-8")
+        # __version__ is the ONE line that legitimately changes every release;
+        # pin it so a version bump can't drift the golden. (Unpinned, every
+        # release turned CI red on all 12 matrix jobs — see run 29480200040.)
+        src = re.sub(r'__version__ = "[^"]*"', '__version__ = "0.0.0"', src)
+        out[rel] = _fingerprint(ch.chunk_file(rel, src))
     return out
 
 
