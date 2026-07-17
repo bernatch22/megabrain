@@ -162,6 +162,12 @@ def test_graph_path_hops_carry_symbols(linked_repo):
     assert "dispatch" in res["hops"][1]["symbols"]
     assert "handle" in res["hops"][2]["symbols"]
     assert "symbols" not in res["hops"][0]          # the start hop has no via
+    # the walkthrough snippets: where the carrier is USED and where it's DEFINED
+    code = res["hops"][1]["code"]
+    assert code and code["symbol"] == "dispatch"
+    assert code["def"]["file"] == "web/routes.py" and "def dispatch" in code["def"]["text"]
+    assert code["use"]["file"] == "web/server.py" and "dispatch" in code["use"]["text"]
+    assert code["use"]["hi"] == "dispatch" and code["use"]["start_line"] >= 1
 
 
 def test_graph_path_not_found_between_islands(linked_repo):

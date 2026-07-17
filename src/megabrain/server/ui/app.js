@@ -59,6 +59,7 @@
     graphFocusCom: null,
     gmode: "overview",                   // overview | com | sub | path
     gsub: null,                          // subgraph search: {q, files:[{file,score}]}
+    gplay: null,                         // path walkthrough: {k: hop idx, t: seconds}
     overlay: null,          // 'settings' | 'add'
     add: null,              // add-repo flow state
   };
@@ -330,6 +331,7 @@
         <div id="gwrap" style="flex:1;position:relative;min-width:0;background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden">
           <canvas id="gcanvas" style="position:absolute;inset:0;cursor:grab"></canvas>
           <div id="gtip" class="mono" style="position:absolute;display:none;pointer-events:none;z-index:5;padding:6px 10px;background:var(--panel2);border:1px solid var(--border2);border-radius:6px;font-size:11px;box-shadow:var(--shadow);max-width:360px"></div>
+          <div id="gplaycard" style="position:absolute;left:12px;right:12px;bottom:34px;z-index:6;display:none;background:var(--panel2);border:1px solid var(--border2);border-radius:10px;box-shadow:var(--shadow);padding:12px 14px"></div>
           ${st.gmode !== "overview" ? `<button class="chip mono" data-act="goverview" style="position:absolute;top:10px;left:12px;z-index:4;background:var(--accent-dim);border-color:var(--accent-bd);color:var(--accent)">← back to overview${crumb ? " · " + esc(crumb) : ""}</button>` : ""}
           <div class="mono" style="position:absolute;left:12px;bottom:10px;font-size:10px;color:var(--muted);pointer-events:none">
             ${st.gmode === "overview" ? "each bubble = a community — click one to open it"
@@ -357,7 +359,10 @@
         <div style="font-size:12.5px;font-weight:600">Path — ${p.found ? p.hops.length + " hops" : "not found"}</div>
         <div class="mono" style="font-size:10.5px;color:var(--muted);margin-top:4px">${esc(p.source || "?")} → ${esc(p.target || "?")}</div>
         <div style="display:flex;flex-direction:column;gap:5px;margin-top:10px">${hops || emptyMini("no route — the endpoints live on disconnected islands")}</div>
-        <button class="chip" data-act="goverview" style="margin-top:10px">← back to overview</button></div>`;
+        <div style="display:flex;gap:8px;margin-top:12px">
+          ${p.found && p.hops.length > 1 ? `<button class="btn-primary" data-act="gplay" style="flex:1">▶ Run the connection</button>` : ""}
+          <button class="chip" data-act="goverview">← overview</button>
+        </div></div>`;
     }
     if (st.gmode === "sub" && st.gsub) {
       const rows = st.gsub.files.map((f) => `<button class="flag-row" data-act="gopen" data-file="${esc(f.file)}" style="width:100%;text-align:left;border:1px solid var(--border);border-radius:6px">
@@ -486,6 +491,49 @@
   }
   const paintPanel = () => { const p = $("#gpanel"); if (p) p.innerHTML = graphPanel(); };
 
+  // ── path walkthrough: the code card under the canvas ─────────────────
+  function snipHtml(sn, title) {
+    if (!sn) return "";
+    const lang = langFor(sn.file);
+    const pat = new RegExp("\\b" + sn.hi.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b");
+    const rows = sn.text.split("\n").map((ln, i) => {
+      const hot = pat.test(ln);
+      return `<div style="display:flex;${hot ? "background:var(--accent-dim);border-radius:3px" : ""}">
+        <span style="width:40px;flex-shrink:0;text-align:right;padding-right:9px;opacity:.4">${sn.start_line + i}</span>
+        <span style="white-space:pre;overflow:hidden;text-overflow:ellipsis">${hl(ln, lang)}</span></div>`;
+    }).join("");
+    return `<div style="flex:1;min-width:0">
+      <div class="mono" style="font-size:10px;color:var(--muted);margin-bottom:5px">${title}
+        <b style="color:var(--text)">${esc(sn.file)}</b></div>
+      <div class="mono" style="font-size:10.5px;line-height:1.55;background:var(--code);border:1px solid var(--border);border-radius:6px;padding:8px 8px;max-height:200px;overflow:auto">${rows}</div></div>`;
+  }
+
+  function paintPlayCard() {
+    const el = $("#gplaycard"); if (!el) return;
+    const gp = st.gplay, p = st.graphPath;
+    if (!gp || !p || !p.found) { el.style.display = "none"; return; }
+    const h = p.hops[gp.k], prev = p.hops[gp.k - 1];
+    const code = h.code || {};
+    const snips = [snipHtml(code.use, "USES · "), snipHtml(code.def, "DEFINED IN · ")]
+      .filter(Boolean).join("");
+    el.style.display = "block";
+    el.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <div class="flag-reason" style="width:auto;padding:2px 8px">step ${gp.k} / ${p.hops.length - 1}</div>
+        <div class="mono" style="font-size:11.5px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">
+          <b style="color:var(--text)">${esc(prev.file.split("/").pop())}</b>
+          <span style="color:var(--accent)"> —${esc(h.via)}→ </span>
+          <b style="color:var(--text)">${esc(h.file.split("/").pop())}</b>
+          ${code.symbol ? ` · via <b style="color:var(--accent)">${esc(code.symbol)}</b>` : ""}
+        </div>
+        <button class="chip mono" data-act="gplay-prev" ${gp.k <= 1 ? "disabled style='opacity:.4'" : ""}>‹ prev</button>
+        <button class="chip mono" data-act="gplay-next" ${gp.k >= p.hops.length - 1 ? "disabled style='opacity:.4'" : ""}>next ›</button>
+        <button class="chip mono" data-act="gplay-stop">✕</button>
+      </div>
+      ${snips ? `<div style="display:flex;gap:10px">${snips}</div>`
+        : `<div class="mono" style="font-size:11px;color:var(--muted)">no code snippet for this hop (semantic link — the files are related by meaning, not by a call)</div>`}`;
+  }
+
   // ── the simulation ────────────────────────────────────────────────────
   function stopSim() { if (SIM && SIM.raf) cancelAnimationFrame(SIM.raf); SIM = null; }
 
@@ -534,8 +582,8 @@
           d: 0, r: 9, big: true, x: m + (W - 2 * m) * (i / span),
           y: H / 2 + (i % 2 ? 60 : -60), vx: 0, vy: 0, fix: true };
       });
-      links = hops.slice(1).map((h, i) => ({ a: i, b: i + 1, sem: /^semantic/.test(h.via),
-        via: h.via, symbols: h.symbols || [] }));
+      links = hops.slice(1).map((h, i) => ({ a: i, b: i + 1, i,
+        sem: /^semantic/.test(h.via), via: h.via, symbols: h.symbols || [] }));
     } else {
       // com = one community's files · sub = the search result's files
       let files;
@@ -575,6 +623,14 @@
   function tickLoop() {
     if (!SIM) return;
     if (SIM.alpha > 0.012 && !document.hidden) simTick();
+    if (SIM.mode === "path" && st.gplay && st.graphPath && !document.hidden) {
+      st.gplay.t += 1 / 60;              // ~6s per hop: 1.4s pulse + read time
+      if (st.gplay.t > 6) {
+        if (st.gplay.k < st.graphPath.hops.length - 1) { st.gplay.k++; st.gplay.t = 0; }
+        else st.gplay = null;
+        paintPlayCard();
+      }
+    }
     drawSim();
     st.graphView = { tx: SIM.tx, ty: SIM.ty, scale: SIM.scale };
     SIM.raf = requestAnimationFrame(tickLoop);
@@ -666,9 +722,24 @@
         ctx.globalAlpha = 0.35;
         ctx.lineWidth = Math.min(6, 1 + Math.log2(1 + (l.count || 1))) / S.scale;
       } else if (S.mode === "path") {
+        const gp = st.gplay, cur = gp ? gp.k - 1 : -1;
+        const state = !gp ? "plain" : l.i < cur ? "done" : l.i === cur ? "now" : "future";
         ctx.strokeStyle = comColor(p.c, 0.9);
-        ctx.globalAlpha = 0.9;
-        ctx.lineWidth = 2.4 / S.scale;
+        ctx.globalAlpha = state === "future" ? 0.15 : state === "plain" ? 0.9 : state === "done" ? 0.95 : 0.3;
+        ctx.lineWidth = (state === "done" ? 2.8 : 2.4) / S.scale;
+        if (state === "now") {           // the pulse: bright segment + dot
+          ctx.stroke();
+          const t01 = Math.min(1, gp.t / 1.4);
+          const mx = p.x + (q.x - p.x) * t01, my = p.y + (q.y - p.y) * t01;
+          ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(mx, my);
+          ctx.globalAlpha = 0.95; ctx.lineWidth = 3 / S.scale; ctx.stroke();
+          ctx.beginPath(); ctx.arc(mx, my, 5.5 / S.scale, 0, Math.PI * 2);
+          ctx.shadowColor = comColor(p.c); ctx.shadowBlur = 16;
+          ctx.fillStyle = comColor(p.c, 1); ctx.fill(); ctx.shadowBlur = 0;
+          ctx.globalAlpha = 0.3; ctx.lineWidth = 2.4 / S.scale;
+          ctx.beginPath(); ctx.moveTo(p.x, p.y);   // keep label pass on the base line
+          ctx.lineTo(q.x, q.y);
+        }
       } else {
         ctx.strokeStyle = l.sem ? comColor(p.c, 0.22) : muted;
         ctx.globalAlpha = l.sem ? 0.5 : 0.3;
@@ -1482,8 +1553,13 @@
     else if (act === "goverview") {
       st.gmode = "overview"; st.graphFocusCom = null; st.graphPath = null;
       st.gsub = null; st.graphNode = null; st.graphSel = null; st.graphView = null;
+      st.gplay = null;
       renderView();
     }
+    else if (act === "gplay") { st.gplay = { k: 1, t: 0 }; paintPlayCard(); }
+    else if (act === "gplay-next") { if (st.gplay && st.gplay.k < st.graphPath.hops.length - 1) { st.gplay.k++; st.gplay.t = 0; paintPlayCard(); } }
+    else if (act === "gplay-prev") { if (st.gplay && st.gplay.k > 1) { st.gplay.k--; st.gplay.t = 0; paintPlayCard(); } }
+    else if (act === "gplay-stop") { st.gplay = null; paintPlayCard(); }
     else if (act === "theme") { st.theme = st.theme === "dark" ? "light" : "dark"; ls.set("mb-theme", st.theme); render(); }
     else if (act === "settings") { st.overlay = "settings"; renderOverlays(); loadProviders(); }
     else if (act === "settings-close" || act === "settings-bg") { st.overlay = null; renderOverlays(); }

@@ -2474,24 +2474,24 @@
     ],
     [
      "module",
-     "graph_map, graph_node, _hop_symbols, graph_path",
+     "graph_map, graph_node, _hop_symbols, _snip",
      null,
      262,
-     369,
-     "megabrain > megabrain/graph.py > [graph_map, graph_node, _hop_symbols, graph_path]",
-     "14e739a546669134133e53c1b5ab130030efc4a7"
+     380,
+     "megabrain > megabrain/graph.py > [graph_map, graph_node, _hop_symbols, _snip]",
+     "9d6f15a03ccba3f4b579f450188cf7adc4931da6"
     ],
     [
      "module",
-     "graph_root, render_graph",
+     "_hop_code, graph_path, graph_root, render_graph",
      null,
-     370,
-     443,
-     "megabrain > megabrain/graph.py > [graph_root, render_graph]",
-     "8f9c585fdfe32e5cbd89cac668cbc882ebd4fe38"
+     381,
+     490,
+     "megabrain > megabrain/graph.py > [_hop_code, graph_path, graph_root, render_graph]",
+     "6759eeb26b98762c918ce60e0e13862847944f41"
     ]
    ],
-   "skeleton_sha": "1987573e1679b9562a97f445a883002abe52cadf",
+   "skeleton_sha": "295d86f23c17b01811b9096eaa87a01ae92c0590",
    "symbols": [
     [
      "log",
@@ -2690,24 +2690,45 @@
      "def _hop_symbols(st: SearchState, prev: str, cur: str, cap: int=4) -> list[str]"
     ],
     [
+     "SNIP_LINES",
+     "constant",
+     358,
+     358,
+     "SNIP_LINES = 22"
+    ],
+    [
+     "_snip",
+     "function",
+     361,
+     380,
+     "def _snip(chunks: list[dict], symbol: str, at_line: int | None=None) -> dict | None"
+    ],
+    [
+     "_hop_code",
+     "function",
+     383,
+     400,
+     "def _hop_code(st: SearchState, prev: str, cur: str, symbols: list[str]) -> dict | None"
+    ],
+    [
      "graph_path",
      "function",
-     358,
-     369,
+     403,
+     416,
      "def graph_path(st: SearchState, source: str, target: str, path_filter: str | None=None) -> dict"
     ],
     [
      "graph_root",
      "function",
-     372,
-     386,
+     419,
+     433,
      "def graph_root(root: Path, mode: str='map', node: str | None=None, source: str | None=None, target: str | None=None, path_filter: str | None=None, label: bool=True) -> dict"
     ],
     [
      "render_graph",
      "function",
-     391,
-     443,
+     438,
+     490,
      "def render_graph(res: dict) -> str"
     ]
    ]

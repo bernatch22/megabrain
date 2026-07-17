@@ -355,6 +355,51 @@ def _hop_symbols(st: SearchState, prev: str, cur: str, cap: int = 4) -> list[str
     return [n for n, _ in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))][:cap]
 
 
+SNIP_LINES = 22
+
+
+def _snip(chunks: list[dict], symbol: str, at_line: int | None = None) -> dict | None:
+    """A small window of REAL chunk text around `symbol` (or around a known
+    line): {file-relative start_line, text, hi} — the studio's play mode
+    renders these with the symbol's lines highlighted."""
+    pat = re.compile(rf"\b{re.escape(symbol)}\b")
+    for c in chunks:
+        lines = (c["text"] or "").splitlines()
+        row = None
+        if at_line is not None:
+            if c["start_line"] <= at_line <= c["end_line"]:
+                row = at_line - c["start_line"]
+        else:
+            row = next((i for i, ln in enumerate(lines) if pat.search(ln)), None)
+        if row is None:
+            continue
+        lo = max(0, row - SNIP_LINES // 3)
+        hi = min(len(lines), lo + SNIP_LINES)
+        return {"start_line": c["start_line"] + lo,
+                "text": "\n".join(lines[lo:hi]), "hi": symbol}
+    return None
+
+
+def _hop_code(st: SearchState, prev: str, cur: str,
+              symbols: list[str]) -> dict | None:
+    """USE + DEF snippets for a hop's top carrier symbol: where one file
+    references it, and where the other defines it (whichever direction the
+    edge actually runs)."""
+    for sym in symbols:                  # first carrier that has a real def
+        for def_file, use_file in ((cur, prev), (prev, cur)):
+            d = next((s for s in st.store.symbols_for(def_file)
+                      if s["name"].split(".")[-1] == sym), None)
+            if d is None:
+                continue
+            use = _snip(st.store.file_chunks(use_file), sym)
+            dfn = _snip(st.store.file_chunks(def_file), sym, at_line=d["line"])
+            if use or dfn:
+                return {"symbol": sym,
+                        "use": {**use, "file": use_file} if use else None,
+                        "def": {**dfn, "file": def_file} if dfn else None}
+    return None
+
+
 def graph_path(st: SearchState, source: str, target: str,
                path_filter: str | None = None) -> dict:
     t0 = time.time()
@@ -362,7 +407,9 @@ def graph_path(st: SearchState, source: str, target: str,
     a, b = resolve_node(st, g, source), resolve_node(st, g, target)
     hops = shortest_path(g, a, b) if a and b else []
     for k in range(1, len(hops)):        # what functions/classes carry each hop
-        hops[k]["symbols"] = _hop_symbols(st, hops[k - 1]["file"], hops[k]["file"])
+        syms = _hop_symbols(st, hops[k - 1]["file"], hops[k]["file"])
+        hops[k]["symbols"] = syms
+        hops[k]["code"] = _hop_code(st, hops[k - 1]["file"], hops[k]["file"], syms)
     return {"repo": st.repo, "source": a, "target": b,
             "resolved_from": [source, target],
             "found": bool(hops), "hops": hops,
