@@ -211,7 +211,7 @@ def test_graph_map_shape_and_fallback_labels(linked_repo):
         {n["community"] for n in res["nodes"]}
     assert all(c["label"].startswith("Community") for c in res["communities"])
     kinds = {ln["kind"] for ln in res["links"]}
-    assert kinds & {"import", "call", "import/call"}, "structural links present"
+    assert kinds & {"import", "call", "call/import"}, "structural links present"
     assert "semantic" in kinds
     assert res["god_nodes"][0]["file"] == "web/routes.py"
 

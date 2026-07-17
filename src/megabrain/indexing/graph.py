@@ -89,69 +89,61 @@ def extract_edges(rel: str, tree: ast.Module, mod2file: dict[str, str],
                   pkg_prefixes: set[str]) -> list[tuple[str, str]]:
     """Return [(dst_file, kind)] for one file. kind: import | call.
 
-    Call edges are RECEIVER-AWARE: `alias.f()` where the alias is an in-repo
-    import resolves to that alias's file; where the alias is an EXTERNAL
-    import (stdlib/site-packages) it produces no edge — `re.search(...)` once
-    fabricated an edge to the repo's unique `search()` def, and every stdlib
-    method colliding with a repo name did the same. Unknown receivers (local
-    variables, self) keep the unique-def fallback: without type inference
-    that evidence is weak but usually right, and dropping it would cost real
-    edges (validated recall)."""
+    A call edge exists ONLY through a resolved import: `f()` where f was
+    imported from a repo module, or `alias.f()` / `Alias(...).f()` where the
+    alias is an imported repo module/symbol. A cross-file Python call that
+    isn't imported can't execute — so a bare-name match is never evidence.
+    The old unique-def fallback minted phantoms out of stdlib collisions
+    (`re.search` -> the repo's only `search()`, `qs.get` -> Registry.get);
+    graphify's extractor follows the same imports-only rule. `unique_defs`
+    stays in the signature for compatibility but is no longer consulted."""
+    del unique_defs, pkg_prefixes        # legacy params — mod2file IS the proof
     edges: set[tuple[str, str]] = set()
     imported: dict[str, str] = {}
-    ext_aliases: set[str] = set()        # imported names that are NOT this repo
-
-    def _in_repo(module: str) -> bool:
-        """Does the dotted module resolve to ANYTHING indexed? pkg_prefixes
-        alone misclassifies top-level repo modules (a repo with no packages
-        imports `web` absolutely) — external means external for real."""
-        return (module in mod2file
-                or any(k.startswith(module + ".") for k in mod2file))
-
+    # this file's dotted module path (src. stripped like mod2file's keys,
+    # __init__ KEPT so relative levels count correctly)
+    own = rel[:-3].replace("/", ".")
+    if own.startswith("src."):
+        own = own[4:]
+    own_parts = own.split(".")
     for node in ast.walk(tree):
-        if isinstance(node, ast.ImportFrom) and node.module:
-            if any(node.module.split(".")[0] == p for p in pkg_prefixes):
-                sf = mod2file.get(node.module)
-                if sf:
-                    edges.add((sf, "import"))
-                    for a in node.names:
-                        imported[a.asname or a.name] = qualdefs.get(
-                            f"{node.module}.{a.name}", sf)
-                else:
-                    for a in node.names:
-                        sub = mod2file.get(f"{node.module}.{a.name}")
-                        if sub:
-                            edges.add((sub, "import"))
-                            imported[a.asname or a.name] = sub
-            elif node.level == 0 and not _in_repo(node.module):
-                for a in node.names:     # stdlib/3rd-party: never edge material
-                    ext_aliases.add(a.asname or a.name)
+        if isinstance(node, ast.ImportFrom):
+            if node.level:               # relative: from . / .. / ..mod import X
+                base = own_parts[:-node.level]
+                target = ".".join(base + (node.module.split(".")
+                                          if node.module else []))
+            else:
+                target = node.module or ""
+            if not target and not node.level:
+                continue
+            sf = mod2file.get(target)
+            if sf:
+                edges.add((sf, "import"))
+            for a in node.names:
+                # `from PKG import submodule` — the submodule wins the alias
+                # (calls on it belong to ITS file, not the package __init__)
+                sub = mod2file.get(f"{target}.{a.name}" if target else a.name)
+                if sub:
+                    edges.add((sub, "import"))
+                    imported[a.asname or a.name] = sub
+                elif sf:
+                    imported[a.asname or a.name] = qualdefs.get(
+                        f"{target}.{a.name}", sf)
         elif isinstance(node, ast.Import):
             for a in node.names:
-                if any(a.name.split(".")[0] == p for p in pkg_prefixes):
-                    sf = mod2file.get(a.name)
-                    if sf:
-                        edges.add((sf, "import"))
-                        imported[a.asname or a.name] = sf
-                elif not _in_repo(a.name):
-                    ext_aliases.add(a.asname or a.name.split(".")[0])
+                sf = mod2file.get(a.name)
+                if sf:
+                    edges.add((sf, "import"))
+                    imported[a.asname or a.name] = sf
     for node in ast.walk(tree):
         if isinstance(node, ast.Call):
             if isinstance(node.func, ast.Name):
-                callee, recv = node.func.id, None
+                tgt = imported.get(node.func.id)
             elif isinstance(node.func, ast.Attribute):
-                callee, recv = node.func.attr, _recv_base(node.func)
+                recv = _recv_base(node.func)
+                tgt = imported.get(recv) if recv else None
             else:
                 continue
-            if recv is not None:
-                if recv in imported:     # exact: the alias's own file
-                    tgt = imported[recv]
-                    if tgt != rel:
-                        edges.add((tgt, "call"))
-                    continue
-                if recv in ext_aliases:  # stdlib/external: never an edge
-                    continue
-            tgt = imported.get(callee) or unique_defs.get(callee)
             if tgt and tgt != rel:
                 edges.add((tgt, "call"))
     return [(dst, kind) for dst, kind in edges if dst != rel]

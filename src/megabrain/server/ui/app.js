@@ -258,8 +258,9 @@
   }
 
   function viewerClose() {
-    st.viewer = null; st.gplay = null;
-    paintViewer(); paintPanel();
+    st.viewer = null;                    // the play card (if any) resumes —
+    paintViewer(); paintPlayCard();      // closing the editor never kills the
+    paintPanel();                        // walkthrough, ✕ on the card does
   }
 
   async function viewerJumpSymbol(name) {
@@ -351,16 +352,88 @@
     return steps;
   }
 
-  async function runConnection() {
+  // snippet block for the side card: highlighted rows, capped height
+  function snipHtml(sn, title, maxH) {
+    if (!sn) return "";
+    const lang = langFor(sn.file);
+    const pat = new RegExp("\\b" + sn.hi.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b");
+    const marks = new Set(sn.hi_rows || []);
+    const rows = sn.text.split("\n").map((ln, i) => {
+      const hot = marks.size ? marks.has(i) : pat.test(ln);
+      return `<div style="display:flex;${hot ? "background:var(--accent-dim);border-radius:3px" : ""}">
+        <span style="width:40px;flex-shrink:0;text-align:right;padding-right:9px;opacity:.4">${sn.start_line + i}</span>
+        <span style="white-space:pre">${hl(ln, lang)}</span></div>`;
+    }).join("");
+    const size = maxH ? `max-height:${maxH}px;` : "flex:1;min-height:0;";
+    return `<div style="flex:1;min-width:0;min-height:0;display:flex;flex-direction:column">
+      <div class="mono" style="font-size:10px;color:var(--muted);margin-bottom:5px">${title}
+        <b style="color:var(--text)">${esc(sn.file)}</b></div>
+      <div class="mono" style="${size}font-size:11px;line-height:1.6;background:var(--code);border:1px solid var(--border);border-radius:6px;padding:10px;overflow:auto">${rows}</div></div>`;
+  }
+
+  // the auto-advancing side card: one step's code beside the canvas, the
+  // pulse/ring in sync; '⤢ open in editor' hands the SAME step to the
+  // navigator for full-file reading and go-to-definition.
+  function startPlay() {
     const steps = connSteps();
     if (!steps.length) { toast("no code steps on this route (semantic links only)"); return; }
-    await viewerConnGo({ steps, k: 0 }, 0, true);
+    st.gplay = { steps, k: 0, t: 0, auto: true };
+    playSync(); paintPlayCard();
   }
+
+  function playSync() {
+    const gp = st.gplay; if (!gp || !gp.steps) return;
+    const s = gp.steps[gp.k];
+    gp.hop = s.hop; gp.file = s.file; gp.kind = s.kind;   // canvas ring + pulse
+  }
+
+  function playStep(k) {
+    const gp = st.gplay; if (!gp || !gp.steps) return;
+    gp.k = Math.max(0, Math.min(gp.steps.length - 1, k));
+    gp.t = 0;
+    playSync(); paintPlayCard();
+  }
+
+  function paintPlayCard() {
+    const el = $("#gplaycard"); if (!el) return;
+    const panel = $("#gpanel");
+    const gp = st.gplay, p = st.graphPath;
+    if (!gp || !gp.steps || !p) {
+      el.style.display = "none";
+      if (panel) panel.style.display = "flex";
+      return;
+    }
+    if (panel) panel.style.display = "none";       // the code owns the space
+    const s = gp.steps[gp.k];
+    const h = p.hops[s.hop], code = h.code || {};
+    const sn = s.kind === "the call" ? code.use : code.def;
+    el.style.display = "flex";
+    el.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-shrink:0">
+        <div class="flag-reason" style="width:auto;padding:2px 8px">step ${gp.k + 1} / ${gp.steps.length}</div>
+        <div style="flex:1"></div>
+        <button class="chip mono" data-act="gplay-auto" title="auto-advance">${gp.auto ? "⏸" : "▶"}</button>
+        <button class="chip mono" data-act="gplay-prev" ${gp.k ? "" : "disabled style='opacity:.4'"}>‹</button>
+        <button class="chip mono" data-act="gplay-next" ${gp.k < gp.steps.length - 1 ? "" : "disabled style='opacity:.4'"}>›</button>
+        <button class="chip mono" data-act="gplay-stop">✕</button>
+      </div>
+      <div class="mono" style="font-size:11.5px;margin-bottom:10px;flex-shrink:0;line-height:1.5">${s.label}</div>
+      ${sn ? `<div class="mb-slide" style="display:flex;flex:1;min-height:0">${snipHtml(sn,
+          `<span style="color:var(--accent)">▸ ${esc(s.kind.toUpperCase())}</span> · `)}</div>`
+        : `<div class="mono" style="font-size:11px;color:var(--muted)">no snippet for this step</div>`}
+      <button class="chip mono" data-act="gplay-editor" style="margin-top:10px;flex-shrink:0;background:var(--accent-dim);border-color:var(--accent-bd);color:var(--accent)">⤢ open this step in the editor — full file, clickable symbols</button>`;
+  }
+
+  async function runConnection() { startPlay(); }
 
   async function viewerConnGo(conn, k, fresh) {
     conn.k = k;
     const s = conn.steps[k];
-    st.gplay = { k: s.hop, t: 0, file: s.file, kind: s.kind };  // canvas pulse
+    // one gplay shape everywhere: the canvas pulse/ring AND the side card
+    // follow whichever surface (card or editor) is stepping
+    st.gplay = { steps: conn.steps, k, t: 0, auto: false,
+                 hop: s.hop, file: s.file, kind: s.kind };
+    paintPlayCard();
     const v = st.viewer;
     if (!fresh && v && v.file === s.file) {
       v.conn = conn; v.focus = s.line; v.hiLines = new Set(s.hi); paintViewer();
@@ -402,6 +475,7 @@
               : "drag · wheel zoom · click a file for neighbors + code"}
             · <span style="color:var(--text)">solid</span> import/call · <span style="color:var(--text)">dashed</span> semantic</div>
         </div>
+        <div id="gplaycard" style="display:none;width:min(44vw,600px);flex-shrink:0;background:var(--panel);border:1px solid var(--border2);border-radius:10px;padding:12px 14px;flex-direction:column;min-height:0"></div>
         <div id="gpanel" style="flex:0 1 380px;min-width:260px;max-width:34%;overflow-y:auto;display:flex;flex-direction:column;gap:10px">${graphPanel()}</div>
       </div>` :
       emptyState("The repo as a living map: communities, god nodes, hidden connections.",
@@ -731,6 +805,7 @@
     pathLayout();                        // static modes lay out from live size
     if (!SIM.userView) fitAll();         // centered, everything visible, always
     bindSim();
+    paintPlayCard();                     // a live walkthrough survives repaints
     // the canvas shares its row with the code card / panel: when they open or
     // close (or the window resizes) re-measure, or the drawing skews
     SIM.ro = new ResizeObserver(() => {
@@ -754,10 +829,12 @@
     // nothing next to the draw we already do each frame.
     if (!SIM.userView) fitAll();
     if (SIM.mode === "path" && st.gplay && st.graphPath && !document.hidden) {
-      // the pulse LOOPS on the current step's hop — the navigator's next/prev
-      // moves it; nothing auto-advances (the user reads at their own pace)
-      st.gplay.t += 1 / 60;
-      if (st.gplay.t > 3.4) st.gplay.t = 0;
+      const gp = st.gplay;
+      gp.t += 1 / 60;
+      if (gp.auto && gp.steps && gp.t > 6) {     // side card: auto-advance,
+        if (gp.k < gp.steps.length - 1) playStep(gp.k + 1);
+        else { gp.auto = false; gp.t = 0; paintPlayCard(); }
+      } else if (gp.t > 3.4) gp.t = 0;           // pulse loops within the step
     }
     drawSim();
     st.graphView = { tx: SIM.tx, ty: SIM.ty, scale: SIM.scale, user: SIM.userView };
@@ -850,32 +927,31 @@
         ctx.globalAlpha = 0.35;
         ctx.lineWidth = Math.min(6, 1 + Math.log2(1 + (l.count || 1))) / S.scale;
       } else if (S.mode === "path") {
-        const gp = st.gplay, cur = gp ? gp.k - 1 : -1;
+        const gp = st.gplay;
+        const cur = gp && gp.steps ? gp.steps[gp.k].hop - 1 : -1;
         const state = !gp ? "plain" : l.i < cur ? "done" : l.i === cur ? "now" : "future";
         ctx.strokeStyle = comColor(p.c, 0.9);
         ctx.globalAlpha = state === "future" ? 0.15 : state === "plain" ? 0.9 : state === "done" ? 0.95 : 0.3;
         ctx.lineWidth = (state === "done" ? 2.8 : 2.4) / S.scale;
-        // EVERY hop wears its true arrowhead (use -> def): scoring -> http <-
-        // rerank reads as a MEETING, not a flow. Hops with no verified
-        // direction get no arrow.
+        ctx.stroke();                    // the base line, FIRST — the arrow's
+        // beginPath below discards the current path (a canvas path is not
+        // saved state; save/restore once ate the lines entirely)
         if (l.uf && l.df && S.idx[l.uf] != null && S.idx[l.df] != null) {
+          // EVERY hop wears its true arrowhead (use -> def): a meeting reads
+          // as -> <- at a glance; hops with no verified direction get none
           const uN = N[S.idx[l.uf]], dN = N[S.idx[l.df]];
-          const an = Math.atan2(dN.y - uN.y, dN.x - uN.x), ah = 9 / S.scale;
-          const ax = dN.x - Math.cos(an) * (dN.r + 4), ay = dN.y - Math.sin(an) * (dN.r + 4);
-          ctx.save();
-          ctx.globalAlpha = state === "future" ? 0.25 : 0.9;
+          const an = Math.atan2(dN.y - uN.y, dN.x - uN.x), ah = 10 / S.scale;
+          const ax = dN.x - Math.cos(an) * (dN.r + 5), ay = dN.y - Math.sin(an) * (dN.r + 5);
+          ctx.globalAlpha = state === "future" ? 0.3 : 0.92;
           ctx.beginPath();
           ctx.moveTo(ax, ay);
-          ctx.lineTo(ax - ah * Math.cos(an - 0.45), ay - ah * Math.sin(an - 0.45));
-          ctx.lineTo(ax - ah * Math.cos(an + 0.45), ay - ah * Math.sin(an + 0.45));
+          ctx.lineTo(ax - ah * Math.cos(an - 0.42), ay - ah * Math.sin(an - 0.42));
+          ctx.lineTo(ax - ah * Math.cos(an + 0.42), ay - ah * Math.sin(an + 0.42));
           ctx.closePath();
           ctx.fillStyle = comColor(p.c, 0.95); ctx.fill();
-          ctx.restore();
         }
         if (state === "now") {
-          // the pulse travels the hop's TRUE call direction (use -> def);
-          // with the arrows always on, truth beats left-to-right continuity
-          ctx.stroke();
+          // the pulse travels the hop's TRUE call direction (use -> def)
           let from = p, to = q;
           if (l.uf && l.df && S.idx[l.uf] != null && S.idx[l.df] != null) {
             from = N[S.idx[l.uf]]; to = N[S.idx[l.df]];
@@ -883,14 +959,13 @@
           const t01 = Math.min(1, gp.t / 3.0);
           const mx = from.x + (to.x - from.x) * t01, my = from.y + (to.y - from.y) * t01;
           ctx.beginPath(); ctx.moveTo(from.x, from.y); ctx.lineTo(mx, my);
-          ctx.globalAlpha = 0.95; ctx.lineWidth = 3 / S.scale; ctx.stroke();
+          ctx.globalAlpha = 0.95; ctx.lineWidth = 3 / S.scale;
+          ctx.strokeStyle = comColor(p.c, 0.95); ctx.stroke();
           ctx.beginPath(); ctx.arc(mx, my, 5.5 / S.scale, 0, Math.PI * 2);
           ctx.shadowColor = comColor(p.c); ctx.shadowBlur = 16;
           ctx.fillStyle = comColor(p.c, 1); ctx.fill(); ctx.shadowBlur = 0;
-          ctx.globalAlpha = 0.3; ctx.lineWidth = 2.4 / S.scale;
-          ctx.beginPath(); ctx.moveTo(p.x, p.y);   // keep label pass on the base line
-          ctx.lineTo(q.x, q.y);
         }
+        ctx.beginPath();                 // outer stroke below becomes a no-op
       } else {
         ctx.strokeStyle = l.sem ? comColor(p.c, 0.22) : muted;
         ctx.globalAlpha = l.sem ? 0.5 : 0.3;
@@ -1725,6 +1800,14 @@
       renderView();
     }
     else if (act === "gplay") { runConnection(); }
+    else if (act === "gplay-next") { playStep(st.gplay ? st.gplay.k + 1 : 0); }
+    else if (act === "gplay-prev") { playStep(st.gplay ? st.gplay.k - 1 : 0); }
+    else if (act === "gplay-auto") { if (st.gplay) { st.gplay.auto = !st.gplay.auto; st.gplay.t = 0; paintPlayCard(); } }
+    else if (act === "gplay-stop") { st.gplay = null; paintPlayCard(); }
+    else if (act === "gplay-editor") {
+      const gp = st.gplay;
+      if (gp && gp.steps) viewerConnGo({ steps: gp.steps, k: gp.k }, gp.k, true);
+    }
     else if (act === "vconn-prev") { const v = st.viewer; if (v && v.conn && v.conn.k > 0) viewerConnGo(v.conn, v.conn.k - 1); }
     else if (act === "vconn-next") { const v = st.viewer; if (v && v.conn && v.conn.k < v.conn.steps.length - 1) viewerConnGo(v.conn, v.conn.k + 1); }
     else if (act === "viewer-close") { viewerClose(); }
@@ -1776,6 +1859,7 @@
     if (e.key === "Enter" && document.activeElement && document.activeElement.id === "add-path") { doScan(); }
     if (e.key === "Escape") {
       if (st.viewer) { viewerClose(); return; }
+      if (st.gplay) { st.gplay = null; paintPlayCard(); return; }
       if (st.overlay) { st.overlay = null; st.add = null; renderOverlays(); }
     }
     if (st.viewer && st.viewer.conn && !/input|textarea/i.test((document.activeElement || {}).tagName || "")) {

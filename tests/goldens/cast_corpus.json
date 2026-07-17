@@ -2828,21 +2828,12 @@
     ],
     [
      "module",
-     "extract_edges, php_class_index",
+     "extract_edges, php_class_index, php_edges",
      null,
      85,
-     189,
-     "megabrain > megabrain/indexing/graph.py > [extract_edges, php_class_index]",
-     "842b1b9d0b078db0a2db27eaf43711aca85cc9ea"
-    ],
-    [
-     "function",
-     "php_edges",
-     null,
-     190,
-     214,
-     "megabrain > megabrain/indexing/graph.py > def php_edges(rel: str, source: str, fqcn2file: dict[str, str]) -> list[tuple[str, str]]",
-     "933f3a478984109cc48f90bb1e0d638e8a5148bb"
+     205,
+     "megabrain > megabrain/indexing/graph.py > [extract_edges, php_class_index, php_edges]",
+     "ece4b6b2f46e683c7910f28df9fb35b39e537822"
     ]
    ],
    "skeleton_sha": "c1aa0367da048481fce56cbf286acfd3073805af",
@@ -2879,49 +2870,49 @@
      "extract_edges",
      "function",
      87,
-     157,
+     148,
      "def extract_edges(rel: str, tree: ast.Module, mod2file: dict[str, str], unique_defs: dict[str, str], qualdefs: dict[str, str], pkg_prefixes: set[str]) -> list[tuple[str, str]]"
     ],
     [
      "_PHP_NS",
      "constant",
-     162,
-     162,
+     153,
+     153,
      "_PHP_NS = re.compile('^\\\\s*namespace\\\\s+([A-Za-z_][\\\\w\\\\\\\\]*)\\\\s*[;{]', re.M)"
     ],
     [
      "_PHP_DECL",
      "constant",
-     163,
-     165,
+     154,
+     156,
      "_PHP_DECL = re.compile('^\\\\s*(?:abstract\\\\s+|final\\\\s+|readonly\\\\s+)*(?:class|interface|trait|enum)\\\\s+([A-Za-z_]\\\\w*)',"
     ],
     [
      "_PHP_USE",
      "constant",
-     169,
-     170,
+     160,
+     161,
      "_PHP_USE = re.compile('^\\\\s*use\\\\s+(?!function\\\\b|const\\\\b)([A-Za-z_][\\\\w\\\\\\\\]*)(?:\\\\s+as\\\\s+\\\\w+)?\\\\s*;', re.M)"
     ],
     [
      "_PHP_USE_GROUP",
      "constant",
-     172,
-     173,
+     163,
+     164,
      "_PHP_USE_GROUP = re.compile('^\\\\s*use\\\\s+(?!function\\\\b|const\\\\b)([A-Za-z_][\\\\w\\\\\\\\]*)\\\\\\\\\\\\{([^}]+)\\\\}\\\\s*;', re.M)"
     ],
     [
      "php_class_index",
      "function",
-     176,
-     189,
+     167,
+     180,
      "def php_class_index(sources: dict[str, str]) -> dict[str, str]"
     ],
     [
      "php_edges",
      "function",
-     192,
-     214,
+     183,
+     205,
      "def php_edges(rel: str, source: str, fqcn2file: dict[str, str]) -> list[tuple[str, str]]"
     ]
    ]
