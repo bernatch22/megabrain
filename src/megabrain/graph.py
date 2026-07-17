@@ -202,26 +202,40 @@ def resolve_node(st: SearchState, g: RepoGraph, term: str) -> str | None:
 def shortest_path(g: RepoGraph, src: str, dst: str) -> list[dict]:
     """Cheapest route over struct+semantic edges (Dijkstra, deterministic).
 
-    Transit is COSTED, not just ordered: package `__init__.py` files import
-    half the repo (a super-hub that 'connects' any pair through plumbing) and
-    test files bridge without explaining — both pay a heavy toll as
-    intermediate nodes, so a route through real code wins even when it's a
-    hop longer. Semantic edges cost more than structural ones. Endpoints are
-    never penalized."""
+    Transit is COSTED, not just ordered: a file with degree far above the
+    repo's p90 (a logger, config, a package `__init__`) connects ANY pair
+    through infrastructure, not through a real relationship — checked
+    live against graphify (nx.shortest_path, unweighted): it routes the SAME
+    way, through the single highest-degree node in its own graph, because
+    plain BFS has no concept of a boring hub. Test files pay the same toll
+    (they bridge without explaining). Semantic edges cost more than
+    structural ones. Endpoints are exempt — you asked for them."""
     if src not in g.idx or dst not in g.idx:
         return []
     import heapq
     a, b = g.idx[src], g.idx[dst]
+    # HUB TOLL: a file imported by half the repo (the logger, config, a
+    # package __init__) connects ANY pair through infrastructure, not through
+    # a real relationship. Degree is the signal — a node far above the p90
+    # pays to be a transit stop, scaled by how hubby it is. Endpoints are
+    # exempt (you asked for them); this generalizes the old __init__-by-name
+    # toll (channels.py, the sdk-server logger, has in-degree 94).
+    degs = sorted(len(g.struct[i]) for i in range(len(g.files)))
+    p90 = degs[int(len(degs) * 0.90)] if degs else 0
+    hub_floor = max(8, p90)
 
     def toll(j: int) -> int:
-        if j == b:
-            return 0                     # entering the destination is free
+        if j == a or j == b:
+            return 0                     # endpoints are free
         f = g.files[j]
         t = 0
         if f.rsplit("/", 1)[-1] == "__init__.py":
-            t += 4                       # package plumbing, not a relationship
+            t += 4                       # package plumbing at ANY graph size
         if _is_test_path(f):
             t += 4
+        d = len(g.struct[j])
+        if d > hub_floor:                # every edge past the floor adds cost
+            t += 3 + (d - hub_floor)
         return t
 
     dist: dict[int, float] = {a: 0}

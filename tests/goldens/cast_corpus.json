@@ -2465,28 +2465,37 @@
     ],
     [
      "module",
-     "_fingerprint, god_nodes, surprises, resolve_node, shortest_path",
+     "_fingerprint, god_nodes, surprises, resolve_node",
      null,
      136,
-     258,
-     "megabrain > megabrain/graph.py > [_fingerprint, god_nodes, surprises, resolve_node, shortest_path]",
-     "544df713fd4adf28a14d71f4f766cd50e9405538"
+     199,
+     "megabrain > megabrain/graph.py > [_fingerprint, god_nodes, surprises, resolve_node]",
+     "a2832d9df000a79a350aaf65bde6df87c5729855"
     ],
     [
      "module",
-     "label_communities, graph_map, graph_node, _source",
+     "shortest_path, label_communities",
      null,
-     259,
-     382,
-     "megabrain > megabrain/graph.py > [label_communities, graph_map, graph_node, _source]",
-     "b9ee69a72113e63ed615a3c45cfa3b484128536c"
+     200,
+     312,
+     "megabrain > megabrain/graph.py > [shortest_path, label_communities]",
+     "119edd928f536345ecdbf86541b72a5bc03b013f"
+    ],
+    [
+     "module",
+     "graph_map, graph_node, _source",
+     null,
+     313,
+     396,
+     "megabrain > megabrain/graph.py > [graph_map, graph_node, _source]",
+     "c86931d9f401be3d8492ea1225167faa5fdc8b8b"
     ],
     [
      "module",
      "_py_uses, _alias_files, _use_sites",
      null,
-     383,
-     495,
+     397,
+     509,
      "megabrain > megabrain/graph.py > [_py_uses, _alias_files, _use_sites]",
      "6c2102037953da381bb23cca46c0ba1d6787c58c"
     ],
@@ -2494,8 +2503,8 @@
      "module",
      "file_links, _hop_symbols, _snip",
      null,
-     496,
-     623,
+     510,
+     637,
      "megabrain > megabrain/graph.py > [file_links, _hop_symbols, _snip]",
      "d2f2ac2ebc62120a384f2b8b4c343de485e8d3eb"
     ],
@@ -2503,8 +2512,8 @@
      "module",
      "_enclosing_symbol, _hop_code, _orient_hops, graph_path",
      null,
-     624,
-     730,
+     638,
+     744,
      "megabrain > megabrain/graph.py > [_enclosing_symbol, _hop_code, _orient_hops, graph_path]",
      "7df332fe4e3149eb6845cb9f95e4106d69b5f488"
     ],
@@ -2512,8 +2521,8 @@
      "module",
      "graph_root, render_graph",
      null,
-     731,
-     812,
+     745,
+     826,
      "megabrain > megabrain/graph.py > [graph_root, render_graph]",
      "cd36e6163cb1ea2cd0b132dd7513355b38ac9ed7"
     ]
@@ -2685,133 +2694,133 @@
      "shortest_path",
      "function",
      202,
-     258,
+     272,
      "def shortest_path(g: RepoGraph, src: str, dst: str) -> list[dict]"
     ],
     [
      "label_communities",
      "function",
-     261,
-     298,
+     275,
+     312,
      "def label_communities(st: SearchState, g: RepoGraph) -> dict[int, str]"
     ],
     [
      "graph_map",
      "function",
-     303,
-     336,
+     317,
+     350,
      "def graph_map(st: SearchState, path_filter: str | None=None, label: bool=True) -> dict"
     ],
     [
      "graph_node",
      "function",
-     339,
-     368,
+     353,
+     382,
      "def graph_node(st: SearchState, term: str, path_filter: str | None=None, label: bool=True) -> dict"
     ],
     [
      "_CALLABLE_KINDS",
      "constant",
-     371,
-     372,
+     385,
+     386,
      "_CALLABLE_KINDS = {'class', 'function', 'async_function', 'method', 'async_method', 'interface', 'type', 'enum'}"
     ],
     [
      "_source",
      "function",
-     375,
-     382,
+     389,
+     396,
      "def _source(st: SearchState, rel: str) -> str"
     ],
     [
      "_py_uses",
      "function",
-     385,
-     429,
+     399,
+     443,
      "def _py_uses(source: str)"
     ],
     [
      "_alias_files",
      "function",
-     432,
-     457,
+     446,
+     471,
      "def _alias_files(st: SearchState, use_file: str, level: int, dotted: str) -> set[str] | None"
     ],
     [
      "_use_sites",
      "function",
-     460,
-     495,
+     474,
+     509,
      "def _use_sites(st: SearchState, uses_file: str, names: set[str], defs_file: str) -> dict[str, list[int]]"
     ],
     [
      "file_links",
      "function",
-     498,
-     570,
+     512,
+     584,
      "def file_links(st: SearchState, rel: str) -> dict[str, dict]"
     ],
     [
      "_hop_symbols",
      "function",
-     573,
-     592,
+     587,
+     606,
      "def _hop_symbols(st: SearchState, prev: str, cur: str, cap: int=4) -> list[str]"
     ],
     [
      "SNIP_LINES",
      "constant",
-     595,
-     595,
+     609,
+     609,
      "SNIP_LINES = 22"
     ],
     [
      "_snip",
      "function",
-     598,
-     623,
+     612,
+     637,
      "def _snip(chunks: list[dict], symbol: str, at_line: int | None=None, at_lines: list[int] | None=None) -> dict | None"
     ],
     [
      "_enclosing_symbol",
      "function",
-     626,
-     634,
+     640,
+     648,
      "def _enclosing_symbol(st: SearchState, rel: str, line: int) -> str | None"
     ],
     [
      "_hop_code",
      "function",
-     637,
-     659,
+     651,
+     673,
      "def _hop_code(st: SearchState, prev: str, cur: str, symbols: list[str]) -> dict | None"
     ],
     [
      "_orient_hops",
      "function",
-     662,
-     689,
+     676,
+     703,
      "def _orient_hops(st: SearchState, hops: list[dict]) -> tuple[list[dict], bool]"
     ],
     [
      "graph_path",
      "function",
-     692,
-     730,
+     706,
+     744,
      "def graph_path(st: SearchState, source: str, target: str, path_filter: str | None=None) -> dict"
     ],
     [
      "graph_root",
      "function",
-     733,
      747,
+     761,
      "def graph_root(root: Path, mode: str='map', node: str | None=None, source: str | None=None, target: str | None=None, path_filter: str | None=None, label: bool=True) -> dict"
     ],
     [
      "render_graph",
      "function",
-     752,
-     812,
+     766,
+     826,
      "def render_graph(res: dict) -> str"
     ]
    ]
