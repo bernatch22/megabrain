@@ -73,6 +73,19 @@ def apply_path_filter(metas: list, M: np.ndarray, path_filter: str | None):
     return [metas[i] for i in idx], M[idx]
 
 
+def exclude_doc_chunks(metas: list, M: np.ndarray, doc_exts: tuple):
+    """Drop doc chunks (markdown) from the candidate set BEFORE scoring, so a
+    doc titled like the query (+ near-identical translations) can't crowd the
+    code out of the bundle — the code-only `ask` wants code to rank. Fail-open:
+    if nothing but docs exists, return unchanged (a docs-only repo still
+    answers)."""
+    idx = [i for i, m in enumerate(metas)
+           if not m.file.lower().endswith(doc_exts)]
+    if not idx or len(idx) == len(metas):
+        return metas, M
+    return [metas[i] for i in idx], M[idx]
+
+
 def ident_tokens(text: str) -> set[str]:
     """Identifier-aware tokens: split camelCase/snake_case, len>=4 to avoid noise."""
     out = set()
@@ -268,18 +281,23 @@ LANES: tuple[ScoreLane, ...] = (
 
 
 def score_chunks(st: SearchState, query: str,
-                 path_filter: str | None = None) -> tuple[list, np.ndarray]:
+                 path_filter: str | None = None,
+                 exclude_docs: bool = False) -> tuple[list, np.ndarray]:
     """Full per-chunk scoring (dense + file-fusion + test penalty + issue-mode /
     lexical boosts) WITHOUT ranking/tiering, run as the LANES pipeline over one
     QueryCtx. Returns (path-filtered metas, fused score array), index-aligned.
     Single source of truth for chunk scoring — shared by search_with_state()
-    and chunks_for_file()."""
+    and chunks_for_file(). `exclude_docs` drops markdown BEFORE scoring (the
+    code-only ask's retrieval), fail-open on a docs-only repo."""
     if not st.metas:
         from ..errors import EmptyIndex
         raise EmptyIndex.at()
     # PATH-SCOPE: restrict candidates to files under the sub-path BEFORE scoring,
     # so CORE/RELATED/graph-neighbors all stay within it. No filter -> unchanged.
     metas, M = apply_path_filter(st.metas, st.M, path_filter)
+    if exclude_docs:
+        from ..indexing.strategies import MarkdownStrategy
+        metas, M = exclude_doc_chunks(metas, M, tuple(MarkdownStrategy.exts))
     qv = st.emb.embed([query])[0]
     st.qv = qv                     # re-used by the flow lane (no second embed)
     f2i = {f: i for i, f in enumerate(st.fpaths)}

@@ -264,18 +264,18 @@
      "stream_events",
      "1/2",
      460,
-     568,
+     570,
      "megabrain > megabrain/ask/agents.py > def stream_events(root, question: str, on_event, *, agents: bool | None=None, show_map: bool=True, docs_only: bool=False, include_docs: bool=False, path_filter: str | None=None, state=None, model: str | None=None) -> dict",
-     "45a67f614f6f61cfdf6e19499c4990c8862dbe52"
+     "3964b5b15ba236e9246dfd4ac540d64bf08fbdf2"
     ],
     [
      "block",
      "stream_events",
      "2/2",
-     569,
-     580,
+     571,
+     588,
      "megabrain > megabrain/ask/agents.py > def stream_events(root, question: str, on_event, *, agents: bool | None=None, show_map: bool=True, docs_only: bool=False, include_docs: bool=False, path_filter: str | None=None, state=None, model: str | None=None) -> dict",
-     "5a741f82421f0497ac76c212f02bbd51ffc3663d"
+     "e6fa3f67eb4454db3295e65c95c6767ba15289b5"
     ]
    ],
    "skeleton_sha": "2a2fd884706b77eb11b4a1aa382124579eb04f72",
@@ -452,7 +452,7 @@
      "stream_events",
      "function",
      464,
-     580,
+     588,
      "def stream_events(root, question: str, on_event, *, agents: bool | None=None, show_map: bool=True, docs_only: bool=False, include_docs: bool=False, path_filter: str | None=None, state=None, model: str | None=None) -> dict"
     ]
    ]
@@ -4300,16 +4300,16 @@
      "search_with_state",
      null,
      1,
-     118,
-     "megabrain > megabrain/retrieval/bundle.py > def search_with_state(st: SearchState, query: str, path_filter: str | None=None, scored: tuple[list, np.ndarray] | None=None) -> dict",
-     "027b08b41d0069303b43e84d640d1783e21672db"
+     121,
+     "megabrain > megabrain/retrieval/bundle.py > def search_with_state(st: SearchState, query: str, path_filter: str | None=None, scored: tuple[list, np.ndarray] | None=None, exclude_docs: bool=False) -> dict",
+     "f44d9849dc2e15bade4b66544b24fdb0491db361"
     ],
     [
      "module",
      "search, selection, chunks_for_file, chunks_for_file_root",
      null,
-     119,
-     187,
+     122,
+     190,
      "megabrain > megabrain/retrieval/bundle.py > [search, selection, chunks_for_file, chunks_for_file_root]",
      "8691e70e810e95338a980542c7dc1b92d9669e2e"
     ],
@@ -4317,13 +4317,13 @@
      "module",
      "prune_search, prune_search_root, search_multi",
      null,
-     188,
-     274,
+     191,
+     277,
      "megabrain > megabrain/retrieval/bundle.py > [prune_search, prune_search_root, search_multi]",
      "3f33f32322847a98113b5ce8e3733ba2a6bd61b2"
     ]
    ],
-   "skeleton_sha": "69b227e1d1a48b830b098cfcb03ce4a6ca0522a1",
+   "skeleton_sha": "ff28a1ef1f4b878e347f7ba24518e4e8f4340910",
    "symbols": [
     [
      "OUTLINE_KINDS",
@@ -4336,56 +4336,56 @@
      "search_with_state",
      "function",
      30,
-     118,
-     "def search_with_state(st: SearchState, query: str, path_filter: str | None=None, scored: tuple[list, np.ndarray] | None=None) -> dict"
+     121,
+     "def search_with_state(st: SearchState, query: str, path_filter: str | None=None, scored: tuple[list, np.ndarray] | None=None, exclude_docs: bool=False) -> dict"
     ],
     [
      "search",
      "function",
-     121,
-     126,
+     124,
+     129,
      "def search(root: Path, query: str, path_filter: str | None=None) -> dict"
     ],
     [
      "selection",
      "function",
-     129,
-     147,
+     132,
+     150,
      "def selection(res: dict) -> list[tuple[dict, float]]"
     ],
     [
      "chunks_for_file",
      "function",
-     150,
-     180,
+     153,
+     183,
      "def chunks_for_file(st: SearchState, relpath: str, query: str, path_filter: str | None=None) -> dict"
     ],
     [
      "chunks_for_file_root",
      "function",
-     183,
-     187,
+     186,
+     190,
      "def chunks_for_file_root(root: Path, relpath: str, query: str, path_filter: str | None=None) -> dict"
     ],
     [
      "prune_search",
      "function",
-     190,
-     233,
+     193,
+     236,
      "def prune_search(st: SearchState, query: str, path_filter: str | None=None, with_text: bool=True, include_pruned: bool=False) -> dict"
     ],
     [
      "prune_search_root",
      "function",
-     236,
-     240,
+     239,
+     243,
      "def prune_search_root(root: Path, query: str, path_filter: str | None=None, with_text: bool=True, include_pruned: bool=False) -> dict"
     ],
     [
      "search_multi",
      "function",
-     243,
-     274,
+     246,
+     277,
      "def search_multi(roots: list[Path], query: str, path_filters: list[str | None] | None=None) -> dict"
     ]
    ]
@@ -4865,33 +4865,42 @@
    "chunks": [
     [
      "module",
-     "_is_test_path, under_path, apply_path_filter, ident_tokens, QueryCtx, ScoreLane",
+     "_is_test_path, under_path, apply_path_filter, exclude_doc_chunks, ident_tokens",
      null,
      1,
-     124,
-     "megabrain > megabrain/retrieval/scoring.py > [_is_test_path, under_path, apply_path_filter, ident_tokens, QueryCtx, ScoreLane]",
-     "f238c63d55a958e6397f03fa4489fbd8829c4718"
+     97,
+     "megabrain > megabrain/retrieval/scoring.py > [_is_test_path, under_path, apply_path_filter, exclude_doc_chunks, ident_tokens]",
+     "f8f2dadc885744a64e9c8466190530d78dfe9184"
     ],
     [
      "module",
-     "DenseFileFusionLane, TestPenaltyLane, IssueLane",
+     "QueryCtx, ScoreLane, DenseFileFusionLane, TestPenaltyLane",
      null,
-     125,
-     237,
-     "megabrain > megabrain/retrieval/scoring.py > [DenseFileFusionLane, TestPenaltyLane, IssueLane]",
-     "b5314964c289931c65bb8a9bac4273840f2481da"
+     98,
+     163,
+     "megabrain > megabrain/retrieval/scoring.py > [QueryCtx, ScoreLane, DenseFileFusionLane, TestPenaltyLane]",
+     "87cc40bb70ab5b6aef27de014ba8c2f57ed5cca9"
     ],
     [
      "module",
-     "LexicalBoostLane, score_chunks",
+     "IssueLane, LexicalBoostLane",
      null,
-     238,
-     296,
-     "megabrain > megabrain/retrieval/scoring.py > [LexicalBoostLane, score_chunks]",
-     "f2684deddc90fd181d1dcccbf40594a8f1ae7b0b"
+     164,
+     280,
+     "megabrain > megabrain/retrieval/scoring.py > [IssueLane, LexicalBoostLane]",
+     "66c569112d2c82f9400fc19dc7122bf47de7d6b9"
+    ],
+    [
+     "function",
+     "score_chunks",
+     null,
+     281,
+     314,
+     "megabrain > megabrain/retrieval/scoring.py > def score_chunks(st: SearchState, query: str, path_filter: str | None=None, exclude_docs: bool=False) -> tuple[list, np.ndarray]",
+     "5e686ee483a136c81032f4ec9683e4f4175e4600"
     ]
    ],
-   "skeleton_sha": "2d24ffc48f0403b3f48f4a27fd693be92923175d",
+   "skeleton_sha": "485f60c44696074b074acb254cf56fa5b34bcaad",
    "symbols": [
     [
      "TEST_DIR_SEGS",
@@ -4922,270 +4931,277 @@
      "def apply_path_filter(metas: list, M: np.ndarray, path_filter: str | None)"
     ],
     [
-     "ident_tokens",
+     "exclude_doc_chunks",
      "function",
      76,
-     84,
+     86,
+     "def exclude_doc_chunks(metas: list, M: np.ndarray, doc_exts: tuple)"
+    ],
+    [
+     "ident_tokens",
+     "function",
+     89,
+     97,
      "def ident_tokens(text: str) -> set[str]"
     ],
     [
      "QueryCtx",
      "class",
-     87,
-     112,
+     100,
+     125,
      "class QueryCtx"
     ],
     [
      "QueryCtx.st",
      "class_attr",
-     93,
-     93,
+     106,
+     106,
      "st: SearchState"
     ],
     [
      "QueryCtx.query",
      "class_attr",
-     94,
-     94,
+     107,
+     107,
      "query: str"
     ],
     [
      "QueryCtx.path_filter",
      "class_attr",
-     95,
-     95,
+     108,
+     108,
      "path_filter: str | None"
     ],
     [
      "QueryCtx.p",
      "class_attr",
-     96,
-     96,
+     109,
+     109,
      "p: RetrievalParams"
     ],
     [
      "QueryCtx.metas",
      "class_attr",
-     97,
-     97,
+     110,
+     110,
      "metas: list"
     ],
     [
      "QueryCtx.M",
      "class_attr",
-     98,
-     98,
+     111,
+     111,
      "M: np.ndarray"
     ],
     [
      "QueryCtx.fpaths",
      "class_attr",
-     99,
-     99,
+     112,
+     112,
      "fpaths: list"
     ],
     [
      "QueryCtx.F",
      "class_attr",
-     100,
-     100,
+     113,
+     113,
      "F: np.ndarray"
     ],
     [
      "QueryCtx.qv",
      "class_attr",
-     101,
-     101,
+     114,
+     114,
      "qv: np.ndarray"
     ],
     [
      "QueryCtx.cfi",
      "class_attr",
-     102,
-     102,
+     115,
+     115,
      "cfi: np.ndarray"
     ],
     [
      "QueryCtx.is_test",
      "class_attr",
-     103,
-     103,
+     116,
+     116,
      "is_test: np.ndarray"
     ],
     [
      "QueryCtx.qtok",
      "class_attr",
-     104,
-     104,
+     117,
+     117,
      "qtok: set"
     ],
     [
      "QueryCtx.store",
      "method",
-     106,
-     108,
+     119,
+     121,
      "def store(self)"
     ],
     [
      "QueryCtx.emb",
      "method",
-     110,
-     112,
+     123,
+     125,
      "def emb(self)"
     ],
     [
      "ScoreLane",
      "class",
-     115,
-     124,
+     128,
+     137,
      "class ScoreLane(Protocol)"
     ],
     [
      "ScoreLane.name",
      "class_attr",
-     120,
-     120,
+     133,
+     133,
      "name: str"
     ],
     [
      "ScoreLane.applies",
      "method",
-     122,
-     122,
+     135,
+     135,
      "def applies(self, ctx: QueryCtx) -> bool"
     ],
     [
      "ScoreLane.apply",
      "method",
-     124,
-     124,
+     137,
+     137,
      "def apply(self, ctx: QueryCtx, fused: np.ndarray | None) -> np.ndarray"
     ],
     [
      "DenseFileFusionLane",
      "class",
-     127,
-     138,
+     140,
+     151,
      "class DenseFileFusionLane"
     ],
     [
      "DenseFileFusionLane.name",
      "class_attr",
-     130,
-     130,
+     143,
+     143,
      "name = 'dense+file'"
     ],
     [
      "DenseFileFusionLane.applies",
      "method",
-     132,
-     133,
+     145,
+     146,
      "def applies(self, ctx: QueryCtx) -> bool"
     ],
     [
      "DenseFileFusionLane.apply",
      "method",
-     135,
-     138,
+     148,
+     151,
      "def apply(self, ctx: QueryCtx, fused: np.ndarray | None) -> np.ndarray"
     ],
     [
      "TestPenaltyLane",
      "class",
-     141,
-     150,
+     154,
+     163,
      "class TestPenaltyLane"
     ],
     [
      "TestPenaltyLane.name",
      "class_attr",
-     144,
-     144,
+     157,
+     157,
      "name = 'test-penalty'"
     ],
     [
      "TestPenaltyLane.applies",
      "method",
-     146,
-     147,
+     159,
+     160,
      "def applies(self, ctx: QueryCtx) -> bool"
     ],
     [
      "TestPenaltyLane.apply",
      "method",
-     149,
-     150,
+     162,
+     163,
      "def apply(self, ctx: QueryCtx, fused: np.ndarray) -> np.ndarray"
     ],
     [
      "IssueLane",
      "class",
-     153,
-     237,
+     166,
+     250,
      "class IssueLane"
     ],
     [
      "IssueLane.name",
      "class_attr",
-     158,
-     158,
+     171,
+     171,
      "name = 'issue'"
     ],
     [
      "IssueLane.applies",
      "method",
-     160,
-     161,
+     173,
+     174,
      "def applies(self, ctx: QueryCtx) -> bool"
     ],
     [
      "IssueLane.apply",
      "method",
-     163,
-     237,
+     176,
+     250,
      "def apply(self, ctx: QueryCtx, fused: np.ndarray) -> np.ndarray"
     ],
     [
      "LexicalBoostLane",
      "class",
-     240,
-     261,
+     253,
+     274,
      "class LexicalBoostLane"
     ],
     [
      "LexicalBoostLane.name",
      "class_attr",
-     247,
-     247,
+     260,
+     260,
      "name = 'lexical'"
     ],
     [
      "LexicalBoostLane.applies",
      "method",
-     249,
-     250,
+     262,
+     263,
      "def applies(self, ctx: QueryCtx) -> bool"
     ],
     [
      "LexicalBoostLane.apply",
      "method",
-     252,
-     261,
+     265,
+     274,
      "def apply(self, ctx: QueryCtx, fused: np.ndarray) -> np.ndarray"
     ],
     [
      "LANES",
      "constant",
-     266,
-     267,
+     279,
+     280,
      "LANES: tuple[ScoreLane, ...] = (DenseFileFusionLane(), TestPenaltyLane(), IssueLane(), LexicalBoostLane())"
     ],
     [
      "score_chunks",
      "function",
-     270,
-     296,
-     "def score_chunks(st: SearchState, query: str, path_filter: str | None=None) -> tuple[list, np.ndarray]"
+     283,
+     314,
+     "def score_chunks(st: SearchState, query: str, path_filter: str | None=None, exclude_docs: bool=False) -> tuple[list, np.ndarray]"
     ]
    ]
   },

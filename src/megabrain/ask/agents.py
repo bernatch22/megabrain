@@ -481,7 +481,15 @@ def stream_events(root, question: str, on_event, *, agents: bool | None = None,
     t0 = time.time()
     model = model or providers.ask_model()
     st = state or load_state(Path(root))
-    res = search_with_state(st, question, path_filter=path_filter)
+    # code-only ask (the default): keep docs OUT of the ranking so a doc named
+    # like the query + its translations can't crowd the code out of the bundle
+    # (graphify's 'how it works' returned 12 docs, 0 code -> fail-open dump).
+    # Fail-open: a docs-only repo (no code survived) re-runs with docs in.
+    code_only = not docs_only and not include_docs
+    res = search_with_state(st, question, path_filter=path_filter,
+                            exclude_docs=code_only)
+    if code_only and not res["tier1"]:
+        res = search_with_state(st, question, path_filter=path_filter)
     retrieval_ms = int((time.time() - t0) * 1000)
     cands = _candidates(res, docs_only, include_docs)
     key = providers.find_chat_key(required=False)

@@ -29,13 +29,16 @@ OUTLINE_KINDS = ("class", "function", "async_function", "method", "async_method"
 
 def search_with_state(st: SearchState, query: str,
                       path_filter: str | None = None,
-                      scored: tuple[list, np.ndarray] | None = None) -> dict:
+                      scored: tuple[list, np.ndarray] | None = None,
+                      exclude_docs: bool = False) -> dict:
     """Full retrieval: score every chunk, then rank + tier into CORE/RELATED.
     `scored` accepts a precomputed (metas, fused) from score_chunks so callers
-    that also need the raw scores (chunks_for_file) score exactly once."""
+    that also need the raw scores (chunks_for_file) score exactly once.
+    `exclude_docs` keeps markdown out of the ranking (code-only ask)."""
     t0 = time.time()
     store, p = st.store, st.params
-    metas, fused = scored if scored is not None else score_chunks(st, query, path_filter)
+    metas, fused = scored if scored is not None else \
+        score_chunks(st, query, path_filter, exclude_docs=exclude_docs)
     order = np.argsort(-fused)
     file_rank: list[str] = []
     file_chunks: dict[str, list[int]] = {}
