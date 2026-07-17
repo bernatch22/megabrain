@@ -359,48 +359,104 @@ def _source(st: SearchState, rel: str) -> str:
         return "\n".join(c["text"] or "" for c in st.store.file_chunks(rel))
 
 
-def _py_use_lines(source: str) -> dict[str, list[int]] | None:
-    """REAL Python usage sites via ast — a name counts only where it is
-    actually CALLED (`foo()`, `obj.foo()`) or IMPORTED. Comments, docstrings
-    and same-named local variables can never fabricate a connection (a lexical
-    match once credited a hop to `stats = _index_into(...)`, a local var).
-    None = not parseable (fall back to the lexical scan)."""
+def _py_uses(source: str):
+    """ast walk -> (alias_map, uses). `uses` is name -> [(line, receiver)]
+    where receiver is the `x` of an `x.name(...)` call (None for plain calls
+    and import sites). `alias_map` maps every imported alias to the dotted
+    module it denotes — the receiver check below uses it to reject stdlib/
+    external attribute calls (`re.search(...)` once 'connected' rerank.py to
+    bundle.py's `search()`). None = not parseable (lexical fallback)."""
     import ast as _ast
     try:
         tree = _ast.parse(source)
     except SyntaxError:
         return None
-    calls: dict[str, list[int]] = {}
-    imports: dict[str, list[int]] = {}
+    aliases: dict[str, tuple[int, str]] = {}     # alias -> (level, dotted)
+    calls: dict[str, list[tuple[int, str | None]]] = {}
+    imports: dict[str, list[tuple[int, str | None]]] = {}
     for node in _ast.walk(tree):
         if isinstance(node, _ast.Call):
             f = node.func
             if isinstance(f, _ast.Name):
-                calls.setdefault(f.id, []).append(node.lineno)
+                calls.setdefault(f.id, []).append((node.lineno, None))
             elif isinstance(f, _ast.Attribute):
-                calls.setdefault(f.attr, []).append(node.lineno)
-        elif isinstance(node, _ast.ImportFrom):
+                v = f.value              # x.name(...) and Cls(...).name(...)
+                recv = v.id if isinstance(v, _ast.Name) else (
+                    v.func.id if isinstance(v, _ast.Call)
+                    and isinstance(v.func, _ast.Name) else None)
+                calls.setdefault(f.attr, []).append((node.lineno, recv))
+        elif isinstance(node, _ast.Import):
             for a in node.names:
-                imports.setdefault(a.name, []).append(node.lineno)
-    # call sites FIRST — `Store(root)` anchors a better snippet than the
-    # import line; imports still count as evidence and still highlight
-    return {n: sorted(calls.get(n, [])) + sorted(imports.get(n, []))
+                aliases[a.asname or a.name.split(".")[0]] = (0, a.name)
+        elif isinstance(node, _ast.ImportFrom):
+            mod = node.module or ""
+            for a in node.names:
+                imports.setdefault(a.name, []).append((node.lineno, None))
+                dotted = f"{mod}.{a.name}" if mod else a.name
+                aliases[a.asname or a.name] = (node.level, dotted)
+    byline = lambda t: t[0]              # noqa: E731 — (line, recv|None) tuples
+    uses = {n: sorted(calls.get(n, []), key=byline)
+            + sorted(imports.get(n, []), key=byline)
             for n in {*calls, *imports}}
+    return aliases, uses
 
 
-def _use_sites(st: SearchState, uses_file: str, names: set[str]) -> dict[str, list[int]]:
-    """name -> real usage line numbers of `names` inside `uses_file`. Python
-    goes through the ast (logic-only trace); other content falls back to a
-    word-boundary scan with no line info."""
+def _alias_files(st: SearchState, use_file: str,
+                 level: int, dotted: str) -> set[str] | None:
+    """Repo files an imported alias could denote (module.py or its package
+    __init__). None = nothing in the repo matches -> the alias is external
+    (stdlib, site-packages) and can never carry an in-repo connection."""
+    def _match(parts: list[str]) -> set[str]:
+        if not parts:
+            return set()
+        if level:                        # relative: anchor at the file's package
+            base = list(Path(use_file).parent.parts)
+            base = base[:len(base) - (level - 1)] if level > 1 else base
+            cands = {"/".join(base + parts) + ".py",
+                     "/".join(base + parts) + "/__init__.py"}
+            return {f for f in st.fpaths if f in cands}
+        suffix = "/".join(parts)         # absolute: match by dotted-path suffix
+        return {f for f in st.fpaths
+                if f == suffix + ".py" or f.endswith("/" + suffix + ".py")
+                or f == suffix + "/__init__.py"
+                or f.endswith("/" + suffix + "/__init__.py")}
+
+    parts = [p for p in dotted.split(".") if p]
+    # `from mod import Class` aliases don't name a module file — fall back to
+    # the parent module, so `Store(x).get_meta()` still resolves to store.py
+    # (and `Path(x).resolve()` still resolves to NOTHING -> rejected).
+    hit = _match(parts) or _match(parts[:-1])
+    return hit or None
+
+
+def _use_sites(st: SearchState, uses_file: str, names: set[str],
+               defs_file: str) -> dict[str, list[int]]:
+    """name -> line numbers where `uses_file` REALLY uses a name defined in
+    `defs_file`. Python goes through the ast, and attribute calls are
+    receiver-checked: `alias.name(...)` counts only when the alias resolves to
+    `defs_file` itself; an alias resolving elsewhere (or to nothing in the
+    repo — stdlib) is rejected. Unresolvable receivers (variables, self) stay
+    counted, as before. Other content: word-boundary scan, no line info."""
     src = _source(st, uses_file)
     if uses_file.endswith(".py"):
-        uses = _py_use_lines(src)
-        if uses is not None:
-            return {n: uses[n] for n in names if uses.get(n)}
+        parsed = _py_uses(src)
+        if parsed is not None:
+            aliases, uses = parsed
+            out: dict[str, list[int]] = {}
+            for n in names:
+                lines = []
+                for ln, recv in uses.get(n, ()):
+                    if recv is not None and recv in aliases:
+                        files = _alias_files(st, uses_file, *aliases[recv])
+                        if files is None or defs_file not in files:
+                            continue     # external or a DIFFERENT module
+                    lines.append(ln)
+                if lines:
+                    out[n] = lines
+            return out
     out = {}
     for n in names:
-        hits = len(re.findall(rf"\b{re.escape(n)}\b", src))
-        if hits:
+        if re.search(rf"\b{re.escape(n)}\b", src):
             out[n] = []                  # matched, but no trustworthy lines
     return out
 
@@ -416,7 +472,7 @@ def _hop_symbols(st: SearchState, prev: str, cur: str, cap: int = 4) -> list[str
                  and len(s["name"].split(".")[-1]) >= 3}
         if not names:
             continue
-        for name, lines in _use_sites(st, uses_file, names).items():
+        for name, lines in _use_sites(st, uses_file, names, defs_file).items():
             counts[name] = counts.get(name, 0) + max(1, len(lines))
     return [n for n, _ in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))][:cap]
 
@@ -474,7 +530,7 @@ def _hop_code(st: SearchState, prev: str, cur: str,
                       if s["name"].split(".")[-1] == sym), None)
             if d is None:
                 continue
-            sites = _use_sites(st, use_file, {sym}).get(sym) or []
+            sites = _use_sites(st, use_file, {sym}, def_file).get(sym) or []
             use = _snip(st.store.file_chunks(use_file), sym, at_lines=sites)
             if use and sites:
                 use["in_symbol"] = _enclosing_symbol(st, use_file, sites[0])

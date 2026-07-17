@@ -123,6 +123,34 @@ def test_resolve_node_path_and_concept(linked_repo):
         assert hit in ("db/store.py", "db/models.py")
 
 
+def test_stdlib_attribute_calls_never_carry_a_hop(tmp_path, fake_embedder):
+    """`re.search(...)` must NOT connect a file to a repo `search()` — the
+    receiver resolves via the file's imports: an alias that resolves to
+    nothing in the repo (stdlib) or to a DIFFERENT module is rejected;
+    an alias resolving to the defs file itself, and variable receivers,
+    still count."""
+    (tmp_path / "engine.py").write_text(
+        "def search(query):\n"
+        '    """Search the engine index for a query."""\n    return [query]\n')
+    (tmp_path / "worker.py").write_text(
+        "import re\n\nfrom engine import search\n\n\n"
+        "def clean(text):\n"
+        '    """Clean a text with a regex search."""\n'
+        "    return re.search(r'x', text)\n\n\n"
+        "def run(q):\n"
+        '    """Run an engine search for the query."""\n'
+        "    return search(q)\n")
+    from megabrain.indexing.indexer import index_repo
+    index_repo(tmp_path)
+    with load_state(tmp_path) as st:
+        sites = G._use_sites(st, "worker.py", {"search"}, "engine.py")
+        lines = sites.get("search", [])
+        src = (tmp_path / "worker.py").read_text().splitlines()
+        # the re.search line is rejected; the plain call + the import remain
+        assert lines and all("re.search" not in src[ln - 1] for ln in lines)
+        assert any("return search(q)" in src[ln - 1] for ln in lines)
+
+
 def test_concept_resolution_prefers_source_over_tests(tmp_path, fake_embedder):
     """A test's skeleton is full of the vocabulary of the thing it tests, so raw
     cosine sends a concept to the test file. The same soft test penalty ranking

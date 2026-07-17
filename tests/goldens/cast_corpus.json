@@ -2483,33 +2483,33 @@
     ],
     [
      "module",
-     "_py_use_lines, _use_sites, _hop_symbols, _snip, _enclosing_symbol",
+     "_py_uses, _alias_files, _use_sites",
      null,
      360,
-     463,
-     "megabrain > megabrain/graph.py > [_py_use_lines, _use_sites, _hop_symbols, _snip, _enclosing_symbol]",
-     "e5861b3d373546bc937bbe9fd09049ee1918b274"
+     461,
+     "megabrain > megabrain/graph.py > [_py_uses, _alias_files, _use_sites]",
+     "749de9494f4767a2550a0d8620638678a3c6c9c0"
     ],
     [
      "module",
-     "_hop_code, _orient_hops, graph_path, graph_root",
+     "_hop_symbols, _snip, _enclosing_symbol, _hop_code, _orient_hops",
      null,
-     464,
-     550,
-     "megabrain > megabrain/graph.py > [_hop_code, _orient_hops, graph_path, graph_root]",
-     "9654b8429d244b9634ce9b6b8aa6768153550ca9"
+     462,
+     570,
+     "megabrain > megabrain/graph.py > [_hop_symbols, _snip, _enclosing_symbol, _hop_code, _orient_hops]",
+     "76a9256a16a077a1f7d2dfa9beba0949121862db"
     ],
     [
-     "function",
-     "render_graph",
+     "module",
+     "graph_path, graph_root, render_graph",
      null,
-     551,
-     609,
-     "megabrain > megabrain/graph.py > def render_graph(res: dict) -> str",
-     "db7e56b3cebc5a2f8af59eb663558aec60758a2b"
+     571,
+     665,
+     "megabrain > megabrain/graph.py > [graph_path, graph_root, render_graph]",
+     "5ebaa726eb5dc5046807641f23934158bc51d5ad"
     ]
    ],
-   "skeleton_sha": "8252ab52f510e19d6abafd413a6abc027c230e92",
+   "skeleton_sha": "1481b5dba039495a8c9d0fb2b5a1816a3b6247dd",
    "symbols": [
     [
      "log",
@@ -2715,80 +2715,87 @@
      "def _source(st: SearchState, rel: str) -> str"
     ],
     [
-     "_py_use_lines",
+     "_py_uses",
      "function",
      362,
-     388,
-     "def _py_use_lines(source: str) -> dict[str, list[int]] | None"
+     401,
+     "def _py_uses(source: str)"
+    ],
+    [
+     "_alias_files",
+     "function",
+     404,
+     429,
+     "def _alias_files(st: SearchState, use_file: str, level: int, dotted: str) -> set[str] | None"
     ],
     [
      "_use_sites",
      "function",
-     391,
-     405,
-     "def _use_sites(st: SearchState, uses_file: str, names: set[str]) -> dict[str, list[int]]"
+     432,
+     461,
+     "def _use_sites(st: SearchState, uses_file: str, names: set[str], defs_file: str) -> dict[str, list[int]]"
     ],
     [
      "_hop_symbols",
      "function",
-     408,
-     421,
+     464,
+     477,
      "def _hop_symbols(st: SearchState, prev: str, cur: str, cap: int=4) -> list[str]"
     ],
     [
      "SNIP_LINES",
      "constant",
-     424,
-     424,
+     480,
+     480,
      "SNIP_LINES = 22"
     ],
     [
      "_snip",
      "function",
-     427,
-     452,
+     483,
+     508,
      "def _snip(chunks: list[dict], symbol: str, at_line: int | None=None, at_lines: list[int] | None=None) -> dict | None"
     ],
     [
      "_enclosing_symbol",
      "function",
-     455,
-     463,
+     511,
+     519,
      "def _enclosing_symbol(st: SearchState, rel: str, line: int) -> str | None"
     ],
     [
      "_hop_code",
      "function",
-     466,
-     486,
+     522,
+     542,
      "def _hop_code(st: SearchState, prev: str, cur: str, symbols: list[str]) -> dict | None"
     ],
     [
      "_orient_hops",
      "function",
-     489,
-     514,
+     545,
+     570,
      "def _orient_hops(st: SearchState, hops: list[dict]) -> tuple[list[dict], bool]"
     ],
     [
      "graph_path",
      "function",
-     517,
-     533,
+     573,
+     589,
      "def graph_path(st: SearchState, source: str, target: str, path_filter: str | None=None) -> dict"
     ],
     [
      "graph_root",
      "function",
-     536,
-     550,
+     592,
+     606,
      "def graph_root(root: Path, mode: str='map', node: str | None=None, source: str | None=None, target: str | None=None, path_filter: str | None=None, label: bool=True) -> dict"
     ],
     [
      "render_graph",
      "function",
-     555,
-     609,
+     611,
+     665,
      "def render_graph(res: dict) -> str"
     ]
    ]
