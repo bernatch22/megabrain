@@ -35,6 +35,15 @@ def _pin_chat_provider(monkeypatch):
     monkeypatch.setenv("MEGABRAIN_CHAT_PROVIDER", "openrouter")
 
 
+@pytest.fixture(autouse=True)
+def _isolate_registry(monkeypatch, tmp_path_factory):
+    """Every index_repo registers into the machine-global repo registry —
+    point it at a per-test tmp file so the suite never touches (or reads)
+    the developer's real ~/.megabrain/registry.json."""
+    monkeypatch.setenv("MEGABRAIN_REGISTRY",
+                       str(tmp_path_factory.mktemp("registry") / "registry.json"))
+
+
 class FakeEmbedder:
     """Drop-in for megabrain.embeddings.Embedder: token-hash embeddings."""
 

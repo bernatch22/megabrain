@@ -94,11 +94,20 @@ TOOLS = [
     },
     {
         "name": "megabrain_index",
-        "description": "Index or incrementally update a repo before querying a NEW one (fast: only changed files are re-embedded; ask/query auto-refresh a stale index).",
+        "description": (
+            "Index or incrementally update a repo before querying a NEW one (fast: "
+            "only changed files are re-embedded; ask/search auto-refresh a stale "
+            "index). With list=true (or no repo_path) it instead returns EVERY repo "
+            "indexed on this machine — the global registry — so you can discover "
+            "what is already searchable without guessing paths."),
         "inputSchema": {
             "type": "object",
-            "properties": {"repo_path": {"type": "string"}},
-            "required": ["repo_path"],
+            "properties": {
+                "repo_path": {"type": "string",
+                              "description": "path to the repo root; omit together with list=true"},
+                "list": {"type": "boolean",
+                         "description": "true = return the registry of every indexed repo on this machine (no indexing)"},
+            },
         },
     },
     {
@@ -200,6 +209,9 @@ def call_tool(name: str, args: dict) -> str:
             text += f"\n\n— multi-agent: {tr}"
         return text
     if name == "megabrain_index":
+        if args.get("list") or not args.get("repo_path"):
+            from ..storage.registry import list_repos
+            return json.dumps({"repos": list_repos()}, indent=1)
         root = Path(args["repo_path"]).expanduser().resolve()
         return json.dumps(app.index(root))
     if name == "megabrain_forge":

@@ -67,16 +67,18 @@
   "name": "megabrain_query"
  },
  {
-  "description": "Index or incrementally update a repo before querying a NEW one (fast: only changed files are re-embedded; ask/query auto-refresh a stale index).",
+  "description": "Index or incrementally update a repo before querying a NEW one (fast: only changed files are re-embedded; ask/search auto-refresh a stale index). With list=true (or no repo_path) it instead returns EVERY repo indexed on this machine \u2014 the global registry \u2014 so you can discover what is already searchable without guessing paths.",
   "inputSchema": {
    "properties": {
+    "list": {
+     "description": "true = return the registry of every indexed repo on this machine (no indexing)",
+     "type": "boolean"
+    },
     "repo_path": {
+     "description": "path to the repo root; omit together with list=true",
      "type": "string"
     }
    },
-   "required": [
-    "repo_path"
-   ],
    "type": "object"
   },
   "name": "megabrain_index"

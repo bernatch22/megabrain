@@ -98,6 +98,27 @@ class Registry:
             return list(self._by_name.values())
 
 
+def _all_repos(reg: Registry) -> list[dict]:
+    """/repos = the repos THIS server holds warm (loaded: true) + every other
+    repo in the machine-global registry (~/.megabrain/registry.json,
+    loaded: false). Selecting an unloaded one in the studio goes through the
+    existing POST /repos/add — the server never eagerly loads N repos at boot."""
+    loaded = [{**_repo_stats(s), "loaded": True} for s in reg.list()]
+    have = {r["root"] for r in loaded}
+    try:
+        from ..storage.registry import list_repos
+        for e in list_repos():
+            if e["path"] not in have:
+                loaded.append({"name": e["name"], "root": e["path"],
+                               "files": e.get("files", 0),
+                               "chunks": e.get("chunks", 0),
+                               "embed_model": e.get("embed_model"),
+                               "loaded": False})
+    except Exception:                     # registry is bookkeeping, never a 500
+        log.debug("global registry merge skipped", exc_info=True)
+    return loaded
+
+
 def _repo_stats(s: RepoSession) -> dict:
     """name/root/files/chunks for /repos and /health — tolerant of a repo that
     isn't indexed yet (freshly added, before its first /index). Which repo is
@@ -231,7 +252,7 @@ def _make_handler(reg: Registry, cors: str | None, enable_llm: bool,
                         "uptime": int(time.time() - reg.get(repo_name).start),
                     }))
                 if path == "/repos":
-                    return self._send(200, [_repo_stats(s) for s in reg.list()])
+                    return self._send(200, _all_repos(reg))
                 if path == "/providers":
                     from .. import providers
                     return self._send(200, providers.detect())

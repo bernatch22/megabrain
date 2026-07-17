@@ -7,6 +7,7 @@
   megabrain serve    [path] --port N           studio web UI + JSON API (warm state)
   megabrain serve-api [path] --port N          JSON API only, no UI (warm state)
   megabrain stats  [path]                      index stats
+  megabrain repos                              every repo indexed on this machine
 
 PATH-SCOPE: for query/ask/get, `path` may be the repo root OR a sub-path inside
 it (e.g. ~/repo/src/dispatch). megabrain auto-detects the repo root (the nearest
@@ -125,6 +126,11 @@ def main(argv=None):
     p = sub.add_parser("stats")
     p.add_argument("path", nargs="?", default=".")
 
+    sub.add_parser("repos",
+                   help="list every repo indexed on this machine (the global "
+                        "registry at ~/.megabrain/registry.json; entries whose "
+                        "index vanished are dropped automatically)")
+
     p = sub.add_parser("forge",
                        help="detect uncovered file types and LLM-generate a chunking "
                             "strategy for each, validated against every matching file "
@@ -167,8 +173,8 @@ def main(argv=None):
     # query/ask/get support PATH-SCOPE: each comma-separated token may be a repo
     # root OR a sub-path inside one — resolve_root() finds the .megabrain root and
     # the sub-path used to scope retrieval to files under it.
-    # `install` is machine-level (it configures assistants), not repo-level — it
-    # is the one verb that takes no path.
+    # `install` and `repos` are machine-level (assistant configs / the global
+    # registry), not repo-level — the two verbs that take no path.
     raw = [Path(p).resolve() for p in a.path.split(",")] if hasattr(a, "path") else []
     root = raw[0] if raw else None
     if len(raw) > 1 and a.cmd not in ("index", "query"):
@@ -381,6 +387,19 @@ def _dispatch(a, raw: list[Path], root: Path) -> None:
         st = app.stats(root)
         print(f"files={st['files']} chunks={st['chunks']} symbols={st['symbols']} "
               f"edges={st['edges']} meta={st['last_index']}")
+    elif a.cmd == "repos":
+        import time as _time
+
+        from ..storage.registry import list_repos
+        rows = list_repos()
+        if not rows:
+            print("no indexed repos registered yet — `megabrain index <path>` adds one")
+            return
+        for e in rows:
+            when = _time.strftime("%Y-%m-%d %H:%M",
+                                  _time.localtime(e.get("last_index") or 0))
+            print(f'{e["name"]:<22} {e.get("files", 0):>5}f {e.get("chunks", 0):>7}c  '
+                  f'{when}  {e.get("embed_model") or "?":<30} {e["path"]}')
 
 
 if __name__ == "__main__":

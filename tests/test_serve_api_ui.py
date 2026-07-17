@@ -227,6 +227,22 @@ def test_repos_add_honors_tree_exclusions(server, tmp_path, fake_embedder):
     assert not any("drop/b.py" in f for f in indexed)   # excluded by the tree
 
 
+def test_repos_merges_global_registry(server, tmp_path):
+    """/repos = warm sessions (loaded: true) + registry-only repos
+    (loaded: false) — the studio rail shows both."""
+    base, repo = server
+    from megabrain.storage import registry
+    other = tmp_path / "coldrepo"
+    (other / ".megabrain").mkdir(parents=True)
+    (other / ".megabrain" / "db.sqlite").write_bytes(b"")
+    registry.register(other, {"files": 7, "chunks": 42, "embed_model": "m"})
+    _, repos = _get(base, "/repos")
+    by_name = {r["name"]: r for r in repos}
+    assert by_name[repo.name]["loaded"] is True
+    assert by_name["coldrepo"]["loaded"] is False
+    assert by_name["coldrepo"]["chunks"] == 42
+
+
 def test_unknown_repo_404(server):
     base, _ = server
     req = urllib.request.Request(base + "/search",

@@ -139,10 +139,14 @@ def index_repo(root: Path, repo_name: str | None = None,
     t0 = time.time()
     emb = Embedder()
     with Store(root) as store:
-        return _index_into(store, emb, root, name, force=force,
-                           exclude=exclude, strategies=strategies,
-                           prune_flows=prune_flows, t0=t0,
-                           scan_filters=scan_filters, on_progress=on_progress)
+        stats = _index_into(store, emb, root, name, force=force,
+                            exclude=exclude, strategies=strategies,
+                            prune_flows=prune_flows, t0=t0,
+                            scan_filters=scan_filters, on_progress=on_progress)
+        total_chunks = store.stats()["chunks"]
+    from ..storage.registry import register
+    register(root, {**stats, "chunks": total_chunks})   # global repo registry (fail-open)
+    return stats
 
 
 def _index_into(store: Store, emb: Embedder, root: Path, name: str, *,
