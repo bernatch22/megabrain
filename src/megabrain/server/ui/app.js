@@ -444,11 +444,12 @@
     const nodes = g.nodes.map((n, i) => {
       idx[n.file] = i;
       const kept = st.graphPos[n.file];
-      const [cx, cy] = center(n.community);
+      const ok = kept && isFinite(kept.x) && isFinite(kept.y);   // a past blowup
+      const [cx, cy] = center(n.community);                      // never sticks
       return { f: n.file, c: n.community, d: n.degree,
         r: 2.5 + Math.min(9, Math.sqrt(n.degree || 0) * 1.8),
-        x: kept ? kept.x : cx + (Math.random() - 0.5) * 90,
-        y: kept ? kept.y : cy + (Math.random() - 0.5) * 90,
+        x: ok ? kept.x : cx + (Math.random() - 0.5) * 90,
+        y: ok ? kept.y : cy + (Math.random() - 0.5) * 90,
         vx: 0, vy: 0, fix: false };
     });
     const links = g.links.map((l) => ({ a: idx[l.s], b: idx[l.d],
@@ -511,21 +512,26 @@
       const [cx, cy] = cent[cid];
       for (const i of S.byCom[cid]) { const p = N[i]; if (!p.fix) { p.vx += (cx - p.x) * 0.012 * alpha; p.vy += (cy - p.y) * 0.012 * alpha; } }
     }
-    for (const l of S.links) {                    // springs
-      const p = N[l.a], q = N[l.b];
-      const dx = q.x - p.x, dy = q.y - p.y;
+    for (const l of S.links) {                    // springs (gentle: k must stay
+      const p = N[l.a], q = N[l.b];               // small or far-apart linked
+      const dx = q.x - p.x, dy = q.y - p.y;       // nodes explode the sim)
       const d = Math.max(1, Math.sqrt(dx * dx + dy * dy));
       const want = l.sem ? 150 : 70;
-      const f = ((d - want) / d) * (l.sem ? 0.012 : 0.05) * alpha * 8;
+      const f = ((d - want) / d) * (l.sem ? 0.004 : 0.02) * alpha;
       if (!p.fix) { p.vx += dx * f; p.vy += dy * f; }
       if (!q.fix) { q.vx -= dx * f; q.vy -= dy * f; }
     }
-    const gx = S.W / 2, gy = S.H / 2;
+    const gx = S.W / 2, gy = S.H / 2, VMAX = 24;
     for (const p of N) {
       if (p.fix) continue;
       p.vx += (gx - p.x) * 0.004 * alpha; p.vy += (gy - p.y) * 0.004 * alpha;
-      p.vx *= 0.82; p.vy *= 0.82;
+      p.vx = Math.max(-VMAX, Math.min(VMAX, p.vx * 0.82));
+      p.vy = Math.max(-VMAX, Math.min(VMAX, p.vy * 0.82));
       p.x += p.vx; p.y += p.vy;
+      if (!isFinite(p.x) || !isFinite(p.y)) {     // never let a blowup go blank
+        p.x = gx + (Math.random() - 0.5) * 60; p.y = gy + (Math.random() - 0.5) * 60;
+        p.vx = p.vy = 0;
+      }
       st.graphPos[p.f] = { x: p.x, y: p.y };
     }
   }
