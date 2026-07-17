@@ -20,13 +20,33 @@
 ---
 
 Point megabrain at a repo and ask **"how does auth work"** in plain English. It finds
-*all* the related code — in ~200 ms, using **no LLM**, just math on embeddings — and an
-LLM narrates a walkthrough with the **real code spliced in from disk**. Nothing is
-invented: every line shown is copied verbatim.
+*all* the related code in ~200 ms with **no LLM** — just math on embeddings — then an
+LLM narrates a walkthrough with the **real code spliced in from disk**, line for line.
 
-Use it from the terminal, as an **MCP server inside Claude Code, Codex, Antigravity,
-Cursor, Windsurf or Gemini CLI** (`megabrain install` wires up whichever you have), as a
-Python library, or as a full **local web app**.
+- **Retrieval that cannot hallucinate.** The search path has no LLM at all: dense chunk
+  vectors fused with a file-skeleton signal and the import/call graph. The narrator only
+  ever *cites* spans — the engine splices the verbatim bytes, so no line is ever invented.
+- **A knowledge graph, for free.** The same index doubles as a navigable graph: communities,
+  god nodes, and the real call-path between any two files — built from AST edges + embedding
+  similarity, numpy-only, no vector DB. `megabrain graph .`
+- **Everywhere you work.** A terminal CLI, an **MCP server** inside Claude Code / Codex /
+  Cursor / Gemini CLI (+more), a Python library, and a full **local web studio**.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/bernatch22/megabrain/master/assets/hero.svg" alt="megabrain tracing the call path between two files, hop by hop, with no LLM" width="900">
+</p>
+<p align="center">
+  <em>`megabrain graph . --path` — the real call route between two files, each hop showing the
+  function that carries it. No LLM, ~200 ms, built from the index.</em>
+</p>
+
+**Get started** (no keys needed — narrate on your Claude Code plan, embed locally):
+
+```bash
+pip install 'megabrain[claude]'
+megabrain index ~/repo
+megabrain ask   ~/repo "how does auth work end to end"
+```
 
 ## 🖥️ megabrain studio — the whole engine, in your browser
 
@@ -63,6 +83,39 @@ megabrain studio ~/repo        #  → open http://localhost:2134
 
 Keyboard-driven, dark/light, zero build step, no CDN. Want the JSON API without the UI?
 `megabrain serve-api ~/repo` mounts the exact same endpoints, no studio.
+
+## See it in action
+
+Once the index is built you query it instead of reading files. **Real, verbatim output**
+from this very repo:
+
+```text
+$ megabrain graph . --path scoring rerank
+# graph path — retrieval/scoring.py → retrieval/rerank.py · 285ms
+⚠ NOT a call chain — the endpoints never call each other;
+  app.py calls BOTH sides (the shared orchestrator)
+  retrieval/scoring.py
+  └─ call → graph.py        · via _is_test_path, under_path
+  └─ call → app.py          · via graph_root, get
+  └─ call → retrieval/rerank.py  · via llm_rerank, get
+```
+
+That's the whole idea: the graph tells you the **truth** about how two files relate — here,
+that they *don't* call each other directly, and it names the file that bridges them
+(`app.py`) plus the exact functions on each hop. `--node` opens one file's neighbors + real
+code; `--path` traces the route; the studio's **Graph tab** does it on a live canvas with a
+`▶ Run the connection` walkthrough. Every carrier is a resolved call site, never a
+bare-name guess — `re.search(...)` can't masquerade as your repo's own `search()`.
+
+And retrieval never hallucinates a line:
+
+```text
+$ megabrain search . "how does the rerank drop tangential matches" --prune
+# megabrain search · 19 signal chunks (31 pruned as noise) · 2ms · no LLM
+### 1. [1552] retrieval/rerank.py L1-101 · rerank_model, _hint, llm_rerank · 1.06
+### 2. [1772] retrieval/bundle.py  L1-121 · search_with_state              · 0.95
+...
+```
 
 ## Quickstart — the easy path, no API keys
 
