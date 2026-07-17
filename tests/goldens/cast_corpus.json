@@ -2468,16 +2468,16 @@
      "_fingerprint, god_nodes, surprises, resolve_node, shortest_path",
      null,
      136,
-     235,
+     258,
      "megabrain > megabrain/graph.py > [_fingerprint, god_nodes, surprises, resolve_node, shortest_path]",
-     "0a3cd4586baadd2132c5ae7864dfcfb7e216c8cc"
+     "544df713fd4adf28a14d71f4f766cd50e9405538"
     ],
     [
      "module",
      "label_communities, graph_map, graph_node, _source",
      null,
-     236,
-     359,
+     259,
+     382,
      "megabrain > megabrain/graph.py > [label_communities, graph_map, graph_node, _source]",
      "b9ee69a72113e63ed615a3c45cfa3b484128536c"
     ],
@@ -2485,31 +2485,40 @@
      "module",
      "_py_uses, _alias_files, _use_sites",
      null,
-     360,
-     467,
+     383,
+     495,
      "megabrain > megabrain/graph.py > [_py_uses, _alias_files, _use_sites]",
-     "6928f6698816e4ab2d794e438ef8319f52b292d7"
+     "6c2102037953da381bb23cca46c0ba1d6787c58c"
     ],
     [
      "module",
-     "_hop_symbols, _snip, _enclosing_symbol, _hop_code, _orient_hops",
+     "file_links, _hop_symbols, _snip",
      null,
-     468,
-     582,
-     "megabrain > megabrain/graph.py > [_hop_symbols, _snip, _enclosing_symbol, _hop_code, _orient_hops]",
-     "272c75442530e3afeb2e1406e76f0f58f01da4b9"
+     496,
+     623,
+     "megabrain > megabrain/graph.py > [file_links, _hop_symbols, _snip]",
+     "d2f2ac2ebc62120a384f2b8b4c343de485e8d3eb"
     ],
     [
      "module",
-     "graph_path, graph_root, render_graph",
+     "_enclosing_symbol, _hop_code, _orient_hops, graph_path",
      null,
-     583,
-     699,
-     "megabrain > megabrain/graph.py > [graph_path, graph_root, render_graph]",
-     "afb03986f713548078ef2c31b1e885af56176f03"
+     624,
+     730,
+     "megabrain > megabrain/graph.py > [_enclosing_symbol, _hop_code, _orient_hops, graph_path]",
+     "7df332fe4e3149eb6845cb9f95e4106d69b5f488"
+    ],
+    [
+     "module",
+     "graph_root, render_graph",
+     null,
+     731,
+     812,
+     "megabrain > megabrain/graph.py > [graph_root, render_graph]",
+     "cd36e6163cb1ea2cd0b132dd7513355b38ac9ed7"
     ]
    ],
-   "skeleton_sha": "1481b5dba039495a8c9d0fb2b5a1816a3b6247dd",
+   "skeleton_sha": "5068f1c000733342f8ee1d6688ccee19878a1078",
    "symbols": [
     [
      "log",
@@ -2676,126 +2685,133 @@
      "shortest_path",
      "function",
      202,
-     235,
+     258,
      "def shortest_path(g: RepoGraph, src: str, dst: str) -> list[dict]"
     ],
     [
      "label_communities",
      "function",
-     238,
-     275,
+     261,
+     298,
      "def label_communities(st: SearchState, g: RepoGraph) -> dict[int, str]"
     ],
     [
      "graph_map",
      "function",
-     280,
-     313,
+     303,
+     336,
      "def graph_map(st: SearchState, path_filter: str | None=None, label: bool=True) -> dict"
     ],
     [
      "graph_node",
      "function",
-     316,
-     345,
+     339,
+     368,
      "def graph_node(st: SearchState, term: str, path_filter: str | None=None, label: bool=True) -> dict"
     ],
     [
      "_CALLABLE_KINDS",
      "constant",
-     348,
-     349,
+     371,
+     372,
      "_CALLABLE_KINDS = {'class', 'function', 'async_function', 'method', 'async_method', 'interface', 'type', 'enum'}"
     ],
     [
      "_source",
      "function",
-     352,
-     359,
+     375,
+     382,
      "def _source(st: SearchState, rel: str) -> str"
     ],
     [
      "_py_uses",
      "function",
-     362,
-     401,
+     385,
+     429,
      "def _py_uses(source: str)"
     ],
     [
      "_alias_files",
      "function",
-     404,
-     429,
+     432,
+     457,
      "def _alias_files(st: SearchState, use_file: str, level: int, dotted: str) -> set[str] | None"
     ],
     [
      "_use_sites",
      "function",
-     432,
-     467,
+     460,
+     495,
      "def _use_sites(st: SearchState, uses_file: str, names: set[str], defs_file: str) -> dict[str, list[int]]"
+    ],
+    [
+     "file_links",
+     "function",
+     498,
+     570,
+     "def file_links(st: SearchState, rel: str) -> dict[str, dict]"
     ],
     [
      "_hop_symbols",
      "function",
-     470,
-     487,
+     573,
+     592,
      "def _hop_symbols(st: SearchState, prev: str, cur: str, cap: int=4) -> list[str]"
     ],
     [
      "SNIP_LINES",
      "constant",
-     490,
-     490,
+     595,
+     595,
      "SNIP_LINES = 22"
     ],
     [
      "_snip",
      "function",
-     493,
-     518,
+     598,
+     623,
      "def _snip(chunks: list[dict], symbol: str, at_line: int | None=None, at_lines: list[int] | None=None) -> dict | None"
     ],
     [
      "_enclosing_symbol",
      "function",
-     521,
-     529,
+     626,
+     634,
      "def _enclosing_symbol(st: SearchState, rel: str, line: int) -> str | None"
     ],
     [
      "_hop_code",
      "function",
-     532,
-     554,
+     637,
+     659,
      "def _hop_code(st: SearchState, prev: str, cur: str, symbols: list[str]) -> dict | None"
     ],
     [
      "_orient_hops",
      "function",
-     557,
-     582,
+     662,
+     689,
      "def _orient_hops(st: SearchState, hops: list[dict]) -> tuple[list[dict], bool]"
     ],
     [
      "graph_path",
      "function",
-     585,
-     620,
+     692,
+     730,
      "def graph_path(st: SearchState, source: str, target: str, path_filter: str | None=None) -> dict"
     ],
     [
      "graph_root",
      "function",
-     623,
-     637,
+     733,
+     747,
      "def graph_root(root: Path, mode: str='map', node: str | None=None, source: str | None=None, target: str | None=None, path_filter: str | None=None, label: bool=True) -> dict"
     ],
     [
      "render_graph",
      "function",
-     642,
-     699,
+     752,
+     812,
      "def render_graph(res: dict) -> str"
     ]
    ]
@@ -2831,9 +2847,9 @@
      "extract_edges, php_class_index, php_edges",
      null,
      85,
-     205,
+     206,
      "megabrain > megabrain/indexing/graph.py > [extract_edges, php_class_index, php_edges]",
-     "ece4b6b2f46e683c7910f28df9fb35b39e537822"
+     "e38841b433797b90f42ccfb5e1609954403fdadc"
     ]
    ],
    "skeleton_sha": "c1aa0367da048481fce56cbf286acfd3073805af",
@@ -2870,49 +2886,49 @@
      "extract_edges",
      "function",
      87,
-     148,
+     149,
      "def extract_edges(rel: str, tree: ast.Module, mod2file: dict[str, str], unique_defs: dict[str, str], qualdefs: dict[str, str], pkg_prefixes: set[str]) -> list[tuple[str, str]]"
     ],
     [
      "_PHP_NS",
      "constant",
-     153,
-     153,
+     154,
+     154,
      "_PHP_NS = re.compile('^\\\\s*namespace\\\\s+([A-Za-z_][\\\\w\\\\\\\\]*)\\\\s*[;{]', re.M)"
     ],
     [
      "_PHP_DECL",
      "constant",
-     154,
-     156,
+     155,
+     157,
      "_PHP_DECL = re.compile('^\\\\s*(?:abstract\\\\s+|final\\\\s+|readonly\\\\s+)*(?:class|interface|trait|enum)\\\\s+([A-Za-z_]\\\\w*)',"
     ],
     [
      "_PHP_USE",
      "constant",
-     160,
      161,
+     162,
      "_PHP_USE = re.compile('^\\\\s*use\\\\s+(?!function\\\\b|const\\\\b)([A-Za-z_][\\\\w\\\\\\\\]*)(?:\\\\s+as\\\\s+\\\\w+)?\\\\s*;', re.M)"
     ],
     [
      "_PHP_USE_GROUP",
      "constant",
-     163,
      164,
+     165,
      "_PHP_USE_GROUP = re.compile('^\\\\s*use\\\\s+(?!function\\\\b|const\\\\b)([A-Za-z_][\\\\w\\\\\\\\]*)\\\\\\\\\\\\{([^}]+)\\\\}\\\\s*;', re.M)"
     ],
     [
      "php_class_index",
      "function",
-     167,
-     180,
+     168,
+     181,
      "def php_class_index(sources: dict[str, str]) -> dict[str, str]"
     ],
     [
      "php_edges",
      "function",
-     183,
-     205,
+     184,
+     206,
      "def php_edges(rel: str, source: str, fqcn2file: dict[str, str]) -> list[tuple[str, str]]"
     ]
    ]
@@ -5483,25 +5499,25 @@
      "_make_handler",
      "2/4",
      267,
-     396,
+     397,
      "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True)",
-     "d94b31ad26f2760df54e35b28aa8d6d31a9e87e5"
+     "a65fd614a32f75d699f43172ed679e5f677cacc3"
     ],
     [
      "block",
      "_make_handler",
      "3/4",
-     397,
-     487,
+     398,
+     489,
      "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True)",
-     "84f668db3506f5034586e2675e40166a84f6afd6"
+     "fe5fff2ff4b1f0e50658226b42fd87ae7abb29dd"
     ],
     [
      "block",
      "_make_handler",
      "4/4",
-     488,
-     489,
+     490,
+     491,
      "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True)",
      "5ebaec407bc18bc3fde033e8db1a20bf3e3ec3f8"
     ],
@@ -5509,8 +5525,8 @@
      "module",
      "_valid_model, _native_pick_folder, _scan_report, _merge_ignore",
      null,
-     490,
-     564,
+     492,
+     566,
      "megabrain > megabrain/server/http.py > [_valid_model, _native_pick_folder, _scan_report, _merge_ignore]",
      "1a60519fd169e3894bbb17ae8e132a99f7846295"
     ],
@@ -5518,8 +5534,8 @@
      "function",
      "serve",
      null,
-     565,
-     603,
+     567,
+     605,
      "megabrain > megabrain/server/http.py > def serve(root, port: int=2134, host: str='127.0.0.1', cors: str | None=None, enable_llm: bool=True, token: str | None=None, serve_ui: bool=True) -> None",
      "9393f03c5365edc0ede85801e1abc3467d166008"
     ]
@@ -5607,42 +5623,42 @@
      "_make_handler",
      "function",
      140,
-     489,
+     491,
      "def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True)"
     ],
     [
      "_valid_model",
      "function",
-     492,
-     503,
+     494,
+     505,
      "def _valid_model(model) -> str | None"
     ],
     [
      "_native_pick_folder",
      "function",
-     506,
-     542,
+     508,
+     544,
      "def _native_pick_folder() -> dict"
     ],
     [
      "_scan_report",
      "function",
-     545,
-     551,
+     547,
+     553,
      "def _scan_report(path: str) -> dict"
     ],
     [
      "_merge_ignore",
      "function",
-     554,
-     564,
+     556,
+     566,
      "def _merge_ignore(root: Path, ignore: str) -> None"
     ],
     [
      "serve",
      "function",
-     567,
-     603,
+     569,
+     605,
      "def serve(root, port: int=2134, host: str='127.0.0.1', cors: str | None=None, enable_llm: bool=True, token: str | None=None, serve_ui: bool=True) -> None"
     ]
    ]

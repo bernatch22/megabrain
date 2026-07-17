@@ -297,9 +297,11 @@ def _make_handler(reg: Registry, cors: str | None, enable_llm: bool,
                     if not rel:                 # no file -> the repo's name index
                         return self._send(200, reg.get(repo_name).with_state(
                             lambda st: {"names": st.store.symbol_names()}))
+                    from ..graph import file_links
                     return self._send(200, reg.get(repo_name).with_state(
                         lambda st: {"file": rel,
-                                    "symbols": st.store.symbols_for(rel)}))
+                                    "symbols": st.store.symbols_for(rel),
+                                    "links": file_links(st, rel)}))
                 if path == "/symbol":
                     nm = (qs.get("name") or [""])[0].strip()
                     if not nm:

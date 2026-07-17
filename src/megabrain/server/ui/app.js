@@ -225,34 +225,27 @@
     return m ? m[1] : String(code);
   }
 
-  async function symbolIndex() {
-    // one cheap fetch per repo: bare name -> definition count
-    if (st.symIndex && st.symIndexRepo === st.repo) return st.symIndex;
-    try {
-      const r = await api.symbolNames(st.repo);
-      st.symIndex = r.names || {}; st.symIndexRepo = st.repo;
-    } catch (e) { st.symIndex = {}; }          // no links beats fake links
-    return st.symIndex;
-  }
-
   async function viewerLoad(file, focus, hiLines, conn, fresh) {
-    let gc, sy, links;
+    let gc, sy;
     try {
-      [gc, sy, links] = await Promise.all([api.fileCode(file, st.repo),
-                                           api.fileSymbols(file, st.repo),
-                                           symbolIndex()]);
+      [gc, sy] = await Promise.all([api.fileCode(file, st.repo),
+                                    api.fileSymbols(file, st.repo)]);
     } catch (e) { toast(e.message); return; }
     const stack = fresh || !st.viewer ? [] : st.viewer.stack;
     const symbols = (sy && sy.symbols) || [];
-    // link policy: local definitions (jump is exact) + names with EXACTLY one
-    // definition repo-wide. Ambiguous names (`get`, `run`, `props`…) are NOT
-    // links — a jump that could land anywhere is worse than none.
-    const local = new Set(symbols.map((s) => s.name.split(".").pop()));
-    const linkSet = new Set(local);
-    for (const [name, count] of Object.entries(links || {}))
-      if (count === 1) linkSet.add(name);
+    // link policy: the SERVER resolves every jump (receiver-aware, import-
+    // anchored, local-var ctor tracing). A word is a link iff its exact
+    // target is known — `Path(root).resolve()` resolves to pathlib, links to
+    // nothing; name uniqueness is never evidence.
+    const linkMap = (sy && sy.links) || {};        // "line:name" -> {file, line}
+    const lineLinks = {};                          // line -> Set(names)
+    for (const k of Object.keys(linkMap)) {
+      const i = k.indexOf(":");
+      (lineLinks[+k.slice(0, i)] = lineLinks[+k.slice(0, i)] || new Set())
+        .add(k.slice(i + 1));
+    }
     st.viewer = { file, code: stripFence(gc.code), lang: langFor(file),
-      symbols, focus: focus || 1, links: linkSet,
+      symbols, focus: focus || 1, linkMap, lineLinks,
       hiLines: hiLines || new Set(), conn: conn || null, stack };
     paintViewer();
   }
@@ -263,23 +256,16 @@
     paintPanel();                        // walkthrough, ✕ on the card does
   }
 
-  async function viewerJumpSymbol(name) {
+  async function viewerJumpSymbol(name, line) {
     const v = st.viewer; if (!v) return;
-    // local definition wins: the jump is exact, no fetch needed
-    const loc = v.symbols.find((s) => s.name.split(".").pop() === name);
-    if (loc) {
-      v.focus = loc.line; v.hiLines = new Set([loc.line]); paintViewer();
+    const tgt = v.linkMap[line + ":" + name];
+    if (!tgt) return;                    // not a resolved link -> not clickable
+    if (tgt.file === v.file) {
+      v.focus = tgt.line; v.hiLines = new Set([tgt.line]); paintViewer();
       return;
     }
-    // otherwise the link policy guarantees a single repo-wide definition
-    let r;
-    try { r = await api.symbolDefs(name, st.repo); }
-    catch (e) { toast(e.message); return; }
-    const defs = (r && r.defs) || [];
-    if (!defs.length) { toast(`no definition of ${name} in the index`); return; }
-    const d = defs[0];
     v.stack.push({ file: v.file, focus: v.focus, hiLines: v.hiLines });
-    await viewerLoad(d.file, d.line, new Set([d.line]), v.conn);
+    await viewerLoad(tgt.file, tgt.line, new Set([tgt.line]), v.conn);
   }
 
   async function viewerBack() {
@@ -307,7 +293,7 @@
     const body = lines.map((ln, i) => {
       const n = i + 1;
       return `<div class="vln ${v.hiLines.has(n) ? "hi" : ""}" id="v-ln-${n}">
-        <span class="vno mono">${n}</span><span class="vcode mono">${hl(ln, v.lang, v.links)}</span></div>`;
+        <span class="vno mono">${n}</span><span class="vcode mono">${hl(ln, v.lang, v.lineLinks[n])}</span></div>`;
     }).join("");
     const outline = v.symbols.map((s) =>
       `<button class="flag-row" data-act="vgoto" data-line="${s.line}" style="width:100%;text-align:left;border-radius:5px">
@@ -532,7 +518,7 @@
         <div style="font-size:12.5px;font-weight:600">Path — ${p.found ? p.hops.length + " hops" : "not found"}</div>
         <div class="mono" style="font-size:10.5px;color:var(--muted);margin-top:4px">${esc(p.source || "?")} → ${esc(p.target || "?")}</div>
         ${p.flipped ? `<div style="font-size:10.5px;color:var(--accent);margin-top:6px">↻ shown in call-flow order — the calls actually run this way, opposite to how you asked</div>` : ""}
-        ${p.chain === false ? `<div style="font-size:11px;color:var(--bad);margin-top:8px;padding:8px 10px;background:var(--bad-bg);border:1px solid var(--bad-bd);border-radius:6px">⚠ <b>not a call chain</b> — ${esc((p.source || "").split("/").pop())} and ${esc((p.target || "").split("/").pop())} never call each other. Both connect <b>into ${esc((p.meet || "a shared file").split("/").pop())}</b> — follow the arrowheads on the canvas.</div>` : ""}
+        ${p.chain === false ? `<div style="font-size:11px;color:var(--bad);margin-top:8px;padding:8px 10px;background:var(--bad-bg);border:1px solid var(--bad-bd);border-radius:6px">⚠ <b>not a call chain</b> — ${esc((p.source || "").split("/").pop())} and ${esc((p.target || "").split("/").pop())} never call each other. ${p.meet_kind === "caller" ? `<b>${esc((p.meet || "?").split("/").pop())} calls BOTH sides</b> — it's the shared orchestrator` : `Both connect <b>into ${esc((p.meet || "a shared file").split("/").pop())}</b>`} — follow the arrowheads.</div>` : ""}
         <div style="display:flex;flex-direction:column;gap:5px;margin-top:10px">${hops || emptyMini("no route — the endpoints live on disconnected islands")}</div>
         <div style="display:flex;gap:8px;margin-top:12px">
           ${p.found && p.hops.length > 1 ? `<button class="btn-primary" data-act="gplay" style="flex:1">▶ Run the connection</button>` : ""}
@@ -1777,7 +1763,11 @@
   document.addEventListener("click", (e) => {
     // go-to-definition: identifiers inside the navigator's code area only
     const sym = e.target.closest("[data-sym]");
-    if (sym && e.target.closest("#vcode")) { viewerJumpSymbol(sym.dataset.sym); return; }
+    if (sym && e.target.closest("#vcode")) {
+      const row = sym.closest(".vln");
+      if (row) viewerJumpSymbol(sym.dataset.sym, +row.id.slice(5));
+      return;
+    }
     const t = e.target.closest("[data-act]"); if (!t) return;
     const act = t.dataset.act;
     if (act === "view") { st.view = t.dataset.id; render(); }

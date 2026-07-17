@@ -200,30 +200,53 @@ def resolve_node(st: SearchState, g: RepoGraph, term: str) -> str | None:
 
 
 def shortest_path(g: RepoGraph, src: str, dst: str) -> list[dict]:
-    """BFS over struct+semantic edges. Each hop says what carries it.
+    """Cheapest route over struct+semantic edges (Dijkstra, deterministic).
 
-    Structural edges are expanded before semantic ones, and non-test files
-    before tests (same house rule as ranking: tests stay reachable, they just
-    never crowd). At equal distance that yields the route through real code —
-    a test file bridges half the repo without explaining anything."""
+    Transit is COSTED, not just ordered: package `__init__.py` files import
+    half the repo (a super-hub that 'connects' any pair through plumbing) and
+    test files bridge without explaining — both pay a heavy toll as
+    intermediate nodes, so a route through real code wins even when it's a
+    hop longer. Semantic edges cost more than structural ones. Endpoints are
+    never penalized."""
     if src not in g.idx or dst not in g.idx:
         return []
+    import heapq
     a, b = g.idx[src], g.idx[dst]
-    order = lambda j: (_is_test_path(g.files[j]), g.files[j])  # noqa: E731
+
+    def toll(j: int) -> int:
+        if j == b:
+            return 0                     # entering the destination is free
+        f = g.files[j]
+        t = 0
+        if f.rsplit("/", 1)[-1] == "__init__.py":
+            t += 4                       # package plumbing, not a relationship
+        if _is_test_path(f):
+            t += 4
+        return t
+
+    dist: dict[int, float] = {a: 0}
     prev: dict[int, tuple[int, str]] = {a: (-1, "")}
-    frontier = [a]
-    while frontier and b not in prev:
-        nxt = []
-        for i in frontier:
-            for j in sorted(g.struct[i], key=order):
-                if j not in prev:
-                    prev[j] = (i, "/".join(sorted(g.struct[i][j])))
-                    nxt.append(j)
-            for j in sorted(g.sem[i], key=order):
-                if j not in prev:
-                    prev[j] = (i, f"semantic {g.sem[i][j]:.2f}")
-                    nxt.append(j)
-        frontier = nxt
+    heap: list[tuple[float, str, int]] = [(0, g.files[a], a)]
+    done: set[int] = set()
+    while heap:
+        d, _, i = heapq.heappop(heap)
+        if i in done:
+            continue
+        done.add(i)
+        if i == b:
+            break
+        for j in sorted(g.struct[i], key=lambda x: g.files[x]):
+            nd = d + 2 + toll(j)
+            if nd < dist.get(j, float("inf")):
+                dist[j] = nd
+                prev[j] = (i, "/".join(sorted(g.struct[i][j])))
+                heapq.heappush(heap, (nd, g.files[j], j))
+        for j in sorted(g.sem[i], key=lambda x: g.files[x]):
+            nd = d + 3 + toll(j)
+            if nd < dist.get(j, float("inf")):
+                dist[j] = nd
+                prev[j] = (i, f"semantic {g.sem[i][j]:.2f}")
+                heapq.heappush(heap, (nd, g.files[j], j))
     if b not in prev:
         return []
     hops, cur = [], b
@@ -380,10 +403,15 @@ def _py_uses(source: str):
             if isinstance(f, _ast.Name):
                 calls.setdefault(f.id, []).append((node.lineno, None))
             elif isinstance(f, _ast.Attribute):
-                v = f.value              # x.name(...) and Cls(...).name(...)
+                v = f.value              # walk a.b.c() chains to the base
+                while isinstance(v, _ast.Attribute):
+                    v = v.value
+                # None is reserved for PLAIN calls (verified); an attribute
+                # call whose base can't be named gets "?" — os.environ.get()
+                # once passed as a plain call and ranked as verified evidence
                 recv = v.id if isinstance(v, _ast.Name) else (
                     v.func.id if isinstance(v, _ast.Call)
-                    and isinstance(v.func, _ast.Name) else None)
+                    and isinstance(v.func, _ast.Name) else "?")
                 calls.setdefault(f.attr, []).append((node.lineno, recv))
         elif isinstance(node, _ast.Import):
             for a in node.names:
@@ -467,6 +495,81 @@ def _use_sites(st: SearchState, uses_file: str, names: set[str],
     return out
 
 
+def file_links(st: SearchState, rel: str) -> dict[str, dict]:
+    """'line:name' -> {file, line}: receiver-aware go-to-definition for one
+    file — the studio editor links ONLY what this resolves. A name links when
+    its jump is exact: an imported name (to its def in the resolved module),
+    a local def, `alias.f()` through the alias's repo file, or `var.f()`
+    where `var = Alias(...)` / `with Alias(...) as var` traces the ctor
+    (lightweight local typing). `Path(root).resolve()` resolves to pathlib →
+    nothing indexed → NO link; uniqueness of a repo def is never evidence."""
+    if not rel.endswith(".py"):
+        return {}
+    src = _source(st, rel)
+    parsed = _py_uses(src)
+    if parsed is None:
+        return {}
+    aliases, uses = parsed
+    import ast as _ast
+    try:
+        tree = _ast.parse(src)
+    except SyntaxError:
+        return {}
+    var2ctor: dict[str, str] = {}        # x = Alias(...) · with Alias(...) as x
+    for node in _ast.walk(tree):
+        val, names = None, []
+        if isinstance(node, _ast.Assign):
+            val = node.value
+            names = [t.id for t in node.targets if isinstance(t, _ast.Name)]
+        elif isinstance(node, _ast.withitem):
+            val = node.context_expr
+            if isinstance(node.optional_vars, _ast.Name):
+                names = [node.optional_vars.id]
+        if (val is not None and names and isinstance(val, _ast.Call)
+                and isinstance(val.func, _ast.Name)):
+            for nm in names:
+                var2ctor[nm] = val.func.id
+    own = {s["name"].split(".")[-1]: s for s in st.store.symbols_for(rel)}
+    symcache: dict[str, list[dict]] = {}
+
+    def _def_in(files: set[str], name: str) -> dict | None:
+        for f in sorted(files):
+            syms = symcache.setdefault(f, st.store.symbols_for(f))
+            d = next((s for s in syms
+                      if s["name"].split(".")[-1] == name), None)
+            if d:
+                return {"file": f, "line": d["line"]}
+        return None
+
+    def _via_alias(alias: str, name: str) -> dict | None:
+        info = aliases.get(alias)
+        if not info:
+            return None
+        files = _alias_files(st, rel, *info)
+        return _def_in(files, name) if files else None
+
+    out: dict[str, dict] = {}
+    for name, sites in uses.items():
+        for ln, recv in sites:
+            tgt = None
+            if recv is None:             # plain call or the import site itself
+                info = aliases.get(name)
+                if info:
+                    files = _alias_files(st, rel, *info)
+                    if files:
+                        tgt = _def_in(files, name) or \
+                            {"file": sorted(files)[0], "line": 1}   # a module
+                elif name in own:
+                    tgt = {"file": rel, "line": own[name]["line"]}
+            elif recv in var2ctor:       # var.f() -> the ctor's file
+                tgt = _via_alias(var2ctor[recv], name)
+            else:                        # alias.f() -> the alias's file
+                tgt = _via_alias(recv, name)
+            if tgt and not (tgt["file"] == rel and tgt["line"] == ln):
+                out[f"{ln}:{name}"] = tgt
+    return out
+
+
 def _hop_symbols(st: SearchState, prev: str, cur: str, cap: int = 4) -> list[str]:
     """The SYMBOLS that carry a hop: names defined in one file of the pair and
     ACTUALLY USED (called/imported — ast, not word-matching) in the other.
@@ -479,12 +582,14 @@ def _hop_symbols(st: SearchState, prev: str, cur: str, cap: int = 4) -> list[str
         if not names:
             continue
         for name, u in _use_sites(st, uses_file, names, defs_file).items():
-            # verified sites (plain calls, resolved aliases) outrank inferred
-            # variable-receiver matches 10:1 — `dict.get` noise never buries
-            # a real carrier
-            w = (10 if u["strong"] else 1) * max(1, len(u["lines"]))
-            counts[name] = counts.get(name, 0) + w
-    return [n for n, _ in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))][:cap]
+            w = max(1, len(u["lines"]))
+            prev_w, prev_s = counts.get(name, (0, False))
+            counts[name] = (prev_w + w, prev_s or u["strong"])
+    # VERIFIED carriers rank before inferred ones no matter the counts — a
+    # dict.get called 15 times is still weaker evidence than one resolved
+    # import, and _hop_code derives the hop's DIRECTION from the top carrier
+    return [n for n, _ in sorted(counts.items(),
+                                 key=lambda kv: (not kv[1][1], -kv[1][0], kv[0]))][:cap]
 
 
 SNIP_LINES = 22
@@ -568,7 +673,9 @@ def _orient_hops(st: SearchState, hops: list[dict]) -> tuple[list[dict], bool]:
         a, b = hops[k - 1]["file"], hops[k]["file"]
         fwd += (a, b) in edges
         back += (b, a) in edges
-    if back <= fwd:
+    # flip ONLY when the whole route runs against the asked order — a mixed
+    # route isn't a chain, and flipping it just disrespects the user's frame
+    if fwd or not back:
         return hops, False
     m = len(hops) - 1
     rev = []
@@ -605,17 +712,20 @@ def graph_path(st: SearchState, source: str, target: str,
             dirs.append(None)
     known = [d for d in dirs if d]
     chain = not ("fwd" in known and "back" in known)
-    meet = None
+    meet = meet_kind = None
     if not chain:
         for i in range(len(dirs) - 1):
             if dirs[i] == "fwd" and dirs[i + 1] == "back":
-                meet = hops[i + 1]["file"]      # both arrows point at this node
-                break
+                meet, meet_kind = hops[i + 1]["file"], "callee"
+                break                    # a→M←b: both call INTO the middle
+            if dirs[i] == "back" and dirs[i + 1] == "fwd":
+                meet, meet_kind = hops[i + 1]["file"], "caller"
+                break                    # a←M→b: the middle calls BOTH sides
     return {"repo": st.repo,
             "source": hops[0]["file"] if hops else a,
             "target": hops[-1]["file"] if hops else b,
             "resolved_from": [source, target], "flipped": flipped,
-            "chain": chain, "meet": meet,
+            "chain": chain, "meet": meet, "meet_kind": meet_kind,
             "found": bool(hops), "hops": hops,
             "ms": int((time.time() - t0) * 1000)}
 
@@ -664,8 +774,11 @@ def render_graph(res: dict) -> str:
         if not res["found"]:
             L.append("no path found")
         elif res.get("chain") is False:
-            L.append(f'⚠ NOT a call chain — the endpoints never call each other; '
-                     f'both connect INTO {res.get("meet") or "a shared file"}')
+            m = res.get("meet") or "a shared file"
+            L.append('⚠ NOT a call chain — the endpoints never call each other; '
+                     + (f'{m} calls BOTH sides (the shared orchestrator)'
+                        if res.get("meet_kind") == "caller"
+                        else f'both connect INTO {m}'))
         for h in res["hops"]:
             syms = f'  · via {", ".join(h["symbols"])}' if h.get("symbols") else ""
             L.append(f'  {"└─ " + h["via"] + " → " if h["via"] else ""}{h["file"]}{syms}')

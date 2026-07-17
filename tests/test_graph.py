@@ -153,6 +153,35 @@ def test_stdlib_attribute_calls_never_carry_a_hop(tmp_path, fake_embedder):
         assert u["strong"] is True       # plain call + import = verified
 
 
+def test_file_links_are_receiver_exact(tmp_path, fake_embedder):
+    """The editor links ONLY resolved jumps: Path(root).resolve() must NOT
+    link to a repo `resolve()` def; imported calls, ctor-traced variables and
+    local defs must."""
+    (tmp_path / "engine.py").write_text(
+        "class Engine:\n"
+        '    """The engine box."""\n'
+        "    def resolve(self):\n"
+        '        """Resolve the engine target."""\n        return 1\n\n\n'
+        "def search(q):\n"
+        '    """Search the engine index."""\n    return [q]\n')
+    (tmp_path / "worker.py").write_text(
+        "from pathlib import Path\n\nfrom engine import Engine, search\n\n\n"
+        "def run(root):\n"
+        '    """Run a worker pass."""\n'
+        "    root = Path(root).resolve()\n"        # L8 — pathlib, NOT Engine.resolve
+        "    eng = Engine()\n"
+        "    eng.resolve()\n"                      # L10 — ctor-traced -> engine.py
+        "    return search(root)\n")               # L11 — imported -> engine.py
+    from megabrain.indexing.indexer import index_repo
+    index_repo(tmp_path)
+    with load_state(tmp_path) as st:
+        links = G.file_links(st, "worker.py")
+    assert "8:resolve" not in links                # the complaint, pinned
+    assert links["10:resolve"]["file"] == "engine.py"
+    assert links["11:search"]["file"] == "engine.py"
+    assert links["3:Engine"]["file"] == "engine.py"   # the import line itself
+
+
 def test_meeting_point_is_declared_not_a_chain(tmp_path, fake_embedder):
     """a.py -> hub.py <- b.py is NOT a flow: both endpoints call INTO hub and
     never into each other. The path says so (chain=False, meet=hub)."""
@@ -174,10 +203,39 @@ def test_meeting_point_is_declared_not_a_chain(tmp_path, fake_embedder):
     assert res["found"] and [h["file"] for h in res["hops"]] == \
         ["alpha.py", "hub.py", "beta.py"]
     assert res["chain"] is False and res["meet"] == "hub.py"
+    assert res["meet_kind"] == "callee"          # both call INTO hub
+    assert res["flipped"] is False               # mixed routes keep asked order
     # a real chain stays chain=True
     with load_state(tmp_path) as st:
         res2 = G.graph_path(st, "alpha.py", "hub.py")
     assert res2["chain"] is True
+
+
+def test_shared_caller_meet_and_init_toll(tmp_path, fake_embedder):
+    """boss.py calls both wings: wing_a -> boss <- ... wait — a←boss→b. The
+    path declares boss the shared ORCHESTRATOR. And a fat __init__.py that
+    imports everything must NOT become the route (transit toll)."""
+    (tmp_path / "pkg").mkdir()
+    (tmp_path / "pkg" / "__init__.py").write_text(
+        "from pkg.wing_a import fly_a\nfrom pkg.wing_b import fly_b\n"
+        "from pkg.boss import drive\n")
+    (tmp_path / "pkg" / "wing_a.py").write_text(
+        "def fly_a():\n    \"\"\"Fly the A wing.\"\"\"\n    return 'a'\n")
+    (tmp_path / "pkg" / "wing_b.py").write_text(
+        "def fly_b():\n    \"\"\"Fly the B wing.\"\"\"\n    return 'b'\n")
+    (tmp_path / "pkg" / "boss.py").write_text(
+        "from pkg.wing_a import fly_a\nfrom pkg.wing_b import fly_b\n\n\n"
+        "def drive():\n    \"\"\"Drive both wings.\"\"\"\n"
+        "    return fly_a() + fly_b()\n")
+    from megabrain.indexing.indexer import index_repo
+    index_repo(tmp_path)
+    with load_state(tmp_path) as st:
+        res = G.graph_path(st, "pkg/wing_a.py", "pkg/wing_b.py")
+    # the route goes through boss (real caller), NOT through the fat __init__
+    assert [h["file"] for h in res["hops"]] == \
+        ["pkg/wing_a.py", "pkg/boss.py", "pkg/wing_b.py"]
+    assert res["chain"] is False and res["meet"] == "pkg/boss.py"
+    assert res["meet_kind"] == "caller"          # boss calls BOTH sides
 
 
 def test_concept_resolution_prefers_source_over_tests(tmp_path, fake_embedder):
