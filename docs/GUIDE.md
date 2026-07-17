@@ -140,8 +140,52 @@ splice guarantee holds regardless of which embedding retrieved the bundle.
 megabrain index ~/repo                       # once; incremental after, auto-refreshes on change
 megabrain ask   ~/repo "how does auth work"  # narrated walkthrough, real code spliced in
 megabrain search ~/repo "retry logic"         # raw code map, NO LLM, ~200 ms
+megabrain search ~/repo "retry logic" --rerank # + one cheap LLM pass over the pruned list (below)
+megabrain graph ~/repo                        # the repo as a knowledge graph (communities, core nodes)
+megabrain repos                              # every repo indexed on this machine (the registry)
 megabrain get   ~/repo src/x.py --symbol Foo # pull one file/symbol to expand
 ```
+
+### `megabrain graph` — the repo as a knowledge graph (no networkx)
+
+The same AST edges and skeleton embeddings that power retrieval also form a graph.
+`megabrain graph` surfaces it three ways — deterministic except for one cached LLM call
+that only *names* the communities (`--no-labels` skips it, fully offline):
+
+```bash
+megabrain graph ~/repo                          # map: communities · core "god node" files · surprising links
+megabrain graph ~/repo --node scoring.py        # one node: community, in/out edges, semantic twins, real chunks
+megabrain graph ~/repo --node "the scoring pipeline"  # a CONCEPT resolves to its file by embedding
+megabrain graph ~/repo --path "auth" "billing"  # BFS route between two concepts, each hop labelled by what carries it
+megabrain graph ~/repo --json                   # machine-readable (nodes, links, communities, god_nodes, surprises)
+```
+
+Two lanes feed it: **structural** (import/call edges, solid) and **semantic** (skeleton-
+embedding cosine ≥ 0.80, the top-3 twins per file — files that talk about the same thing
+without importing each other). Communities come from deterministic weighted label
+propagation; "god nodes" are the highest-degree files; "surprises" are cosine ≥ 0.85 pairs
+with no structural edge across different communities. `--node` splices the file's REAL
+chunks — the graph never paraphrases code. Measured: this repo is 122 files / 324 links in
+~8 ms; graphify 630 files in ~37 ms.
+
+### `search --rerank` — a cheap LLM pass over the pruned list (opt-in)
+
+The deterministic prune is recall-safe, so files that merely *share vocabulary* with the
+query (tests, eval scripts, A/B gates) survive as "signal" and bloat the output. `--rerank`
+adds one buffered LLM call over the pruned list — the model sees only a compact view
+(ids + spans + names, no bodies) and returns the relevant ids, ordered; the engine
+reorders/filters its own verbatim chunks (dropped ones move to `noise`, nothing is lost).
+
+```bash
+megabrain search ~/repo "how does scoring work" --prune           # deterministic signal chunks
+megabrain search ~/repo "how does scoring work" --rerank          # + the LLM pass (implies --prune)
+```
+
+Fail-open everywhere (no key, timeout, junk reply → the deterministic list, untouched).
+Opt-in on the CLI; **default-on over MCP** (`megabrain_search rerank: true`) and via
+`GET /prune?rerank=1`. The model is `MEGABRAIN_RERANK_MODEL` (falls back to the ask model —
+reranking is cheap, any fast model works). Measured on this repo's scoring query: 21 signal
+chunks down to 6.
 
 ### query vs query+prune vs ask — when to use which (especially if the caller is an LLM)
 
@@ -231,12 +275,13 @@ before answering.
 | tool | when the agent should reach for it |
 |---|---|
 | **`megabrain_ask`** | **the default.** Any "how/where/why does X work" — returns a senior-engineer walkthrough with the REAL code spliced in, tracing the whole cross-file flow. One call instead of crawling files. |
-| `megabrain_search` | no LLM (~200 ms) — a flat, relevance-ranked list of exactly the **signal** chunks **with their code** (noise dropped, every related file still represented). When the agent wants the code to read and will reason over it itself, at zero LLM cost. (`megabrain_query` remains a deprecated dispatch alias for 0.9 clients.) |
-| `megabrain_index` | index/refresh a repo the agent hasn't seen. |
+| `megabrain_search` | fast (~200 ms) — a flat, relevance-ranked list of exactly the **signal** chunks **with their code** (noise dropped, every related file still represented). When the agent wants the code to read and will reason over it itself. An **LLM rerank runs by default** (`rerank: true`, ~1–2 s) to drop vocabulary-only matches — pass `rerank: false` for the zero-LLM deterministic list; either way it fails open. (`megabrain_query` remains a deprecated dispatch alias for 0.9 clients.) |
+| `megabrain_graph` | the repo as a knowledge graph: `mode: "map"` (default) = communities + core "god node" files + surprising cross-community links; `mode: "node"` (`node:`) = one file's community, in/out edges, semantic twins, symbols and REAL chunks (a concept resolves to its file by embedding); `mode: "path"` (`source:`/`target:`) = the route between two concepts. Deterministic bar one cached LLM call that only names communities. |
+| `megabrain_index` | index/refresh a repo the agent hasn't seen — **or `list: true` (or no `repo_path`)** to enumerate every repo indexed on this machine (the global registry), so the agent can discover what's available. |
 | `megabrain_forge` | make a file type the engine can't read yet (`.toml`, `.astro`) searchable. |
 | `megabrain_flows` | manage the opt-in flow cache: `action: "warm"` pre-caches the repo's workflows, `"refresh"` updates stale ones, `"list"` / `"enable"`. |
 
-Five tools, on purpose. Every tool costs the calling agent context and a routing
+Every tool costs the calling agent context and a routing
 decision, so megabrain exposes only what it alone can do — pulling a single file or
 symbol is left to the host's own Read/Grep (and to `ask`'s sub-agents, which fetch
 files internally). Deleting an index is a `rm -rf .megabrain` away, so there's no tool
@@ -432,7 +477,9 @@ megabrain flows ~/repo --refresh           # after big changes, update the cache
 # provider knobs (env or ~/.zshrc)
 OPENROUTER_API_KEY=…                        # recommended, one key for both
 MEGABRAIN_ASK_MODEL=anthropic/claude-haiku-4.5
+MEGABRAIN_RERANK_MODEL=…                     # model for search --rerank / MCP rerank (default: the ask model)
 MEGABRAIN_EMBED_BASE_URL=http://localhost:11434/v1   # local embeddings (§2b)
 MEGABRAIN_EMBED_MODEL=unclemusclez/jina-embeddings-v2-base-code   # code-tuned, open weights, $0
 MEGABRAIN_FLOW_CACHE=0                      # hard-off the flow cache
+MEGABRAIN_REGISTRY=…                        # override the global repo registry path (default ~/.megabrain/registry.json)
 ```

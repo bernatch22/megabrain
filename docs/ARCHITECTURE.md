@@ -5,7 +5,7 @@
 > minutes of agent file-crawling with one grounded answer.
 
 Every load-bearing choice below is locked by experimental data (golden-set gates,
-model bakeoffs — see §7). The five hard rules:
+model bakeoffs — see §8). The five hard rules:
 
 1. **No LLM in the retrieval path** — LLM pruning was tested four ways and every
    variant cost completeness or added 1–2 s for no recall gain. The only LLM calls
@@ -39,8 +39,8 @@ model bakeoffs — see §7). The five hard rules:
 ```
 
 Entry points share one retrieval core: CLI (`megabrain …`), MCP stdio server
-(`megabrain_ask/_query/_get/_chunks/_index`), HTTP (`serve-api`), and the Python API
-(`megabrain.search/ask/…`, lazy imports, `py.typed`).
+(`megabrain_ask/_search/_graph/_index/_forge/_flows`), HTTP (`serve-api`), and the Python
+API (`megabrain.search/ask/…`, lazy imports, `py.typed`).
 
 | command | LLM? | latency | use |
 |---------|------|---------|-----|
@@ -255,6 +255,24 @@ signal/noise call the full bundle makes, just rendering the signal alone (with
 is the lean read-path answer for a coding agent that wants only the code worth
 reading, not a narration; a plain `query` still returns the full CORE+RELATED bundle.
 
+**LLM rerank (`retrieval/rerank.py`, the `llm_rerank` lane, layered ON the prune).**
+The deterministic prune is recall-safe by design — every bundle file contributes its
+best chunk — so files that merely *share vocabulary* with the query (tests, eval
+scripts, A/B gates) survive as "signal" and bloat the output; cosine can't tell
+"implements scoring" from "tests scoring". This optional lane fixes exactly that: one
+buffered LLM call sees a COMPACT view of the pruned candidates (ids + spans + names +
+a one-line hint, no bodies, ~2K tokens) and returns only the relevant ids, ordered.
+The engine then keeps/reorders its **own verbatim chunks** and moves the dropped ones
+to `noise` — the model *selects*, it never writes code (the same anti-hallucination
+stance as ask's splice). It does **not** touch the deterministic scoring or ranking
+(rule 1's core stays LLM-free); it is a post-retrieval selector, fail-open in every
+branch (no key, timeout, malformed reply, unknown ids → the deterministic result is
+returned untouched — the LLM is an optimization, never a dependency). Opt-in on the
+CLI (`search --rerank`, which implies `--prune`); **default-on over MCP**
+(`megabrain_search rerank: true`) and via `GET /prune?rerank=1`. Model:
+`MEGABRAIN_RERANK_MODEL`, falling back to `ask_model()`. Measured on this repo's
+scoring query: 21 signal chunks → 6.
+
 ### 3.4 Flow cache — self-caching workflow retrieval (`flows.py`, opt-in)
 
 **OFF by default** — a mode a dev enables per repo (`megabrain flows --enable`,
@@ -374,19 +392,28 @@ single-agent ask → full bundle.
   `include_docs`, `scope_path`, `agents` — omit for auto fan-out on broad
   questions; MCP is request/response, so the fan-out runs buffered and the trace
   lands as a footer), `megabrain_search` (`scope_path`, `compact` — ALWAYS the flat
-  signal-only chunk list with code, no LLM; the file-grouped bundle is deliberately
+  signal-only chunk list with code; the file-grouped bundle is deliberately
   not exposed, since its code-less RELATED map is a dead end without a get/chunks
-  tool, while pruning still keeps every bundle file),
-  `megabrain_index`, `megabrain_forge`, `megabrain_flows`. Five tools on purpose:
-  a tool costs the caller context + a routing decision, so the MCP surface carries
+  tool, while pruning still keeps every bundle file; the **LLM rerank runs by default**
+  here — `rerank: true`, fail-open — `megabrain_query` stays as a deprecated dispatch
+  alias),
+  `megabrain_graph` (`mode=map|node|path`, `node`/`source`/`target`/`scope_path` — the
+  knowledge graph over §6, node mode splicing the file's real chunks),
+  `megabrain_index` (index a repo, or `list: true` / no `repo_path` → the machine-global
+  registry of every indexed repo), `megabrain_forge`, `megabrain_flows`. A tool costs the
+  caller context + a routing decision, so the MCP surface carries
   only what megabrain alone can do (single-file/symbol fetches are the host's
   Read/Grep job; `ask`'s sub-agents fetch files internally). Auto-refreshes stale
   indexes before answering.
 - **HTTP** (`frontends/http.py`, stdlib `http.server`, warm state, db-mtime auto-reload):
   `/search` `/docsearch` `/chunks` `/ask` `/ask/stream` (SSE: the ask v2 event
-  stream — plan, per-agent deltas/tools, spliced synthesis) `/get` `/index`
-  `/health`. Optional Bearer auth (`--token` / `MEGABRAIN_API_TOKEN`) on everything
-  but `/health`; `get_code` enforces repo-root containment (path-traversal
+  stream — plan, per-agent deltas/tools, spliced synthesis) `/prune` (`?rerank=1` runs
+  the §3.3 LLM rerank over the signal chunks) `/graph` (`?mode=&node=&source=&target=` —
+  the §6 knowledge graph) `/get` `/index` (`/index/stream` SSE per-file progress)
+  `/repos` (this server's warm repos **merged with the machine-global registry** —
+  registered-elsewhere repos come back `loaded: false` so the studio can load them on
+  click) `/providers` `/health`. Optional Bearer auth (`--token` / `MEGABRAIN_API_TOKEN`)
+  on everything but `/health`; `get_code` enforces repo-root containment (path-traversal
   hardened). `/docsearch` groups are per-deployment config
   (`.megabrain/docsearch.json` or env), not engine knowledge.
 - **PATH-SCOPE** everywhere: pass a sub-path (`~/repo/src/auth`) and retrieval is
@@ -403,7 +430,45 @@ single-agent ask → full bundle.
 
 ---
 
-## 6. Layout
+## 6. Graph — the repo as a knowledge graph (`megabrain/graph.py`, numpy-only)
+
+Where a tool like graphify spins up LLM sub-agents to *extract* relationships, megabrain
+already owns them: the AST import/call edges (the `edges` table from §2.3) are the
+**structural lane**, and the per-file skeleton embeddings (§2.2) add a **semantic lane**
+(cosine — files that talk about the same thing without importing each other). No networkx,
+no new store: it reads what indexing already produced (`Store.all_edges()` +
+`Store.file_chunks()` were added for it) and runs pure numpy over it.
+
+- **Semantic edges** — skeleton-vector cosine, top-3 twins per file above `SEM_EDGE_MIN
+  = 0.80`, capped to keep the graph sparse (`SEM_TOP_K = 3`).
+- **Communities** — deterministic weighted **label propagation** (numpy): structural edges
+  weight 1.0 per kind, semantic edges `SEM_WEIGHT = 0.5 · cosine`; fixed ascending visit
+  order + smallest-label tie-break → byte-stable across runs, renumbered by size. **No
+  PageRank:** PageRank-as-*ranking* was rejected by experiment (rule 3, Acc@1 0.91 → 0.73),
+  but that verdict is about ranking; communities are STRUCTURE, a different use, and label
+  prop is parameter-free.
+- **God nodes** — the highest structural-degree files, the repo's core abstractions.
+- **Surprises** — pairs with cosine ≥ `SURPRISE_MIN = 0.85`, **no** structural edge, in
+  **different** communities: the connection you didn't know was there, scored honestly.
+- **Paths** — BFS between two nodes over the combined graph, each hop labelled by what
+  carries it (an edge kind, or `semantic 0.87`). Endpoints resolve by **embedding**: a
+  concept ("the scoring pipeline") finds its file, not just an exact path match.
+
+The **only** LLM touch is community *labeling* — one buffered call names each community
+in 2–4 words, cached in the store's `meta` table under a graph fingerprint (files + edge
+counts + thresholds), fail-open to "Community N" (and `--no-labels` / offline skips it
+entirely). Everything else is deterministic. `mode=node` splices the file's REAL chunks —
+the graph never paraphrases code (rule 5 holds here too).
+
+Surfaces: CLI `megabrain graph [path] [--node F] [--path A B] [--no-labels] [--json]`,
+MCP `megabrain_graph(repo_path, mode=map|node|path, node?, source?, target?, scope_path?)`,
+HTTP `GET /graph?mode=&node=&source=&target=&repo=`, and the studio's force-directed
+canvas (§5). Measured: this repo 122 files / 324 links in ~8 ms; graphify 630 files in
+~37 ms.
+
+---
+
+## 7. Layout
 
 The tree mirrors the pipeline — content → index → retrieval → narration →
 surfaces — one subpackage per layer (src/ layout, PyPA standard). Loose files
@@ -418,6 +483,10 @@ src/megabrain/
   app.py             application-service layer: one use-case per verb + the
                      shared pre-steps (resolve_scope · rel_join · normalize_agents
                      · reindex policy) every surface calls
+  graph.py           KNOWLEDGE GRAPH (§6): structural (AST edges) + semantic
+                     (skeleton cosine) lanes · label-prop communities · god
+                     nodes · surprises · embedding-resolved BFS paths · one
+                     cached LLM community-label call (numpy only, no networkx)
   mcp_server.py      launcher shim — keeps `python3 -m megabrain.mcp_server` registrations working
 
   chunkers/          CONTENT → CHUNKS: base (contract) · cast (the ONE cAST
@@ -430,6 +499,11 @@ src/megabrain/
     graph.py           import/call edges (py · ts/js · php)
   storage/           PERSISTENCE
     store.py           SQLite schema + loads + row packing + flow integrity
+                       (+ all_edges / file_chunks — the graph's structural read)
+    registry.py        machine-global repo registry (~/.megabrain/registry.json,
+                       env MEGABRAIN_REGISTRY): every index registers here so any
+                       frontend lists EVERY indexed repo · fail-open · self-heals
+                       (drops entries whose db.sqlite is gone)
     flows.py           flow-cache MECHANICS (write/dedupe · cosine read · verbatim
                        serve · sha invalidation — no LLM; retrieval may import this)
   retrieval/         ANSWER queries (no LLM in this package — rule 1)
@@ -443,6 +517,9 @@ src/megabrain/
     docsearch.py       docs-site search projection
     issue.py           deterministic issue parsing (py + js/ts frames, variants)
     bm25.py            sparse entity-ID lane (postings)
+    rerank.py          OPTIONAL post-prune LLM rerank (§3.3): one buffered call
+                       over a compact candidate view drops vocabulary-only hits +
+                       reorders verbatim chunks · fail-open · MCP default-on
   ask/               NARRATE (the only layer that talks to an LLM at query time)
     narrator.py        walkthrough with verbatim splice (code/docs/code+docs modes)
     agents.py          ask v2: classifier · planner · parallel tool-enabled
@@ -481,7 +558,7 @@ the one-shot entry.
 
 ---
 
-## 7. Evidence (where the numbers live)
+## 8. Evidence (where the numbers live)
 
 - **Golden gate** (30 human-verified queries over a private corpus, maintainer-side):
   R@1 **0.86** · **bundle_full 1.00** · p50 ~10 ms warm. Multi-repo and 134K-line

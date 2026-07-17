@@ -1,6 +1,54 @@
 # Changelog
 
-## Unreleased
+## Unreleased — megabrain_graph · search + LLM rerank · repo registry
+
+- **`megabrain_graph` — the repo as a navigable knowledge graph (new MCP tool
+  / CLI verb / `GET /graph` / studio tab).** Built from what indexing already
+  owns: AST import/call edges (structural lane) + skeleton-embedding cosine
+  (semantic lane — similar files with no import between them, honestly
+  scored). Deterministic weighted label propagation for communities (numpy
+  only, no networkx), god nodes by degree, "surprising connections"
+  (cosine ≥0.85 + no structural edge + different communities), BFS paths
+  with the carrying edge kind per hop, and endpoints resolved by EMBEDDING —
+  `megabrain graph . --node "the scoring pipeline"` lands on `scoring.py`.
+  The one LLM touch is community labeling: a single buffered call, cached in
+  the store's meta under a graph fingerprint, fail-open to "Community N".
+  Node views splice the store's REAL chunks (new `Store.all_edges()` /
+  `Store.file_chunks()`). Measured: this repo 122 files/324 links in 8ms;
+  graphify's own 630-file repo in 37ms. Where graphify needs LLM sub-agents
+  to extract relationships, megabrain gets the graph for free at index time.
+- **`megabrain_query` → `megabrain_search`** (breaking, with a net): the tool
+  IS a search and the engine already speaks that vocabulary
+  (`search_with_state`/`prune_search`); "query" read as SQL. TOOLS lists only
+  `megabrain_search`; `call_tool` still accepts `megabrain_query`, so
+  registered 0.9 clients keep working at zero agent-context cost. CLI:
+  `megabrain search` is the primary verb, `query` a hidden alias.
+- **LLM rerank on search (`llm_prune`)** — the deterministic prune is
+  recall-safe by design, so files that merely share vocabulary with the query
+  (tests, evals, A/B gates) survive as signal. A cheap buffered LLM call now
+  sees a compact candidate listing (ids + spans + hints, never bodies) and
+  returns the relevant ids ordered; the engine keeps its own verbatim chunks
+  (the model selects, never writes code) and ANY failure returns the
+  deterministic result untouched. Defaults: MCP `rerank: true`, CLI
+  `search --rerank` opt-in (keeps the 2ms path), `GET /prune?rerank=1`.
+  Model: `MEGABRAIN_RERANK_MODEL` (else the ask default). Measured on the
+  motivating query ("how does retrieval scoring work"): 21 signal chunks → 6,
+  the three scoring.py lanes ranked 1-2-3, every eval/test tangential dropped.
+- **Global repo registry** — every `index_repo` now registers its repo in
+  `~/.megabrain/registry.json` (override `MEGABRAIN_REGISTRY`; atomic writes;
+  fail-open; self-healing — entries whose index vanished are dropped on
+  read). Surfaces: `megabrain repos` (CLI), `megabrain_index list=true`
+  (MCP), and `GET /repos` merges the server's warm sessions
+  (`loaded: true`) with registry-only repos (`loaded: false`) so the studio
+  rail shows EVERY indexed repo on the machine — clicking a cold one loads it.
+- **Studio: Graph tab** — a force-directed canvas (vanilla, no libs) over
+  `/graph`: nodes colored by community with labels at centroids, god nodes
+  haloed, solid structural vs dashed semantic edges, drag/zoom/pan, click a
+  node for its neighbors + symbols + real chunks, and `A -> B` in the query
+  bar traces a highlighted path. Physics stays cheap via per-community
+  repulsion (no global O(n²)). Prune view gains the LLM-rerank toggle.
+
+### Also in Unreleased — local-model knobs
 
 - **`MEGABRAIN_CHAT_EXTRA`** — a JSON object shallow-merged into every
   OpenAI-compat chat body (streamed and not; extras win, so a knob can be

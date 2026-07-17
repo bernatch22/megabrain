@@ -40,6 +40,12 @@ megabrain serve ~/repo        #  → open http://localhost:2134
 - **Search** — every related file ranked in ~200 ms; click one for a **chunk heatmap**
   where signal glows and noise dims, code syntax-highlighted.
 - **Prune** — the money shot: what the engine **read** vs what it **ignored**, side by side.
+  Flip on **LLM rerank** to watch a cheap model drop the vocabulary-only matches (tests,
+  eval scripts) and reorder — fail-open to the deterministic list.
+- **Graph** — the repo as a **force-directed knowledge graph**: nodes coloured by community,
+  the core abstractions haloed, structural edges solid and semantic ones dotted. Drag, zoom,
+  click a file for its neighbours + symbols + real chunks, or type `A -> B` to trace the path
+  between two concepts.
 - **Ask** — watch a broad question **fan out into parallel sub-agents**, their tool calls
   and prose streaming into per-agent cards, then a synthesis with the **real code spliced
   in** as it types.
@@ -48,7 +54,9 @@ megabrain serve ~/repo        #  → open http://localhost:2134
   click** to go fully local.
 - **Add a repo → it scans first** — you SEE exactly what will index and what's skipped and
   *why* (`.gitignore` · vendored · generated · too-big), edit the `.megabrainignore`, then a
-  **live progress bar** indexes it file by file.
+  **live progress bar** indexes it file by file. The rail also lists **every repo indexed on
+  this machine** (the global registry) — the ones this server hasn't loaded show dimmed; one
+  click loads and searches them.
 - **Embeddings you can see** — which model each index used, and **re-index with another**
   (cloud pplx or a local, code-tuned jina) behind the same bar — the query embedding
   switches to match, so search keeps working.
@@ -105,12 +113,18 @@ to do it by hand? `claude mcp add megabrain -- python3 -m megabrain.mcp_server`,
 the equivalent entry into your assistant's MCP config.
 
 Then use `megabrain_ask` / `megabrain_search` instead of grep + Read chains — one call
-replaces minutes of file-crawling. Five tools, deliberately lean — megabrain exposes
+replaces minutes of file-crawling. The tools are deliberately lean — megabrain exposes
 only what it alone can do (your agent already has Read/Grep for single files):
 **`megabrain_ask`** (narrated walkthrough, real code spliced),
-**`megabrain_search`** (no LLM, ~200 ms — a flat, relevance-ranked list of exactly the
-chunks worth reading, with the code, noise dropped), `megabrain_index`, plus `megabrain_forge`
-(teach it a new file type) and `megabrain_flows` (the opt-in workflow cache).
+**`megabrain_search`** (no core LLM, ~200 ms — a flat, relevance-ranked list of exactly the
+chunks worth reading, with the code, noise dropped; an **LLM rerank runs by default**
+(`rerank: true`) to cut vocabulary-only matches, fail-open to the raw list),
+**`megabrain_graph`** (the repo as a knowledge graph — `mode=map` for communities + core
+abstractions + surprising links, `mode=node` for one file's neighbours/symbols/real chunks,
+`mode=path` to route between two concepts), `megabrain_index` (index a repo, or `list: true`
+to enumerate every repo indexed on this machine), plus `megabrain_forge` (teach it a new file
+type) and `megabrain_flows` (the opt-in workflow cache). `megabrain_query` stays as a
+deprecated dispatch alias for `megabrain_search`.
 
 ## Commands
 
@@ -121,6 +135,11 @@ megabrain scan   ~/repo                          # census: what WOULD index + wh
 megabrain ask    ~/repo "how does X work"        # narrated walkthrough + real code
 megabrain search  ~/repo "retry logic"            # raw code map, no LLM (~200 ms)
 megabrain search  ~/repo "retry logic" --prune    # flat signal-only chunks, no LLM (drops the noise)
+megabrain search  ~/repo "retry logic" --rerank   # + one cheap LLM pass to drop vocabulary-only hits
+megabrain graph  ~/repo                          # the repo as a knowledge graph (communities + core nodes)
+megabrain graph  ~/repo --node scoring.py        # one file: neighbours, semantic twins, real chunks
+megabrain graph  ~/repo --path "auth" "billing"  # BFS route between two concepts (resolved by embedding)
+megabrain repos                                  # every repo indexed on this machine (the registry)
 megabrain get    ~/repo src/x.py --symbol Foo    # one file or symbol
 megabrain forge  ~/repo                          # teach it your repo's file types (below)
 megabrain serve  ~/repo                          # studio web UI at / + the JSON API
