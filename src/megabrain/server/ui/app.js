@@ -712,6 +712,8 @@
     const W = wrap.clientWidth, H = wrap.clientHeight;
     const dpr = window.devicePixelRatio || 1;
     cv.width = W * dpr; cv.height = H * dpr;
+    cv.style.width = W + "px"; cv.style.height = H + "px";   // buffer is dpr-scaled;
+    // WITHOUT this the canvas showed its full buffer (2x) and overflowed the wrap
     const mode = st.gmode;
     const idx = {};
     let nodes = [], links = [];
@@ -799,6 +801,7 @@
       const w = wrap.clientWidth, h = wrap.clientHeight;
       if (!w || !h || (w === S.W && h === S.H)) return;
       S.W = w; S.H = h; S.cv.width = w * S.dpr; S.cv.height = h * S.dpr;
+      S.cv.style.width = w + "px"; S.cv.style.height = h + "px";   // CSS = logical
       pathLayout();                      // static modes re-lay for the new size
       if (!S.userView) fitAll();
     });
