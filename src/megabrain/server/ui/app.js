@@ -501,8 +501,10 @@
     if (!sn) return "";
     const lang = langFor(sn.file);
     const pat = new RegExp("\\b" + sn.hi.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b");
+    // hi_rows = the ast-verified call/def lines; only word-match when absent
+    const marks = new Set(sn.hi_rows || []);
     const rows = sn.text.split("\n").map((ln, i) => {
-      const hot = pat.test(ln);
+      const hot = marks.size ? marks.has(i) : pat.test(ln);
       return `<div style="display:flex;${hot ? "background:var(--accent-dim);border-radius:3px" : ""}">
         <span style="width:40px;flex-shrink:0;text-align:right;padding-right:9px;opacity:.4">${sn.start_line + i}</span>
         <span style="white-space:pre">${hl(ln, lang)}</span></div>`;

@@ -345,67 +345,126 @@ def graph_node(st: SearchState, term: str,
     }
 
 
+_CALLABLE_KINDS = {"class", "function", "async_function", "method",
+                   "async_method", "interface", "type", "enum"}
+
+
+def _source(st: SearchState, rel: str) -> str:
+    """The file's real bytes (disk first; the chunk partition reconstructs it
+    when the file moved out from under the index)."""
+    try:
+        return (Path(st.store.root) / rel).read_text(encoding="utf-8",
+                                                     errors="replace")
+    except OSError:
+        return "\n".join(c["text"] or "" for c in st.store.file_chunks(rel))
+
+
+def _py_use_lines(source: str) -> dict[str, list[int]] | None:
+    """REAL Python usage sites via ast — a name counts only where it is
+    actually CALLED (`foo()`, `obj.foo()`) or IMPORTED. Comments, docstrings
+    and same-named local variables can never fabricate a connection (a lexical
+    match once credited a hop to `stats = _index_into(...)`, a local var).
+    None = not parseable (fall back to the lexical scan)."""
+    import ast as _ast
+    try:
+        tree = _ast.parse(source)
+    except SyntaxError:
+        return None
+    calls: dict[str, list[int]] = {}
+    imports: dict[str, list[int]] = {}
+    for node in _ast.walk(tree):
+        if isinstance(node, _ast.Call):
+            f = node.func
+            if isinstance(f, _ast.Name):
+                calls.setdefault(f.id, []).append(node.lineno)
+            elif isinstance(f, _ast.Attribute):
+                calls.setdefault(f.attr, []).append(node.lineno)
+        elif isinstance(node, _ast.ImportFrom):
+            for a in node.names:
+                imports.setdefault(a.name, []).append(node.lineno)
+    # call sites FIRST — `Store(root)` anchors a better snippet than the
+    # import line; imports still count as evidence and still highlight
+    return {n: sorted(calls.get(n, [])) + sorted(imports.get(n, []))
+            for n in {*calls, *imports}}
+
+
+def _use_sites(st: SearchState, uses_file: str, names: set[str]) -> dict[str, list[int]]:
+    """name -> real usage line numbers of `names` inside `uses_file`. Python
+    goes through the ast (logic-only trace); other content falls back to a
+    word-boundary scan with no line info."""
+    src = _source(st, uses_file)
+    if uses_file.endswith(".py"):
+        uses = _py_use_lines(src)
+        if uses is not None:
+            return {n: uses[n] for n in names if uses.get(n)}
+    out = {}
+    for n in names:
+        hits = len(re.findall(rf"\b{re.escape(n)}\b", src))
+        if hits:
+            out[n] = []                  # matched, but no trustworthy lines
+    return out
+
+
 def _hop_symbols(st: SearchState, prev: str, cur: str, cap: int = 4) -> list[str]:
     """The SYMBOLS that carry a hop: names defined in one file of the pair and
-    referenced in the other's real chunk text (word-boundary; both directions,
-    since BFS walks edges undirected). No new indexing — the symbols table and
-    chunks already know. Ordered by reference count."""
+    ACTUALLY USED (called/imported — ast, not word-matching) in the other.
+    Both directions, since BFS walks edges undirected. Ordered by call count."""
     counts: dict[str, int] = {}
-    callable_kinds = {"class", "function", "async_function", "method",
-                      "async_method", "interface", "type", "enum"}
     for defs_file, uses_file in ((cur, prev), (prev, cur)):
-        # functions/classes only — module constants and vars (`log`, `query`)
-        # collide with ubiquitous identifiers and drown the real carriers
         names = {s["name"].split(".")[-1] for s in st.store.symbols_for(defs_file)
-                 if s["name"] and s["kind"] in callable_kinds
+                 if s["name"] and s["kind"] in _CALLABLE_KINDS
                  and len(s["name"].split(".")[-1]) >= 3}
         if not names:
             continue
-        src = "\n".join(c["text"] or "" for c in st.store.file_chunks(uses_file))
-        for name in names:
-            n = len(re.findall(rf"\b{re.escape(name)}\b", src))
-            if n:
-                counts[name] = counts.get(name, 0) + n
+        for name, lines in _use_sites(st, uses_file, names).items():
+            counts[name] = counts.get(name, 0) + max(1, len(lines))
     return [n for n, _ in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))][:cap]
 
 
 SNIP_LINES = 22
 
 
-def _snip(chunks: list[dict], symbol: str, at_line: int | None = None) -> dict | None:
-    """A small window of REAL chunk text around `symbol` (or around a known
-    line): {file-relative start_line, text, hi} — the studio's play mode
-    renders these with the symbol's lines highlighted."""
+def _snip(chunks: list[dict], symbol: str, at_line: int | None = None,
+          at_lines: list[int] | None = None) -> dict | None:
+    """A small window of REAL chunk text around a KNOWN line — the def line or
+    the ast-verified call sites — falling back to the first word match only
+    when no line info exists. `hi_rows` = window-relative rows to highlight
+    (the exact call/def lines, so the UI never marks a same-named local)."""
     pat = re.compile(rf"\b{re.escape(symbol)}\b")
+    anchor = at_line if at_line is not None else (at_lines[0] if at_lines else None)
     for c in chunks:
         lines = (c["text"] or "").splitlines()
         row = None
-        if at_line is not None:
-            if c["start_line"] <= at_line <= c["end_line"]:
-                row = at_line - c["start_line"]
+        if anchor is not None:
+            if c["start_line"] <= anchor <= c["end_line"]:
+                row = anchor - c["start_line"]
         else:
             row = next((i for i, ln in enumerate(lines) if pat.search(ln)), None)
         if row is None:
             continue
         lo = max(0, row - SNIP_LINES // 3)
         hi = min(len(lines), lo + SNIP_LINES)
-        return {"start_line": c["start_line"] + lo,
-                "text": "\n".join(lines[lo:hi]), "hi": symbol}
+        start = c["start_line"] + lo
+        marks = [ln - start for ln in (at_lines or ([anchor] if anchor else []))
+                 if start <= ln < start + (hi - lo)]
+        return {"start_line": start, "text": "\n".join(lines[lo:hi]),
+                "hi": symbol, "hi_rows": sorted(set(marks))}
     return None
 
 
 def _hop_code(st: SearchState, prev: str, cur: str,
               symbols: list[str]) -> dict | None:
-    """USE + DEF snippets for a hop's top carrier symbol: where one file
-    references it, and where the other defines it (whichever direction the
-    edge actually runs)."""
+    """USE + DEF snippets for a hop's top carrier symbol: the ast-verified
+    call sites in one file, the definition in the other (whichever direction
+    the edge actually runs)."""
     for sym in symbols:                  # first carrier that has a real def
         for def_file, use_file in ((cur, prev), (prev, cur)):
             d = next((s for s in st.store.symbols_for(def_file)
                       if s["name"].split(".")[-1] == sym), None)
             if d is None:
                 continue
-            use = _snip(st.store.file_chunks(use_file), sym)
+            sites = _use_sites(st, use_file, {sym}).get(sym) or []
+            use = _snip(st.store.file_chunks(use_file), sym, at_lines=sites)
             dfn = _snip(st.store.file_chunks(def_file), sym, at_line=d["line"])
             if use or dfn:
                 return {"symbol": sym,
