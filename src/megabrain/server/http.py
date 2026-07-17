@@ -589,6 +589,17 @@ def serve(root, port: int = 2134, host: str = "127.0.0.1",
               "every endpoint (including POST /index) is open to the network")
 
     reg = Registry(boot)
+    # studio pre-loads EVERY repo indexed on this machine (the global registry)
+    # so they're all selectable from the rail immediately — RepoSession is lazy
+    # (its embedding matrix loads on first query, not here), so this costs
+    # nothing at boot. serve-api stays boot-repo-only (headless/embed).
+    if serve_ui:
+        try:
+            from ..storage.registry import list_repos
+            for e in list_repos():
+                reg.add(Path(e["path"]))
+        except Exception:
+            log.debug("registry preload skipped", exc_info=True)
     httpd = ThreadingHTTPServer((host, port),
                                 _make_handler(reg, cors, enable_llm, token, serve_ui))
     httpd.daemon_threads = True

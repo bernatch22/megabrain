@@ -1,7 +1,7 @@
 """megabrain CLI.
 
   megabrain index  [path]                      index/update a repo (incremental)
-  megabrain search [path] "task" [--compact]   one-shot code map (`query` = alias)
+  megabrain search [path] "task" [--compact]   one-shot code map
   megabrain ask    [path] "question"           explained walkthrough
   megabrain get    [path] <file> [--symbol N]  pull code for navigation
   megabrain graph  [path] [--node F|--path A B] knowledge graph: map/node/path
@@ -29,12 +29,6 @@ def main(argv=None):
     logging.basicConfig(
         level=logging.DEBUG if os.environ.get("MEGABRAIN_DEBUG") else logging.INFO,
         format="%(message)s")
-    # `serve` was renamed to `studio` in 0.10 — accept the old verb silently so
-    # scripts/launch.json keep working, without cluttering --help with it.
-    _argv = list(sys.argv[1:] if argv is None else argv)
-    if _argv and _argv[0] == "serve":
-        _argv[0] = "studio"
-    argv = _argv
     ap = argparse.ArgumentParser(prog="megabrain")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
@@ -67,27 +61,23 @@ def main(argv=None):
     p.add_argument("--write", action="store_true",
                    help="write the proposed .megabrainignore (deterministic skips only)")
 
-    # `search` is the primary retrieval verb; `query` is its hidden pre-0.10
-    # alias (same flags, same dispatch) so muscle memory and scripts keep working.
-    def _add_search_args(p):
-        p.add_argument("path")
-        p.add_argument("task")
-        p.add_argument("--compact", action="store_true")
-        p.add_argument("--prune", action="store_true",
-                       help="no-LLM noise pruning: a flat relevance-ranked list of only "
-                            "the signal chunks ([id] file:lines · score + code), noise dropped")
-        p.add_argument("--rerank", action="store_true",
-                       help="add the LLM rerank on top of --prune: drop vocabulary-only "
-                            "matches (tests/evals) and reorder (~1-2s, fails open to the "
-                            "deterministic list; model: $MEGABRAIN_RERANK_MODEL)")
-        p.add_argument("--full", action="store_true",
-                       help="include RELATED best-chunk code bodies (default renders "
-                            "RELATED as a map: file, match span, symbols — ~60%% fewer tokens)")
-        p.add_argument("--json", action="store_true")
-    _add_search_args(sub.add_parser("search",
-                                    help="one-shot retrieval: CORE code + RELATED map "
-                                         "(--prune for the flat signal-only list)"))
-    _add_search_args(sub.add_parser("query", help=argparse.SUPPRESS))
+    p = sub.add_parser("search",
+                       help="one-shot retrieval: CORE code + RELATED map "
+                            "(--prune for the flat signal-only list)")
+    p.add_argument("path")
+    p.add_argument("task")
+    p.add_argument("--compact", action="store_true")
+    p.add_argument("--prune", action="store_true",
+                   help="no-LLM noise pruning: a flat relevance-ranked list of only "
+                        "the signal chunks ([id] file:lines · score + code), noise dropped")
+    p.add_argument("--rerank", action="store_true",
+                   help="add the LLM rerank on top of --prune: drop vocabulary-only "
+                        "matches (tests/evals) and reorder (~1-2s, fails open to the "
+                        "deterministic list; model: $MEGABRAIN_RERANK_MODEL)")
+    p.add_argument("--full", action="store_true",
+                   help="include RELATED best-chunk code bodies (default renders "
+                        "RELATED as a map: file, match span, symbols — ~60%% fewer tokens)")
+    p.add_argument("--json", action="store_true")
 
     p = sub.add_parser("ask")
     p.add_argument("path")
@@ -209,7 +199,7 @@ def main(argv=None):
     # registry), not repo-level — the two verbs that take no path.
     raw = [Path(p).resolve() for p in a.path.split(",")] if hasattr(a, "path") else []
     root = raw[0] if raw else None
-    if len(raw) > 1 and a.cmd not in ("index", "search", "query"):
+    if len(raw) > 1 and a.cmd not in ("index", "search"):
         ap.error(f"`{a.cmd}` takes a single path — comma-separated multi-path "
                  f"applies to `index` and `search` only")
 
@@ -284,7 +274,7 @@ def _dispatch(a, raw: list[Path], root: Path) -> None:
             _merge_ignore(root, rep["proposed_ignore"])
             print(f"# wrote proposed skips to {root}/.megabrainignore\n")
         print(_json.dumps(rep, indent=1) if a.json else _render_scan(rep))
-    elif a.cmd in ("search", "query"):     # query = pre-0.10 alias
+    elif a.cmd == "search":
         import json as _json
 
         from .. import app
