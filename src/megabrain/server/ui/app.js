@@ -402,11 +402,11 @@
               : "drag · wheel zoom · click a file for neighbors + code"}
             · <span style="color:var(--text)">solid</span> import/call · <span style="color:var(--text)">dashed</span> semantic</div>
         </div>
-        <div id="gpanel" style="width:400px;flex-shrink:0;overflow-y:auto;display:flex;flex-direction:column;gap:10px">${graphPanel()}</div>
+        <div id="gpanel" style="flex:0 1 380px;min-width:260px;max-width:34%;overflow-y:auto;display:flex;flex-direction:column;gap:10px">${graphPanel()}</div>
       </div>` :
       emptyState("The repo as a living map: communities, god nodes, hidden connections.",
         st.graphLoading ? "Building the graph…" : "Loads by itself — or search anything, or  a -> b  for a path.");
-    return `<div class="view-wrap mb-fade" style="max-width:none;padding:28px 28px 20px">${queryBar("search files/concepts…  or  a -> b  for the path between two", badge)}${body}</div>`;
+    return `<div class="view-wrap mb-fade" style="max-width:none;padding:20px 16px 14px">${queryBar("search files/concepts…  or  a -> b  for the path between two", badge)}${body}</div>`;
   }
 
   function graphPanel() {
@@ -609,11 +609,12 @@
       x0 = Math.min(x0, p.x - p.r); y0 = Math.min(y0, p.y - p.r);
       x1 = Math.max(x1, p.x + p.r); y1 = Math.max(y1, p.y + p.r);
     }
-    // path: few nodes -> an unclamped fit blows them up huge; wider padding
-    // so the endpoint labels (drawn outside the node radius) never clip
-    const cap = S.mode === "path" ? 1.25 : 2.2;
-    if (S.mode === "path") pad = Math.max(pad, 130);
-    const s = Math.min(cap, Math.max(0.15,
+    // the auto-fit only ever zooms OUT (cap 1). Node radii already encode
+    // meaning (degree / community size); scaling past 1 to "fill" a wide pane
+    // ballooned 4 bubbles across the screen — that was the too-much-zoom.
+    // Zooming in is the + button's job, on demand.
+    if (S.mode === "path") pad = Math.max(pad, 130);   // room for end labels
+    const s = Math.min(1, Math.max(0.15,
       Math.min(S.W / (x1 - x0 + pad * 2), S.H / (y1 - y0 + pad * 2))));
     S.scale = s;
     S.tx = S.W / 2 - ((x0 + x1) / 2) * s;
@@ -742,10 +743,11 @@
   function tickLoop() {
     if (!SIM) return;
     if (SIM.alpha > 0.012 && !document.hidden) simTick();
-    // while the layout settles, keep the WHOLE graph centered on screen —
-    // until the user takes over (wheel/pan/buttons). The path view is static
-    // (alpha 0) so it stays fitted permanently unless the user grabbed it.
-    if (!SIM.userView && (SIM.alpha > 0.05 || SIM.mode === "path")) fitAll();
+    // keep the WHOLE graph centered and visible, every frame, in every mode —
+    // until the user takes the camera (wheel/pan/drag/±). Gating this on the
+    // sim's alpha left late drift uncorrected; a bbox loop over N nodes is
+    // nothing next to the draw we already do each frame.
+    if (!SIM.userView) fitAll();
     if (SIM.mode === "path" && st.gplay && st.graphPath && !document.hidden) {
       // the pulse LOOPS on the current step's hop — the navigator's next/prev
       // moves it; nothing auto-advances (the user reads at their own pace)
