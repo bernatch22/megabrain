@@ -123,6 +123,29 @@ def test_resolve_node_path_and_concept(linked_repo):
         assert hit in ("db/store.py", "db/models.py")
 
 
+def test_concept_resolution_prefers_source_over_tests(tmp_path, fake_embedder):
+    """A test's skeleton is full of the vocabulary of the thing it tests, so raw
+    cosine sends a concept to the test file. The same soft test penalty ranking
+    uses keeps concepts landing on the real code (tests stay reachable by name)."""
+    (tmp_path / "mailer.py").write_text(
+        "def send_email(user):\n"
+        '    """Send an email message to the user inbox."""\n    return True\n')
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "tests" / "test_mailer.py").write_text(
+        "from mailer import send_email\n\n\n"
+        "def test_send_email_to_user_inbox():\n"
+        '    """Test that send_email sends an email message to the user inbox."""\n'
+        "    assert send_email('a')\n")
+    from megabrain.indexing.indexer import index_repo
+    index_repo(tmp_path)
+    with load_state(tmp_path) as st:
+        g = G.build_graph(st)
+        assert G.resolve_node(st, g, "send an email message to a user inbox") \
+            == "mailer.py"
+        # naming the test explicitly still reaches it (path match, no embedding)
+        assert G.resolve_node(st, g, "test_mailer.py") == "tests/test_mailer.py"
+
+
 def test_graph_map_shape_and_fallback_labels(linked_repo):
     """No chat key in tests -> labeling fails open to 'Community N'."""
     res = G.graph_root(linked_repo, mode="map")

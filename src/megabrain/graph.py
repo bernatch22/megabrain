@@ -35,7 +35,7 @@ from pathlib import Path
 
 import numpy as np
 
-from .retrieval.scoring import under_path
+from .retrieval.scoring import _is_test_path, under_path
 from .retrieval.state import SearchState, load_state
 
 log = logging.getLogger(__name__)
@@ -174,7 +174,13 @@ def surprises(g: RepoGraph, k: int = 10) -> list[dict]:
 
 def resolve_node(st: SearchState, g: RepoGraph, term: str) -> str | None:
     """Term -> file. Exact/suffix path match wins; else EMBED the term and take
-    the closest skeleton (concept search: "the scoring pipeline" -> scoring.py)."""
+    the closest skeleton (concept search: "the scoring pipeline" -> scoring.py).
+
+    Test files carry the SAME soft down-weight retrieval applies
+    (`params.test_penalty`): a test's skeleton is full of the vocabulary of the
+    thing it tests, so raw cosine sends "the studio web server" to
+    test_serve_api_ui.py. They stay reachable — name one explicitly and the
+    path match above wins before any embedding runs."""
     t = term.strip().strip("/")
     if t in g.idx:
         return t
@@ -188,24 +194,32 @@ def resolve_node(st: SearchState, g: RepoGraph, term: str) -> str | None:
     qv = st.emb.embed([term])[0]
     norms = np.linalg.norm(F, axis=1)
     sims = (F @ qv) / np.where(norms == 0, 1, norms)
-    return g.files[int(np.argmax(sims))]
+    penalty = np.array([st.params.test_penalty if _is_test_path(f) else 1.0
+                        for f in g.files])
+    return g.files[int(np.argmax(sims * penalty))]
 
 
 def shortest_path(g: RepoGraph, src: str, dst: str) -> list[dict]:
-    """BFS over struct+semantic edges. Each hop says what carries it."""
+    """BFS over struct+semantic edges. Each hop says what carries it.
+
+    Structural edges are expanded before semantic ones, and non-test files
+    before tests (same house rule as ranking: tests stay reachable, they just
+    never crowd). At equal distance that yields the route through real code —
+    a test file bridges half the repo without explaining anything."""
     if src not in g.idx or dst not in g.idx:
         return []
     a, b = g.idx[src], g.idx[dst]
+    order = lambda j: (_is_test_path(g.files[j]), g.files[j])  # noqa: E731
     prev: dict[int, tuple[int, str]] = {a: (-1, "")}
     frontier = [a]
     while frontier and b not in prev:
         nxt = []
         for i in frontier:
-            for j in sorted(g.struct[i]):
+            for j in sorted(g.struct[i], key=order):
                 if j not in prev:
                     prev[j] = (i, "/".join(sorted(g.struct[i][j])))
                     nxt.append(j)
-            for j in sorted(g.sem[i]):
+            for j in sorted(g.sem[i], key=order):
                 if j not in prev:
                     prev[j] = (i, f"semantic {g.sem[i][j]:.2f}")
                     nxt.append(j)

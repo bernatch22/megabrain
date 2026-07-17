@@ -2461,34 +2461,43 @@
      1,
      135,
      "megabrain > megabrain/graph.py > [RepoGraph, build_graph, _communities]",
-     "8a1fec70cae101dcb7a0a810e1485cb2d3994bbf"
+     "fb06658f869b39f3b8e3d340c08edc04ad154e15"
     ],
     [
      "module",
-     "_fingerprint, god_nodes, surprises, resolve_node, shortest_path, label_communities",
+     "_fingerprint, god_nodes, surprises, resolve_node, shortest_path",
      null,
      136,
-     261,
-     "megabrain > megabrain/graph.py > [_fingerprint, god_nodes, surprises, resolve_node, shortest_path, label_communities]",
-     "82b96d9cd9572e9abd88f83acd611f9a19fb0f87"
+     235,
+     "megabrain > megabrain/graph.py > [_fingerprint, god_nodes, surprises, resolve_node, shortest_path]",
+     "0a3cd4586baadd2132c5ae7864dfcfb7e216c8cc"
     ],
     [
      "module",
-     "graph_map, graph_node, _hop_symbols, _snip",
+     "label_communities, graph_map, graph_node",
      null,
-     262,
-     380,
-     "megabrain > megabrain/graph.py > [graph_map, graph_node, _hop_symbols, _snip]",
-     "9d6f15a03ccba3f4b579f450188cf7adc4931da6"
+     236,
+     345,
+     "megabrain > megabrain/graph.py > [label_communities, graph_map, graph_node]",
+     "437894159a2c989606862d1f649d8277d2ec4635"
     ],
     [
      "module",
-     "_hop_code, graph_path, graph_root, render_graph",
+     "_hop_symbols, _snip, _hop_code, graph_path, graph_root",
      null,
-     381,
-     490,
-     "megabrain > megabrain/graph.py > [_hop_code, graph_path, graph_root, render_graph]",
-     "6759eeb26b98762c918ce60e0e13862847944f41"
+     346,
+     447,
+     "megabrain > megabrain/graph.py > [_hop_symbols, _snip, _hop_code, graph_path, graph_root]",
+     "cc090f55a599618fc9b4b4700645e67b2c36313c"
+    ],
+    [
+     "function",
+     "render_graph",
+     null,
+     448,
+     504,
+     "megabrain > megabrain/graph.py > def render_graph(res: dict) -> str",
+     "87228323bf84d8a099c93b54e9b099699b1d7c07"
     ]
    ],
    "skeleton_sha": "295d86f23c17b01811b9096eaa87a01ae92c0590",
@@ -2651,84 +2660,84 @@
      "resolve_node",
      "function",
      175,
-     191,
+     199,
      "def resolve_node(st: SearchState, g: RepoGraph, term: str) -> str | None"
     ],
     [
      "shortest_path",
      "function",
-     194,
-     221,
+     202,
+     235,
      "def shortest_path(g: RepoGraph, src: str, dst: str) -> list[dict]"
     ],
     [
      "label_communities",
      "function",
-     224,
-     261,
+     238,
+     275,
      "def label_communities(st: SearchState, g: RepoGraph) -> dict[int, str]"
     ],
     [
      "graph_map",
      "function",
-     266,
-     299,
+     280,
+     313,
      "def graph_map(st: SearchState, path_filter: str | None=None, label: bool=True) -> dict"
     ],
     [
      "graph_node",
      "function",
-     302,
-     331,
+     316,
+     345,
      "def graph_node(st: SearchState, term: str, path_filter: str | None=None, label: bool=True) -> dict"
     ],
     [
      "_hop_symbols",
      "function",
-     334,
-     355,
+     348,
+     369,
      "def _hop_symbols(st: SearchState, prev: str, cur: str, cap: int=4) -> list[str]"
     ],
     [
      "SNIP_LINES",
      "constant",
-     358,
-     358,
+     372,
+     372,
      "SNIP_LINES = 22"
     ],
     [
      "_snip",
      "function",
-     361,
-     380,
+     375,
+     394,
      "def _snip(chunks: list[dict], symbol: str, at_line: int | None=None) -> dict | None"
     ],
     [
      "_hop_code",
      "function",
-     383,
-     400,
+     397,
+     414,
      "def _hop_code(st: SearchState, prev: str, cur: str, symbols: list[str]) -> dict | None"
     ],
     [
      "graph_path",
      "function",
-     403,
-     416,
+     417,
+     430,
      "def graph_path(st: SearchState, source: str, target: str, path_filter: str | None=None) -> dict"
     ],
     [
      "graph_root",
      "function",
-     419,
      433,
+     447,
      "def graph_root(root: Path, mode: str='map', node: str | None=None, source: str | None=None, target: str | None=None, path_filter: str | None=None, label: bool=True) -> dict"
     ],
     [
      "render_graph",
      "function",
-     438,
-     490,
+     452,
+     504,
      "def render_graph(res: dict) -> str"
     ]
    ]
