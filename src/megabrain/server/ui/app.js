@@ -46,12 +46,12 @@
   // ── state ────────────────────────────────────────────────────────────
   const st = {
     theme: ls.get("mb-theme", "dark"),
-    view: "search",
+    view: "search",   // search | bundle | ask | graph
     repos: [], repo: null,
     providers: null,
     provider: ls.get("mb-provider", ""), model: ls.get("mb-model", ""),
     q: "",
-    search: null, openFile: null, chunks: {}, loading: false,
+    search: null, loading: false,
     prune: null, pruneRerank: ls.get("mb-rerank", "0") === "1",
     ask: null, askCtl: null,
     graph: null, graphLoading: false, graphSel: null, graphNode: null,
@@ -116,7 +116,7 @@
   }
 
   function main() {
-    const tabs = [["search", "Search"], ["prune", "Prune"], ["ask", "Ask"], ["graph", "Graph"]].map(([id, l]) =>
+    const tabs = [["search", "Search"], ["ask", "Ask"], ["graph", "Graph"]].map(([id, l]) =>
       `<button class="tab ${st.view === id ? "active" : ""}" data-act="view" data-id="${id}">${l}</button>`).join("");
     const root = st.repo ? (st.repos.find((r) => r.name === st.repo) || {}).root || "" : "";
     return `<main class="main">
@@ -146,7 +146,6 @@
     v.className = "";
     stopSim();                            // leaving/repainting kills the RAF loop
     if (st.view === "search") v.innerHTML = viewSearch();
-    else if (st.view === "prune") v.innerHTML = viewPrune();
     else if (st.view === "graph") v.innerHTML = viewGraph();
     else v.innerHTML = viewAsk();
     bindView();
@@ -155,7 +154,7 @@
 
   function queryBar(placeholder, right) {
     return `<div class="query-wrap">
-      <div class="query-icon">${st.view === "prune" ? ico.prune : st.view === "ask" ? ico.ask : ico.search}</div>
+      <div class="query-icon">${st.view === "search" ? ico.prune : st.view === "ask" ? ico.ask : ico.search}</div>
       <input id="q" class="query-input" value="${esc(st.q)}" placeholder="${esc(placeholder)}" autocomplete="off" spellcheck="false"/>
       ${right || ""}
     </div>`;
@@ -163,108 +162,8 @@
 
   function viewSearch() {
     const r = st.search;
-    const badge = st.loading ? `<div class="badge"><span class="spinner"></span></div>`
-      : r ? `<div class="badge"><div class="dotlive" style="animation:mb-pulse 1.6s infinite"></div><span>${r.ms}ms</span><span style="opacity:0.5">·</span><span>no LLM</span></div>` : "";
-    let body = "";
-    if (r) {
-      const scanned = (r.tier1 || []).reduce((a, t) => a + (t.chunks ? t.chunks.length : 0), 0);
-      body = `<div class="stats-row">
-          <div><b>${r.tier1.length}</b> core files</div><div class="sdot"></div>
-          <div><b>${r.tier2.length}</b> related via graph</div><div class="sdot"></div>
-          <div><b>${scanned}</b> chunks in core</div><div class="sdot"></div>
-          <div title="CORE ships full code; each RELATED file contributes its best chunk — that sum is what Prune calls 'kept'">
-            <span style="color:var(--muted)">signal =</span> ${scanned} core + ${r.tier2.length} related best = <b>${scanned + r.tier2.length}</b></div>
-        </div>
-        <div class="section-head"><div class="section-label mono">CORE</div><div class="section-rule"></div><div class="mono" style="font-size:10.5px;color:var(--muted);letter-spacing:.06em">RANKED · TIER 1</div></div>
-        <div style="display:flex;flex-direction:column;gap:10px">${r.tier1.map(tier1Card).join("")}</div>`;
-      if (r.tier2.length) body += `<div class="section-head" style="margin-top:36px"><div class="section-label mono">RELATED</div><div class="section-rule"></div><div class="mono" style="font-size:10.5px;color:var(--muted);letter-spacing:.06em">VIA IMPORT GRAPH · TIER 2</div></div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px">${r.tier2.map(tier2Card).join("")}</div>`;
-    } else {
-      body = emptyState("Search returns every related file in ~200ms — pure vector math, no LLM.", "Ask a question or search for code, then hit ⏎.");
-    }
-    return `<div class="view-wrap mb-fade" style="max-width:1080px">${queryBar("Ask a question or search for code…", badge)}${body}</div>`;
-  }
-
-  function tier1Card(f) {
-    const hot = f.score >= 0.85;
-    const open = st.openFile === f.file;
-    const summary = (f.chunks && f.chunks[0] && f.chunks[0].name) ||
-      (f.symbols && f.symbols[0] && f.symbols[0].name) || f.file.split("/").pop();
-    let inner = "";
-    if (open) {
-      const ch = st.chunks[f.file];
-      if (!ch) inner = `<div style="padding:20px;display:flex;justify-content:center"><span class="spinner"></span></div>`;
-      else inner = chunkHeatmap(ch);
-    }
-    return `<div class="file-card ${open ? "open" : ""}">
-      <button class="file-head" data-act="file" data-file="${esc(f.file)}">
-        <div style="display:flex;align-items:center;gap:12px;min-width:0;flex:1">
-          <div class="score-bar" style="background:${hot ? "var(--accent)" : "var(--muted)"};opacity:${hot ? 1 : 0.4};box-shadow:${hot ? "0 0 6px var(--accent)" : "none"}"></div>
-          <div style="min-width:0;flex:1">
-            <div class="file-path mono">${esc(f.file)}</div>
-            <div class="file-summary">${esc(summary)}</div>
-          </div>
-        </div>
-        <div style="display:flex;align-items:center;gap:14px;flex-shrink:0">
-          <div class="mono" style="font-size:11px;font-weight:600;color:${hot ? "var(--accent)" : "var(--text)"}">${f.score.toFixed(2)}</div>
-          <div class="mono" style="font-size:10.5px;color:var(--muted)">${f.chunks ? f.chunks.length : 0} chunks</div>
-          <span class="chev" style="transform:rotate(${open ? 180 : 0}deg)">${ico.chev}</span>
-        </div>
-      </button>
-      ${open ? `<div style="padding:0 16px 16px;border-top:1px solid var(--border)">${inner}</div>` : ""}
-    </div>`;
-  }
-
-  function chunkHeatmap(ch) {
-    const chunks = ch.chunks || [];
-    const lang = langFor(ch.file);
-    const heat = chunks.map((c) => {
-      const sel = !!c.selected;
-      const op = sel ? 0.95 : Math.max(0.12, Math.min(1, c.score || 0.2));
-      return `<div class="heat ${sel ? "sel" : ""}" style="opacity:${op}" title="${esc(c.name || "chunk")} · ${(c.score || 0).toFixed(2)}"></div>`;
-    }).join("");
-    const bodies = chunks.filter((c) => c.selected).slice(0, 4).map((c) => `
-      <div class="chunk">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px">
-          <div style="display:flex;align-items:center;gap:10px">
-            <div class="kind-pill on">${esc(c.kind || "chunk")}</div>
-            <div class="mono" style="font-size:12px;font-weight:500">${esc(c.name || "")}</div>
-            <div class="mono" style="font-size:10.5px;color:var(--muted)">L${c.start_line}–${c.end_line}</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px">
-            <div class="mono" style="font-size:10.5px;font-weight:600;color:${(c.score || 0) >= 0.85 ? "var(--accent)" : "var(--text)"}">${(c.score || 0).toFixed(2)}</div>
-            <button class="chip mono" data-act="vopen" data-file="${esc(ch.file)}" data-line="${c.start_line}" title="open the whole file here">⤢ open</button>
-          </div>
-        </div>
-        <pre class="mono">${hl(c.text || "", lang)}</pre>
-      </div>`).join("");
-    return `<div style="display:flex;gap:14px;align-items:center;padding:14px 0 12px">
-        <div class="mono" style="font-size:10px;color:var(--muted);letter-spacing:.06em">CHUNK HEATMAP</div>
-        <div style="flex:1;display:flex;gap:3px;align-items:center">${heat}</div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--muted)" class="mono">
-          <div class="heat sel" style="width:8px;height:8px;flex:none;border-radius:2px"></div>signal
-          <div class="heat" style="width:8px;height:8px;flex:none;border-radius:2px;margin-left:6px"></div>noise
-        </div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:8px">${bodies || '<div style="font-size:11px;color:var(--muted);padding:4px">No chunk was selected as signal for this query.</div>'}</div>`;
-  }
-
-  function tier2Card(t) {
-    return `<div class="t2-card" data-act="vopen" data-file="${esc(t.file)}" data-line="${(t.best_chunk && t.best_chunk.start_line) || 1}" title="open the file">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
-        <div class="file-path mono" style="font-size:12px">${esc(t.file)}</div>
-        <div class="mono" style="font-size:10.5px;font-weight:600;color:var(--muted);flex-shrink:0">${(t.score || 0).toFixed(2)}</div>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:10.5px;color:var(--muted)">
-        ${ico.link}<span>via <span class="mono" style="color:var(--text)">${t.via_flow ? "flow cache" : t.via_graph ? "import graph" : "content"}</span></span>
-      </div>
-    </div>`;
-  }
-
-  function viewPrune() {
-    const r = st.prune;
     const rerankBtn = `<button class="btn-ghost" data-act="rerank-toggle" title="LLM pass: drop vocabulary-only matches (tests/evals), reorder — fails open to the deterministic list"
-        style="${st.pruneRerank ? "background:var(--accent-dim);border-color:var(--accent-bd);color:var(--accent)" : ""}">✨<span>LLM rerank ${st.pruneRerank ? "on" : "off"}</span></button>`;
+        style="${st.rerank ? "background:var(--accent-dim);border-color:var(--accent-bd);color:var(--accent)" : ""}">✨<span>LLM rerank ${st.rerank ? "on" : "off"}</span></button>`;
     const right = rerankBtn + (st.loading ? `<div class="badge"><span class="spinner"></span></div>`
       : r ? `<div class="badge"><b style="color:var(--accent)">${r.kept}</b><span>kept</span><span style="opacity:.5">·</span><span style="color:var(--muted)">${r.pruned} pruned</span></div>` : "");
     let body;
@@ -274,7 +173,7 @@
           <div><b>${r.scanned}</b> chunks scanned</div><div class="sdot"></div>
           <div><span style="color:var(--muted)">retrieval</span> <b class="mono">${r.ms}ms</b></div>
           ${rr ? `<div class="sdot"></div><div>✨ reranked by <b class="mono">${esc(shortModel(rr.model))}</b> · dropped <b>${rr.dropped}</b> tangential · +${(rr.ms / 1000).toFixed(1)}s</div>`
-             : st.pruneRerank && r.reranked === false ? `<div class="sdot"></div><div style="color:var(--muted)">rerank failed open — deterministic list shown</div>` : ""}
+             : st.rerank && r.reranked === false ? `<div class="sdot"></div><div style="color:var(--muted)">rerank failed open — deterministic list shown</div>` : ""}
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:22px">
           <div>
@@ -327,12 +226,12 @@
   }
 
   async function symbolIndex() {
-    // one cheap fetch per repo: which names are worth linking (~1.3K here)
+    // one cheap fetch per repo: bare name -> definition count
     if (st.symIndex && st.symIndexRepo === st.repo) return st.symIndex;
     try {
       const r = await api.symbolNames(st.repo);
-      st.symIndex = new Set(r.names || []); st.symIndexRepo = st.repo;
-    } catch (e) { st.symIndex = new Set(); }   // no links beats fake links
+      st.symIndex = r.names || {}; st.symIndexRepo = st.repo;
+    } catch (e) { st.symIndex = {}; }          // no links beats fake links
     return st.symIndex;
   }
 
@@ -344,8 +243,16 @@
                                            symbolIndex()]);
     } catch (e) { toast(e.message); return; }
     const stack = fresh || !st.viewer ? [] : st.viewer.stack;
+    const symbols = (sy && sy.symbols) || [];
+    // link policy: local definitions (jump is exact) + names with EXACTLY one
+    // definition repo-wide. Ambiguous names (`get`, `run`, `props`…) are NOT
+    // links — a jump that could land anywhere is worse than none.
+    const local = new Set(symbols.map((s) => s.name.split(".").pop()));
+    const linkSet = new Set(local);
+    for (const [name, count] of Object.entries(links || {}))
+      if (count === 1) linkSet.add(name);
     st.viewer = { file, code: stripFence(gc.code), lang: langFor(file),
-      symbols: (sy && sy.symbols) || [], focus: focus || 1, links,
+      symbols, focus: focus || 1, links: linkSet,
       hiLines: hiLines || new Set(), conn: conn || null, stack };
     paintViewer();
   }
@@ -356,21 +263,22 @@
   }
 
   async function viewerJumpSymbol(name) {
+    const v = st.viewer; if (!v) return;
+    // local definition wins: the jump is exact, no fetch needed
+    const loc = v.symbols.find((s) => s.name.split(".").pop() === name);
+    if (loc) {
+      v.focus = loc.line; v.hiLines = new Set([loc.line]); paintViewer();
+      return;
+    }
+    // otherwise the link policy guarantees a single repo-wide definition
     let r;
     try { r = await api.symbolDefs(name, st.repo); }
     catch (e) { toast(e.message); return; }
     const defs = (r && r.defs) || [];
     if (!defs.length) { toast(`no definition of ${name} in the index`); return; }
-    const v = st.viewer; if (!v) return;
-    const d = defs.find((x) => x.file === v.file) || defs[0];
-    if (defs.length > 1)
-      toast(`${defs.length} definitions — showing ${d.file.split("/").pop()}:${d.line}`);
-    if (d.file === v.file) {
-      v.focus = d.line; v.hiLines = new Set([d.line]); paintViewer();
-    } else {
-      v.stack.push({ file: v.file, focus: v.focus, hiLines: v.hiLines });
-      await viewerLoad(d.file, d.line, new Set([d.line]), v.conn);
-    }
+    const d = defs[0];
+    v.stack.push({ file: v.file, focus: v.focus, hiLines: v.hiLines });
+    await viewerLoad(d.file, d.line, new Set([d.line]), v.conn);
   }
 
   async function viewerBack() {
@@ -1317,7 +1225,7 @@
   }
 
   function emptyState(title, sub) {
-    return `<div class="empty"><div class="query-icon" style="width:44px;height:44px">${st.view === "ask" ? ico.ask : st.view === "prune" ? ico.prune : ico.search}</div>
+    return `<div class="empty"><div class="query-icon" style="width:44px;height:44px">${st.view === "ask" ? ico.ask : st.view === "search" ? ico.prune : ico.search}</div>
       <div style="font-size:14px;font-weight:600;color:var(--text)">${esc(title)}</div>
       <div style="font-size:12.5px;max-width:440px;line-height:1.6">${esc(sub)}</div></div>`;
   }
@@ -1326,28 +1234,11 @@
   // ── actions ──────────────────────────────────────────────────────────
   async function runSearch() {
     if (!st.q.trim() || !st.repo) return;
-    st.loading = true; st.openFile = null; st.chunks = {}; renderView();
-    try { st.search = await api.search(st.q.trim(), st.repo); }
-    catch (e) { toast(e.message); }
-    st.loading = false; renderView();
-  }
-  async function runPrune() {
-    if (!st.q.trim() || !st.repo) return;
     st.loading = true; renderView();
-    try { st.prune = await api.prune(st.q.trim(), st.repo, st.pruneRerank); }
+    try { st.search = await api.prune(st.q.trim(), st.repo, st.rerank); }
     catch (e) { toast(e.message); }
     st.loading = false; renderView();
   }
-  async function toggleFile(file) {
-    if (st.openFile === file) { st.openFile = null; renderView(); return; }
-    st.openFile = file; renderView();
-    if (!st.chunks[file]) {
-      try { st.chunks[file] = await api.chunks(file, st.q.trim(), st.repo); }
-      catch (e) { toast(e.message); st.chunks[file] = { chunks: [] }; }
-      if (st.openFile === file) renderView();
-    }
-  }
-
   function runAsk() {
     if (!st.q.trim() || !st.repo) return;
     if (st.askCtl) { try { st.askCtl.abort(); } catch (e) {} st.askCtl = null; }
@@ -1807,7 +1698,7 @@
       if (t.dataset.cold) { loadColdRepo(t.dataset.name); return; }
       st.repo = t.dataset.name; clearRepoState(); render();
     }
-    else if (act === "rerank-toggle") { st.pruneRerank = !st.pruneRerank; ls.set("mb-rerank", st.pruneRerank ? "1" : "0"); if (st.q.trim()) runPrune(); else renderView(); }
+    else if (act === "rerank-toggle") { st.rerank = !st.rerank; ls.set("mb-rerank", st.rerank ? "1" : "0"); if (st.q.trim()) runSearch(); else renderView(); }
     else if (act === "gopen") { openGraphNode(t.dataset.file); }
     else if (act === "gclear") { st.graphNode = null; st.graphSel = null; paintPanel(); }
     else if (act === "gcom") {
@@ -1837,7 +1728,6 @@
     else if (act === "theme") { st.theme = st.theme === "dark" ? "light" : "dark"; ls.set("mb-theme", st.theme); render(); }
     else if (act === "settings") { st.overlay = "settings"; renderOverlays(); loadProviders(); }
     else if (act === "settings-close" || act === "settings-bg") { st.overlay = null; renderOverlays(); }
-    else if (act === "file") { toggleFile(t.dataset.file); }
     else if (act === "ask-run") { runAsk(); }
     else if (act === "add-open") { openAdd(); }
     else if (act === "add-close" || act === "add-close-bg") { if (act === "add-close-bg" && !e.target.classList.contains("overlay-bg")) return; st.overlay = null; st.add = null; renderOverlays(); }
@@ -1868,7 +1758,7 @@
     }
     if (e.key === "Enter" && document.activeElement && document.activeElement.id === "q") {
       st.q = document.activeElement.value;
-      if (st.view === "search") runSearch(); else if (st.view === "prune") runPrune();
+      if (st.view === "search") runSearch();
       else if (st.view === "graph") runGraphQuery(); else runAsk();
     }
     if (e.key === "Enter" && document.activeElement && document.activeElement.id === "add-path") { doScan(); }
@@ -1885,7 +1775,7 @@
   });
 
   function clearRepoState() {
-    st.search = st.prune = st.ask = null; st.openFile = null;
+    st.search = st.ask = null;
     st.graph = null; st.graphNode = null; st.graphSel = null;
     st.graphPath = null; st.graphPos = {};
     st.graphFocusCom = null; st.graphView = null;

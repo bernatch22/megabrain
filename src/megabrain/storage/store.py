@@ -215,13 +215,16 @@ class Store:
         return [{"name": r[0], "kind": r[1], "line": r[2], "end_line": r[3],
                  "signature": r[4], "doc": r[5]} for r in rows]
 
-    def symbol_names(self) -> list[str]:
-        """Every distinct BARE symbol name in the repo (last segment of a
-        qualified `Class.method`) — the navigator marks only these as
-        go-to-definition links, so ordinary words aren't fake affordances."""
-        return sorted({r[0].rsplit(".", 1)[-1]
-                       for r in self.db.execute("SELECT DISTINCT name FROM symbols")
-                       if r[0]})
+    def symbol_names(self) -> dict[str, int]:
+        """BARE symbol name -> definition count, repo-wide. The navigator only
+        links a name whose jump is UNAMBIGUOUS: defined in the current file,
+        or count == 1 — a link that could land anywhere is worse than none."""
+        counts: dict[str, int] = {}
+        for (name,) in self.db.execute("SELECT name FROM symbols"):
+            if name:
+                bare = name.rsplit(".", 1)[-1]
+                counts[bare] = counts.get(bare, 0) + 1
+        return counts
 
     def find_symbols(self, name: str) -> list[dict]:
         """Definitions matching a bare symbol name repo-wide (exact, or the

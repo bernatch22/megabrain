@@ -303,10 +303,10 @@ def test_symbols_and_symbol_routes(server):
     assert status == 200
     names = {s["name"] for s in body["symbols"]}
     assert "login_user" in names and "check_password" in names
-    # no file -> every linkable name in the repo
+    # no file -> bare name -> definition count (the navigator's link policy)
     status, body = _get(base, "/symbols")
     assert status == 200
-    assert {"login_user", "check_password", "create_invoice"} <= set(body["names"])
+    assert body["names"]["login_user"] == 1 and body["names"]["check_password"] == 1
     status, body = _get(base, "/symbol?name=check_password")
     assert status == 200
     assert body["defs"] and body["defs"][0]["file"] == "auth/login.py"

@@ -6098,15 +6098,24 @@
     ],
     [
      "method",
-     "Store.file_chunks, Store.neighbors, Store.symbols_for, Store.symbol_names, Store.find_symbols, Store.stats, Store.set_meta, Store.get_meta, Store.insert_flow, Store.delete_flow, Store.stale_flows, Store.prune_stale_flows, Store.load_flows",
+     "Store.file_chunks, Store.neighbors, Store.symbols_for, Store.symbol_names, Store.find_symbols, Store.stats, Store.set_meta, Store.get_meta, Store.insert_flow, Store.delete_flow, Store.stale_flows, Store.prune_stale_flows",
      null,
      192,
-     298,
-     "megabrain > megabrain/storage/store.py > class Store > [Store.file_chunks, Store.neighbors, Store.symbols_for, Store.symbol_names, Store.find_symbols, Store.stats, Store.set_meta, Store.get_meta, Store.insert_flow, Store.delete_flow, Store.stale_flows, Store.prune_stale_flows, Store.load_flows]",
-     "52770372ab403ba8c65dfc3c65972014e0ed1708"
+     285,
+     "megabrain > megabrain/storage/store.py > class Store > [Store.file_chunks, Store.neighbors, Store.symbols_for, Store.symbol_names, Store.find_symbols, Store.stats, Store.set_meta, Store.get_meta, Store.insert_flow, Store.delete_flow, Store.stale_flows, Store.prune_stale_flows]",
+     "63be0f64c5597e74782c79f8cd2e8f596463d636"
+    ],
+    [
+     "method",
+     "Store.load_flows",
+     null,
+     286,
+     301,
+     "megabrain > megabrain/storage/store.py > class Store > def load_flows(self) -> tuple[list[dict], np.ndarray, np.ndarray]",
+     "b5828e1060714852ff11e3c03fea28f1f2c5f8ff"
     ]
    ],
-   "skeleton_sha": "8d6e7ee75a12af93f679c2c6715410a29b7ebb04",
+   "skeleton_sha": "19251ff8a1d8299c68e38c08cfe1d7a651c8b8ea",
    "symbols": [
     [
      "resolve_root",
@@ -6126,7 +6135,7 @@
      "Store",
      "class",
      83,
-     298,
+     301,
      "class Store"
     ],
     [
@@ -6259,70 +6268,70 @@
      "Store.symbol_names",
      "method",
      218,
-     224,
-     "def symbol_names(self) -> list[str]"
+     227,
+     "def symbol_names(self) -> dict[str, int]"
     ],
     [
      "Store.find_symbols",
      "method",
-     226,
-     235,
+     229,
+     238,
      "def find_symbols(self, name: str) -> list[dict]"
     ],
     [
      "Store.stats",
      "method",
-     237,
-     243,
+     240,
+     246,
      "def stats(self) -> dict"
     ],
     [
      "Store.set_meta",
      "method",
-     245,
-     246,
+     248,
+     249,
      "def set_meta(self, k: str, v)"
     ],
     [
      "Store.get_meta",
      "method",
-     248,
-     250,
+     251,
+     253,
      "def get_meta(self, k: str)"
     ],
     [
      "Store.insert_flow",
      "method",
-     254,
-     261,
+     257,
+     264,
      "def insert_flow(self, question: str, text: str, files: dict, vec: np.ndarray, qvec: np.ndarray | None=None) -> int"
     ],
     [
      "Store.delete_flow",
      "method",
-     263,
-     264,
+     266,
+     267,
      "def delete_flow(self, flow_id: int)"
     ],
     [
      "Store.stale_flows",
      "method",
-     266,
-     273,
+     269,
+     276,
      "def stale_flows(self) -> list[dict]"
     ],
     [
      "Store.prune_stale_flows",
      "method",
-     275,
-     282,
+     278,
+     285,
      "def prune_stale_flows(self) -> int"
     ],
     [
      "Store.load_flows",
      "method",
-     284,
-     298,
+     287,
+     301,
      "def load_flows(self) -> tuple[list[dict], np.ndarray, np.ndarray]"
     ]
    ]
