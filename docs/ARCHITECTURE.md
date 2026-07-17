@@ -44,8 +44,8 @@ API (`megabrain.search/ask/…`, lazy imports, `py.typed`).
 
 | command | LLM? | latency | use |
 |---------|------|---------|-----|
-| `query` | no | ~10–200 ms | complete bundle: CORE full code + RELATED map (`--full` for RELATED bodies) |
-| `query --prune` | no | ~10–200 ms | flat, relevance-ranked **signal** chunks only (noise dropped) — the existing selection, projected flat |
+| `search` | no | ~10–200 ms | complete bundle: CORE full code + RELATED map (`--full` for RELATED bodies) |
+| `search --prune` | no | ~10–200 ms | flat, relevance-ranked **signal** chunks only (noise dropped) — the existing selection, projected flat |
 | `ask`   | 1 chat call | ~6–25 s | narrated walkthrough, verbatim code spliced at each citation |
 | `get` / `chunks` | no | <10 ms | one file/symbol · per-chunk scores for one file |
 
@@ -117,7 +117,7 @@ One SQLite file per repo at `<repo>/.megabrain/db.sqlite` (`chunks`, `files`,
 (incoming edges drop only then — re-index preserves them). Relpaths are **POSIX on
 every platform** (`as_posix()`; Windows backslash keys corrupted the index once —
 CI's Windows matrix is the regression guard). No daemon or watcher: CLI
-`ask`/`query`/`chunks` and the MCP server **auto-refresh a stale index (60 s TTL,
+`ask`/`search`/`chunks` and the MCP server **auto-refresh a stale index (60 s TTL,
 fail-open without a key)** before answering, so results always match disk. Vectors
 load into one NumPy matrix; brute-force cosine is <2 ms up to ~50 K chunks, so ANN
 indexing is deliberately deferred.
@@ -188,8 +188,8 @@ span-IoU 0.037 → 0.115 with hit@1 held). Do not chase it on ordinary code.
 
 ## 3. Query time — retrieval (no LLM)
 
-`retrieval/` (scoring in `scoring.py`, assembly in `bundle.py`, exposed through the
-`retrieval/query.py` facade). `load_state()` (in `state.py`) loads matrices once (servers keep it warm and reload on
+`retrieval/` (scoring in `scoring.py`, assembly in `bundle.py`, exposed through
+`app.py`'s use-case layer). `load_state()` (in `state.py`) loads matrices once (servers keep it warm and reload on
 db-mtime change); `search_with_state()` runs per query, all vectorized.
 
 ### 3.1 Scoring
@@ -239,21 +239,21 @@ stays rejected: every phase-5 variant lost gold files). But by *volume*, RELATED
 ~17 files/query at ~5% verified gold, and its inline code bodies were ~16K of a
 ~22K-token render. So the fix is structural, in the **render only**: RELATED shows
 **file · best-match span pointer · symbols** by default (−65% tokens, 22K → 8K);
-`query --full` (MCP `full: true`) restores inline bodies; `--compact` strips all
+`search --full` (MCP `full: true`) restores inline bodies; `--compact` strips all
 bodies. The bundle **data** always carries `best_chunk` — ask, serve-api and the
 webui consume it unchanged. Expansion is multi-turn: `megabrain get <file>
 [--symbol N]`.
 
 **Noise pruning (`prune_search`, no LLM).** The bundle already marks which
 chunks are *signal* — a tier-1 chunk that survives the `CHUNK_KEEP_RATIO` cut, or a
-related file's best chunk. `prune_search` (CLI `query --prune`, and the ONLY shape
+related file's best chunk. `prune_search` (CLI `search --prune`, and the ONLY shape
 `megabrain_search` returns over MCP) simply **projects that existing selection into a flat list
 ranked by relevance** — each `[id] file:Lstart-end · score` with its code, the noise
 chunks dropped. No new scoring, no LLM, no token cost: it reuses the same
 signal/noise call the full bundle makes, just rendering the signal alone (with
 `include_pruned` it also returns the dropped `noise` for a signal-vs-noise diff). It
 is the lean read-path answer for a coding agent that wants only the code worth
-reading, not a narration; a plain `query` still returns the full CORE+RELATED bundle.
+reading, not a narration; a plain `search` still returns the full CORE+RELATED bundle.
 
 **LLM rerank (`retrieval/rerank.py`, the `llm_rerank` lane, layered ON the prune).**
 The deterministic prune is recall-safe by design — every bundle file contributes its
@@ -277,7 +277,7 @@ scoring query: 21 signal chunks → 6.
 
 **OFF by default** — a mode a dev enables per repo (`megabrain flows --enable`,
 or implied by `--warm-flows`; env `MEGABRAIN_FLOW_CACHE` forces on/off). When
-off, `load_state` skips flows entirely and `query`/`ask` are byte-for-byte the
+off, `load_state` skips flows entirely and `search`/`ask` are byte-for-byte the
 prior behavior at zero cost. When on:
 
 Every successful `ask` synthesizes a cross-file WORKFLOW ("VAD detects speech →

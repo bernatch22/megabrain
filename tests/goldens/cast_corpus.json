@@ -5392,41 +5392,41 @@
      1,
      25,
      "megabrain > megabrain/server/cli.py (module level)",
-     "710023ec14057ce63a409acf8e83a7f8879b7eeb"
+     "d09123dc2a2f6b6e5a5348aa5a4d6737fc05ebd8"
     ],
     [
      "block",
      "main",
      "1/3",
      26,
-     122,
+     119,
      "megabrain > megabrain/server/cli.py > def main(argv=None)",
-     "04d9dd384c5423e25695e3fc463fd6aa8d0b949e"
+     "625e18e9517c0f8480f48cc53d088414aee4c8ca"
     ],
     [
      "block",
      "main",
      "2/3",
-     123,
-     211,
+     120,
+     204,
      "megabrain > megabrain/server/cli.py > def main(argv=None)",
-     "6e39356d936359fad3eff464d37bf0461f9a903e"
+     "8dd32f18c493b396ab1578258461e29678d6897f"
     ],
     [
      "block",
      "main",
      "3/3",
-     212,
-     224,
+     205,
+     214,
      "megabrain > megabrain/server/cli.py > def main(argv=None)",
-     "77112a19072dca2f871129e9510c3310e7460436"
+     "4da70d1ee7b364f958dd0f9c683ae37f02bbf265"
     ],
     [
      "module",
      "_scan, _render_scan",
      null,
-     225,
-     258,
+     215,
+     248,
      "megabrain > megabrain/server/cli.py > [_scan, _render_scan]",
      "6c4d106b3f64799ed33c25ecfbc89235a70f8628"
     ],
@@ -5434,17 +5434,17 @@
      "block",
      "_dispatch",
      "1/2",
-     259,
-     380,
+     249,
+     370,
      "megabrain > megabrain/server/cli.py > def _dispatch(a, raw: list[Path], root: Path) -> None",
-     "8441e64467243bd5a8e4db8f9bcfb3bd39659f60"
+     "23c928fe699e1f03414e93312e361906dada4f6d"
     ],
     [
      "block",
      "_dispatch",
      "2/2",
-     381,
-     447,
+     371,
+     437,
      "megabrain > megabrain/server/cli.py > def _dispatch(a, raw: list[Path], root: Path) -> None",
      "4020b5a0ea1d29b3558cf760b64bd7d72566c235"
     ],
@@ -5452,8 +5452,8 @@
      "module",
      null,
      null,
-     448,
-     451,
+     438,
+     441,
      "megabrain > megabrain/server/cli.py (module level)",
      "494c28ef72c62a5924f4316a400d4193725ae15a"
     ]
@@ -5464,28 +5464,28 @@
      "main",
      "function",
      28,
-     224,
+     214,
      "def main(argv=None)"
     ],
     [
      "_scan",
      "function",
-     227,
-     229,
+     217,
+     219,
      "def _scan(root: Path) -> dict"
     ],
     [
      "_render_scan",
      "function",
-     232,
-     258,
+     222,
+     248,
      "def _render_scan(rep: dict) -> str"
     ],
     [
      "_dispatch",
      "function",
-     261,
-     447,
+     251,
+     437,
      "def _dispatch(a, raw: list[Path], root: Path) -> None"
     ]
    ]
@@ -5560,9 +5560,9 @@
      "serve",
      null,
      567,
-     605,
+     616,
      "megabrain > megabrain/server/http.py > def serve(root, port: int=2134, host: str='127.0.0.1', cors: str | None=None, enable_llm: bool=True, token: str | None=None, serve_ui: bool=True) -> None",
-     "dbe6213e6bb275baab27873eb11f4042b18a7b4f"
+     "2ed008f9a64b5e883db7a3fa1aba32ab9d4d7b80"
     ]
    ],
    "skeleton_sha": "889e546523c56821d9784a5bbfc4b789e47eeffc",
@@ -5683,7 +5683,7 @@
      "serve",
      "function",
      569,
-     605,
+     616,
      "def serve(root, port: int=2134, host: str='127.0.0.1', cors: str | None=None, enable_llm: bool=True, token: str | None=None, serve_ui: bool=True) -> None"
     ]
    ]

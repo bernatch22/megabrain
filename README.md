@@ -55,8 +55,8 @@ megabrain studio ~/repo        #  → open http://localhost:2134
 - **Add a repo → it scans first** — you SEE exactly what will index and what's skipped and
   *why* (`.gitignore` · vendored · generated · too-big), edit the `.megabrainignore`, then a
   **live progress bar** indexes it file by file. The rail also lists **every repo indexed on
-  this machine** (the global registry) — the ones this server hasn't loaded show dimmed; one
-  click loads and searches them.
+  this machine** (the global registry) — studio pre-loads every one of them into the rail,
+  so every indexed repo is selectable and searchable immediately.
 - **Embeddings you can see** — which model each index used, and **re-index with another**
   (cloud pplx or a local, code-tuned jina) behind the same bar — the query embedding
   switches to match, so search keeps working.
@@ -349,7 +349,7 @@ megabrain index ~/repo --warm-flows 12       # or pre-fill: discover the repo's 
 megabrain flows ~/repo                        # list what's cached · --clear to reset
 ```
 
-- **Off by default** — plain `query`/`ask` behave byte-for-byte as before, at
+- **Off by default** — plain `search`/`ask` behave byte-for-byte as before, at
   zero cost. It's a mode a team turns on so its megabrain accumulates the repo's
   workflows from use (great for onboarding).
 - **Rules intact:** the LLM + the one embed happen at *ask* time (write path);
@@ -372,6 +372,7 @@ chunks, live. Or run it locally: `python examples/webui/server.py`.
 ## Learn more
 
 - **[docs/GUIDE.md](docs/GUIDE.md)** — step-by-step: providers, indexing, the 2000-vs-4000 budget choice, custom chunkers, and the flow cache
+- **[docs/STUDIO.md](docs/STUDIO.md)** — the studio web app: every view, the JSON API, and the deploy recipes
 - **[docs/GRAPH.md](docs/GRAPH.md)** — the knowledge graph in plain language: what the map means, real output, and what it's actually good for
 - **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — the full design, the locked rules, and the measurements behind them
 - **[examples/](examples/)** — programmatic API · a custom `.sql` chunker · the web demo

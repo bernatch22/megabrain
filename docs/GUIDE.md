@@ -81,7 +81,7 @@ megabrain index ~/your/repo --force            # re-embed with the new model
 | `bge-m3` (general, local) | 0.773 | **0.909** | yes | $0.00 | 1.2 GB |
 
 **`jina-embeddings-v2-base-code` is the local pick**: it ties bge-m3 on
-`bundle_full` — the number that decides whether `ask`/`query` have the right
+`bundle_full` — the number that decides whether `ask`/`search` have the right
 code to splice — at 7× less memory and 768 dims (25% smaller index, faster
 search). bge-m3 ranks the #1 slot better (R@1 0.773); take it if tier1
 ordering matters more than footprint. Both are 8K-context models — the
@@ -190,18 +190,18 @@ Opt-in on the CLI; **default-on over MCP** (`megabrain_search rerank: true`) and
 reranking is cheap, any fast model works). Measured on this repo's scoring query: 21 signal
 chunks down to 6.
 
-### query vs query+prune vs ask — when to use which (especially if the caller is an LLM)
+### search vs search+prune vs ask — when to use which (especially if the caller is an LLM)
 
 Three retrieval shapes, two of them with **no LLM at all**:
 
-- **`query`** = pure retrieval, no LLM (~200 ms, free): returns every related
+- **`search`** = pure retrieval, no LLM (~200 ms, free): returns every related
   file (CORE full code + RELATED map), nothing interpreted — the full bundle.
-- **`query --prune`** (`prune_noise: true`) = the same no-LLM retrieval, but it
+- **`search --prune`** (`prune_noise: true`) = the same no-LLM retrieval, but it
   keeps only the **selected "signal" chunks** and returns them as a **flat list
   ranked by relevance** — each `[id] file:Lstart-end · score` with its code, the
   "noise" chunks dropped. Deterministic, zero LLM, zero token cost. Just the code
   worth reading, nothing to narrate.
-- **`ask`** = `query` + one LLM narration: a walkthrough that traces the flow,
+- **`ask`** = `search` + one LLM narration: a walkthrough that traces the flow,
   citing code as `[[k]]`; the engine splices each citation with the **verbatim
   block from disk**, so nothing is hallucinated. Broad questions fan out into
   parallel sub-agents.
@@ -211,13 +211,13 @@ The decision rule — for a human OR an LLM agent calling megabrain:
 | your question is… | use | why |
 |---|---|---|
 | "**how/why** does X work" — a flow, a mechanism, cross-file behavior | **ask** | you want the *connected* story; retrieval alone gives you the pieces, ask assembles them (and with flows on, the assembly gets cached) |
-| "just give me the **code worth reading**" — you'll reason over it yourself, no narration | **query** (pruned) | flat, relevance-ranked signal chunks *with the code*, noise dropped, **zero LLM cost**; a modern LLM agent doesn't need pre-chewed prose, only the exact code |
-| "**where** is Y" — locate a symbol/handler/config | **query** | free, instant; every related file still shows up (each contributes its best chunk) |
-| you want the raw file-grouped bundle (CORE code + RELATED map) | **CLI `query`** (no `--prune`) | CLI/HTTP only — see the note below on why MCP doesn't expose it |
+| "just give me the **code worth reading**" — you'll reason over it yourself, no narration | **search** (pruned) | flat, relevance-ranked signal chunks *with the code*, noise dropped, **zero LLM cost**; a modern LLM agent doesn't need pre-chewed prose, only the exact code |
+| "**where** is Y" — locate a symbol/handler/config | **search** | free, instant; every related file still shows up (each contributes its best chunk) |
+| you want the raw file-grouped bundle (CORE code + RELATED map) | **CLI `search`** (no `--prune`) | CLI/HTTP only — see the note below on why MCP doesn't expose it |
 | the same how/why might be asked again (team repo, agents) | **ask with flows on** | first ask pays once; repeats are served free |
 
-Rule of thumb for an agent: **query when you want just the code to read at zero LLM
-cost; ask when you want a narrated cross-file walkthrough.** Never chain `query` +
+Rule of thumb for an agent: **search when you want just the code to read at zero LLM
+cost; ask when you want a narrated cross-file walkthrough.** Never chain `search` +
 your own summarization to imitate `ask` — ask's splice guarantees the code shown is
 verbatim; your own summary doesn't.
 
@@ -246,7 +246,7 @@ narrated story across files.
 
 > Note: `ask` deliberately has **no** pre-filter step — filter-then-narrate would
 > be double work, and a modern LLM narrator doesn't need pre-pruned prose. Pruning
-> lives on the QUERY path only, and it is opt-in: a plain `query` is unchanged and
+> lives on the QUERY path only, and it is opt-in: a plain `search` is unchanged and
 > still returns the full bundle.
 
 ---
@@ -290,7 +290,7 @@ symbol is left to the host's own Read/Grep (and to `ask`'s sub-agents, which fet
 files internally). Deleting an index is a `rm -rf .megabrain` away, so there's no tool
 for it either.
 
-`scope_path` on `ask`/`query` confines the answer to a sub-folder
+`scope_path` on `ask`/`search` confines the answer to a sub-folder
 (`src/auth`); pass comma-separated roots to search several repos at once.
 
 ### The one rule that makes it pay off
@@ -393,7 +393,7 @@ doesn't install.
 
 ## 7. Flow cache — self-caching workflow retrieval (opt-in)
 
-**Off by default.** Plain `query`/`ask` never touch it. Turn it on when a repo
+**Off by default.** Plain `search`/`ask` never touch it. Turn it on when a repo
 has several devs and you want megabrain to *accumulate the team's understanding*
 of the codebase.
 
