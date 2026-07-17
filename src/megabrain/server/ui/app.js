@@ -497,6 +497,19 @@
   const paintPanel = () => { const p = $("#gpanel"); if (p) p.innerHTML = graphPanel(); };
 
   // ── path walkthrough: the code card under the canvas ─────────────────
+  // The walk is SPATIAL (phase "from" = the node you're leaving, "to" = the
+  // node you land on) while the labels are SEMANTIC (each side's true role:
+  // the call site or the definition) — so the pulse never teleports and the
+  // arrow/roles still tell the truth about who calls whom.
+  function hopSides(k) {
+    const p = st.graphPath;
+    const h = p.hops[k], prev = p.hops[k - 1];
+    const code = h.code || {};
+    const side = (f) =>
+      code.use && code.use.file === f ? { sn: code.use, role: "the call" } :
+      code.def && code.def.file === f ? { sn: code.def, role: "the definition" } : null;
+    return { h, prev, code, from: side(prev.file), to: side(h.file) };
+  }
   function snipHtml(sn, title) {
     if (!sn) return "";
     const lang = langFor(sn.file);
@@ -526,12 +539,13 @@
       return;
     }
     if (panel) panel.style.display = "none";         // the code owns the space
-    const h = p.hops[gp.k], prev = p.hops[gp.k - 1];
-    const code = h.code || {};
-    const phase = gp.phase || (code.use ? "use" : "def");
-    const sn = phase === "use" ? code.use : code.def;
-    // ONE code block; it transitions use -> def as the pulse lands. The phase
-    // tabs both show where you are and let you jump.
+    const sides = hopSides(gp.k);
+    const h = sides.h, prev = sides.prev, code = sides.code;
+    const phase = gp.phase || (sides.from ? "from" : "to");
+    const cur = phase === "from" ? (sides.from || sides.to) : (sides.to || sides.from);
+    const sn = cur && cur.sn;
+    // ONE code block; it walks WITH the pulse: the file you're leaving, then —
+    // as it lands — the file you arrive at, each labeled by its TRUE role.
     const tab = (id, label, on, enabled) =>
       `<button class="chip mono" data-act="gplay-phase" data-phase="${id}"
         ${enabled ? "" : "disabled style='opacity:.35'"}
@@ -556,14 +570,12 @@
              ${code.symbol ? ` · via <b style="color:var(--accent)">${esc(code.symbol)}</b>` : ""}`}
       </div>
       <div style="display:flex;align-items:center;gap:7px;margin-bottom:10px;flex-shrink:0">
-        ${tab("use", "1 · the call", phase === "use", !!code.use)}
+        ${tab("from", `1 · ${esc(prev.file.split("/").pop())} — ${sides.from ? sides.from.role : "…"}`, phase === "from", !!sides.from)}
         <span style="color:var(--muted);font-size:11px">→</span>
-        ${tab("def", "2 · the definition", phase === "def", !!code.def)}
+        ${tab("to", `2 · ${esc(h.file.split("/").pop())} — ${sides.to ? sides.to.role : "…"}`, phase === "to", !!sides.to)}
       </div>
       ${sn ? `<div class="mb-slide" style="display:flex;flex:1;min-height:0">${snipHtml(sn,
-          phase === "use"
-            ? `<span style="color:var(--accent)">▸ 1 · THE CALL</span> — ${esc(code.symbol || "")} used in `
-            : `<span style="color:var(--accent)">▸ 2 · THE DEFINITION</span> — ${esc(code.symbol || "")} lives in `)}</div>`
+          `<span style="color:var(--accent)">▸ ${phase === "from" ? "1" : "2"} · ${esc(cur.role.toUpperCase())}</span> — ${esc(code.symbol || "")} in `)}</div>`
         : `<div class="mono" style="font-size:11px;color:var(--muted)">no code snippet for this hop (semantic link — the files are related by meaning, not by a call)</div>`}`;
   }
 
@@ -703,8 +715,8 @@
     if (SIM.mode === "path" && st.gplay && st.graphPath && !document.hidden) {
       const gp = st.gplay;
       gp.t += 1 / 60;                    // ~7s per hop: pulse → use code → def code
-      const h = st.graphPath.hops[gp.k], code = h.code || {};
-      const want = (code.use && gp.t < 3.2 ? "use" : code.def ? "def" : "use");
+      const sides = hopSides(gp.k);
+      const want = (sides.from && gp.t < 3.2) ? "from" : (sides.to ? "to" : "from");
       if (want !== gp.phase) { gp.phase = want; paintPlayCard(); }
       if (gp.t > 7) {
         if (gp.k < st.graphPath.hops.length - 1) { gp.k++; gp.t = 0; gp.phase = null; }
@@ -809,31 +821,29 @@
         ctx.globalAlpha = state === "future" ? 0.15 : state === "plain" ? 0.9 : state === "done" ? 0.95 : 0.3;
         ctx.lineWidth = (state === "done" ? 2.8 : 2.4) / S.scale;
         if (state === "now") {
-          // the pulse IS a call executing: it leaves the file that CALLS the
-          // carrier symbol and lands on the file that DEFINES it — the card
-          // shows THE CALL while it travels, THE DEFINITION when it lands.
-          // (BFS is undirected, so this can run against the path's left-to-
-          // right order — the arrow tells the truth.)
+          // the pulse WALKS the route in path order — spatial continuity:
+          // every hop starts where the last one landed. The CALL direction
+          // (which can run against the walk; BFS is undirected) is stated by
+          // the fixed arrowhead at the definition end + the role tags.
           ctx.stroke();
           const code = (st.graphPath.hops[gp.k] || {}).code || {};
-          let from = p, to = q;
+          const t01 = Math.min(1, gp.t / 3.0);      // lands as the card flips
+          const mx = p.x + (q.x - p.x) * t01, my = p.y + (q.y - p.y) * t01;
+          ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(mx, my);
+          ctx.globalAlpha = 0.95; ctx.lineWidth = 3 / S.scale; ctx.stroke();
+          // arrowhead pointing at the DEFINITION side: the call's true direction
           if (code.use && code.def &&
               S.idx[code.use.file] != null && S.idx[code.def.file] != null) {
-            from = N[S.idx[code.use.file]]; to = N[S.idx[code.def.file]];
+            const uN = N[S.idx[code.use.file]], dN = N[S.idx[code.def.file]];
+            const an = Math.atan2(dN.y - uN.y, dN.x - uN.x), ah = 9 / S.scale;
+            const ax = dN.x - Math.cos(an) * (dN.r + 3), ay = dN.y - Math.sin(an) * (dN.r + 3);
+            ctx.beginPath();
+            ctx.moveTo(ax, ay);
+            ctx.lineTo(ax - ah * Math.cos(an - 0.45), ay - ah * Math.sin(an - 0.45));
+            ctx.lineTo(ax - ah * Math.cos(an + 0.45), ay - ah * Math.sin(an + 0.45));
+            ctx.closePath();
+            ctx.fillStyle = comColor(p.c, 0.95); ctx.fill();
           }
-          const t01 = Math.min(1, gp.t / 3.0);      // lands as the card flips
-          const mx = from.x + (to.x - from.x) * t01, my = from.y + (to.y - from.y) * t01;
-          ctx.beginPath(); ctx.moveTo(from.x, from.y); ctx.lineTo(mx, my);
-          ctx.globalAlpha = 0.95; ctx.lineWidth = 3 / S.scale; ctx.stroke();
-          // arrowhead at the DEF end: the direction of the call, always true
-          const an = Math.atan2(to.y - from.y, to.x - from.x), ah = 9 / S.scale;
-          const ax = to.x - Math.cos(an) * (to.r + 3), ay = to.y - Math.sin(an) * (to.r + 3);
-          ctx.beginPath();
-          ctx.moveTo(ax, ay);
-          ctx.lineTo(ax - ah * Math.cos(an - 0.45), ay - ah * Math.sin(an - 0.45));
-          ctx.lineTo(ax - ah * Math.cos(an + 0.45), ay - ah * Math.sin(an + 0.45));
-          ctx.closePath();
-          ctx.fillStyle = comColor(p.c, 0.95); ctx.fill();
           ctx.beginPath(); ctx.arc(mx, my, 5.5 / S.scale, 0, Math.PI * 2);
           ctx.shadowColor = comColor(p.c); ctx.shadowBlur = 16;
           ctx.fillStyle = comColor(p.c, 1); ctx.fill(); ctx.shadowBlur = 0;
@@ -885,10 +895,10 @@
     // ── path walkthrough: ring + tag the node the card is talking about ──
     if (S.mode === "path" && st.gplay && st.graphPath) {
       const gp = st.gplay;
-      const code = (st.graphPath.hops[gp.k] || {}).code || {};
-      const phase = gp.phase || "use";
-      const sn = phase === "use" ? code.use : code.def;
-      const act = sn && S.idx[sn.file] != null ? N[S.idx[sn.file]] : null;
+      const sides = hopSides(gp.k);
+      const phase = gp.phase || "from";
+      const s = phase === "from" ? (sides.from || sides.to) : (sides.to || sides.from);
+      const act = s && S.idx[s.sn.file] != null ? N[S.idx[s.sn.file]] : null;
       if (act) {
         ctx.beginPath();
         ctx.arc(act.x, act.y, act.r + 6 / S.scale, 0, Math.PI * 2);
@@ -899,7 +909,7 @@
         ctx.textAlign = "center";
         ctx.font = `600 ${10.5 / S.scale}px ui-monospace, Menlo, monospace`;
         ctx.fillStyle = comColor(act.c, 1);
-        ctx.fillText(phase === "use" ? "1 · the call" : "2 · the definition",
+        ctx.fillText((phase === "from" ? "1 · " : "2 · ") + s.role,
                      act.x, act.y - act.r - 12 / S.scale);
         ctx.textAlign = "left";
       }
@@ -1687,7 +1697,7 @@
     else if (act === "gplay-phase") {
       if (st.gplay) {                     // jump + hold the clock at that phase
         st.gplay.phase = t.dataset.phase;
-        st.gplay.t = t.dataset.phase === "use" ? 1.5 : 3.4;
+        st.gplay.t = t.dataset.phase === "from" ? 1.5 : 3.4;
         paintPlayCard();
       }
     }
