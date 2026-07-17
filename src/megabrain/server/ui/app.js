@@ -56,7 +56,9 @@
     ask: null, askCtl: null,
     graph: null, graphLoading: false, graphSel: null, graphNode: null,
     graphPath: null, graphPos: {},       // {file:{x,y}} — layout survives repaints
-    graphHideIso: true, graphFocusCom: null,
+    graphFocusCom: null,
+    gmode: "overview",                   // overview | com | sub | path
+    gsub: null,                          // subgraph search: {q, files:[{file,score}]}
     overlay: null,          // 'settings' | 'add'
     add: null,              // add-repo flow state
   };
@@ -312,36 +314,39 @@
   const comColor = (cid, a) =>
     `hsla(${(cid * 137.508) % 360}, 58%, 62%, ${a == null ? 1 : a})`;
 
-  const isoFiles = (g) => {
-    const linked = new Set();
-    for (const l of g.links) { linked.add(l.s); linked.add(l.d); }
-    return new Set(g.nodes.filter((n) => !linked.has(n.file)).map((n) => n.file));
-  };
-
   function viewGraph() {
     const g = st.graph;
     const badge = st.graphLoading ? `<div class="badge"><span class="spinner"></span></div>`
       : g ? `<div class="badge"><div class="dotlive" style="animation:mb-pulse 1.6s infinite"></div><span>${g.files} files</span><span style="opacity:.5">·</span><span>${g.links.length} links</span><span style="opacity:.5">·</span><span>${g.ms}ms</span></div>` : "";
-    const nIso = g ? isoFiles(g).size : 0;
+    const crumb = {
+      overview: "",
+      com: g && st.graphFocusCom != null
+        ? `◉ ${(g.communities.find((c) => c.id === st.graphFocusCom) || {}).label || "community"}` : "",
+      sub: st.gsub ? `⌕ "${st.gsub.q}" — ${st.gsub.files.length} relevant files` : "",
+      path: st.graphPath ? `${(st.graphPath.source || "?").split("/").pop()} → ${(st.graphPath.target || "?").split("/").pop()}` : "",
+    }[st.gmode] || "";
     const body = g ? `
       <div style="display:flex;gap:14px;margin-top:16px;height:calc(100vh - 200px);min-height:420px">
         <div id="gwrap" style="flex:1;position:relative;min-width:0;background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden">
           <canvas id="gcanvas" style="position:absolute;inset:0;cursor:grab"></canvas>
           <div id="gtip" class="mono" style="position:absolute;display:none;pointer-events:none;z-index:5;padding:6px 10px;background:var(--panel2);border:1px solid var(--border2);border-radius:6px;font-size:11px;box-shadow:var(--shadow);max-width:360px"></div>
-          ${nIso ? `<button class="chip mono" data-act="giso" style="position:absolute;top:10px;right:12px;z-index:4">${st.graphHideIso ? `+${nIso} isolated files hidden` : `hide ${nIso} isolated files`}</button>` : ""}
-          ${st.graphFocusCom != null ? `<button class="chip mono" data-act="gfocus-clear" style="position:absolute;top:10px;left:12px;z-index:4;background:var(--accent-dim);border-color:var(--accent-bd);color:var(--accent)">◉ focused — show all</button>` : ""}
+          ${st.gmode !== "overview" ? `<button class="chip mono" data-act="goverview" style="position:absolute;top:10px;left:12px;z-index:4;background:var(--accent-dim);border-color:var(--accent-bd);color:var(--accent)">← back to overview${crumb ? " · " + esc(crumb) : ""}</button>` : ""}
           <div class="mono" style="position:absolute;left:12px;bottom:10px;font-size:10px;color:var(--muted);pointer-events:none">
-            drag · wheel zoom · click a node — <span style="color:var(--text)">solid</span> import/call · <span style="color:var(--text)">dashed</span> semantic</div>
+            ${st.gmode === "overview" ? "each bubble = a community — click one to open it"
+              : st.gmode === "path" ? "the route between your two endpoints — click a file for its code"
+              : "drag · wheel zoom · click a file for neighbors + code"}
+            · <span style="color:var(--text)">solid</span> import/call · <span style="color:var(--text)">dashed</span> semantic</div>
         </div>
         <div id="gpanel" style="width:400px;flex-shrink:0;overflow-y:auto;display:flex;flex-direction:column;gap:10px">${graphPanel()}</div>
       </div>` :
       emptyState("The repo as a living map: communities, god nodes, hidden connections.",
-        st.graphLoading ? "Building the graph…" : "Type a file/concept (or A -> B for a path) and hit ⏎ — or just wait, the map loads itself.");
-    return `<div class="view-wrap mb-fade" style="max-width:none;padding:28px 28px 20px">${queryBar("file, concept… or  source -> target  for a path", badge)}${body}</div>`;
+        st.graphLoading ? "Building the graph…" : "Loads by itself — or search anything, or  a -> b  for a path.");
+    return `<div class="view-wrap mb-fade" style="max-width:none;padding:28px 28px 20px">${queryBar("search files/concepts…  or  a -> b  for the path between two", badge)}${body}</div>`;
   }
 
   function graphPanel() {
     const g = st.graph; if (!g) return "";
+    if (st.graphNode) return nodePanel(st.graphNode);
     if (st.graphPath) {
       const p = st.graphPath;
       const hops = p.hops.map((h, i) => `<button class="flag-row" data-act="gopen" data-file="${esc(h.file)}" style="width:100%;text-align:left;border:1px solid var(--border);border-radius:6px;flex-wrap:wrap">
@@ -352,11 +357,33 @@
         <div style="font-size:12.5px;font-weight:600">Path — ${p.found ? p.hops.length + " hops" : "not found"}</div>
         <div class="mono" style="font-size:10.5px;color:var(--muted);margin-top:4px">${esc(p.source || "?")} → ${esc(p.target || "?")}</div>
         <div style="display:flex;flex-direction:column;gap:5px;margin-top:10px">${hops || emptyMini("no route — the endpoints live on disconnected islands")}</div>
-        <button class="chip" data-act="gclear" style="margin-top:10px">clear path</button></div>`;
+        <button class="chip" data-act="goverview" style="margin-top:10px">← back to overview</button></div>`;
     }
-    if (st.graphNode) return nodePanel(st.graphNode);
-    // map summary: how-to + communities + god nodes + surprises
-    const comBtn = (c) => `<button class="flag-row" data-act="gcom" data-id="${c.id}" style="width:100%;text-align:left;border:1px solid ${st.graphFocusCom === c.id ? "var(--accent-bd)" : "var(--border)"};border-radius:6px;${st.graphFocusCom === c.id ? "background:var(--accent-dim)" : ""}">
+    if (st.gmode === "sub" && st.gsub) {
+      const rows = st.gsub.files.map((f) => `<button class="flag-row" data-act="gopen" data-file="${esc(f.file)}" style="width:100%;text-align:left;border:1px solid var(--border);border-radius:6px">
+          <div class="flag-reason">${f.score.toFixed(2)}</div>
+          <span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f.file)}</span></button>`).join("");
+      return `<div class="prov-card" style="padding:14px 16px">
+          <div style="font-size:12.5px;font-weight:600">Relevant to "${esc(st.gsub.q)}"</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">Real retrieval (same engine as Search), drawn as its subgraph — only these files and the links between them are on the canvas.</div>
+          <div style="display:flex;flex-direction:column;gap:5px;margin-top:10px">${rows}</div></div>`;
+    }
+    if (st.gmode === "com" && st.graphFocusCom != null) {
+      const c = g.communities.find((x) => x.id === st.graphFocusCom);
+      if (c) {
+        const deg = {}; g.nodes.forEach((n) => deg[n.file] = n.degree);
+        const rows = c.files.map((f) => `<button class="flag-row" data-act="gopen" data-file="${esc(f)}" style="width:100%;text-align:left;border:1px solid var(--border);border-radius:6px">
+            <div class="flag-reason">deg ${deg[f] || 0}</div>
+            <span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f)}</span></button>`).join("");
+        return `<div class="prov-card" style="padding:14px 16px">
+            <div style="display:flex;align-items:center;gap:8px"><span style="width:10px;height:10px;border-radius:3px;background:${comColor(c.id)}"></span>
+            <div style="font-size:12.5px;font-weight:600">${esc(c.label)}</div>
+            <span class="mono" style="font-size:10px;color:var(--muted)">${c.size} files</span></div>
+            <div style="display:flex;flex-direction:column;gap:5px;margin-top:10px;max-height:60vh;overflow-y:auto">${rows}</div></div>`;
+      }
+    }
+    // overview panel: communities + god nodes + surprises
+    const comBtn = (c) => `<button class="flag-row" data-act="gcom" data-id="${c.id}" style="width:100%;text-align:left;border:1px solid var(--border);border-radius:6px">
         <span style="width:9px;height:9px;border-radius:3px;background:${comColor(c.id)};flex-shrink:0"></span>
         <span style="font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${esc(c.label)}</span>
         <span class="mono" style="font-size:10px;color:var(--muted)">${c.size}</span></button>`;
@@ -364,15 +391,12 @@
     const singles = g.communities.filter((c) => c.size === 1);
     const coms = multi.map(comBtn).join("") + (singles.length ? `
       <details style="margin-top:2px"><summary class="mono" style="cursor:pointer;font-size:10.5px;color:var(--muted);padding:4px 6px">+${singles.length} standalone files (docs, configs — no code links)</summary>
-      <div style="display:flex;flex-direction:column;gap:4px;margin-top:4px">${singles.map(comBtn).join("")}</div></details>` : "");
+      <div style="display:flex;flex-direction:column;gap:4px;margin-top:4px">${singles.map((c) => `<button class="flag-row" data-act="gopen" data-file="${esc(c.files[0])}" style="width:100%;text-align:left;border:1px solid var(--border);border-radius:6px"><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.files[0])}</span></button>`).join("")}</div></details>` : "");
     const hint = `<div class="prov-card" style="padding:12px 16px;font-size:11.5px;line-height:1.65;color:var(--muted)">
-        <b style="color:var(--text)">How to read this map</b><br>
-        Every dot is a <b style="color:var(--text)">file</b>; its color is the <b style="color:var(--text)">community</b>
-        the engine detected (files that import/call each other or talk about the same thing).
-        Glowing dots are <b style="color:var(--text)">god nodes</b> — the repo's core abstractions.
-        Solid lines = import/call; dashed = <b style="color:var(--text)">semantically similar with no code link</b>.<br>
-        <b style="color:var(--text)">Click a community</b> below to focus it · <b style="color:var(--text)">click a dot</b> for its neighbors + real code ·
-        type <span class="mono" style="color:var(--text)">a -> b</span> above to trace how two files connect.</div>`;
+        <b style="color:var(--text)">Start here</b> — each bubble is a <b style="color:var(--text)">community</b>: files that
+        import/call each other or talk about the same thing. <b style="color:var(--text)">Click one</b> (bubble or row) to open
+        just that community. <b style="color:var(--text)">Search anything</b> above to see only the relevant files as a small
+        graph, or type <span class="mono" style="color:var(--text)">a -> b</span> for the route between two files/concepts.</div>`;
     const gods = g.god_nodes.map((n) => `<button class="flag-row" data-act="gopen" data-file="${esc(n.file)}" style="width:100%;text-align:left;border:1px solid var(--border);border-radius:6px">
         <div class="flag-reason">deg ${n.degree}</div>
         <span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(n.file)}</span></button>`).join("");
@@ -427,11 +451,11 @@
     st.graphLoading = false; renderView();
   }
   async function openGraphNode(file) {
-    st.graphSel = file; st.graphPath = null;
-    paintPanel(); paintSim();
+    st.graphSel = file;
+    paintPanel();
     try { st.graphNode = await api.graph({ mode: "node", node: file }, st.repo); st.graphSel = st.graphNode.file; }
     catch (e) { toast("graph: " + e.message); }
-    paintPanel(); paintSim(); centerOn(st.graphSel);
+    paintPanel();
   }
   async function runGraphQuery() {
     const q = st.q.trim(); if (!q) return;
@@ -440,10 +464,25 @@
       if (!a || !b) return;
       try {
         st.graphPath = await api.graph({ mode: "path", source: a, target: b }, st.repo);
-        st.graphNode = null; st.graphSel = null;
+        st.graphNode = null; st.graphSel = null; st.gsub = null;
+        st.gmode = "path"; st.graphView = null;
       } catch (e) { toast("graph: " + e.message); }
-      paintPanel(); paintSim();
-    } else openGraphNode(q);
+      renderView();
+      return;
+    }
+    // free text = REAL retrieval (the same engine as the Search tab), drawn as
+    // the induced subgraph — never "resolve to one node" over a hairball
+    st.graphLoading = true; renderView();
+    try {
+      const r = await api.search(q, st.repo);
+      const files = r.tier1.map((t) => ({ file: t.file, score: t.score }))
+        .concat(r.tier2.slice(0, 10).map((t) => ({ file: t.file, score: t.score || 0 })));
+      const known = new Set(st.graph.nodes.map((n) => n.file));
+      st.gsub = { q, files: files.filter((f) => known.has(f.file)) };
+      st.gmode = "sub"; st.graphPath = null; st.graphNode = null; st.graphSel = null;
+      st.graphView = null;
+    } catch (e) { toast("graph: " + e.message); }
+    st.graphLoading = false; renderView();
   }
   const paintPanel = () => { const p = $("#gpanel"); if (p) p.innerHTML = graphPanel(); };
 
@@ -458,37 +497,75 @@
     const W = wrap.clientWidth, H = wrap.clientHeight;
     const dpr = window.devicePixelRatio || 1;
     cv.width = W * dpr; cv.height = H * dpr;
+    const mode = st.gmode;
     const idx = {};
-    // isolated files (no links at all) are visual noise — hidden by default,
-    // the overlay chip toggles them (they stay listed in the panel either way)
-    const iso = isoFiles(g);
-    const shown = st.graphHideIso ? g.nodes.filter((n) => !iso.has(n.file)) : g.nodes;
-    // seed positions clustered by community (persisted across repaints)
-    const coms = [...new Set(shown.map((n) => n.community))];
-    const center = (cid) => {
-      const k = coms.indexOf(cid), R = Math.min(W, H) * 0.32;
-      const th = (k / Math.max(1, coms.length)) * Math.PI * 2;
-      return [W / 2 + R * Math.cos(th), H / 2 + R * Math.sin(th)];
-    };
-    const nodes = shown.map((n, i) => {
-      idx[n.file] = i;
-      const kept = st.graphPos[n.file];
-      const ok = kept && isFinite(kept.x) && isFinite(kept.y);   // a past blowup
-      const [cx, cy] = center(n.community);                      // never sticks
-      return { f: n.file, c: n.community, d: n.degree,
-        r: 2.5 + Math.min(9, Math.sqrt(n.degree || 0) * 1.8),
-        x: ok ? kept.x : cx + (Math.random() - 0.5) * 90,
-        y: ok ? kept.y : cy + (Math.random() - 0.5) * 90,
-        vx: 0, vy: 0, fix: false };
-    });
-    const links = g.links.map((l) => ({ a: idx[l.s], b: idx[l.d],
-      sem: l.kind === "semantic" })).filter((l) => l.a != null && l.b != null);
+    let nodes = [], links = [];
+
+    if (mode === "overview") {
+      // one BUBBLE per multi-file community — never the whole-repo hairball
+      const multi = g.communities.filter((c) => c.size > 1);
+      const comOf = {}; g.nodes.forEach((n) => comOf[n.file] = n.community);
+      nodes = multi.map((c, i) => {
+        idx["com:" + c.id] = i;
+        return { f: "com:" + c.id, c: c.id, d: c.size, size: c.size,
+          label: c.label, bubble: true,
+          r: 22 + Math.min(60, Math.sqrt(c.size) * 7),
+          x: W / 2 + (Math.random() - 0.5) * 120,
+          y: H / 2 + (Math.random() - 0.5) * 120, vx: 0, vy: 0, fix: false };
+      });
+      const cross = {};                  // inter-community link counts
+      for (const l of g.links) {
+        const a = comOf[l.s], b = comOf[l.d];
+        if (a === b || idx["com:" + a] == null || idx["com:" + b] == null) continue;
+        const k = a < b ? a + "-" + b : b + "-" + a;
+        cross[k] = (cross[k] || 0) + 1;
+      }
+      links = Object.entries(cross).map(([k, n]) => {
+        const [a, b] = k.split("-");
+        return { a: idx["com:" + a], b: idx["com:" + b], sem: false, count: n };
+      });
+    } else if (mode === "path" && st.graphPath && st.graphPath.found) {
+      // graphify-style: ONLY the route, laid out as a clean zigzag, edge labels on
+      const hops = st.graphPath.hops;
+      const m = 110, span = Math.max(1, hops.length - 1);
+      nodes = hops.map((h, i) => {
+        idx[h.file] = i;
+        return { f: h.file, c: (g.nodes.find((n) => n.file === h.file) || {}).community || 0,
+          d: 0, r: 9, big: true, x: m + (W - 2 * m) * (i / span),
+          y: H / 2 + (i % 2 ? 60 : -60), vx: 0, vy: 0, fix: true };
+      });
+      links = hops.slice(1).map((h, i) => ({ a: i, b: i + 1, sem: /^semantic/.test(h.via),
+        via: h.via, symbols: h.symbols || [] }));
+    } else {
+      // com = one community's files · sub = the search result's files
+      let files;
+      if (mode === "com" && st.graphFocusCom != null) {
+        const c = g.communities.find((x) => x.id === st.graphFocusCom);
+        files = new Set(c ? c.files : []);
+      } else {
+        files = new Set((st.gsub ? st.gsub.files : []).map((f) => f.file));
+      }
+      const shown = g.nodes.filter((n) => files.has(n.file));
+      const R = Math.min(W, H) * 0.34;
+      nodes = shown.map((n, i) => {
+        idx[n.file] = i;
+        const th = (i / Math.max(1, shown.length)) * Math.PI * 2;
+        return { f: n.file, c: n.community, d: n.degree,
+          r: 4 + Math.min(9, Math.sqrt(n.degree || 0) * 1.6),
+          x: W / 2 + R * Math.cos(th), y: H / 2 + R * Math.sin(th),
+          vx: 0, vy: 0, fix: false };
+      });
+      links = g.links.map((l) => ({ a: idx[l.s], b: idx[l.d],
+        sem: l.kind === "semantic" })).filter((l) => l.a != null && l.b != null);
+    }
+
     const godSet = new Set(g.god_nodes.map((n) => n.file));
     const byCom = {};
-    nodes.forEach((n, i) => (byCom[n.c] = byCom[n.c] || []).push(i));
-    const v = st.graphView || {};        // pan/zoom survives repaints too
+    nodes.forEach((n, i) => (byCom[n.bubble ? "b" + i : n.c] = byCom[n.bubble ? "b" + i : n.c] || []).push(i));
+    const v = st.graphView || {};        // pan/zoom survives repaints
     SIM = { cv, ctx: cv.getContext("2d"), W, H, dpr, nodes, links, idx, byCom,
-      godSet, alpha: 1, tx: v.tx || 0, ty: v.ty || 0, scale: v.scale || 1,
+      godSet, mode, alpha: mode === "path" ? 0 : 1,
+      tx: v.tx || 0, ty: v.ty || 0, scale: v.scale || 1,
       drag: null, panning: null, raf: 0,
       labels: Object.fromEntries(g.communities.map((c) => [c.id, c.label])) };
     bindSim();
@@ -549,7 +626,7 @@
       const p = N[l.a], q = N[l.b];               // small or far-apart linked
       const dx = q.x - p.x, dy = q.y - p.y;       // nodes explode the sim)
       const d = Math.max(1, Math.sqrt(dx * dx + dy * dy));
-      const want = l.sem ? 150 : 70;
+      const want = S.mode === "overview" ? p.r + q.r + 70 : l.sem ? 150 : 70;
       const f = ((d - want) / d) * (l.sem ? 0.004 : 0.02) * alpha;
       if (!p.fix) { p.vx += dx * f; p.vy += dy * f; }
       if (!q.fix) { q.vx -= dx * f; q.vy -= dy * f; }
@@ -578,84 +655,85 @@
     const cs = getComputedStyle(document.documentElement);
     const muted = cs.getPropertyValue("--muted").trim() || "#7a7a84";
     const textCol = cs.getPropertyValue("--text").trim() || "#e9e9ec";
-    const pathFiles = st.graphPath && st.graphPath.found
-      ? st.graphPath.hops.map((h) => h.file) : null;
-    const onPath = pathFiles ? new Set(pathFiles) : null;
-    const focus = st.graphFocusCom;                 // dim everything else
-    const dimN = (p) => focus != null && p.c !== focus;
-    // edges
+    // ── edges ──
     for (const l of S.links) {
       const p = N[l.a], q = N[l.b];
-      const hot = onPath && onPath.has(p.f) && onPath.has(q.f) &&
-        Math.abs(pathFiles.indexOf(p.f) - pathFiles.indexOf(q.f)) === 1;
       ctx.beginPath();
       ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y);
       if (l.sem) ctx.setLineDash([3, 4]); else ctx.setLineDash([]);
-      ctx.strokeStyle = hot ? comColor(0, 0.95) : l.sem ? comColor(p.c, 0.22) : muted;
-      ctx.globalAlpha = (dimN(p) || dimN(q)) ? 0.04 : hot ? 0.95 : l.sem ? 0.5 : 0.22;
-      ctx.lineWidth = hot ? 2.4 / S.scale : 1 / S.scale;
+      if (S.mode === "overview") {
+        ctx.strokeStyle = muted;
+        ctx.globalAlpha = 0.35;
+        ctx.lineWidth = Math.min(6, 1 + Math.log2(1 + (l.count || 1))) / S.scale;
+      } else if (S.mode === "path") {
+        ctx.strokeStyle = comColor(p.c, 0.9);
+        ctx.globalAlpha = 0.9;
+        ctx.lineWidth = 2.4 / S.scale;
+      } else {
+        ctx.strokeStyle = l.sem ? comColor(p.c, 0.22) : muted;
+        ctx.globalAlpha = l.sem ? 0.5 : 0.3;
+        ctx.lineWidth = 1.1 / S.scale;
+      }
       ctx.stroke();
-    }
-    ctx.setLineDash([]); ctx.globalAlpha = 1;
-    // nodes
-    for (const p of N) {
-      const sel = st.graphSel === p.f || (onPath && onPath.has(p.f)) || S.hover === p.f;
-      ctx.globalAlpha = dimN(p) ? 0.10 : 1;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r + (sel ? 1.5 : 0), 0, Math.PI * 2);
-      if (S.godSet.has(p.f) && !dimN(p)) { ctx.shadowColor = comColor(p.c); ctx.shadowBlur = 14; }
-      ctx.fillStyle = comColor(p.c, sel ? 1 : 0.82);
-      ctx.fill();
-      ctx.shadowBlur = 0;
-      if (sel) { ctx.strokeStyle = textCol; ctx.lineWidth = 1.4 / S.scale; ctx.stroke(); }
-    }
-    ctx.globalAlpha = 1;
-    // labels: community names at centroids; file name for selected/hovered/gods
-    ctx.font = `600 ${11 / S.scale}px ui-monospace, Menlo, monospace`;
-    for (const cid in S.byCom) {
-      const ids = S.byCom[cid];
-      if (ids.length < 2 || (focus != null && +cid !== focus)) continue;
-      let x = 0, y = 0, top = ids[0];
-      for (const i of ids) { x += N[i].x; y += N[i].y; if (N[i].d > N[top].d) top = i; }
-      ctx.fillStyle = comColor(+cid, 0.9);
-      ctx.fillText(S.labels[cid] || "", x / ids.length + 10, y / ids.length - 10);
-    }
-    ctx.font = `${10 / S.scale}px ui-monospace, Menlo, monospace`;
-    // file names appear when there's ROOM: focused community, zoomed in past
-    // 1.6x, hovered/selected/path nodes, and god nodes always.
-    for (const p of N) {
-      if (dimN(p)) continue;
-      const show = st.graphSel === p.f || S.hover === p.f || S.godSet.has(p.f) ||
-        (onPath && onPath.has(p.f)) || (focus != null && p.c === focus) || S.scale > 1.6;
-      if (show) {
-        ctx.fillStyle = st.graphSel === p.f || S.hover === p.f ? textCol : muted;
-        ctx.fillText(p.f.split("/").pop(), p.x + p.r + 3, p.y + 3);
+      if (S.mode === "path" && l.via) {           // edge label ON the line
+        const mx = (p.x + q.x) / 2, my = (p.y + q.y) / 2;
+        ctx.setLineDash([]);
+        ctx.font = `italic 600 ${11 / S.scale}px ui-monospace, Menlo, monospace`;
+        ctx.fillStyle = comColor(p.c, 0.95);
+        ctx.textAlign = "center";
+        ctx.fillText(l.via, mx, my - 10);
+        if (l.symbols.length) {
+          ctx.font = `${10 / S.scale}px ui-monospace, Menlo, monospace`;
+          ctx.fillStyle = muted;
+          ctx.fillText("via " + l.symbols.slice(0, 2).join(", "), mx, my + 16);
+        }
+        ctx.textAlign = "left";
       }
     }
-  }
-  const paintSim = () => {};              // drawing happens every frame anyway
-
-  function centerOn(file) {
-    const S = SIM; if (!S || S.idx[file] == null) return;
-    const p = S.nodes[S.idx[file]];
-    S.tx = S.W / 2 - p.x * S.scale; S.ty = S.H / 2 - p.y * S.scale;
-  }
-
-  function zoomToCommunity(cid) {
-    const S = SIM; if (!S) return;
-    const ids = S.byCom[cid]; if (!ids || !ids.length) return;
-    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
-    for (const i of ids) {
-      const p = S.nodes[i];
-      x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y);
-      x1 = Math.max(x1, p.x); y1 = Math.max(y1, p.y);
+    ctx.setLineDash([]); ctx.globalAlpha = 1;
+    // ── nodes ──
+    for (const p of N) {
+      const sel = st.graphSel === p.f || S.hover === p.f;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r + (sel ? 1.5 : 0), 0, Math.PI * 2);
+      if (p.bubble) {
+        ctx.fillStyle = comColor(p.c, sel ? 0.5 : 0.3);
+        ctx.fill();
+        ctx.strokeStyle = comColor(p.c, 0.95);
+        ctx.lineWidth = (sel ? 2.4 : 1.6) / S.scale;
+        ctx.stroke();
+      } else {
+        if ((S.godSet.has(p.f) || p.big)) { ctx.shadowColor = comColor(p.c); ctx.shadowBlur = 14; }
+        ctx.fillStyle = comColor(p.c, sel ? 1 : 0.85);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        if (sel) { ctx.strokeStyle = textCol; ctx.lineWidth = 1.4 / S.scale; ctx.stroke(); }
+      }
     }
-    const pad = 70;
-    const s = Math.min(2.4, Math.max(0.3,
-      Math.min(S.W / (x1 - x0 + pad * 2), S.H / (y1 - y0 + pad * 2))));
-    S.scale = s;
-    S.tx = S.W / 2 - ((x0 + x1) / 2) * s;
-    S.ty = S.H / 2 - ((y0 + y1) / 2) * s;
+    // ── labels ──
+    ctx.textAlign = "center";
+    if (S.mode === "overview") {
+      for (const p of N) {                        // label + size inside/under bubble
+        ctx.font = `600 ${Math.max(11, Math.min(15, p.r / 3.2)) / S.scale}px ui-monospace, Menlo, monospace`;
+        ctx.fillStyle = textCol;
+        ctx.fillText(p.label || "", p.x, p.y - 2);
+        ctx.font = `${10 / S.scale}px ui-monospace, Menlo, monospace`;
+        ctx.fillStyle = muted;
+        ctx.fillText(p.size + " files", p.x, p.y + 14 / S.scale);
+      }
+    } else {
+      // com/sub: EVERY node gets its name (these views are small by design);
+      // path: bold names under the big dots
+      const small = N.length <= 60;
+      for (const p of N) {
+        const hot = st.graphSel === p.f || S.hover === p.f;
+        if (!small && !hot && !S.godSet.has(p.f) && !p.big && S.scale < 1.4) continue;
+        ctx.font = `${p.big ? "600 " : ""}${(p.big ? 12 : 10.5) / S.scale}px ui-monospace, Menlo, monospace`;
+        ctx.fillStyle = hot || p.big ? textCol : muted;
+        ctx.fillText(p.f.split("/").pop(), p.x, p.y + p.r + 12 / S.scale);
+      }
+    }
+    ctx.textAlign = "left";
   }
 
   function bindSim() {
@@ -680,10 +758,13 @@
       if (!tip) return;
       if (!p) { tip.style.display = "none"; return; }
       const wr = $("#gwrap").getBoundingClientRect();
-      tip.innerHTML = `<b style="color:var(--text)">${esc(p.f)}</b><br>` +
-        `<span style="color:${comColor(p.c)}">● ${esc(S.labels[p.c] || "Community " + p.c)}</span>` +
-        ` · ${p.d} link${p.d === 1 ? "" : "s"}${S.godSet.has(p.f) ? " · ★ god node" : ""}` +
-        `<br><span style="opacity:.65">click for neighbors + code</span>`;
+      tip.innerHTML = p.bubble
+        ? `<b style="color:var(--text)">${esc(p.label)}</b> · ${p.size} files` +
+          `<br><span style="opacity:.65">click to open this community</span>`
+        : `<b style="color:var(--text)">${esc(p.f)}</b><br>` +
+          `<span style="color:${comColor(p.c)}">● ${esc(S.labels[p.c] || "Community " + p.c)}</span>` +
+          ` · ${p.d} link${p.d === 1 ? "" : "s"}${S.godSet.has(p.f) ? " · ★ god node" : ""}` +
+          `<br><span style="opacity:.65">click for neighbors + code</span>`;
       tip.style.display = "block";
       tip.style.left = Math.min(e.clientX - wr.left + 14, wr.width - 300) + "px";
       tip.style.top = (e.clientY - wr.top + 12) + "px";
@@ -712,8 +793,14 @@
     const up = () => {
       if (S.drag) {
         const { p, moved } = S.drag;
-        p.fix = false;
-        if (!moved) openGraphNode(p.f);
+        if (S.mode !== "path") p.fix = false;
+        if (!moved) {
+          if (p.bubble) {                      // open that community
+            st.graphFocusCom = p.c; st.gmode = "com";
+            st.graphView = null; st.graphNode = null; st.graphSel = null;
+            renderView();
+          } else openGraphNode(p.f);
+        }
       }
       S.drag = null; S.panning = null; cv.style.cursor = "grab";
     };
@@ -1386,15 +1473,17 @@
     }
     else if (act === "rerank-toggle") { st.pruneRerank = !st.pruneRerank; ls.set("mb-rerank", st.pruneRerank ? "1" : "0"); if (st.q.trim()) runPrune(); else renderView(); }
     else if (act === "gopen") { openGraphNode(t.dataset.file); }
-    else if (act === "gclear") { st.graphNode = null; st.graphSel = null; st.graphPath = null; paintPanel(); }
+    else if (act === "gclear") { st.graphNode = null; st.graphSel = null; paintPanel(); }
     else if (act === "gcom") {
-      const id = +t.dataset.id;
-      st.graphFocusCom = st.graphFocusCom === id ? null : id;
-      renderView();                       // re-mounts overlay chips + panel state
-      if (st.graphFocusCom != null) zoomToCommunity(id);
+      st.graphFocusCom = +t.dataset.id; st.gmode = "com";
+      st.graphView = null; st.graphNode = null; st.graphSel = null;
+      renderView();
     }
-    else if (act === "gfocus-clear") { st.graphFocusCom = null; renderView(); }
-    else if (act === "giso") { st.graphHideIso = !st.graphHideIso; renderView(); }
+    else if (act === "goverview") {
+      st.gmode = "overview"; st.graphFocusCom = null; st.graphPath = null;
+      st.gsub = null; st.graphNode = null; st.graphSel = null; st.graphView = null;
+      renderView();
+    }
     else if (act === "theme") { st.theme = st.theme === "dark" ? "light" : "dark"; ls.set("mb-theme", st.theme); render(); }
     else if (act === "settings") { st.overlay = "settings"; renderOverlays(); loadProviders(); }
     else if (act === "settings-close" || act === "settings-bg") { st.overlay = null; renderOverlays(); }
@@ -1440,7 +1529,8 @@
     st.search = st.prune = st.ask = null; st.openFile = null;
     st.graph = null; st.graphNode = null; st.graphSel = null;
     st.graphPath = null; st.graphPos = {};
-    st.graphFocusCom = null; st.graphHideIso = true; st.graphView = null;
+    st.graphFocusCom = null; st.graphView = null;
+    st.gmode = "overview"; st.gsub = null;
   }
   function cycleRepo() {
     const warm = st.repos.filter((r) => r.loaded !== false);

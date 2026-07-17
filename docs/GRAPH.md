@@ -27,11 +27,21 @@ Every **dot is a file**. Three kinds of information are drawn on top:
 | **solid line** | a real code edge: one file **imports or calls** the other (extracted from the AST at index time — deterministic, no LLM). |
 | **dashed line** | a **semantic** edge: the two files are talking about the same thing (embedding similarity ≥ 0.80) but there is **no code link** between them. |
 
-In the studio: **hover** a dot for its name/community/degree, **click** it for
-its neighbors + symbols + real code, **click a community** in the side panel to
-focus it (everything else dims, its file names appear), and type
-`a -> b` in the search box to trace a path. Isolated files (readmes, configs —
-nothing links them) are hidden by default; the corner chip brings them back.
+The studio never shows you the whole-repo hairball. It has four views, and you
+move between them by clicking:
+
+1. **Overview (default)** — one **bubble per community**, sized by file count,
+   connected by how many links cross between them. Ten shapes, not 600 dots.
+2. **Community** — click a bubble (or its row in the panel) and ONLY that
+   community's files appear, every one labeled. `← back to overview` returns.
+3. **Search subgraph** — type anything ("chunker split php") and the engine
+   runs its REAL retrieval, then draws only the relevant files and the links
+   between them, ranked in the side panel.
+4. **Path** — type `a -> b` and you get just the route, laid out flat, with
+   the edge kind and the **carrier functions** written on each line.
+
+In any view: **hover** for a tooltip, **click a file** for its neighbors +
+symbols + real code in the side panel.
 
 ## 2. Real output — megabrain's own repo (122 files, built in 8 ms)
 
