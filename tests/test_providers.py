@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 from megabrain import providers
+from megabrain.errors import MegabrainError
 
 
 @pytest.fixture
@@ -170,3 +171,65 @@ def test_chat_text_extracts_message(monkeypatch):
     monkeypatch.setattr("urllib.request.urlopen",
                         lambda req, timeout=0: _Resp(json.dumps(body).encode()))
     assert providers.chat_text("m", "hi", max_tokens=5, key="k") == "OK"
+
+
+# ---------------------------------------------------------------- chat extras
+
+@pytest.fixture
+def sent(monkeypatch):
+    """Capture the JSON body of the last request instead of sending it. The
+    reply is plain JSON: post_json parses it, and stream_chat skips it as a
+    non-`data:` line — so one fixture serves both transports."""
+    box = {}
+
+    def fake_urlopen(req, timeout=0):
+        box.update(json.loads(req.data))
+        return _Resp(json.dumps({"choices": [{"message": {"content": "ok"}}]}).encode())
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+    return box
+
+
+def test_chat_extra_merges_into_post_json(sent, monkeypatch):
+    monkeypatch.setenv("MEGABRAIN_CHAT_EXTRA", '{"reasoning_effort": "none"}')
+    providers.post_json("/chat/completions", {"model": "m", "messages": []}, key="k")
+    assert sent["reasoning_effort"] == "none"
+    assert sent["model"] == "m"
+
+
+def test_chat_extra_merges_into_stream_chat(sent, monkeypatch):
+    monkeypatch.setenv("MEGABRAIN_CHAT_EXTRA", '{"reasoning_effort": "none"}')
+    providers.stream_chat({"model": "m", "messages": []}, key="k")
+    assert sent["reasoning_effort"] == "none"
+    assert sent["stream"] is True
+
+
+def test_chat_extra_only_touches_chat_completions(sent, monkeypatch):
+    """Embeddings share post_json — a chat-only knob must not leak into them
+    (an unknown field is a 400 on strict providers)."""
+    monkeypatch.setenv("MEGABRAIN_CHAT_EXTRA", '{"reasoning_effort": "none"}')
+    providers.post_json("/embeddings", {"model": "e", "input": ["x"]}, key="k")
+    assert "reasoning_effort" not in sent
+
+
+def test_chat_extra_overrides_body(sent, monkeypatch):
+    """Extras win: the point is forcing a knob the caller already set."""
+    monkeypatch.setenv("MEGABRAIN_CHAT_EXTRA", '{"temperature": 0.9}')
+    providers.stream_chat({"model": "m", "messages": [], "temperature": 0}, key="k")
+    assert sent["temperature"] == 0.9
+
+
+def test_chat_extra_absent_is_noop(sent, monkeypatch):
+    monkeypatch.delenv("MEGABRAIN_CHAT_EXTRA", raising=False)
+    providers.stream_chat({"model": "m", "messages": []}, key="k")
+    assert set(sent) == {"model", "messages", "stream"}
+
+
+@pytest.mark.parametrize("raw", ["not json", "[1, 2]", '"a string"'])
+def test_chat_extra_malformed_fails_loud(monkeypatch, raw):
+    """A silently-dropped knob would corrupt every measurement that assumed it
+    applied — better a 400 than a lie."""
+    monkeypatch.setenv("MEGABRAIN_CHAT_EXTRA", raw)
+    with pytest.raises(MegabrainError, match="MEGABRAIN_CHAT_EXTRA") as e:
+        providers.stream_chat({"model": "m", "messages": []}, key="k")
+    assert e.value.http_status == 400

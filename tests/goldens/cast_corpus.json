@@ -453,29 +453,29 @@
   "megabrain/ask/narrator.py": {
    "chunks": [
     [
-     "module",
-     "_candidates, _flow_ctx",
+     "function",
+     "_candidates",
      null,
      1,
-     83,
-     "megabrain > megabrain/ask/narrator.py > [_candidates, _flow_ctx]",
-     "6a82c3ec5347b9270ffa658e1a11bb3cbbf72de0"
+     72,
+     "megabrain > megabrain/ask/narrator.py > def _candidates(res: dict, docs_only: bool=False, include_docs: bool=False) -> list[dict]",
+     "aa338289dcab035128bb4990d2d60ca8337fdde3"
     ],
     [
      "module",
-     "_numbered, _build_body, _code_block",
+     "_flow_ctx, _numbered, _build_body, _code_block",
      null,
-     84,
-     167,
-     "megabrain > megabrain/ask/narrator.py > [_numbered, _build_body, _code_block]",
-     "3a2558a63a397ff517b35c2acd47a19d37bf7b5b"
+     73,
+     171,
+     "megabrain > megabrain/ask/narrator.py > [_flow_ctx, _numbered, _build_body, _code_block]",
+     "2cd4016ceae0752524989f61afb35db978c06b91"
     ],
     [
      "module",
      "_Splicer, ask, cited_files, _splice",
      null,
-     168,
-     268,
+     172,
+     272,
      "megabrain > megabrain/ask/narrator.py > [_Splicer, ask, cited_files, _splice]",
      "4c80b1eb018266d0b05c5112a9b98cae1f8bc76d"
     ],
@@ -483,159 +483,159 @@
      "module",
      "render_ask, stream_ask",
      null,
-     269,
-     371,
+     273,
+     375,
      "megabrain > megabrain/ask/narrator.py > [render_ask, stream_ask]",
      "33f0b3fa2af444b1e2b4d452fe0cb7b443b70237"
     ]
    ],
-   "skeleton_sha": "651cd38b09c2d314f4e415ab279ebdafccc6e077",
+   "skeleton_sha": "d21c73bc75f93e457342bae2421720bd2fc1371f",
    "symbols": [
     [
      "DOC_EXTS",
      "constant",
-     24,
-     24,
+     25,
+     25,
      "DOC_EXTS = MarkdownStrategy.exts"
     ],
     [
      "MAX_CTX_CHARS",
      "constant",
-     26,
-     26,
-     "MAX_CTX_CHARS = 200000"
+     30,
+     30,
+     "MAX_CTX_CHARS = int(os.environ.get('MEGABRAIN_ASK_CTX_CHARS', '200000'))"
     ],
     [
      "_SEL",
      "constant",
-     31,
-     31,
+     35,
+     35,
      "_SEL = re.compile('\\\\[\\\\[(\\\\d+)(?::\\\\s*[Ll]?(\\\\d+)\\\\s*-\\\\s*[Ll]?(\\\\d+))?\\\\s*\\\\]\\\\]')"
     ],
     [
      "_candidates",
      "function",
-     34,
-     59,
+     38,
+     63,
      "def _candidates(res: dict, docs_only: bool=False, include_docs: bool=False) -> list[dict]"
     ],
     [
      "_RULES",
      "constant",
-     62,
-     68,
+     66,
+     72,
      "_RULES = '- NEVER paste or quote code. Cite it with DOUBLE brackets: [[3]] (whole chunk) or [[3:705-731]] (file lines 70"
     ],
     [
      "_flow_ctx",
      "function",
-     71,
-     83,
+     75,
+     87,
      "def _flow_ctx(res: dict) -> str"
     ],
     [
      "_numbered",
      "function",
-     86,
-     93,
+     90,
+     97,
      "def _numbered(c: dict) -> str"
     ],
     [
      "_build_body",
      "function",
-     96,
-     120,
+     100,
+     124,
      "def _build_body(question: str, cands: list[dict], flow_ctx: str='', model: str | None=None) -> dict"
     ],
     [
      "_code_block",
      "function",
-     123,
-     160,
+     127,
+     164,
      "def _code_block(c: dict, lo: int | None, hi: int | None, seen: set, file_syms: dict[str, list[dict]]) -> str"
     ],
     [
      "_PARTIAL",
      "constant",
-     167,
-     167,
+     171,
+     171,
      "_PARTIAL = re.compile('\\\\[(?:\\\\[(?:\\\\d+(?::\\\\s*[Ll]?\\\\d*(?:-\\\\s*[Ll]?\\\\d*)?)?\\\\]?)?)?$')"
     ],
     [
      "_Splicer",
      "class",
-     170,
-     208,
+     174,
+     212,
      "class _Splicer"
     ],
     [
      "_Splicer.__init__",
      "method",
-     178,
      182,
+     186,
      "def __init__(self, cands: list[dict], file_syms: dict[str, list[dict]])"
     ],
     [
      "_Splicer._sub",
      "method",
-     184,
-     191,
+     188,
+     195,
      "def _sub(self, m)"
     ],
     [
      "_Splicer.feed",
      "method",
-     193,
-     200,
+     197,
+     204,
      "def feed(self, d: str) -> str"
     ],
     [
      "_Splicer.flush",
      "method",
-     202,
-     204,
+     206,
+     208,
      "def flush(self) -> str"
     ],
     [
      "_Splicer.files",
      "method",
-     206,
-     208,
+     210,
+     212,
      "def files(self) -> int"
     ],
     [
      "ask",
      "function",
-     211,
-     235,
+     215,
+     239,
      "def ask(root: Path, question: str, docs_only: bool=False, path_filter: str | None=None, state: SearchState | None=None, include_docs: bool=False, agents: bool | None=False, model: str | None=None) -> dict"
     ],
     [
      "cited_files",
      "function",
-     238,
-     248,
+     242,
+     252,
      "def cited_files(out: dict) -> list[str]"
     ],
     [
      "_splice",
      "function",
-     251,
-     268,
+     255,
+     272,
      "def _splice(out: dict) -> tuple[str, set, set]"
     ],
     [
      "render_ask",
      "function",
-     271,
-     294,
+     275,
+     298,
      "def render_ask(out: dict) -> str"
     ],
     [
      "stream_ask",
      "function",
-     297,
-     371,
+     301,
+     375,
      "def stream_ask(root: Path, question: str, out=None, show_map: bool=True, docs_only: bool=False, path_filter: str | None=None, include_docs: bool=False, agents: bool | None=None, model: str | None=None) -> None"
     ]
    ]
@@ -3294,37 +3294,37 @@
    "chunks": [
     [
      "module",
-     "_bad_request, chat_provider, ask_model, _resolve, find_key",
+     "_bad_request, chat_provider, ask_model",
      null,
      1,
-     105,
-     "megabrain > megabrain/providers/__init__.py > [_bad_request, chat_provider, ask_model, _resolve, find_key]",
-     "a7d6f0f33370d2b1f6bb74fbd4b2d964652b463b"
+     91,
+     "megabrain > megabrain/providers/__init__.py > [_bad_request, chat_provider, ask_model]",
+     "d2d493819e74486a0f12276e7f719de1ee796af4"
     ],
     [
      "module",
-     "_is_local, _key_for, find_embed_key, find_chat_key, _headers, post_json, chat_text, stream_chat",
+     "_resolve, find_key, _is_local, _key_for, find_embed_key, find_chat_key, _headers, _chat_extras, post_json, chat_text",
      null,
-     106,
-     193,
-     "megabrain > megabrain/providers/__init__.py > [_is_local, _key_for, find_embed_key, find_chat_key, _headers, post_json, chat_text, stream_chat]",
-     "61d050fd3e320a07acf012c338ac4a1e7e4b3758"
+     92,
+     210,
+     "megabrain > megabrain/providers/__init__.py > [_resolve, find_key, _is_local, _key_for, find_embed_key, find_chat_key, _headers, _chat_extras, post_json, chat_text]",
+     "bc73ef88b9f70ad7ebcbfa222d2e1badfeca5463"
     ],
     [
      "module",
-     "_or_stream_chat, OpenRouterProvider",
+     "stream_chat, _or_stream_chat, OpenRouterProvider",
      null,
-     194,
-     304,
-     "megabrain > megabrain/providers/__init__.py > [_or_stream_chat, OpenRouterProvider]",
-     "708cee4511a3c61edcf2bdcb80b711bd260766ce"
+     211,
+     332,
+     "megabrain > megabrain/providers/__init__.py > [stream_chat, _or_stream_chat, OpenRouterProvider]",
+     "64ce1687a4f9833ca8b89e8cc0994f5c76980132"
     ],
     [
      "module",
      "ClaudeProvider, _ollama_probe, _active_label, detect, select",
      null,
-     305,
-     410,
+     333,
+     438,
      "megabrain > megabrain/providers/__init__.py > [ClaudeProvider, _ollama_probe, _active_label, detect, select]",
      "b525b952df736ed614ae1972645f2b90c0a7157d"
     ],
@@ -3332,327 +3332,334 @@
      "module",
      "start_ollama, resolve",
      null,
-     411,
-     452,
+     439,
+     480,
      "megabrain > megabrain/providers/__init__.py > [start_ollama, resolve]",
      "4f53dec70f88f1f570ff85f414a10414cad1af3b"
     ]
    ],
-   "skeleton_sha": "282a0b32a344b2e0d4d650e3a7444245cb53b9c2",
+   "skeleton_sha": "8c1b5afd07372a3f490970907f836bf8199b34d0",
    "symbols": [
     [
      "_bad_request",
      "function",
-     48,
-     51,
+     54,
+     57,
      "def _bad_request(msg: str) -> MegabrainError"
     ],
     [
      "BASE_URL",
      "constant",
-     53,
-     53,
+     59,
+     59,
      "BASE_URL = os.environ.get('OPENROUTER_BASE_URL', 'https://openrouter.ai/api/v1').rstrip('/')"
     ],
     [
      "EMBED_MODEL",
      "constant",
-     60,
-     60,
+     66,
+     66,
      "EMBED_MODEL = os.environ.get('MEGABRAIN_EMBED_MODEL', 'perplexity/pplx-embed-v1-0.6b')"
     ],
     [
      "ASK_MODEL",
      "constant",
-     61,
-     61,
+     67,
+     67,
      "ASK_MODEL = os.environ.get('MEGABRAIN_ASK_MODEL', 'qwen/qwen3-coder')"
     ],
     [
      "chat_provider",
      "function",
-     64,
-     67,
+     70,
+     73,
      "def chat_provider() -> str"
     ],
     [
      "ask_model",
      "function",
-     70,
-     78,
+     76,
+     84,
      "def ask_model() -> str"
     ],
     [
      "_REFERER",
      "constant",
-     82,
-     82,
+     88,
+     88,
      "_REFERER = os.environ.get('OPENROUTER_HTTP_REFERER', 'https://github.com/bernatch22/megabrain')"
     ],
     [
      "_TITLE",
      "constant",
-     83,
-     83,
+     89,
+     89,
      "_TITLE = os.environ.get('OPENROUTER_APP_TITLE', 'megabrain')"
     ],
     [
      "_RETRY_CODES",
      "constant",
-     85,
-     85,
+     91,
+     91,
      "_RETRY_CODES = (429, 500, 502, 503, 529)"
     ],
     [
      "_resolve",
      "function",
-     88,
-     101,
+     94,
+     107,
      "def _resolve(name: str, required: bool=True) -> str | None"
     ],
     [
      "find_key",
      "function",
-     104,
-     105,
+     110,
+     111,
      "def find_key(required: bool=True) -> str | None"
     ],
     [
      "EMBED_BASE_URL",
      "constant",
-     111,
-     111,
+     117,
+     117,
      "EMBED_BASE_URL = os.environ.get('MEGABRAIN_EMBED_BASE_URL', BASE_URL).rstrip('/')"
     ],
     [
      "CHAT_BASE_URL",
      "constant",
-     112,
-     112,
+     118,
+     118,
      "CHAT_BASE_URL = os.environ.get('MEGABRAIN_CHAT_BASE_URL', BASE_URL).rstrip('/')"
     ],
     [
      "_is_local",
      "function",
-     115,
-     118,
+     121,
+     124,
      "def _is_local(url: str) -> bool"
     ],
     [
      "_key_for",
      "function",
-     121,
-     128,
+     127,
+     134,
      "def _key_for(base_url: str, explicit: str | None, required: bool) -> str | None"
     ],
     [
      "find_embed_key",
      "function",
-     131,
-     134,
+     137,
+     140,
      "def find_embed_key(required: bool=True) -> str | None"
     ],
     [
      "find_chat_key",
      "function",
-     137,
      143,
+     149,
      "def find_chat_key(required: bool=True) -> str | None"
     ],
     [
      "_headers",
      "function",
-     146,
-     151,
+     152,
+     157,
      "def _headers(key: str, base_url: str=BASE_URL) -> dict"
+    ],
+    [
+     "_chat_extras",
+     "function",
+     160,
+     177,
+     "def _chat_extras() -> dict"
     ],
     [
      "post_json",
      "function",
-     154,
-     173,
+     180,
+     201,
      "def post_json(path: str, body: dict, key: str | None=None, retries: int=5, timeout: int=120, base_url: str | None=None) -> dict"
     ],
     [
      "chat_text",
      "function",
-     176,
-     182,
+     204,
+     210,
      "def chat_text(model: str, prompt: str, max_tokens: int, temperature: float=0.0, key: str | None=None, retries: int=5, timeout: int=45) -> str"
     ],
     [
      "stream_chat",
      "function",
-     185,
-     193,
+     213,
+     221,
      "def stream_chat(body: dict, key: str | None=None, retries: int=4, on_delta=None, timeout: int=90, with_tools: bool=False)"
     ],
     [
      "_or_stream_chat",
      "function",
-     196,
-     271,
+     224,
+     299,
      "def _or_stream_chat(body: dict, key: str | None=None, retries: int=4, on_delta=None, timeout: int=90, with_tools: bool=False)"
     ],
     [
      "OpenRouterProvider",
      "class",
-     281,
-     304,
+     309,
+     332,
      "class OpenRouterProvider"
     ],
     [
      "OpenRouterProvider.name",
      "class_attr",
-     285,
-     285,
+     313,
+     313,
      "name = 'openrouter'"
     ],
     [
      "OpenRouterProvider.agent_stream",
      "class_attr",
-     286,
-     286,
+     314,
+     314,
      "agent_stream = None"
     ],
     [
      "OpenRouterProvider.available",
      "method",
-     288,
-     289,
+     316,
+     317,
      "def available(self) -> bool"
     ],
     [
      "OpenRouterProvider.chat_text",
      "method",
-     291,
-     299,
+     319,
+     327,
      "def chat_text(self, model: str, prompt: str, max_tokens: int, temperature: float=0.0, key: str | None=None, retries: int=5, timeout: int=45) -> str"
     ],
     [
      "OpenRouterProvider.stream_chat",
      "method",
-     301,
-     304,
+     329,
+     332,
      "def stream_chat(self, body: dict, key: str | None=None, retries: int=4, on_delta=None, timeout: int=90, with_tools: bool=False)"
     ],
     [
      "ClaudeProvider",
      "class",
-     307,
-     334,
+     335,
+     362,
      "class ClaudeProvider"
     ],
     [
      "ClaudeProvider.name",
      "class_attr",
-     312,
-     312,
+     340,
+     340,
      "name = 'claude'"
     ],
     [
      "ClaudeProvider.available",
      "method",
-     314,
-     316,
+     342,
+     344,
      "def available(self) -> bool"
     ],
     [
      "ClaudeProvider.chat_text",
      "method",
-     318,
-     322,
+     346,
+     350,
      "def chat_text(self, model: str, prompt: str, max_tokens: int, temperature: float=0.0, key: str | None=None, retries: int=5, timeout: int=45) -> str"
     ],
     [
      "ClaudeProvider.stream_chat",
      "method",
-     324,
-     329,
+     352,
+     357,
      "def stream_chat(self, body: dict, key: str | None=None, retries: int=4, on_delta=None, timeout: int=90, with_tools: bool=False)"
     ],
     [
      "ClaudeProvider.agent_stream",
      "method",
-     331,
-     334,
+     359,
+     362,
      "def agent_stream(self)"
     ],
     [
      "_REGISTRY",
      "constant",
-     337,
-     338,
+     365,
+     366,
      "_REGISTRY: dict[str, object] = {'openrouter': OpenRouterProvider(), 'claude': ClaudeProvider()}"
     ],
     [
      "_PRIORITY",
      "constant",
-     339,
-     339,
+     367,
+     367,
      "_PRIORITY = ('claude', 'openrouter')"
     ],
     [
      "OLLAMA_HOST",
      "constant",
-     342,
-     342,
+     370,
+     370,
      "OLLAMA_HOST = os.environ.get('OLLAMA_HOST', 'http://localhost:11434').rstrip('/')"
     ],
     [
      "OLLAMA_OPENAI",
      "constant",
-     343,
-     343,
+     371,
+     371,
      "OLLAMA_OPENAI = OLLAMA_HOST + '/v1'"
     ],
     [
      "_select_lock",
      "constant",
-     344,
-     344,
+     372,
+     372,
      "_select_lock = __import__('threading').Lock()"
     ],
     [
      "_ollama_probe",
      "function",
-     347,
-     358,
+     375,
+     386,
      "def _ollama_probe(timeout: float=0.3) -> dict"
     ],
     [
      "_active_label",
      "function",
-     361,
-     368,
+     389,
+     396,
      "def _active_label() -> str"
     ],
     [
      "detect",
      "function",
-     371,
-     384,
+     399,
+     412,
      "def detect() -> dict"
     ],
     [
      "select",
      "function",
-     387,
-     410,
+     415,
+     438,
      "def select(provider: str, model: str | None=None) -> dict"
     ],
     [
      "start_ollama",
      "function",
-     413,
-     435,
+     441,
+     463,
      "def start_ollama(wait_s: float=6.0) -> dict"
     ],
     [
      "resolve",
      "function",
-     438,
-     452,
+     466,
+     480,
      "def resolve()"
     ]
    ]

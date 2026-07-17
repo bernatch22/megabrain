@@ -18,6 +18,12 @@ Env surface (all optional except an embedding credential):
                             Embeddings ALWAYS use OpenRouter/local, never this.
     MEGABRAIN_EMBED_MODEL   default perplexity/pplx-embed-v1-0.6b
     MEGABRAIN_ASK_MODEL     default qwen/qwen3-coder ('haiku' on claude)
+    MEGABRAIN_CHAT_EXTRA    JSON object shallow-merged into every OpenAI-compat
+                            chat body (streamed and not; extras win). The
+                            provider-param escape hatch — e.g.
+                            '{"reasoning_effort": "none"}' pins hybrid-thinking
+                            models (qwen3 on Ollama ≥0.12 / OpenRouter) to pure
+                            instruct mode. Ignored by the claude provider.
     OPENROUTER_HTTP_REFERER / OPENROUTER_APP_TITLE  optional attribution headers
 
 Local / hybrid stacks — point embeddings and/or chat at ANY OpenAI-compatible
@@ -151,12 +157,34 @@ def _headers(key: str, base_url: str = BASE_URL) -> dict:
     return h
 
 
+def _chat_extras() -> dict:
+    """MEGABRAIN_CHAT_EXTRA parsed — a JSON object shallow-merged into every
+    OpenAI-compat chat body (extras win over the built body, so a knob like
+    temperature can be forced). The provider-param escape hatch: e.g.
+    '{"reasoning_effort": "none"}' turns hybrid-thinking models (qwen3 on
+    Ollama ≥0.12 / OpenRouter) into pure instruct — ask wants answers, not
+    chains of thought. Malformed JSON fails loud: a silently-dropped knob
+    would corrupt any measurement that relied on it."""
+    raw = os.environ.get("MEGABRAIN_CHAT_EXTRA")
+    if not raw:
+        return {}
+    try:
+        d = json.loads(raw)
+    except json.JSONDecodeError as e:
+        raise _bad_request(f"MEGABRAIN_CHAT_EXTRA is not valid JSON: {e}") from e
+    if not isinstance(d, dict):
+        raise _bad_request("MEGABRAIN_CHAT_EXTRA must be a JSON object")
+    return d
+
+
 def post_json(path: str, body: dict, key: str | None = None, retries: int = 5,
               timeout: int = 120, base_url: str | None = None) -> dict:
     """POST a JSON body to `<base_url><path>`, return parsed JSON. Exponential
     backoff on 429/5xx. Used for embeddings and non-streamed chat."""
     base = (base_url or BASE_URL).rstrip("/")
     key = key or find_key()
+    if path == "/chat/completions":
+        body = {**body, **_chat_extras()}
     data = json.dumps(body).encode()
     for attempt in range(retries):
         req = urllib.request.Request(f"{base}{path}", data=data, method="POST",
@@ -204,7 +232,7 @@ def _or_stream_chat(body: dict, key: str | None = None, retries: int = 4,
     any delta has been emitted via on_delta we stop retrying so the terminal
     never double-prints."""
     key = key or find_chat_key()
-    body = {**body, "stream": True}
+    body = {**body, **_chat_extras(), "stream": True}
     data = json.dumps(body).encode()
     last: Exception | None = None
     emitted = False

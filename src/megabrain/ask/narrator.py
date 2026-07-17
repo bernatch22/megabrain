@@ -9,6 +9,7 @@ disk. Streamed, ~1-3s. Fail-open: no citations / API error -> full bundle.
 
 from __future__ import annotations
 
+import os
 import re
 import sys
 from pathlib import Path
@@ -23,7 +24,10 @@ from ..retrieval.state import SearchState
 # walkthrough. Docs stay retrievable via `query` regardless.
 DOC_EXTS = MarkdownStrategy.exts
 
-MAX_CTX_CHARS = 200_000  # ~50K tokens of candidate code; fits every default model
+# ~50K tokens of candidate code; fits every default CLOUD model. Local models
+# have smaller windows (qwen3:14b tops out at 40960 tokens) — override with
+# MEGABRAIN_ASK_CTX_CHARS or the serving runtime silently truncates the prompt.
+MAX_CTX_CHARS = int(os.environ.get("MEGABRAIN_ASK_CTX_CHARS", "200000"))
 # double-bracket so the model can still mention [n] in prose without collision.
 # Tolerate an "L" prefix and stray spaces on the line range: the chunk headers in
 # the prompt read "L1-172", so the model often mirrors that as [[0:L1-172]] — accept

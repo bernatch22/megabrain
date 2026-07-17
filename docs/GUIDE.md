@@ -60,29 +60,59 @@ flow cache on, a **repeated question costs $0 and ~0 ms** (next up).
 ## 2b. Local embeddings (Ollama, $0, code never leaves your machine)
 
 For a private repo, or to run with zero API keys: point `MEGABRAIN_EMBED_MODEL`
-at any model served by an OpenAI-compatible local endpoint. Two real options,
-**measured** against the same 22-query golden set (sdk-server, R@1 = does the
-single best file for a question land in the #1 slot):
+at any model served by an OpenAI-compatible local endpoint. Measured 2026-07-17
+against the same 22-query golden set (sdk-server snapshot, all three re-indexed
+the same day on an RTX 3090 — `bundle_full` = every expected file made the
+bundle, the completeness bar; `R@1` = the best file landed in the #1 slot):
 
 ```bash
 ollama serve                                   # once, keep running
-ollama pull unclemusclez/jina-embeddings-v2-base-code   # 322 MB, one time
+ollama pull hf.co/wsxiaoys/jina-embeddings-v2-base-code-Q8_0-GGUF   # 172 MB, one time
 
 export MEGABRAIN_EMBED_BASE_URL=http://localhost:11434/v1
-export MEGABRAIN_EMBED_MODEL=unclemusclez/jina-embeddings-v2-base-code
+export MEGABRAIN_EMBED_MODEL=hf.co/wsxiaoys/jina-embeddings-v2-base-code-Q8_0-GGUF
 megabrain index ~/your/repo --force            # re-embed with the new model
 ```
 
-| embedding | R@1 (retrieval) | open weights? | cost | index (575 chunks) |
-|---|---|---|---|---|
-| `perplexity/pplx-embed-v1-0.6b` *(cloud default)* | **0.591** | no (API-only) | $0.003 | fast |
-| `unclemusclez/jina-embeddings-v2-base-code` *(local, code-tuned)* | **0.455** | **yes — Apache 2.0** | **$0.00** | ~165 s (CPU) |
-| `intfloat/multilingual-e5-large` (general-purpose, local) | 0.364 | yes | $0.00 | ~590 s (needs OpenRouter-hosted; slow + weaker — not code-tuned) |
+| embedding | R@1 | bundle_full | open weights? | cost | size |
+|---|---|---|---|---|---|
+| `perplexity/pplx-embed-v1-0.6b` *(cloud default)* | **0.864** | **0.955** | no (API-only) | ~$0.002/index | — |
+| `jina-embeddings-v2-base-code` Q8 GGUF *(local, code-tuned)* | 0.682 | **0.909** | **yes — Apache 2.0** | **$0.00** | **172 MB** |
+| `bge-m3` (general, local) | 0.773 | **0.909** | yes | $0.00 | 1.2 GB |
 
-**`jina-embeddings-v2-base-code` is the one worth using locally** — it's the
-only embedder here that is both genuinely open-weight AND code-specialized.
-`embeddinggemma`/general local embedders (e5, bge, etc.) measure noticeably
-worse on code because they weren't trained on it.
+**`jina-embeddings-v2-base-code` is the local pick**: it ties bge-m3 on
+`bundle_full` — the number that decides whether `ask`/`query` have the right
+code to splice — at 7× less memory and 768 dims (25% smaller index, faster
+search). bge-m3 ranks the #1 slot better (R@1 0.773); take it if tier1
+ordering matters more than footprint. Both are 8K-context models — the
+512-token BERT embedders (e5, gte, bge-large) choke on megabrain's chunks and
+are not usable.
+
+### Local narrator too (`ask` on Ollama) — the two knobs that make it work
+
+```bash
+export MEGABRAIN_CHAT_BASE_URL=http://localhost:11434/v1
+export MEGABRAIN_ASK_MODEL=qwen3-coder:30b        # best measured local ask model
+export MEGABRAIN_CHAT_EXTRA='{"reasoning_effort": "none"}'
+export MEGABRAIN_ASK_CTX_CHARS=105000
+```
+
+- **`MEGABRAIN_CHAT_EXTRA`** — a JSON object merged into every chat request.
+  Hybrid-thinking models (`qwen3:*`) burn hundreds of hidden reasoning tokens
+  per answer through Ollama's OpenAI endpoint, which **ignores** the native
+  `think:false`; `reasoning_effort:"none"` is the field it honors (Ollama
+  ≥0.12). Non-thinking models (`qwen3-coder:*`) don't need it.
+- **`MEGABRAIN_ASK_CTX_CHARS`** — `ask`'s candidate budget is sized for cloud
+  windows (200K chars ≈ 50K tokens); a 40K-token local model gets its prompt
+  **silently truncated** by the runtime. Cap the budget below the model's
+  window (~3 chars/token, leave ~3K tokens for the answer) and raise Ollama's
+  default: `OLLAMA_CONTEXT_LENGTH=40960`.
+
+Measured same-day on the 3090 (6-query golden sample, pplx retrieval):
+`qwen3-coder:30b` cite_recall 0.417 · `qwen3:14b` 0.333 · cloud `qwen/qwen3-coder`
+control 0.667. Local narrators cite fewer *secondary* files — the primary answer
+file and the splice guarantee hold; see `evals/LOCAL_MODELS.md` for the full lab
+log.
 
 ### Does it change what `ask` actually tells you?
 

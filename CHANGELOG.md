@@ -1,5 +1,26 @@
 # Changelog
 
+## Unreleased
+
+- **`MEGABRAIN_CHAT_EXTRA`** — a JSON object shallow-merged into every
+  OpenAI-compat chat body (streamed and not; extras win, so a knob can be
+  forced). The provider-param escape hatch, born from a real wall: Ollama's
+  `/v1/chat/completions` **ignores** the native `think:false`, so hybrid
+  qwen3 models silently burned ~265 hidden reasoning tokens per `ask` answer;
+  `'{"reasoning_effort": "none"}'` is the field Ollama honors and it pins them
+  to pure instruct mode. Chat-only (never leaks into `/embeddings`), ignored
+  by the claude provider, malformed JSON fails loud (a silently-dropped knob
+  corrupts any measurement that relied on it).
+- **`MEGABRAIN_ASK_CTX_CHARS`** — override `ask`'s candidate-prompt budget
+  (default 200K chars ≈ 50K tokens, sized for cloud windows). Local models
+  have smaller windows and runtimes truncate silently: golden bundles measure
+  29–58K tokens vs qwen3:14b's 40960 cap, so 5/6 eval prompts were being cut
+  without a trace. Cap the budget under the model's window instead.
+- Fully-local stack re-measured on an RTX 3090 (docs/GUIDE.md §2b updated with
+  same-day controls): jina-code Q8 GGUF ties bge-m3 on bundle_full 0.909 at
+  7× less memory; qwen3-coder:30b stays the local ask pick. Lab log in
+  `evals/LOCAL_MODELS.md` §(f).
+
 ## 0.9.1 — Windows: stop silently corrupting non-ASCII code · `megabrain install`
 
 - **Fix (Windows, silent data corruption): every file read is now explicitly
