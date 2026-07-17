@@ -4,9 +4,9 @@
 window.mockApi = function () {
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   const REPOS = [
-    { name: "megabrain", root: "~/code/megabrain", files: 173, chunks: 1284, embed_model: "perplexity/pplx-embed-v1-0.6b" },
-    { name: "flowcache-bench", root: "~/code/flowcache-bench", files: 24, chunks: 187, embed_model: "nomic-embed-text" },
-    { name: "engine-notebook", root: "~/scratch/engine-notebook", files: 8, chunks: 51, embed_model: "perplexity/pplx-embed-v1-0.6b" },
+    { name: "megabrain", root: "~/code/megabrain", files: 173, chunks: 1284, embed_model: "perplexity/pplx-embed-v1-0.6b", loaded: true },
+    { name: "flowcache-bench", root: "~/code/flowcache-bench", files: 24, chunks: 187, embed_model: "nomic-embed-text", loaded: true },
+    { name: "engine-notebook", root: "~/scratch/engine-notebook", files: 8, chunks: 51, embed_model: "perplexity/pplx-embed-v1-0.6b", loaded: false },
   ];
   const CH = (id, name, kind, s, e, score, text, selected) =>
     ({ id, name, kind, start_line: s, end_line: e, score, text, selected });
@@ -61,11 +61,57 @@ window.mockApi = function () {
     search: async (query) => (await wait(220), { ...SEARCH, query }),
     chunks: async (file, q) => (await wait(160), {
       file, role: "core", selected_count: 3, chunks: gen(9, [2, 4, 7]) }),
-    prune: async (q) => (await wait(200), {
-      query: q, repo: "megabrain", kept: 4, pruned: 8, scanned: 31, ms: 204,
-      chunks: SEARCH.tier1[0].chunks.map((c) => ({ ...c, file: "engine/flow_cache.py" })),
+    prune: async (q, repo, rerank) => (await wait(rerank ? 900 : 200), {
+      query: q, repo: "megabrain", kept: rerank ? 2 : 4, pruned: rerank ? 10 : 8,
+      scanned: 31, ms: 204,
+      reranked: rerank ? { model: "haiku", kept: 2, dropped: 2, ms: 850 } : undefined,
+      chunks: SEARCH.tier1[0].chunks.slice(0, rerank ? 2 : 4)
+        .map((c) => ({ ...c, file: "engine/flow_cache.py" })),
       noise: gen(8, []).map((c) => ({ ...c, file: "engine/http.py" })),
     }),
+    graph: async (params) => {
+      await wait(260);
+      if (params.mode === "node") {
+        const f = /cache/i.test(params.node || "") ? "engine/flow_cache.py" : (params.node || "engine/indexer.py");
+        return { repo: "megabrain", file: f, resolved_from: params.node,
+          community: { id: 0, label: "Cache & Index" }, degree: 4,
+          out: [{ file: "engine/store.py", kind: "import" }, { file: "engine/metrics.py", kind: "call" }],
+          in: [{ file: "engine/indexer.py", kind: "call" }, { file: "engine/http.py", kind: "import" }],
+          semantic: [{ file: "engine/ask_stream.py", score: 0.87 }],
+          symbols: [{ name: "on_reindex", kind: "method", line: 88, end_line: 104, signature: "def on_reindex(self, changed)", doc: "Drop stale entries." }],
+          chunks: SEARCH.tier1[0].chunks, ms: 6 };
+      }
+      if (params.mode === "path") {
+        return { repo: "megabrain", source: "engine/http.py", target: "engine/store.py",
+          resolved_from: [params.source, params.target], found: true, ms: 4,
+          hops: [{ file: "engine/http.py", via: "" }, { file: "engine/flow_cache.py", via: "import" }, { file: "engine/store.py", via: "call" }] };
+      }
+      const files = ["engine/flow_cache.py", "engine/indexer.py", "engine/store.py", "engine/http.py",
+        "engine/metrics.py", "engine/chunker.py", "engine/ask_stream.py", "engine/broadcast.py",
+        "tests/test_cache.py", "tests/test_http.py", "docs/GUIDE.md", "README.md"];
+      const com = (f) => f.startsWith("tests") ? 1 : /md$/i.test(f) ? 2 : 0;
+      return { repo: "megabrain", files: files.length, ms: 9,
+        communities: [
+          { id: 0, label: "Engine core", size: 8, files: files.filter((f) => com(f) === 0) },
+          { id: 1, label: "Test harness", size: 2, files: files.filter((f) => com(f) === 1) },
+          { id: 2, label: "Docs", size: 2, files: files.filter((f) => com(f) === 2) },
+        ],
+        god_nodes: [{ file: "engine/store.py", degree: 5, out: 1, in: 4, community: 0 },
+          { file: "engine/flow_cache.py", degree: 4, out: 2, in: 2, community: 0 }],
+        surprises: [{ a: "engine/ask_stream.py", b: "docs/GUIDE.md", score: 0.88, a_community: 0, b_community: 2 }],
+        nodes: files.map((f) => ({ file: f, community: com(f), degree: 2 + (f.length % 4) })),
+        links: [
+          { s: "engine/http.py", d: "engine/flow_cache.py", kind: "import" },
+          { s: "engine/flow_cache.py", d: "engine/store.py", kind: "call" },
+          { s: "engine/indexer.py", d: "engine/store.py", kind: "import/call" },
+          { s: "engine/indexer.py", d: "engine/chunker.py", kind: "call" },
+          { s: "engine/http.py", d: "engine/ask_stream.py", kind: "import" },
+          { s: "engine/broadcast.py", d: "engine/flow_cache.py", kind: "call" },
+          { s: "engine/metrics.py", d: "engine/store.py", kind: "import" },
+          { s: "tests/test_cache.py", d: "tests/test_http.py", kind: "semantic", score: 0.83 },
+          { s: "engine/ask_stream.py", d: "docs/GUIDE.md", kind: "semantic", score: 0.88 },
+        ] };
+    },
     scan: async (path) => (await wait(300), {
       path, name: path.split("/").pop() || "repo", would_index: 128,
       by_ext: { ".py": 94, ".md": 22, ".toml": 8, ".yml": 4 },

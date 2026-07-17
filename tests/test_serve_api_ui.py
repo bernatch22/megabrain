@@ -256,6 +256,44 @@ def test_repos_merges_global_registry(server, tmp_path):
     assert by_name["coldrepo"]["chunks"] == 42
 
 
+def test_graph_map_route(server, monkeypatch):
+    base, _ = server
+    import megabrain.providers as providers
+    monkeypatch.setattr(providers, "chat_text",
+                        lambda *a, **k: (_ for _ in ()).throw(RuntimeError("no llm")))
+    status, body = _get(base, "/graph")
+    assert status == 200
+    assert body["files"] >= 3
+    assert {"communities", "god_nodes", "surprises", "nodes", "links"} <= set(body)
+    assert all(c["label"].startswith("Community") for c in body["communities"])
+
+
+def test_graph_node_route(server, monkeypatch):
+    base, _ = server
+    import megabrain.providers as providers
+    monkeypatch.setattr(providers, "chat_text",
+                        lambda *a, **k: (_ for _ in ()).throw(RuntimeError("no llm")))
+    status, body = _get(base, "/graph?mode=node&node=auth%2Flogin.py")
+    assert status == 200
+    assert body["file"] == "auth/login.py"
+    assert body["chunks"] and "login" in body["chunks"][0]["text"]
+    # missing node param -> 400
+    import urllib.error
+    with pytest.raises(urllib.error.HTTPError) as ei:
+        _get(base, "/graph?mode=node")
+    assert ei.value.code == 400
+
+
+def test_graph_path_route(server, monkeypatch):
+    base, _ = server
+    import megabrain.providers as providers
+    monkeypatch.setattr(providers, "chat_text",
+                        lambda *a, **k: (_ for _ in ()).throw(RuntimeError("no llm")))
+    status, body = _get(base, "/graph?mode=path&source=auth%2Flogin.py&target=util.py")
+    assert status == 200
+    assert "found" in body and isinstance(body["hops"], list)
+
+
 def test_unknown_repo_404(server):
     base, _ = server
     req = urllib.request.Request(base + "/search",

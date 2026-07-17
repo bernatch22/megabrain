@@ -87,8 +87,15 @@
     chunks: (file, q, repo) =>
       j("/chunks?file=" + encodeURIComponent(file) + "&q=" + encodeURIComponent(q) +
         (repo ? "&repo=" + encodeURIComponent(repo) : "")),
-    prune: (q, repo) =>
-      j("/prune?q=" + encodeURIComponent(q) + (repo ? "&repo=" + encodeURIComponent(repo) : "")),
+    prune: (q, repo, rerank) =>
+      j("/prune?q=" + encodeURIComponent(q) + (repo ? "&repo=" + encodeURIComponent(repo) : "") +
+        (rerank ? "&rerank=1" : "")),
+    graph: (params, repo) => {
+      const p = new URLSearchParams();
+      for (const k of ["mode", "node", "source", "target"]) if (params[k]) p.set(k, params[k]);
+      if (repo) p.set("repo", repo);
+      return j("/graph?" + p.toString());
+    },
     reposAdd: (path, ignore) => post("/repos/add", { path, ignore }),
     askStream: (body, onEvent) => sse("/ask/stream", body, onEvent),
     indexStream: (body, onEvent) => sse("/index/stream", body, onEvent),

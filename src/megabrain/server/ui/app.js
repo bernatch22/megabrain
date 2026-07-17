@@ -1,7 +1,8 @@
 /* app.js — megabrain studio SPA (vanilla, no framework).
- * Renders the rail + topbar + the three views (search / prune / ask), the
- * settings slide-over, and the add-repo flow (scan census → live indexing
- * progress). All backend access is through window.api (see api.js). */
+ * Renders the rail + topbar + the four views (search / prune / ask / graph),
+ * the settings slide-over, and the add-repo flow (scan census → live indexing
+ * progress). The graph view is a force-directed canvas over /graph (no libs).
+ * All backend access is through window.api (see api.js). */
 (function () {
   "use strict";
   const $ = (s, r) => (r || document).querySelector(s);
@@ -19,6 +20,7 @@
     search: I('<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/>', 16),
     prune: I('<path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/>', 16),
     ask: I('<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>', 16),
+    graph: I('<circle cx="5" cy="6" r="2.2"/><circle cx="19" cy="6" r="2.2"/><circle cx="12" cy="18" r="2.2"/><path d="M7 7.2l3.6 8.6M17 7.2l-3.6 8.6M7.2 6h9.6"/>', 16),
     gear: I('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>', 14),
     sun: I('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>', 14),
     moon: I('<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>', 14),
@@ -50,8 +52,10 @@
     provider: ls.get("mb-provider", ""), model: ls.get("mb-model", ""),
     q: "",
     search: null, openFile: null, chunks: {}, loading: false,
-    prune: null,
+    prune: null, pruneRerank: ls.get("mb-rerank", "0") === "1",
     ask: null, askCtl: null,
+    graph: null, graphLoading: false, graphSel: null, graphNode: null,
+    graphPath: null, graphPos: {},       // {file:{x,y}} — layout survives repaints
     overlay: null,          // 'settings' | 'add'
     add: null,              // add-repo flow state
   };
@@ -79,13 +83,14 @@
   function rail() {
     const repos = st.repos.length ? st.repos.map((r) => {
       const active = st.repo === r.name;
-      const lang = /\.py|python/i.test(r.root) ? "py" : (r.name[0] || "?");
-      return `<button class="repo-row ${active ? "active" : ""}" data-act="repo" data-name="${esc(r.name)}">
+      const cold = r.loaded === false;      // in the machine registry, not warm here
+      return `<button class="repo-row ${active ? "active" : ""}" data-act="repo" data-name="${esc(r.name)}"
+        ${cold ? 'data-cold="1" title="indexed on this machine — click to load"' : ""} style="${cold ? "opacity:.55" : ""}">
         <div style="display:flex;align-items:center;gap:9px;min-width:0;flex:1">
           <div class="repo-dot">${esc((r.name[0] || "?"))}</div>
           <div style="min-width:0;flex:1">
             <div class="repo-name">${esc(r.name)}</div>
-            <div class="repo-meta mono">${r.files} files · ${r.chunks} chunks</div>
+            <div class="repo-meta mono">${cold ? "on disk · click to load" : `${r.files} files · ${r.chunks} chunks`}</div>
           </div>
         </div>${active ? '<div class="repo-active-bar"></div>' : ""}</button>`;
     }).join("") : `<div style="padding:6px 8px;font-size:11px;color:var(--muted)">No repos yet.</div>`;
@@ -107,7 +112,7 @@
   }
 
   function main() {
-    const tabs = [["search", "Search"], ["prune", "Prune"], ["ask", "Ask"]].map(([id, l]) =>
+    const tabs = [["search", "Search"], ["prune", "Prune"], ["ask", "Ask"], ["graph", "Graph"]].map(([id, l]) =>
       `<button class="tab ${st.view === id ? "active" : ""}" data-act="view" data-id="${id}">${l}</button>`).join("");
     const root = st.repo ? (st.repos.find((r) => r.name === st.repo) || {}).root || "" : "";
     return `<main class="main">
@@ -135,10 +140,13 @@
   function renderView() {
     const v = $("#view"); if (!v) return;
     v.className = "";
+    stopSim();                            // leaving/repainting kills the RAF loop
     if (st.view === "search") v.innerHTML = viewSearch();
     else if (st.view === "prune") v.innerHTML = viewPrune();
+    else if (st.view === "graph") v.innerHTML = viewGraph();
     else v.innerHTML = viewAsk();
     bindView();
+    if (st.view === "graph") mountGraph();
   }
 
   function queryBar(placeholder, right) {
@@ -246,13 +254,18 @@
 
   function viewPrune() {
     const r = st.prune;
-    const right = st.loading ? `<div class="badge"><span class="spinner"></span></div>`
-      : r ? `<div class="badge"><b style="color:var(--accent)">${r.kept}</b><span>kept</span><span style="opacity:.5">·</span><span style="color:var(--muted)">${r.pruned} pruned</span></div>` : "";
+    const rerankBtn = `<button class="btn-ghost" data-act="rerank-toggle" title="LLM pass: drop vocabulary-only matches (tests/evals), reorder — fails open to the deterministic list"
+        style="${st.pruneRerank ? "background:var(--accent-dim);border-color:var(--accent-bd);color:var(--accent)" : ""}">✨<span>LLM rerank ${st.pruneRerank ? "on" : "off"}</span></button>`;
+    const right = rerankBtn + (st.loading ? `<div class="badge"><span class="spinner"></span></div>`
+      : r ? `<div class="badge"><b style="color:var(--accent)">${r.kept}</b><span>kept</span><span style="opacity:.5">·</span><span style="color:var(--muted)">${r.pruned} pruned</span></div>` : "");
     let body;
     if (r) {
+      const rr = r.reranked;
       body = `<div class="stats-row">
           <div><b>${r.scanned}</b> chunks scanned</div><div class="sdot"></div>
           <div><span style="color:var(--muted)">retrieval</span> <b class="mono">${r.ms}ms</b></div>
+          ${rr ? `<div class="sdot"></div><div>✨ reranked by <b class="mono">${esc(shortModel(rr.model))}</b> · dropped <b>${rr.dropped}</b> tangential · +${(rr.ms / 1000).toFixed(1)}s</div>`
+             : st.pruneRerank && r.reranked === false ? `<div class="sdot"></div><div style="color:var(--muted)">rerank failed open — deterministic list shown</div>` : ""}
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:22px">
           <div>
@@ -291,6 +304,340 @@
       </div>
       <div class="mono" style="flex-shrink:0">${(n.score || 0).toFixed(2)}</div>
     </div>`;
+  }
+
+  // ── graph view (force-directed canvas over /graph, no libs) ──────────
+  let SIM = null;                        // live simulation; rebuilt per mount
+  const comColor = (cid, a) =>
+    `hsla(${(cid * 137.508) % 360}, 58%, 62%, ${a == null ? 1 : a})`;
+
+  function viewGraph() {
+    const g = st.graph;
+    const badge = st.graphLoading ? `<div class="badge"><span class="spinner"></span></div>`
+      : g ? `<div class="badge"><div class="dotlive" style="animation:mb-pulse 1.6s infinite"></div><span>${g.files} files</span><span style="opacity:.5">·</span><span>${g.links.length} links</span><span style="opacity:.5">·</span><span>${g.ms}ms</span></div>` : "";
+    const body = g ? `
+      <div style="display:flex;gap:14px;margin-top:16px;height:calc(100vh - 200px);min-height:420px">
+        <div id="gwrap" style="flex:1;position:relative;min-width:0;background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+          <canvas id="gcanvas" style="position:absolute;inset:0;cursor:grab"></canvas>
+          <div class="mono" style="position:absolute;left:12px;bottom:10px;font-size:10px;color:var(--muted);pointer-events:none">
+            drag · wheel zoom · click a node — <span style="color:var(--text)">solid</span> import/call · <span style="color:var(--text)">dashed</span> semantic</div>
+        </div>
+        <div id="gpanel" style="width:400px;flex-shrink:0;overflow-y:auto;display:flex;flex-direction:column;gap:10px">${graphPanel()}</div>
+      </div>` :
+      emptyState("The repo as a living map: communities, god nodes, hidden connections.",
+        st.graphLoading ? "Building the graph…" : "Type a file/concept (or A -> B for a path) and hit ⏎ — or just wait, the map loads itself.");
+    return `<div class="view-wrap mb-fade" style="max-width:none;padding:28px 28px 20px">${queryBar("file, concept… or  source -> target  for a path", badge)}${body}</div>`;
+  }
+
+  function graphPanel() {
+    const g = st.graph; if (!g) return "";
+    if (st.graphPath) {
+      const p = st.graphPath;
+      const hops = p.hops.map((h, i) => `<button class="flag-row" data-act="gopen" data-file="${esc(h.file)}" style="width:100%;text-align:left;border:1px solid var(--border);border-radius:6px">
+          <div class="flag-reason">${i === 0 ? "start" : esc(h.via.split("/")[0] || "hop")}</div>
+          <span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(h.file)}</span></button>`).join("");
+      return `<div class="prov-card" style="padding:14px 16px">
+        <div style="font-size:12.5px;font-weight:600">Path — ${p.found ? p.hops.length + " hops" : "not found"}</div>
+        <div class="mono" style="font-size:10.5px;color:var(--muted);margin-top:4px">${esc(p.source || "?")} → ${esc(p.target || "?")}</div>
+        <div style="display:flex;flex-direction:column;gap:5px;margin-top:10px">${hops || emptyMini("no route — the endpoints live on disconnected islands")}</div>
+        <button class="chip" data-act="gclear" style="margin-top:10px">clear path</button></div>`;
+    }
+    if (st.graphNode) return nodePanel(st.graphNode);
+    // map summary: communities + god nodes + surprises
+    const coms = g.communities.map((c) => `<button class="flag-row" data-act="gcom" data-id="${c.id}" style="width:100%;text-align:left;border:1px solid var(--border);border-radius:6px">
+        <span style="width:9px;height:9px;border-radius:3px;background:${comColor(c.id)};flex-shrink:0"></span>
+        <span style="font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${esc(c.label)}</span>
+        <span class="mono" style="font-size:10px;color:var(--muted)">${c.size}</span></button>`).join("");
+    const gods = g.god_nodes.map((n) => `<button class="flag-row" data-act="gopen" data-file="${esc(n.file)}" style="width:100%;text-align:left;border:1px solid var(--border);border-radius:6px">
+        <div class="flag-reason">deg ${n.degree}</div>
+        <span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(n.file)}</span></button>`).join("");
+    const sur = g.surprises.map((s) => `<div class="flag-row" style="border:1px solid var(--border);border-radius:6px;flex-wrap:wrap">
+        <button class="mono" data-act="gopen" data-file="${esc(s.a)}" style="font-size:11px;color:var(--text)">${esc(s.a.split("/").pop())}</button>
+        <span class="mono" style="font-size:10px;color:var(--accent)">~${s.score}~</span>
+        <button class="mono" data-act="gopen" data-file="${esc(s.b)}" style="font-size:11px;color:var(--text)">${esc(s.b.split("/").pop())}</button></div>`).join("");
+    return `<div class="prov-card" style="padding:14px 16px">
+        <div class="mono" style="font-size:10px;color:var(--muted);letter-spacing:.06em;margin-bottom:8px">COMMUNITIES</div>
+        <div style="display:flex;flex-direction:column;gap:5px">${coms}</div></div>
+      <div class="prov-card" style="padding:14px 16px">
+        <div class="mono" style="font-size:10px;color:var(--muted);letter-spacing:.06em;margin-bottom:8px">GOD NODES · CORE ABSTRACTIONS</div>
+        <div style="display:flex;flex-direction:column;gap:5px">${gods || emptyMini("no structural edges yet")}</div></div>
+      ${sur ? `<div class="prov-card" style="padding:14px 16px">
+        <div class="mono" style="font-size:10px;color:var(--muted);letter-spacing:.06em;margin-bottom:8px">SURPRISING CONNECTIONS</div>
+        <div style="display:flex;flex-direction:column;gap:5px">${sur}</div></div>` : ""}`;
+  }
+
+  function nodePanel(n) {
+    const c = n.community || {};
+    const row = (e, mark) => `<button class="flag-row" data-act="gopen" data-file="${esc(e.file)}" style="width:100%;text-align:left;border:1px solid var(--border);border-radius:6px">
+        <div class="flag-reason">${esc(mark)}</div>
+        <span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(e.file)}</span></button>`;
+    const chunks = (n.chunks || []).map((ch) => `
+      <details class="chunk" style="margin-top:6px">
+        <summary style="display:flex;align-items:center;gap:10px;padding:8px 12px;cursor:pointer;list-style:none">
+          <div class="kind-pill on">${esc(ch.kind || "chunk")}</div>
+          <div class="mono" style="font-size:11.5px;font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(ch.name || "")}</div>
+          <div class="mono" style="font-size:10px;color:var(--muted)">L${ch.start_line}–${ch.end_line}</div>
+        </summary>
+        <pre class="mono">${hl(ch.text || "", langFor(n.file))}</pre>
+      </details>`).join("");
+    return `<div class="prov-card" style="padding:14px 16px">
+        <div class="mono" style="font-size:12.5px;font-weight:600;word-break:break-all">${esc(n.file)}</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap">
+          <span class="chip" style="border-color:${comColor(c.id || 0, 0.5)};color:${comColor(c.id || 0)}">● ${esc(c.label || "Community " + (c.id || 0))}</span>
+          <span class="file-pill mono">degree ${n.degree}</span>
+          ${n.resolved_from && n.resolved_from !== n.file ? `<span class="file-pill mono" title="resolved by embedding">← "${esc(n.resolved_from)}"</span>` : ""}
+        </div>
+        <button class="chip" data-act="gclear" style="margin-top:10px">back to map</button></div>
+      ${n.out.length ? `<div class="prov-card" style="padding:12px 16px"><div class="mono" style="font-size:10px;color:var(--muted);letter-spacing:.06em;margin-bottom:6px">OUTGOING</div><div style="display:flex;flex-direction:column;gap:4px">${n.out.map((e) => row(e, e.kind)).join("")}</div></div>` : ""}
+      ${n.in.length ? `<div class="prov-card" style="padding:12px 16px"><div class="mono" style="font-size:10px;color:var(--muted);letter-spacing:.06em;margin-bottom:6px">INCOMING</div><div style="display:flex;flex-direction:column;gap:4px">${n.in.map((e) => row(e, e.kind)).join("")}</div></div>` : ""}
+      ${n.semantic.length ? `<div class="prov-card" style="padding:12px 16px"><div class="mono" style="font-size:10px;color:var(--muted);letter-spacing:.06em;margin-bottom:6px">SEMANTICALLY CLOSE</div><div style="display:flex;flex-direction:column;gap:4px">${n.semantic.map((e) => row(e, "~" + e.score)).join("")}</div></div>` : ""}
+      ${chunks ? `<div class="prov-card" style="padding:12px 16px"><div class="mono" style="font-size:10px;color:var(--muted);letter-spacing:.06em;margin-bottom:4px">CHUNKS · REAL CODE</div>${chunks}</div>` : ""}`;
+  }
+
+  async function loadGraph() {
+    if (st.graphLoading || !st.repo) return;
+    st.graphLoading = true; renderView();
+    try { st.graph = await api.graph({ mode: "map" }, st.repo); }
+    catch (e) { toast("graph: " + e.message); }
+    st.graphLoading = false; renderView();
+  }
+  async function openGraphNode(file) {
+    st.graphSel = file; st.graphPath = null;
+    paintPanel(); paintSim();
+    try { st.graphNode = await api.graph({ mode: "node", node: file }, st.repo); st.graphSel = st.graphNode.file; }
+    catch (e) { toast("graph: " + e.message); }
+    paintPanel(); paintSim(); centerOn(st.graphSel);
+  }
+  async function runGraphQuery() {
+    const q = st.q.trim(); if (!q) return;
+    if (q.includes("->")) {
+      const [a, b] = q.split("->").map((x) => x.trim());
+      if (!a || !b) return;
+      try {
+        st.graphPath = await api.graph({ mode: "path", source: a, target: b }, st.repo);
+        st.graphNode = null; st.graphSel = null;
+      } catch (e) { toast("graph: " + e.message); }
+      paintPanel(); paintSim();
+    } else openGraphNode(q);
+  }
+  const paintPanel = () => { const p = $("#gpanel"); if (p) p.innerHTML = graphPanel(); };
+
+  // ── the simulation ────────────────────────────────────────────────────
+  function stopSim() { if (SIM && SIM.raf) cancelAnimationFrame(SIM.raf); SIM = null; }
+
+  function mountGraph() {
+    if (!st.graph) { loadGraph(); return; }
+    const cv = $("#gcanvas"), wrap = $("#gwrap");
+    if (!cv || !wrap) return;
+    const g = st.graph;
+    const W = wrap.clientWidth, H = wrap.clientHeight;
+    const dpr = window.devicePixelRatio || 1;
+    cv.width = W * dpr; cv.height = H * dpr;
+    const idx = {};
+    // seed positions clustered by community (persisted across repaints)
+    const coms = g.communities.map((c) => c.id);
+    const center = (cid) => {
+      const k = coms.indexOf(cid), R = Math.min(W, H) * 0.32;
+      const th = (k / Math.max(1, coms.length)) * Math.PI * 2;
+      return [W / 2 + R * Math.cos(th), H / 2 + R * Math.sin(th)];
+    };
+    const nodes = g.nodes.map((n, i) => {
+      idx[n.file] = i;
+      const kept = st.graphPos[n.file];
+      const [cx, cy] = center(n.community);
+      return { f: n.file, c: n.community, d: n.degree,
+        r: 2.5 + Math.min(9, Math.sqrt(n.degree || 0) * 1.8),
+        x: kept ? kept.x : cx + (Math.random() - 0.5) * 90,
+        y: kept ? kept.y : cy + (Math.random() - 0.5) * 90,
+        vx: 0, vy: 0, fix: false };
+    });
+    const links = g.links.map((l) => ({ a: idx[l.s], b: idx[l.d],
+      sem: l.kind === "semantic" })).filter((l) => l.a != null && l.b != null);
+    const godSet = new Set(g.god_nodes.map((n) => n.file));
+    const byCom = {};
+    nodes.forEach((n, i) => (byCom[n.c] = byCom[n.c] || []).push(i));
+    SIM = { cv, ctx: cv.getContext("2d"), W, H, dpr, nodes, links, idx, byCom,
+      godSet, alpha: 1, tx: 0, ty: 0, scale: 1, drag: null, panning: null,
+      raf: 0, labels: Object.fromEntries(g.communities.map((c) => [c.id, c.label])) };
+    bindSim();
+    tickLoop();
+  }
+
+  function tickLoop() {
+    if (!SIM) return;
+    if (SIM.alpha > 0.012 && !document.hidden) simTick();
+    drawSim();
+    SIM.raf = requestAnimationFrame(tickLoop);
+  }
+
+  function simTick() {
+    const S = SIM, N = S.nodes;
+    const alpha = S.alpha = Math.max(0.011, S.alpha * 0.985);
+    // repulsion INSIDE each community only (communities pre-cluster, so global
+    // O(n²) isn't needed) + community centers repel each other + link springs.
+    for (const cid in S.byCom) {
+      const ids = S.byCom[cid], m = ids.length;
+      const stride = m > 260 ? 2 : 1;              // big community: sample pairs
+      for (let a = 0; a < m; a += 1)
+        for (let b = a + stride; b < m; b += stride) {
+          const p = N[ids[a]], q = N[ids[b]];
+          let dx = p.x - q.x, dy = p.y - q.y;
+          let d2 = dx * dx + dy * dy; if (d2 < 1) { dx = Math.random() - 0.5; dy = Math.random() - 0.5; d2 = 1; }
+          const f = Math.min(3, 620 / d2) * alpha;
+          const d = Math.sqrt(d2); dx /= d; dy /= d;
+          if (!p.fix) { p.vx += dx * f; p.vy += dy * f; }
+          if (!q.fix) { q.vx -= dx * f; q.vy -= dy * f; }
+        }
+    }
+    // community centroids: mild mutual repulsion + pull members toward centroid
+    const cent = {};
+    for (const cid in S.byCom) {
+      let x = 0, y = 0; const ids = S.byCom[cid];
+      for (const i of ids) { x += N[i].x; y += N[i].y; }
+      cent[cid] = [x / ids.length, y / ids.length, ids.length];
+    }
+    const cids = Object.keys(cent);
+    for (let a = 0; a < cids.length; a++)
+      for (let b = a + 1; b < cids.length; b++) {
+        const A = cent[cids[a]], B = cent[cids[b]];
+        let dx = A[0] - B[0], dy = A[1] - B[1];
+        const d2 = Math.max(400, dx * dx + dy * dy), d = Math.sqrt(d2);
+        const f = Math.min(2.2, (24000 * Math.sqrt(Math.min(A[2], B[2]))) / d2) * alpha;
+        dx /= d; dy /= d;
+        for (const i of S.byCom[cids[a]]) if (!N[i].fix) { N[i].vx += dx * f; N[i].vy += dy * f; }
+        for (const i of S.byCom[cids[b]]) if (!N[i].fix) { N[i].vx -= dx * f; N[i].vy -= dy * f; }
+      }
+    for (const cid in S.byCom) {
+      const [cx, cy] = cent[cid];
+      for (const i of S.byCom[cid]) { const p = N[i]; if (!p.fix) { p.vx += (cx - p.x) * 0.012 * alpha; p.vy += (cy - p.y) * 0.012 * alpha; } }
+    }
+    for (const l of S.links) {                    // springs
+      const p = N[l.a], q = N[l.b];
+      const dx = q.x - p.x, dy = q.y - p.y;
+      const d = Math.max(1, Math.sqrt(dx * dx + dy * dy));
+      const want = l.sem ? 150 : 70;
+      const f = ((d - want) / d) * (l.sem ? 0.012 : 0.05) * alpha * 8;
+      if (!p.fix) { p.vx += dx * f; p.vy += dy * f; }
+      if (!q.fix) { q.vx -= dx * f; q.vy -= dy * f; }
+    }
+    const gx = S.W / 2, gy = S.H / 2;
+    for (const p of N) {
+      if (p.fix) continue;
+      p.vx += (gx - p.x) * 0.004 * alpha; p.vy += (gy - p.y) * 0.004 * alpha;
+      p.vx *= 0.82; p.vy *= 0.82;
+      p.x += p.vx; p.y += p.vy;
+      st.graphPos[p.f] = { x: p.x, y: p.y };
+    }
+  }
+
+  function drawSim() {
+    const S = SIM; if (!S) return;
+    const { ctx, W, H, dpr, nodes: N } = S;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    ctx.translate(S.tx, S.ty); ctx.scale(S.scale, S.scale);
+    const cs = getComputedStyle(document.documentElement);
+    const muted = cs.getPropertyValue("--muted").trim() || "#7a7a84";
+    const pathFiles = st.graphPath && st.graphPath.found
+      ? st.graphPath.hops.map((h) => h.file) : null;
+    const onPath = pathFiles ? new Set(pathFiles) : null;
+    // edges
+    for (const l of S.links) {
+      const p = N[l.a], q = N[l.b];
+      const hot = onPath && onPath.has(p.f) && onPath.has(q.f) &&
+        Math.abs(pathFiles.indexOf(p.f) - pathFiles.indexOf(q.f)) === 1;
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y);
+      if (l.sem) ctx.setLineDash([3, 4]); else ctx.setLineDash([]);
+      ctx.strokeStyle = hot ? comColor(0, 0.95) : l.sem ? comColor(p.c, 0.22) : muted;
+      ctx.globalAlpha = hot ? 0.95 : l.sem ? 0.5 : 0.22;
+      ctx.lineWidth = hot ? 2.4 / S.scale : 1 / S.scale;
+      ctx.stroke();
+    }
+    ctx.setLineDash([]); ctx.globalAlpha = 1;
+    // nodes
+    for (const p of N) {
+      const sel = st.graphSel === p.f || (onPath && onPath.has(p.f));
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r + (sel ? 1.5 : 0), 0, Math.PI * 2);
+      if (S.godSet.has(p.f)) { ctx.shadowColor = comColor(p.c); ctx.shadowBlur = 14; }
+      ctx.fillStyle = comColor(p.c, sel ? 1 : 0.82);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      if (sel) { ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.4 / S.scale; ctx.stroke(); }
+    }
+    // labels: community names at centroids; file name for selected/hovered/gods
+    ctx.font = `600 ${11 / S.scale}px ui-monospace, Menlo, monospace`;
+    for (const cid in S.byCom) {
+      const ids = S.byCom[cid];
+      if (ids.length < 2) continue;
+      let x = 0, y = 0, top = ids[0];
+      for (const i of ids) { x += N[i].x; y += N[i].y; if (N[i].d > N[top].d) top = i; }
+      ctx.fillStyle = comColor(+cid, 0.9);
+      ctx.fillText(S.labels[cid] || "", x / ids.length + 10, y / ids.length - 10);
+    }
+    ctx.font = `${10 / S.scale}px ui-monospace, Menlo, monospace`;
+    for (const p of N) {
+      if (st.graphSel === p.f || S.godSet.has(p.f) || (S.hover === p.f) || (onPath && onPath.has(p.f))) {
+        ctx.fillStyle = st.graphSel === p.f ? "#fff" : muted;
+        ctx.fillText(p.f.split("/").pop(), p.x + p.r + 3, p.y + 3);
+      }
+    }
+  }
+  const paintSim = () => {};              // drawing happens every frame anyway
+
+  function centerOn(file) {
+    const S = SIM; if (!S || S.idx[file] == null) return;
+    const p = S.nodes[S.idx[file]];
+    S.tx = S.W / 2 - p.x * S.scale; S.ty = S.H / 2 - p.y * S.scale;
+  }
+
+  function bindSim() {
+    const S = SIM, cv = S.cv;
+    const toWorld = (e) => {
+      const r = cv.getBoundingClientRect();
+      return [(e.clientX - r.left - S.tx) / S.scale, (e.clientY - r.top - S.ty) / S.scale];
+    };
+    const hit = (x, y) => {
+      for (let i = S.nodes.length - 1; i >= 0; i--) {
+        const p = S.nodes[i];
+        const dx = x - p.x, dy = y - p.y;
+        if (dx * dx + dy * dy <= (p.r + 3) * (p.r + 3)) return p;
+      }
+      return null;
+    };
+    cv.onmousedown = (e) => {
+      const [x, y] = toWorld(e);
+      const p = hit(x, y);
+      if (p) { S.drag = { p, moved: false }; p.fix = true; }
+      else S.panning = { x: e.clientX - S.tx, y: e.clientY - S.ty };
+      cv.style.cursor = "grabbing";
+    };
+    cv.onmousemove = (e) => {
+      const [x, y] = toWorld(e);
+      if (S.drag) { S.drag.p.x = x; S.drag.p.y = y; S.drag.moved = true; S.alpha = Math.max(S.alpha, 0.25); }
+      else if (S.panning) { S.tx = e.clientX - S.panning.x; S.ty = e.clientY - S.panning.y; }
+      else { const p = hit(x, y); S.hover = p ? p.f : null; cv.style.cursor = p ? "pointer" : "grab"; }
+    };
+    const up = () => {
+      if (S.drag) {
+        const { p, moved } = S.drag;
+        p.fix = false;
+        if (!moved) openGraphNode(p.f);
+      }
+      S.drag = null; S.panning = null; cv.style.cursor = "grab";
+    };
+    cv.onmouseup = up; cv.onmouseleave = up;
+    cv.onwheel = (e) => {
+      e.preventDefault();
+      const r = cv.getBoundingClientRect();
+      const mx = e.clientX - r.left, my = e.clientY - r.top;
+      const k = e.deltaY < 0 ? 1.12 : 0.89;
+      const ns = Math.min(5, Math.max(0.25, S.scale * k));
+      S.tx = mx - ((mx - S.tx) / S.scale) * ns;
+      S.ty = my - ((my - S.ty) / S.scale) * ns;
+      S.scale = ns;
+    };
   }
 
   // ── ask view (incremental) ───────────────────────────────────────────
@@ -476,7 +823,7 @@
   async function runPrune() {
     if (!st.q.trim() || !st.repo) return;
     st.loading = true; renderView();
-    try { st.prune = await api.prune(st.q.trim(), st.repo); }
+    try { st.prune = await api.prune(st.q.trim(), st.repo, st.pruneRerank); }
     catch (e) { toast(e.message); }
     st.loading = false; renderView();
   }
@@ -942,7 +1289,14 @@
     const t = e.target.closest("[data-act]"); if (!t) return;
     const act = t.dataset.act;
     if (act === "view") { st.view = t.dataset.id; render(); }
-    else if (act === "repo") { st.repo = t.dataset.name; st.search = st.prune = st.ask = null; st.openFile = null; render(); }
+    else if (act === "repo") {
+      if (t.dataset.cold) { loadColdRepo(t.dataset.name); return; }
+      st.repo = t.dataset.name; clearRepoState(); render();
+    }
+    else if (act === "rerank-toggle") { st.pruneRerank = !st.pruneRerank; ls.set("mb-rerank", st.pruneRerank ? "1" : "0"); if (st.q.trim()) runPrune(); else renderView(); }
+    else if (act === "gopen") { openGraphNode(t.dataset.file); }
+    else if (act === "gclear") { st.graphNode = null; st.graphSel = null; st.graphPath = null; paintPanel(); }
+    else if (act === "gcom") { const c = (st.graph.communities || []).find((x) => x.id === +t.dataset.id); if (c && c.files[0]) centerOn(c.files[0]); }
     else if (act === "theme") { st.theme = st.theme === "dark" ? "light" : "dark"; ls.set("mb-theme", st.theme); render(); }
     else if (act === "settings") { st.overlay = "settings"; renderOverlays(); loadProviders(); }
     else if (act === "settings-close" || act === "settings-bg") { st.overlay = null; renderOverlays(); }
@@ -977,21 +1331,41 @@
     }
     if (e.key === "Enter" && document.activeElement && document.activeElement.id === "q") {
       st.q = document.activeElement.value;
-      if (st.view === "search") runSearch(); else if (st.view === "prune") runPrune(); else runAsk();
+      if (st.view === "search") runSearch(); else if (st.view === "prune") runPrune();
+      else if (st.view === "graph") runGraphQuery(); else runAsk();
     }
     if (e.key === "Enter" && document.activeElement && document.activeElement.id === "add-path") { doScan(); }
     if (e.key === "Escape") { if (st.overlay) { st.overlay = null; st.add = null; renderOverlays(); } }
   });
 
+  function clearRepoState() {
+    st.search = st.prune = st.ask = null; st.openFile = null;
+    st.graph = null; st.graphNode = null; st.graphSel = null;
+    st.graphPath = null; st.graphPos = {};
+  }
   function cycleRepo() {
-    if (st.repos.length < 2) return;
-    const i = st.repos.findIndex((r) => r.name === st.repo);
-    st.repo = st.repos[(i + 1) % st.repos.length].name;
-    st.search = st.prune = st.ask = null; render();
+    const warm = st.repos.filter((r) => r.loaded !== false);
+    if (warm.length < 2) return;
+    const i = warm.findIndex((r) => r.name === st.repo);
+    st.repo = warm[(i + 1) % warm.length].name;
+    clearRepoState(); render();
+  }
+  async function loadColdRepo(name) {
+    const r = st.repos.find((x) => x.name === name); if (!r) return;
+    toast("loading " + name + "…");
+    try {
+      await api.reposAdd(r.root, "");     // registers a warm session (index exists)
+      await refreshRepos();
+      st.repo = name; clearRepoState(); render();
+    } catch (e) { toast(e.message); }
   }
   // ── data loading ─────────────────────────────────────────────────────
   async function refreshRepos() {
-    try { st.repos = await api.repos(); if (!st.repo && st.repos[0]) st.repo = st.repos[0].name; }
+    try {
+      st.repos = await api.repos();
+      if (!st.repo && st.repos[0])
+        st.repo = (st.repos.find((r) => r.loaded !== false) || st.repos[0]).name;
+    }
     catch (e) { toast("repos: " + e.message); }
     render();
   }
