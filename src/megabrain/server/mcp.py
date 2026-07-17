@@ -89,6 +89,11 @@ TOOLS = [
                             "description": "default false (code bodies included). Set true for "
                                            "signatures only — drop the code bodies, keep the "
                                            "ranked spans (ids/files/lines/scores)."},
+                "rerank": {"type": "boolean", "default": True,
+                           "description": "default true: a cheap LLM pass drops vocabulary-only "
+                                          "matches (tests/evals/tangential files) and reorders "
+                                          "(~1-2s). Fails open to the deterministic list. "
+                                          "false = pure deterministic retrieval (~200ms)."},
             },
             "required": ["repo_path", "task"],
         },
@@ -193,7 +198,8 @@ def call_tool(name: str, args: dict) -> str:
         from ..retrieval.render import render_pruned
         root, pf = _scope(args)
         with_text = not bool(args.get("compact"))
-        res = app.prune(root, args["task"], path_filter=pf, with_text=with_text)
+        res = app.prune(root, args["task"], path_filter=pf, with_text=with_text,
+                        llm_rerank=bool(args.get("rerank", True)))
         return render_pruned(res, with_text=with_text)
     if name == "megabrain_ask":
         from ..ask import render_ask

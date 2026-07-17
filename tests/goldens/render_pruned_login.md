@@ -1,4 +1,4 @@
-# megabrain prune — "user login password check"
+# megabrain search — "user login password check"
 repo `goldenrepo` · 4 signal chunks (0 pruned as noise) · 0ms
 
 ### 1. [1] auth/login.py L1-13 · login_user, check_password · `1.188`

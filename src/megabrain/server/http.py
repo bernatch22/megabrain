@@ -291,8 +291,12 @@ def _make_handler(reg: Registry, cors: str | None, enable_llm: bool,
                     if not q:
                         return self._err(400, "missing q")
                     from ..retrieval.bundle import prune_search
-                    return self._send(200, reg.get(repo_name).with_state(
-                        lambda st: prune_search(st, q, include_pruned=True)))
+                    res = reg.get(repo_name).with_state(
+                        lambda st: prune_search(st, q, include_pruned=True))
+                    if (qs.get("rerank") or ["0"])[0] in ("1", "true"):
+                        from ..retrieval.rerank import llm_rerank
+                        res = llm_rerank(res, q)
+                    return self._send(200, res)
                 return self._err(404, "not found")
             except MegabrainError as e:  # typed engine error -> mapped status
                 return self._err(e.http_status, str(e))

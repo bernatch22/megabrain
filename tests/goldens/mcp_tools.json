@@ -49,6 +49,11 @@
      "description": "path to the indexed repo root (a sub-path also works \u2014 the root is auto-detected from .megabrain)",
      "type": "string"
     },
+    "rerank": {
+     "default": true,
+     "description": "default true: a cheap LLM pass drops vocabulary-only matches (tests/evals/tangential files) and reorders (~1-2s). Fails open to the deterministic list. false = pure deterministic retrieval (~200ms).",
+     "type": "boolean"
+    },
     "scope_path": {
      "description": "optional repo-relative folder (e.g. src/dispatch) to scope the bundle to files under it; omit for the whole repo",
      "type": "string"

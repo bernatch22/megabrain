@@ -103,9 +103,12 @@ def render_pruned(res: dict, with_text: bool = True) -> str:
     """Pruned result -> ranked markdown list: `[id] file L… (name) · score`,
     each with its code (unless with_text=False). Noise dropped, signal only."""
     L: list[str] = []
-    L.append(f'# megabrain prune — "{res["query"]}"')
+    L.append(f'# megabrain search — "{res["query"]}"')
+    rr = res.get("reranked")
+    tail = (f' · reranked by `{rr["model"]}` (+{rr["ms"]}ms, '
+            f'dropped {rr["dropped"]} tangential)' if rr else "")
     L.append(f'repo `{res["repo"]}` · {res["kept"]} signal chunks '
-             f'({res["pruned"]} pruned as noise) · {res["ms"]}ms\n')
+             f'({res["pruned"]} pruned as noise) · {res["ms"]}ms{tail}\n')
     for rank, c in enumerate(res["chunks"], 1):
         label = c["name"] or c["kind"]
         L.append(f'### {rank}. [{c["id"]}] {c["file"]} '

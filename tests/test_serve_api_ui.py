@@ -227,6 +227,19 @@ def test_repos_add_honors_tree_exclusions(server, tmp_path, fake_embedder):
     assert not any("drop/b.py" in f for f in indexed)   # excluded by the tree
 
 
+def test_prune_rerank_param(server, monkeypatch):
+    """/prune?rerank=1 runs the LLM lane (here mocked) and annotates the result."""
+    base, _ = server
+    import megabrain.providers as providers
+    monkeypatch.setattr(providers, "chat_text",
+                        lambda model, prompt, max_tokens, **kw: "[]")
+    # mocked model returns nothing usable -> fail-open, reranked: false
+    status, body = _get(base, "/prune?q=user%20login&rerank=1")
+    assert status == 200
+    assert body["reranked"] is False
+    assert body["kept"] == len(body["chunks"])
+
+
 def test_repos_merges_global_registry(server, tmp_path):
     """/repos = warm sessions (loaded: true) + registry-only repos
     (loaded: false) — the studio rail shows both."""

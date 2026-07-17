@@ -70,24 +70,24 @@
    "chunks": [
     [
      "module",
-     "resolve_scope, rel_join, normalize_agents, _maybe_reindex, query, query_multi, prune, ask, get",
+     "resolve_scope, rel_join, normalize_agents, _maybe_reindex, query, query_multi, prune, ask",
      null,
      1,
-     109,
-     "megabrain > megabrain/app.py > [resolve_scope, rel_join, normalize_agents, _maybe_reindex, query, query_multi, prune, ask, get]",
-     "c3c38e7a76133342b1839908764d9ee6525c1f6e"
+     107,
+     "megabrain > megabrain/app.py > [resolve_scope, rel_join, normalize_agents, _maybe_reindex, query, query_multi, prune, ask]",
+     "9e5b73558418d28ee00e95c2a5c1ebd33fba09af"
     ],
     [
      "module",
-     "chunks, index, scan, stats",
+     "get, chunks, index, scan, stats",
      null,
-     110,
-     145,
-     "megabrain > megabrain/app.py > [chunks, index, scan, stats]",
-     "fde20da8d9c9a7163223292287d1d840a1af9e7a"
+     108,
+     151,
+     "megabrain > megabrain/app.py > [get, chunks, index, scan, stats]",
+     "9ae6cc8e7af185b22b1a77c69b2e418283317c59"
     ]
    ],
-   "skeleton_sha": "0b48f842323ff6778716bdde617b2529ba162bc4",
+   "skeleton_sha": "9f1c500865a0d6a708dbc97e74cd45b9ac5554ac",
    "symbols": [
     [
      "resolve_scope",
@@ -135,49 +135,49 @@
      "prune",
      "function",
      79,
-     86,
-     "def prune(root: Path, task: str, path_filter: str | None=None, with_text: bool=True, include_pruned: bool=False, reindex: bool=True) -> dict"
+     92,
+     "def prune(root: Path, task: str, path_filter: str | None=None, with_text: bool=True, include_pruned: bool=False, reindex: bool=True, llm_rerank: bool=False) -> dict"
     ],
     [
      "ask",
      "function",
-     89,
-     101,
+     95,
+     107,
      "def ask(root: Path, question: str, path_filter: str | None=None, docs_only: bool=False, include_docs: bool=False, agents: Any=None, reindex: bool=True, model: str | None=None) -> dict"
     ],
     [
      "get",
      "function",
-     104,
-     109,
+     110,
+     115,
      "def get(root: Path, sub: str | None, file: str, symbol: str | None=None) -> str"
     ],
     [
      "chunks",
      "function",
-     112,
      118,
+     124,
      "def chunks(root: Path, sub: str | None, file: str, query_str: str, path_filter: str | None=None, reindex: bool=True) -> dict"
     ],
     [
      "index",
      "function",
-     121,
-     126,
+     127,
+     132,
      "def index(root: Path, force: bool=False, exclude=(), scan_filters: bool=False) -> dict"
     ],
     [
      "scan",
      "function",
-     129,
-     138,
+     135,
+     144,
      "def scan(root: Path) -> dict"
     ],
     [
      "stats",
      "function",
-     141,
-     145,
+     147,
+     151,
      "def stats(root: Path) -> dict"
     ]
    ]
@@ -4372,9 +4372,9 @@
      "render_pruned",
      null,
      100,
-     118,
+     121,
      "megabrain > megabrain/retrieval/render.py > def render_pruned(res: dict, with_text: bool=True) -> str",
-     "858d2906b981d6fd14026e4cd7f0cc44233d3d9d"
+     "cbcd0424a02c31d64682c1fb922755882dd9c768"
     ]
    ],
    "skeleton_sha": "5ef2f88845a1af21aa996aee34aac88912d66479",
@@ -4404,8 +4404,73 @@
      "render_pruned",
      "function",
      102,
-     118,
+     121,
      "def render_pruned(res: dict, with_text: bool=True) -> str"
+    ]
+   ]
+  },
+  "megabrain/retrieval/rerank.py": {
+   "chunks": [
+    [
+     "module",
+     "rerank_model, _hint, llm_rerank",
+     null,
+     1,
+     101,
+     "megabrain > megabrain/retrieval/rerank.py > [rerank_model, _hint, llm_rerank]",
+     "93139e186fc6411b2b5bc33438a7f76bba36de8b"
+    ]
+   ],
+   "skeleton_sha": "c49a6a5b44bb7819ffa7c0c509a2111f82cfac6e",
+   "symbols": [
+    [
+     "log",
+     "constant",
+     25,
+     25,
+     "log = logging.getLogger(__name__)"
+    ],
+    [
+     "RERANK_MAX_TOKENS",
+     "constant",
+     27,
+     27,
+     "RERANK_MAX_TOKENS = 300"
+    ],
+    [
+     "RERANK_TIMEOUT",
+     "constant",
+     28,
+     28,
+     "RERANK_TIMEOUT = 30"
+    ],
+    [
+     "_PROMPT",
+     "constant",
+     30,
+     41,
+     "_PROMPT = 'You are reranking code-search results. Question:\\n\\n{question}\\n\\nCandidate chunks (id \u00b7 file:lines \u00b7 symbols"
+    ],
+    [
+     "rerank_model",
+     "function",
+     44,
+     48,
+     "def rerank_model() -> str"
+    ],
+    [
+     "_hint",
+     "function",
+     51,
+     58,
+     "def _hint(c: dict) -> str"
+    ],
+    [
+     "llm_rerank",
+     "function",
+     61,
+     101,
+     "def llm_rerank(res: dict, question: str, model: str | None=None) -> dict"
     ]
    ]
   },
@@ -4933,23 +4998,23 @@
      25,
      120,
      "megabrain > megabrain/server/cli.py > def main(argv=None)",
-     "ccd96d7db514e1dffa4f7af4ee176f7d0ecea5d7"
+     "0ae97a80ead1bec363be5a6e207e3d184031c307"
     ],
     [
      "block",
      "main",
      "2/2",
      121,
-     198,
+     202,
      "megabrain > megabrain/server/cli.py > def main(argv=None)",
-     "0d0900b696e5cbbf6c6ddafb0d0844a7bd3da819"
+     "bcefcf89f772f2badab3488ee469dc8948670ddc"
     ],
     [
      "module",
      "_scan, _render_scan",
      null,
-     199,
-     232,
+     203,
+     236,
      "megabrain > megabrain/server/cli.py > [_scan, _render_scan]",
      "6c4d106b3f64799ed33c25ecfbc89235a70f8628"
     ],
@@ -4957,26 +5022,26 @@
      "block",
      "_dispatch",
      "1/2",
-     233,
+     237,
      359,
      "megabrain > megabrain/server/cli.py > def _dispatch(a, raw: list[Path], root: Path) -> None",
-     "1cb369febdcc713c1a40b32e7c8adb4b30f25f55"
+     "63037cab2a12d06686ddf1caa8998179b7f3336c"
     ],
     [
      "block",
      "_dispatch",
      "2/2",
      360,
-     408,
+     413,
      "megabrain > megabrain/server/cli.py > def _dispatch(a, raw: list[Path], root: Path) -> None",
-     "b9fc225ca21e87d4de1a4fb111b882c74c874350"
+     "8899aa30ad804ebbb8c2e36154764b01743c9191"
     ],
     [
      "module",
      null,
      null,
-     409,
-     412,
+     414,
+     417,
      "megabrain > megabrain/server/cli.py (module level)",
      "494c28ef72c62a5924f4316a400d4193725ae15a"
     ]
@@ -4987,28 +5052,28 @@
      "main",
      "function",
      27,
-     198,
+     202,
      "def main(argv=None)"
     ],
     [
      "_scan",
      "function",
-     201,
-     203,
+     205,
+     207,
      "def _scan(root: Path) -> dict"
     ],
     [
      "_render_scan",
      "function",
-     206,
-     232,
+     210,
+     236,
      "def _render_scan(rep: dict) -> str"
     ],
     [
      "_dispatch",
      "function",
-     235,
-     408,
+     239,
+     413,
      "def _dispatch(a, raw: list[Path], root: Path) -> None"
     ]
    ]
@@ -5049,23 +5114,23 @@
      266,
      391,
      "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True)",
-     "ef0228ff73b76ac9141c08ebad276bc1c1a43f68"
+     "18c24aaa990bca3a65757f73b5f8e85404f2372e"
     ],
     [
      "block",
      "_make_handler",
      "3/4",
      392,
-     443,
+     447,
      "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True)",
-     "c3c4a3d6f2f0a19363692d6cd2330ab7d4ec1824"
+     "302d2cf67994a4eb81a78fe3a582ed32aab27dc4"
     ],
     [
      "block",
      "_make_handler",
      "4/4",
-     444,
-     445,
+     448,
+     449,
      "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True)",
      "5ebaec407bc18bc3fde033e8db1a20bf3e3ec3f8"
     ],
@@ -5073,8 +5138,8 @@
      "module",
      "_valid_model, _native_pick_folder, _scan_report, _merge_ignore",
      null,
-     446,
-     520,
+     450,
+     524,
      "megabrain > megabrain/server/http.py > [_valid_model, _native_pick_folder, _scan_report, _merge_ignore]",
      "1a60519fd169e3894bbb17ae8e132a99f7846295"
     ],
@@ -5082,8 +5147,8 @@
      "function",
      "serve",
      null,
-     521,
-     559,
+     525,
+     563,
      "megabrain > megabrain/server/http.py > def serve(root, port: int=2134, host: str='127.0.0.1', cors: str | None=None, enable_llm: bool=True, token: str | None=None, serve_ui: bool=True) -> None",
      "9393f03c5365edc0ede85801e1abc3467d166008"
     ]
@@ -5171,42 +5236,42 @@
      "_make_handler",
      "function",
      137,
-     445,
+     449,
      "def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True)"
     ],
     [
      "_valid_model",
      "function",
-     448,
-     459,
+     452,
+     463,
      "def _valid_model(model) -> str | None"
     ],
     [
      "_native_pick_folder",
      "function",
-     462,
-     498,
+     466,
+     502,
      "def _native_pick_folder() -> dict"
     ],
     [
      "_scan_report",
      "function",
-     501,
-     507,
+     505,
+     511,
      "def _scan_report(path: str) -> dict"
     ],
     [
      "_merge_ignore",
      "function",
-     510,
-     520,
+     514,
+     524,
      "def _merge_ignore(root: Path, ignore: str) -> None"
     ],
     [
      "serve",
      "function",
-     523,
-     559,
+     527,
+     563,
      "def serve(root, port: int=2134, host: str='127.0.0.1', cors: str | None=None, enable_llm: bool=True, token: str | None=None, serve_ui: bool=True) -> None"
     ]
    ]
@@ -5322,34 +5387,34 @@
      null,
      "1/2",
      36,
-     127,
+     129,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "29ba72fe98d733aadbfd446fb22fd4e28d7b8bbb"
+     "e4cf6c6eb9d269729362ca65f09eeabcc28069f8"
     ],
     [
      "block",
      null,
      "2/2",
-     128,
-     171,
+     130,
+     176,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "c2ecd46c91eb1141b3ec236f32f49ff6f9cce303"
+     "2c14b8aba70e17a7c2aa55ed1407b39bc1aec552"
     ],
     [
      "module",
      "_scope, call_tool",
      null,
-     172,
-     264,
+     177,
+     270,
      "megabrain > megabrain/server/mcp.py > [_scope, call_tool]",
-     "9c370442a28779eebcee7510962ecfc2f95d83f7"
+     "4bd0d0a0d58249f872ecc70de3758710384841a7"
     ],
     [
      "function",
      "main",
      null,
-     265,
-     306,
+     271,
+     312,
      "megabrain > megabrain/server/mcp.py > def main()",
      "494cf17f80c3e1afe9632a2577e0beb051e44aa6"
     ]
@@ -5367,28 +5432,28 @@
      "TOOLS",
      "constant",
      37,
-     171,
+     176,
      "TOOLS = [{'name': 'megabrain_ask', 'description': 'THE primary tool for any how/where/why question about an indexed repo"
     ],
     [
      "_scope",
      "function",
-     174,
-     181,
+     179,
+     186,
      "def _scope(args: dict) -> tuple[Path, str | None]"
     ],
     [
      "call_tool",
      "function",
-     184,
-     264,
+     189,
+     270,
      "def call_tool(name: str, args: dict) -> str"
     ],
     [
      "main",
      "function",
-     267,
-     302,
+     273,
+     308,
      "def main()"
     ]
    ]

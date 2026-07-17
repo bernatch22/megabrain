@@ -78,12 +78,18 @@ def query_multi(roots: list[Path], task: str,
 
 def prune(root: Path, task: str, path_filter: str | None = None,
           with_text: bool = True, include_pruned: bool = False,
-          reindex: bool = True) -> dict:
-    """No-LLM noise pruning -> flat ranked signal chunks."""
+          reindex: bool = True, llm_rerank: bool = False) -> dict:
+    """No-LLM noise pruning -> flat ranked signal chunks. `llm_rerank` adds the
+    opt-in LLM lane on top (drop vocabulary-only matches, reorder); it fails
+    open to the deterministic result, so the floor never drops."""
     from .retrieval.bundle import prune_search_root
     _maybe_reindex(root, reindex)
-    return prune_search_root(root, task, path_filter=path_filter,
-                             with_text=with_text, include_pruned=include_pruned)
+    res = prune_search_root(root, task, path_filter=path_filter,
+                            with_text=with_text, include_pruned=include_pruned)
+    if llm_rerank:
+        from .retrieval.rerank import llm_rerank as _rerank
+        res = _rerank(res, task)
+    return res
 
 
 def ask(root: Path, question: str, path_filter: str | None = None,
