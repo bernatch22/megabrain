@@ -546,10 +546,14 @@
         <button class="chip mono" data-act="gplay-stop">✕</button>
       </div>
       <div class="mono" style="font-size:11.5px;margin-bottom:10px;flex-shrink:0;line-height:1.5;word-break:break-all">
-        <b style="color:var(--text)">${esc(prev.file.split("/").pop())}</b>
-        <span style="color:var(--accent)"> —${esc(h.via)}→ </span>
-        <b style="color:var(--text)">${esc(h.file.split("/").pop())}</b>
-        ${code.symbol ? ` · via <b style="color:var(--accent)">${esc(code.symbol)}</b>` : ""}
+        ${code.use && code.def
+          ? `<b style="color:var(--text)">${esc(code.use.file.split("/").pop())}</b>
+             <span style="color:var(--accent)"> —calls ${esc(code.symbol || "")}()→ </span>
+             <b style="color:var(--text)">${esc(code.def.file.split("/").pop())}</b>`
+          : `<b style="color:var(--text)">${esc(prev.file.split("/").pop())}</b>
+             <span style="color:var(--accent)"> —${esc(h.via)}→ </span>
+             <b style="color:var(--text)">${esc(h.file.split("/").pop())}</b>
+             ${code.symbol ? ` · via <b style="color:var(--accent)">${esc(code.symbol)}</b>` : ""}`}
       </div>
       <div style="display:flex;align-items:center;gap:7px;margin-bottom:10px;flex-shrink:0">
         ${tab("use", "1 · the call", phase === "use", !!code.use)}
@@ -804,12 +808,32 @@
         ctx.strokeStyle = comColor(p.c, 0.9);
         ctx.globalAlpha = state === "future" ? 0.15 : state === "plain" ? 0.9 : state === "done" ? 0.95 : 0.3;
         ctx.lineWidth = (state === "done" ? 2.8 : 2.4) / S.scale;
-        if (state === "now") {           // the pulse: bright segment + dot
+        if (state === "now") {
+          // the pulse IS a call executing: it leaves the file that CALLS the
+          // carrier symbol and lands on the file that DEFINES it — the card
+          // shows THE CALL while it travels, THE DEFINITION when it lands.
+          // (BFS is undirected, so this can run against the path's left-to-
+          // right order — the arrow tells the truth.)
           ctx.stroke();
-          const t01 = Math.min(1, gp.t / 1.4);
-          const mx = p.x + (q.x - p.x) * t01, my = p.y + (q.y - p.y) * t01;
-          ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(mx, my);
+          const code = (st.graphPath.hops[gp.k] || {}).code || {};
+          let from = p, to = q;
+          if (code.use && code.def &&
+              S.idx[code.use.file] != null && S.idx[code.def.file] != null) {
+            from = N[S.idx[code.use.file]]; to = N[S.idx[code.def.file]];
+          }
+          const t01 = Math.min(1, gp.t / 3.0);      // lands as the card flips
+          const mx = from.x + (to.x - from.x) * t01, my = from.y + (to.y - from.y) * t01;
+          ctx.beginPath(); ctx.moveTo(from.x, from.y); ctx.lineTo(mx, my);
           ctx.globalAlpha = 0.95; ctx.lineWidth = 3 / S.scale; ctx.stroke();
+          // arrowhead at the DEF end: the direction of the call, always true
+          const an = Math.atan2(to.y - from.y, to.x - from.x), ah = 9 / S.scale;
+          const ax = to.x - Math.cos(an) * (to.r + 3), ay = to.y - Math.sin(an) * (to.r + 3);
+          ctx.beginPath();
+          ctx.moveTo(ax, ay);
+          ctx.lineTo(ax - ah * Math.cos(an - 0.45), ay - ah * Math.sin(an - 0.45));
+          ctx.lineTo(ax - ah * Math.cos(an + 0.45), ay - ah * Math.sin(an + 0.45));
+          ctx.closePath();
+          ctx.fillStyle = comColor(p.c, 0.95); ctx.fill();
           ctx.beginPath(); ctx.arc(mx, my, 5.5 / S.scale, 0, Math.PI * 2);
           ctx.shadowColor = comColor(p.c); ctx.shadowBlur = 16;
           ctx.fillStyle = comColor(p.c, 1); ctx.fill(); ctx.shadowBlur = 0;
@@ -856,6 +880,28 @@
         ctx.fill();
         ctx.shadowBlur = 0;
         if (sel) { ctx.strokeStyle = textCol; ctx.lineWidth = 1.4 / S.scale; ctx.stroke(); }
+      }
+    }
+    // ── path walkthrough: ring + tag the node the card is talking about ──
+    if (S.mode === "path" && st.gplay && st.graphPath) {
+      const gp = st.gplay;
+      const code = (st.graphPath.hops[gp.k] || {}).code || {};
+      const phase = gp.phase || "use";
+      const sn = phase === "use" ? code.use : code.def;
+      const act = sn && S.idx[sn.file] != null ? N[S.idx[sn.file]] : null;
+      if (act) {
+        ctx.beginPath();
+        ctx.arc(act.x, act.y, act.r + 6 / S.scale, 0, Math.PI * 2);
+        ctx.strokeStyle = comColor(act.c, 0.95);
+        ctx.lineWidth = 2 / S.scale;
+        ctx.setLineDash([4 / S.scale, 3 / S.scale]);
+        ctx.stroke(); ctx.setLineDash([]);
+        ctx.textAlign = "center";
+        ctx.font = `600 ${10.5 / S.scale}px ui-monospace, Menlo, monospace`;
+        ctx.fillStyle = comColor(act.c, 1);
+        ctx.fillText(phase === "use" ? "1 · the call" : "2 · the definition",
+                     act.x, act.y - act.r - 12 / S.scale);
+        ctx.textAlign = "left";
       }
     }
     // ── labels ──
