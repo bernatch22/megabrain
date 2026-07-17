@@ -374,6 +374,7 @@
       return `<div class="prov-card" style="padding:14px 16px">
         <div style="font-size:12.5px;font-weight:600">Path — ${p.found ? p.hops.length + " hops" : "not found"}</div>
         <div class="mono" style="font-size:10.5px;color:var(--muted);margin-top:4px">${esc(p.source || "?")} → ${esc(p.target || "?")}</div>
+        ${p.flipped ? `<div style="font-size:10.5px;color:var(--accent);margin-top:6px">↻ shown in call-flow order — the calls actually run this way, opposite to how you asked</div>` : ""}
         <div style="display:flex;flex-direction:column;gap:5px;margin-top:10px">${hops || emptyMini("no route — the endpoints live on disconnected islands")}</div>
         <div style="display:flex;gap:8px;margin-top:12px">
           ${p.found && p.hops.length > 1 ? `<button class="btn-primary" data-act="gplay" style="flex:1">▶ Run the connection</button>` : ""}

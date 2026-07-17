@@ -473,18 +473,49 @@ def _hop_code(st: SearchState, prev: str, cur: str,
     return None
 
 
+def _orient_hops(st: SearchState, hops: list[dict]) -> tuple[list[dict], bool]:
+    """Present the route in CALL-FLOW order. The graph is undirected, so a
+    query phrased against the flow ("scoring -> narrator") walks every call
+    backwards and the story reads wrong (the real chain is narrator -> agents
+    -> scoring). If most directed edges point opposite to the walk, flip the
+    presentation — caller first, descending the call stack — and say so."""
+    if len(hops) < 2:
+        return hops, False
+    edges = {(s, d) for s, d, _ in st.store.all_edges()}
+    fwd = back = 0
+    for k in range(1, len(hops)):
+        a, b = hops[k - 1]["file"], hops[k]["file"]
+        fwd += (a, b) in edges
+        back += (b, a) in edges
+    if back <= fwd:
+        return hops, False
+    m = len(hops) - 1
+    rev = []
+    for k in range(len(hops)):
+        nh = {"file": hops[m - k]["file"]}
+        if k:                            # the entering edge's via moves with it
+            nh["via"] = hops[m - k + 1]["via"]
+        else:
+            nh["via"] = ""
+        rev.append(nh)
+    return rev, True
+
+
 def graph_path(st: SearchState, source: str, target: str,
                path_filter: str | None = None) -> dict:
     t0 = time.time()
     g = build_graph(st, path_filter)
     a, b = resolve_node(st, g, source), resolve_node(st, g, target)
     hops = shortest_path(g, a, b) if a and b else []
+    hops, flipped = _orient_hops(st, hops)
     for k in range(1, len(hops)):        # what functions/classes carry each hop
         syms = _hop_symbols(st, hops[k - 1]["file"], hops[k]["file"])
         hops[k]["symbols"] = syms
         hops[k]["code"] = _hop_code(st, hops[k - 1]["file"], hops[k]["file"], syms)
-    return {"repo": st.repo, "source": a, "target": b,
-            "resolved_from": [source, target],
+    return {"repo": st.repo,
+            "source": hops[0]["file"] if hops else a,
+            "target": hops[-1]["file"] if hops else b,
+            "resolved_from": [source, target], "flipped": flipped,
             "found": bool(hops), "hops": hops,
             "ms": int((time.time() - t0) * 1000)}
 
@@ -527,7 +558,9 @@ def render_graph(res: dict) -> str:
             for s in res["surprises"]:
                 L.append(f'  {s["a"]}  ~{s["score"]}~  {s["b"]}')
     elif "hops" in res:                                        # path
-        L.append(f'# graph path — {res["source"]} → {res["target"]} · {res["ms"]}ms')
+        flip = " · shown in call-flow order (flipped from your query)" \
+            if res.get("flipped") else ""
+        L.append(f'# graph path — {res["source"]} → {res["target"]} · {res["ms"]}ms{flip}')
         if not res["found"]:
             L.append("no path found")
         for h in res["hops"]:

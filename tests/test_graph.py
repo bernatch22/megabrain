@@ -193,6 +193,22 @@ def test_graph_path_hops_carry_symbols(linked_repo):
     assert code["use"]["hi"] == "dispatch" and code["use"]["start_line"] >= 1
 
 
+def test_graph_path_presents_call_flow_order(linked_repo):
+    """A query phrased AGAINST the call flow flips the presentation: asking
+    handlers -> server still shows server -> routes -> handlers (callers
+    first, descending the call stack), flagged so the UI can say so."""
+    res = G.graph_root(linked_repo, mode="path",
+                       source="web/handlers.py", target="web/server.py")
+    assert res["flipped"] is True
+    assert [h["file"] for h in res["hops"]] == \
+        ["web/server.py", "web/routes.py", "web/handlers.py"]
+    assert "dispatch" in res["hops"][1]["symbols"]      # annotations follow
+    # asking WITH the flow never flips
+    res2 = G.graph_root(linked_repo, mode="path",
+                        source="web/server.py", target="web/handlers.py")
+    assert res2["flipped"] is False
+
+
 def test_graph_path_not_found_between_islands(linked_repo):
     res = G.graph_root(linked_repo, mode="path",
                        source="web/server.py", target="db/models.py")
