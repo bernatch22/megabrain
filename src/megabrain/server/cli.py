@@ -5,7 +5,7 @@
   megabrain ask    [path] "question"           explained walkthrough
   megabrain get    [path] <file> [--symbol N]  pull code for navigation
   megabrain graph  [path] [--node F|--path A B] knowledge graph: map/node/path
-  megabrain serve    [path] --port N           studio web UI + JSON API (warm state)
+  megabrain studio   [path] --port N           studio web UI + JSON API (warm state)
   megabrain serve-api [path] --port N          JSON API only, no UI (warm state)
   megabrain stats  [path]                      index stats
   megabrain repos                              every repo indexed on this machine
@@ -29,6 +29,12 @@ def main(argv=None):
     logging.basicConfig(
         level=logging.DEBUG if os.environ.get("MEGABRAIN_DEBUG") else logging.INFO,
         format="%(message)s")
+    # `serve` was renamed to `studio` in 0.10 — accept the old verb silently so
+    # scripts/launch.json keep working, without cluttering --help with it.
+    _argv = list(sys.argv[1:] if argv is None else argv)
+    if _argv and _argv[0] == "serve":
+        _argv[0] = "studio"
+    argv = _argv
     ap = argparse.ArgumentParser(prog="megabrain")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
@@ -122,8 +128,9 @@ def main(argv=None):
     p.add_argument("file")
     p.add_argument("query")
 
-    # serve-api = JSON API ONLY; serve = the same API + the studio web UI at /.
-    # Same options either way — the only difference is whether the UI is mounted.
+    # ONE server, one switch: `studio` mounts the web UI at / on top of the
+    # JSON API; `serve-api` runs the same API headless (embed / demo backend).
+    # `serve` is the pre-0.10 name for `studio`, kept as a hidden alias.
     def _add_serve_args(p):
         p.add_argument("path", nargs="?", default=".")
         p.add_argument("--port", type=int, default=2134)
@@ -133,10 +140,10 @@ def main(argv=None):
         p.add_argument("--token", default=os.environ.get("MEGABRAIN_API_TOKEN"),
                        help="require `Authorization: Bearer <token>` on every request except "
                             "/health (default: $MEGABRAIN_API_TOKEN; recommended off-localhost)")
+    _add_serve_args(sub.add_parser("studio",
+                                   help="the studio web UI at / + the JSON API (warm state)"))
     _add_serve_args(sub.add_parser("serve-api",
                                    help="long-running JSON API only (warm state, no UI)"))
-    _add_serve_args(sub.add_parser("serve",
-                                   help="the studio web UI at / + the JSON API (warm state)"))
 
     p = sub.add_parser("install",
                        help="register the MCP server with your AI coding assistants "
@@ -348,10 +355,10 @@ def _dispatch(a, raw: list[Path], root: Path) -> None:
                       f"{state:<16} {r['path']}")
             return
         print(render(apply(platform=a.platform, remove=a.remove), remove=a.remove))
-    elif a.cmd in ("serve-api", "serve"):
+    elif a.cmd in ("studio", "serve-api"):
         from .http import serve
         serve(root, port=a.port, host=a.host, cors=a.cors, enable_llm=not a.no_llm,
-              token=a.token, serve_ui=(a.cmd == "serve"))
+              token=a.token, serve_ui=(a.cmd == "studio"))
     elif a.cmd == "forge":
         import json as _json
         if a.specialize:

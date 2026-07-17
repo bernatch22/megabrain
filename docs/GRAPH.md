@@ -11,7 +11,7 @@
 megabrain graph ~/repo                    # the map (communities, god nodes, surprises)
 megabrain graph ~/repo --node "the scoring pipeline"   # one file, in depth
 megabrain graph ~/repo --path scoring.py narrator.py   # how two files connect
-megabrain serve ~/repo                    # → the Graph tab: the same thing, interactive
+megabrain studio ~/repo                    # → the Graph tab: the same thing, interactive
 ```
 
 ---

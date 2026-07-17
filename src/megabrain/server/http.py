@@ -1,9 +1,9 @@
 """serve.py — long-running JSON API over indexed repos (+ the studio web UI).
 
-    megabrain serve     ~/repo --port 2134   # UI + API; open http://localhost:2134/
+    megabrain studio   ~/repo --port 2134   # UI + API; open http://localhost:2134/
     megabrain serve-api ~/repo --port 2134   # JSON API only, no UI
 
-Both drive serve() below; `serve` mounts the studio (serve_ui=True), `serve-api`
+Both drive serve() below; `studio` mounts the UI (serve_ui=True), `serve-api`
 does not. One repo is pinned at boot (warm state — the embedding matrix loads
 once, not per request), but the server holds a REGISTRY of repos so the studio
 can switch between several and add new ones at runtime; every route accepts an
@@ -593,7 +593,7 @@ def serve(root, port: int = 2134, host: str = "127.0.0.1",
                                 _make_handler(reg, cors, enable_llm, token, serve_ui))
     httpd.daemon_threads = True
     ui = "on" if (serve_ui and (UI_DIR / "index.html").is_file()) else "off"
-    verb = "serve" if serve_ui else "serve-api"
+    verb = "studio" if serve_ui else "serve-api"
     print(f"megabrain {verb} → http://{host}:{port}  repo={boot.root.name} "
           f"chunks={chunks} cors={cors or 'off'} llm={'on' if enable_llm else 'off'} "
           f"auth={'bearer' if token else 'off'} ui={ui}")

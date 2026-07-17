@@ -34,7 +34,7 @@ One command turns megabrain into a local studio — nothing canned, every pixel 
 the live engine:
 
 ```bash
-megabrain serve ~/repo        #  → open http://localhost:2134
+megabrain studio ~/repo        #  → open http://localhost:2134
 ```
 
 - **Search** — every related file ranked in ~200 ms; click one for a **chunk heatmap**
@@ -142,14 +142,14 @@ megabrain graph  ~/repo --path "auth" "billing"  # BFS route between two concept
 megabrain repos                                  # every repo indexed on this machine (the registry)
 megabrain get    ~/repo src/x.py --symbol Foo    # one file or symbol
 megabrain forge  ~/repo                          # teach it your repo's file types (below)
-megabrain serve  ~/repo                          # studio web UI at / + the JSON API
+megabrain studio ~/repo                          # studio web UI at / + the JSON API
 megabrain serve-api ~/repo                       # the JSON API only, no UI
 ```
 
 Scope to a sub-folder (`~/repo/src/auth`), search several repos at once
 (`~/a,~/b`), and the index auto-refreshes when files change on disk.
 
-`megabrain serve ~/repo` serves **[megabrain studio](#️-megabrain-studio--the-whole-engine-in-your-browser)**
+`megabrain studio ~/repo` serves **[megabrain studio](#️-megabrain-studio--the-whole-engine-in-your-browser)**
 (the web UI, above) at `/`, and `megabrain serve-api ~/repo` exposes the same JSON API
 with no UI mounted. And `megabrain scan` is the studio's add-repo census on the
 CLI — what *would* index and everything skipped with a reason (`.gitignore` · vendored ·
