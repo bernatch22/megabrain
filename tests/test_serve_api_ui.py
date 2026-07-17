@@ -294,6 +294,26 @@ def test_graph_path_route(server, monkeypatch):
     assert "found" in body and isinstance(body["hops"], list)
 
 
+def test_symbols_and_symbol_routes(server):
+    """The code navigator's two lookups: one file's outline, and repo-wide
+    go-to-definition by bare name."""
+    base, _ = server
+    status, body = _get(base, "/symbols?file=auth%2Flogin.py")
+    assert status == 200
+    names = {s["name"] for s in body["symbols"]}
+    assert "login_user" in names and "check_password" in names
+    status, body = _get(base, "/symbol?name=check_password")
+    assert status == 200
+    assert body["defs"] and body["defs"][0]["file"] == "auth/login.py"
+    assert body["defs"][0]["line"] >= 1 and body["defs"][0]["kind"]
+    # missing params -> 400
+    import urllib.error
+    for bad in ("/symbols", "/symbol"):
+        with pytest.raises(urllib.error.HTTPError) as ei:
+            _get(base, bad)
+        assert ei.value.code == 400
+
+
 def test_unknown_repo_404(server):
     base, _ = server
     req = urllib.request.Request(base + "/search",

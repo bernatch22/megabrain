@@ -215,6 +215,17 @@ class Store:
         return [{"name": r[0], "kind": r[1], "line": r[2], "end_line": r[3],
                  "signature": r[4], "doc": r[5]} for r in rows]
 
+    def find_symbols(self, name: str) -> list[dict]:
+        """Definitions matching a bare symbol name repo-wide (exact, or the
+        last segment of a qualified `Class.method`) — go-to-definition for the
+        studio's code navigator. Uses idx_symbols_name."""
+        rows = self.db.execute(
+            "SELECT file,name,kind,line,end_line,signature FROM symbols "
+            "WHERE name=? OR name LIKE '%.' || ? ORDER BY file, line",
+            (name, name)).fetchall()
+        return [{"file": r[0], "name": r[1], "kind": r[2], "line": r[3],
+                 "end_line": r[4], "signature": r[5]} for r in rows]
+
     def stats(self) -> dict:
         """Index shape counts — the store's knowledge, so no frontend ever
         runs raw SQL against the schema."""

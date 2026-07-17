@@ -97,6 +97,12 @@
       return j("/graph?" + p.toString());
     },
     reposAdd: (path, ignore) => post("/repos/add", { path, ignore }),
+    fileCode: (file, repo) =>
+      j("/get?file=" + encodeURIComponent(file) + (repo ? "&repo=" + encodeURIComponent(repo) : "")),
+    fileSymbols: (file, repo) =>
+      j("/symbols?file=" + encodeURIComponent(file) + (repo ? "&repo=" + encodeURIComponent(repo) : "")),
+    symbolDefs: (name, repo) =>
+      j("/symbol?name=" + encodeURIComponent(name) + (repo ? "&repo=" + encodeURIComponent(repo) : "")),
     askStream: (body, onEvent) => sse("/ask/stream", body, onEvent),
     indexStream: (body, onEvent) => sse("/index/stream", body, onEvent),
   };

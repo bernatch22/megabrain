@@ -229,7 +229,10 @@
             <div class="mono" style="font-size:12px;font-weight:500">${esc(c.name || "")}</div>
             <div class="mono" style="font-size:10.5px;color:var(--muted)">L${c.start_line}–${c.end_line}</div>
           </div>
-          <div class="mono" style="font-size:10.5px;font-weight:600;color:${(c.score || 0) >= 0.85 ? "var(--accent)" : "var(--text)"}">${(c.score || 0).toFixed(2)}</div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="mono" style="font-size:10.5px;font-weight:600;color:${(c.score || 0) >= 0.85 ? "var(--accent)" : "var(--text)"}">${(c.score || 0).toFixed(2)}</div>
+            <button class="chip mono" data-act="vopen" data-file="${esc(ch.file)}" data-line="${c.start_line}" title="open the whole file here">⤢ open</button>
+          </div>
         </div>
         <pre class="mono">${hl(c.text || "", lang)}</pre>
       </div>`).join("");
@@ -245,7 +248,7 @@
   }
 
   function tier2Card(t) {
-    return `<div class="t2-card">
+    return `<div class="t2-card" data-act="vopen" data-file="${esc(t.file)}" data-line="${(t.best_chunk && t.best_chunk.start_line) || 1}" title="open the file">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
         <div class="file-path mono" style="font-size:12px">${esc(t.file)}</div>
         <div class="mono" style="font-size:10.5px;font-weight:600;color:var(--muted);flex-shrink:0">${(t.score || 0).toFixed(2)}</div>
@@ -296,18 +299,153 @@
         </div>
         <div class="mono" style="font-size:10.5px;font-weight:600;color:var(--accent)">${(s.score || 0).toFixed(2)}</div>
       </div>
-      <div class="mono" style="font-size:10.5px;color:var(--muted);padding:0 12px 6px">${esc(s.file)}<span style="opacity:.55">:L${s.start_line}–${s.end_line}</span></div>
+      <button class="mono" data-act="vopen" data-file="${esc(s.file)}" data-line="${s.start_line}" style="display:block;font-size:10.5px;color:var(--muted);padding:0 12px 6px;text-align:left" title="open the whole file here">${esc(s.file)}<span style="opacity:.55">:L${s.start_line}–${s.end_line}</span> ⤢</button>
       ${s.text ? `<pre class="mono" style="font-size:11px;padding:8px 12px 10px;background:var(--code);border-top:1px solid var(--border);overflow-x:auto">${hl(s.text, langFor(s.file))}</pre>` : ""}
     </div>`;
   }
   function noiseRow(n) {
-    return `<div class="flag-row" style="justify-content:space-between;border:1px solid var(--border);border-radius:5px;opacity:.72">
+    return `<div class="flag-row" data-act="vopen" data-file="${esc(n.file)}" data-line="${n.start_line}" style="justify-content:space-between;border:1px solid var(--border);border-radius:5px;opacity:.72;cursor:pointer">
       <div style="display:flex;align-items:center;gap:10px;min-width:0;flex:1">
         <div class="kind-pill">${esc(n.kind || "")}</div>
         <div class="mono" style="min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(n.name || "")} <span style="opacity:.55">· ${esc(n.file)}</span></div>
       </div>
       <div class="mono" style="flex-shrink:0">${(n.score || 0).toFixed(2)}</div>
     </div>`;
+  }
+
+  // ── code navigator: a read-only IDE over the index ───────────────────
+  // Full files (real bytes via /get), scrolled to the exact line, connection
+  // lines highlighted, EVERY identifier clickable -> /symbol go-to-definition,
+  // a symbols outline rail, and a step bar for walking a graph connection.
+  // Opens from search/prune/ask/graph alike (data-act="vopen").
+
+  function stripFence(code) {
+    const m = String(code).match(/^```[^\n]*\n([\s\S]*?)\n?```\s*$/);
+    return m ? m[1] : String(code);
+  }
+
+  async function viewerLoad(file, focus, hiLines, conn, fresh) {
+    let gc, sy;
+    try {
+      [gc, sy] = await Promise.all([api.fileCode(file, st.repo),
+                                    api.fileSymbols(file, st.repo)]);
+    } catch (e) { toast(e.message); return; }
+    const stack = fresh || !st.viewer ? [] : st.viewer.stack;
+    st.viewer = { file, code: stripFence(gc.code), lang: langFor(file),
+      symbols: (sy && sy.symbols) || [], focus: focus || 1,
+      hiLines: hiLines || new Set(), conn: conn || null, stack };
+    paintViewer();
+  }
+
+  function viewerClose() {
+    st.viewer = null; st.gplay = null;
+    paintViewer(); paintPanel();
+  }
+
+  async function viewerJumpSymbol(name) {
+    let r;
+    try { r = await api.symbolDefs(name, st.repo); }
+    catch (e) { toast(e.message); return; }
+    const defs = (r && r.defs) || [];
+    if (!defs.length) { toast(`no definition of ${name} in the index`); return; }
+    const v = st.viewer; if (!v) return;
+    const d = defs.find((x) => x.file === v.file) || defs[0];
+    if (defs.length > 1)
+      toast(`${defs.length} definitions — showing ${d.file.split("/").pop()}:${d.line}`);
+    if (d.file === v.file) {
+      v.focus = d.line; v.hiLines = new Set([d.line]); paintViewer();
+    } else {
+      v.stack.push({ file: v.file, focus: v.focus, hiLines: v.hiLines });
+      await viewerLoad(d.file, d.line, new Set([d.line]), v.conn);
+    }
+  }
+
+  async function viewerBack() {
+    const v = st.viewer; if (!v || !v.stack.length) return;
+    const s = v.stack.pop();
+    await viewerLoad(s.file, s.focus, s.hiLines, v.conn);
+  }
+
+  function paintViewer() {
+    const el = $("#viewer"); if (!el) return;
+    const v = st.viewer;
+    if (!v) { el.innerHTML = ""; return; }
+    const conn = v.conn;
+    let stepBar = "";
+    if (conn) {
+      const s = conn.steps[conn.k];
+      stepBar = `<div style="display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid var(--border);background:var(--panel2);flex-shrink:0">
+        <div class="flag-reason" style="width:auto;padding:2px 8px">step ${conn.k + 1} / ${conn.steps.length}</div>
+        <div class="mono" style="font-size:11.5px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.label}</div>
+        <button class="chip mono" data-act="vconn-prev" ${conn.k ? "" : "disabled style='opacity:.35'"}>‹ prev</button>
+        <button class="chip mono" data-act="vconn-next" ${conn.k < conn.steps.length - 1 ? "" : "disabled style='opacity:.35'"} style="background:var(--accent-dim);border-color:var(--accent-bd);color:var(--accent)">next ›</button>
+      </div>`;
+    }
+    const lines = v.code.split("\n");
+    const body = lines.map((ln, i) => {
+      const n = i + 1;
+      return `<div class="vln ${v.hiLines.has(n) ? "hi" : ""}" id="v-ln-${n}">
+        <span class="vno mono">${n}</span><span class="vcode mono">${hl(ln, v.lang)}</span></div>`;
+    }).join("");
+    const outline = v.symbols.map((s) =>
+      `<button class="flag-row" data-act="vgoto" data-line="${s.line}" style="width:100%;text-align:left;border-radius:5px">
+        <span class="mono" style="font-size:10.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;color:${s.line <= v.focus && v.focus <= (s.end_line || s.line) ? "var(--accent)" : "var(--text)"}">${esc(s.name)}</span>
+        <span class="mono" style="font-size:9.5px;color:var(--muted);flex-shrink:0">${s.line}</span></button>`).join("");
+    el.innerHTML = `<aside class="viewer-panel">
+      <div style="display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid var(--border);flex-shrink:0">
+        ${v.stack.length ? `<button class="chip mono" data-act="vback">← back</button>` : ""}
+        <div class="mono" style="font-size:12.5px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(v.file)}</div>
+        <div class="mono" style="font-size:10px;color:var(--muted);flex-shrink:0">click any symbol → its definition</div>
+        <button class="close-btn" data-act="viewer-close">${ico.close}</button>
+      </div>
+      ${stepBar}
+      <div style="flex:1;display:flex;min-height:0">
+        <div id="vcode" style="flex:1;overflow:auto;padding:8px 0;min-width:0">${body}</div>
+        <div style="width:216px;border-left:1px solid var(--border);overflow-y:auto;padding:10px 8px;flex-shrink:0">
+          <div class="mono" style="font-size:9.5px;color:var(--muted);letter-spacing:.06em;padding:0 6px 8px">SYMBOLS</div>
+          ${outline || emptyMini("no symbols indexed")}</div>
+      </div>
+    </aside>`;
+    requestAnimationFrame(() => {
+      const t = $("#v-ln-" + v.focus);
+      if (t) t.scrollIntoView({ block: "center" });
+    });
+  }
+
+  // connection mode: manual next/prev through every call -> definition pair.
+  // In the graph behind, the pulse loops on the CURRENT hop (tickLoop).
+  function connSteps() {
+    const p = st.graphPath; if (!p || !p.found) return [];
+    const steps = [];
+    p.hops.slice(1).forEach((h, i) => {
+      const c = h.code || {};
+      const abs = (sn) => (sn.hi_rows || []).map((r) => sn.start_line + r);
+      if (c.use) steps.push({ file: c.use.file, hop: i + 1, kind: "the call",
+        line: c.use.start_line + ((c.use.hi_rows || [])[0] || 0), hi: abs(c.use),
+        label: `hop ${i + 1} · <span style="color:var(--accent)">THE CALL</span> — ${esc(c.symbol || "")}()${c.use.in_symbol ? ` inside <b>${esc(c.use.in_symbol)}()</b>` : ""} · ${esc(c.use.file.split("/").pop())}` });
+      if (c.def) steps.push({ file: c.def.file, hop: i + 1, kind: "the definition",
+        line: c.def.start_line + ((c.def.hi_rows || [])[0] || 0), hi: abs(c.def),
+        label: `hop ${i + 1} · <span style="color:var(--accent)">THE DEFINITION</span> — ${esc(c.symbol || "")}() · ${esc(c.def.file.split("/").pop())}` });
+    });
+    return steps;
+  }
+
+  async function runConnection() {
+    const steps = connSteps();
+    if (!steps.length) { toast("no code steps on this route (semantic links only)"); return; }
+    await viewerConnGo({ steps, k: 0 }, 0, true);
+  }
+
+  async function viewerConnGo(conn, k, fresh) {
+    conn.k = k;
+    const s = conn.steps[k];
+    st.gplay = { k: s.hop, t: 0, file: s.file, kind: s.kind };  // canvas pulse
+    const v = st.viewer;
+    if (!fresh && v && v.file === s.file) {
+      v.conn = conn; v.focus = s.line; v.hiLines = new Set(s.hi); paintViewer();
+    } else {
+      await viewerLoad(s.file, s.line, new Set(s.hi), conn, fresh);
+    }
   }
 
   // ── graph view (force-directed canvas over /graph, no libs) ──────────
@@ -343,7 +481,6 @@
               : "drag · wheel zoom · click a file for neighbors + code"}
             · <span style="color:var(--text)">solid</span> import/call · <span style="color:var(--text)">dashed</span> semantic</div>
         </div>
-        <div id="gplaycard" style="display:none;width:min(46vw,620px);flex-shrink:0;background:var(--panel);border:1px solid var(--border2);border-radius:10px;padding:12px 14px;flex-direction:column;min-height:0"></div>
         <div id="gpanel" style="width:400px;flex-shrink:0;overflow-y:auto;display:flex;flex-direction:column;gap:10px">${graphPanel()}</div>
       </div>` :
       emptyState("The repo as a living map: communities, god nodes, hidden connections.",
@@ -386,9 +523,13 @@
             <span class="chev" style="flex-shrink:0">${ico.chev}</span>
           </summary>
           ${pills ? `<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:9px">${pills}</div>` : ""}
-          <div style="display:flex;flex-direction:column;gap:9px;margin-top:10px">
-            ${c.use ? snipHtml(c.use, `<span style="color:var(--accent)">THE CALL</span>${c.use.in_symbol ? ` — inside <b style="color:var(--text)">${esc(c.use.in_symbol)}()</b>` : ""} · `, 220) : ""}
-            ${c.def ? snipHtml(c.def, `<span style="color:var(--accent)">THE DEFINITION</span> · `, 220) : ""}
+          <div style="display:flex;flex-direction:column;gap:5px;margin-top:9px">
+            ${c.use ? `<button class="flag-row" data-act="vopen" data-file="${esc(c.use.file)}" data-line="${c.use.start_line + ((c.use.hi_rows || [])[0] || 0)}" style="width:100%;text-align:left;border:1px solid var(--border);border-radius:6px">
+              <div class="flag-reason" style="color:var(--accent)">the call</div>
+              <span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.use.in_symbol ? `inside ${esc(c.use.in_symbol)}() · ` : ""}${esc(c.use.file)}:${c.use.start_line + ((c.use.hi_rows || [])[0] || 0)}</span></button>` : ""}
+            ${c.def ? `<button class="flag-row" data-act="vopen" data-file="${esc(c.def.file)}" data-line="${c.def.start_line + ((c.def.hi_rows || [])[0] || 0)}" style="width:100%;text-align:left;border:1px solid var(--border);border-radius:6px">
+              <div class="flag-reason" style="color:var(--accent)">definition</div>
+              <span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.def.file)}:${c.def.start_line + ((c.def.hi_rows || [])[0] || 0)}</span></button>` : ""}
           </div>
         </details>`;
       }).join("") : "";
@@ -471,6 +612,7 @@
           <div class="kind-pill on">${esc(ch.kind || "chunk")}</div>
           <div class="mono" style="font-size:11.5px;font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(ch.name || "")}</div>
           <div class="mono" style="font-size:10px;color:var(--muted)">L${ch.start_line}–${ch.end_line}</div>
+          <button class="chip mono" data-act="vopen" data-file="${esc(n.file)}" data-line="${ch.start_line}" title="open the whole file here">⤢</button>
         </summary>
         <pre class="mono">${hl(ch.text || "", langFor(n.file))}</pre>
       </details>`).join("");
@@ -496,7 +638,6 @@
     st.graphLoading = false; renderView();
   }
   async function openGraphNode(file) {
-    if (st.gplay) { st.gplay = null; paintPlayCard(); }   // un-hide the panel
     st.graphSel = file;
     paintPanel();
     try { st.graphNode = await api.graph({ mode: "node", node: file }, st.repo); st.graphSel = st.graphNode.file; }
@@ -531,90 +672,6 @@
     st.graphLoading = false; renderView();
   }
   const paintPanel = () => { const p = $("#gpanel"); if (p) p.innerHTML = graphPanel(); };
-
-  // ── path walkthrough: the code card under the canvas ─────────────────
-  // The walk is SPATIAL (phase "from" = the node you're leaving, "to" = the
-  // node you land on) while the labels are SEMANTIC (each side's true role:
-  // the call site or the definition) — so the pulse never teleports and the
-  // arrow/roles still tell the truth about who calls whom.
-  function hopSides(k) {
-    const p = st.graphPath;
-    const h = p.hops[k], prev = p.hops[k - 1];
-    const code = h.code || {};
-    const side = (f) =>
-      code.use && code.use.file === f ? { sn: code.use, role: "the call" } :
-      code.def && code.def.file === f ? { sn: code.def, role: "the definition" } : null;
-    return { h, prev, code, from: side(prev.file), to: side(h.file) };
-  }
-  function snipHtml(sn, title, maxH) {
-    if (!sn) return "";
-    const lang = langFor(sn.file);
-    const pat = new RegExp("\\b" + sn.hi.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b");
-    // hi_rows = the ast-verified call/def lines; only word-match when absent
-    const marks = new Set(sn.hi_rows || []);
-    const rows = sn.text.split("\n").map((ln, i) => {
-      const hot = marks.size ? marks.has(i) : pat.test(ln);
-      return `<div style="display:flex;${hot ? "background:var(--accent-dim);border-radius:3px" : ""}">
-        <span style="width:40px;flex-shrink:0;text-align:right;padding-right:9px;opacity:.4">${sn.start_line + i}</span>
-        <span style="white-space:pre">${hl(ln, lang)}</span></div>`;
-    }).join("");
-    // maxH: capped block (panel storyboard) · none: fill the column (play card)
-    const size = maxH ? `max-height:${maxH}px;` : "flex:1;min-height:0;";
-    return `<div style="flex:1;min-width:0;min-height:0;display:flex;flex-direction:column">
-      <div class="mono" style="font-size:10px;color:var(--muted);margin-bottom:5px">${title}
-        <b style="color:var(--text)">${esc(sn.file)}</b></div>
-      <div class="mono" style="${size}font-size:11px;line-height:1.6;background:var(--code);border:1px solid var(--border);border-radius:6px;padding:10px;overflow:auto">${rows}</div></div>`;
-  }
-
-  function paintPlayCard() {
-    const el = $("#gplaycard"); if (!el) return;
-    const panel = $("#gpanel");
-    const gp = st.gplay, p = st.graphPath;
-    if (!gp || !p || !p.found) {
-      el.style.display = "none";
-      if (panel) panel.style.display = "flex";       // hops list comes back
-      return;
-    }
-    if (panel) panel.style.display = "none";         // the code owns the space
-    const sides = hopSides(gp.k);
-    const h = sides.h, prev = sides.prev, code = sides.code;
-    const phase = gp.phase || (sides.from ? "from" : "to");
-    const cur = phase === "from" ? (sides.from || sides.to) : (sides.to || sides.from);
-    const sn = cur && cur.sn;
-    // ONE code block; it walks WITH the pulse: the file you're leaving, then —
-    // as it lands — the file you arrive at, each labeled by its TRUE role.
-    const tab = (id, label, on, enabled) =>
-      `<button class="chip mono" data-act="gplay-phase" data-phase="${id}"
-        ${enabled ? "" : "disabled style='opacity:.35'"}
-        style="${on ? "background:var(--accent-dim);border-color:var(--accent-bd);color:var(--accent)" : ""}">${label}</button>`;
-    el.style.display = "flex";
-    el.innerHTML = `
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-shrink:0">
-        <div class="flag-reason" style="width:auto;padding:2px 8px">step ${gp.k} / ${p.hops.length - 1}</div>
-        <div style="flex:1"></div>
-        <button class="chip mono" data-act="gplay-prev" ${gp.k <= 1 ? "disabled style='opacity:.4'" : ""}>‹</button>
-        <button class="chip mono" data-act="gplay-next" ${gp.k >= p.hops.length - 1 ? "disabled style='opacity:.4'" : ""}>›</button>
-        <button class="chip mono" data-act="gplay-stop">✕</button>
-      </div>
-      <div class="mono" style="font-size:11.5px;margin-bottom:10px;flex-shrink:0;line-height:1.5;word-break:break-all">
-        ${code.use && code.def
-          ? `<b style="color:var(--text)">${esc(code.use.file.split("/").pop())}</b>
-             <span style="color:var(--accent)"> —calls ${esc(code.symbol || "")}()→ </span>
-             <b style="color:var(--text)">${esc(code.def.file.split("/").pop())}</b>`
-          : `<b style="color:var(--text)">${esc(prev.file.split("/").pop())}</b>
-             <span style="color:var(--accent)"> —${esc(h.via)}→ </span>
-             <b style="color:var(--text)">${esc(h.file.split("/").pop())}</b>
-             ${code.symbol ? ` · via <b style="color:var(--accent)">${esc(code.symbol)}</b>` : ""}`}
-      </div>
-      <div style="display:flex;align-items:center;gap:7px;margin-bottom:10px;flex-shrink:0">
-        ${tab("from", `1 · ${esc(prev.file.split("/").pop())} — ${sides.from ? sides.from.role : "…"}`, phase === "from", !!sides.from)}
-        <span style="color:var(--muted);font-size:11px">→</span>
-        ${tab("to", `2 · ${esc(h.file.split("/").pop())} — ${sides.to ? sides.to.role : "…"}`, phase === "to", !!sides.to)}
-      </div>
-      ${sn ? `<div class="mb-slide" style="display:flex;flex:1;min-height:0">${snipHtml(sn,
-          `<span style="color:var(--accent)">▸ ${phase === "from" ? "1" : "2"} · ${esc(cur.role.toUpperCase())}</span> — ${esc(code.symbol || "")}${cur.role === "the call" && sn.in_symbol ? ` <span style="color:var(--muted)">inside</span> <span style="color:var(--accent)">${esc(sn.in_symbol)}()</span>` : ""} in `)}</div>`
-        : `<div class="mono" style="font-size:11px;color:var(--muted)">no code snippet for this hop (semantic link — the files are related by meaning, not by a call)</div>`}`;
-  }
 
   // ── the simulation ────────────────────────────────────────────────────
   function stopSim() {
@@ -758,7 +815,6 @@
       if (!S.userView) fitAll();
     });
     SIM.ro.observe(wrap);
-    paintPlayCard();                     // a live walkthrough survives a repaint
     tickLoop();
   }
 
@@ -770,16 +826,10 @@
     // (alpha 0) so it stays fitted permanently unless the user grabbed it.
     if (!SIM.userView && (SIM.alpha > 0.05 || SIM.mode === "path")) fitAll();
     if (SIM.mode === "path" && st.gplay && st.graphPath && !document.hidden) {
-      const gp = st.gplay;
-      gp.t += 1 / 60;                    // ~7s per hop: pulse → use code → def code
-      const sides = hopSides(gp.k);
-      const want = (sides.from && gp.t < 3.2) ? "from" : (sides.to ? "to" : "from");
-      if (want !== gp.phase) { gp.phase = want; paintPlayCard(); }
-      if (gp.t > 7) {
-        if (gp.k < st.graphPath.hops.length - 1) { gp.k++; gp.t = 0; gp.phase = null; }
-        else st.gplay = null;
-        paintPlayCard();
-      }
+      // the pulse LOOPS on the current step's hop — the navigator's next/prev
+      // moves it; nothing auto-advances (the user reads at their own pace)
+      st.gplay.t += 1 / 60;
+      if (st.gplay.t > 3.4) st.gplay.t = 0;
     }
     drawSim();
     st.graphView = { tx: SIM.tx, ty: SIM.ty, scale: SIM.scale, user: SIM.userView };
@@ -954,26 +1004,21 @@
       }
     }
     // ── path walkthrough: ring + tag the node the card is talking about ──
-    if (S.mode === "path" && st.gplay && st.graphPath) {
-      const gp = st.gplay;
-      const sides = hopSides(gp.k);
-      const phase = gp.phase || "from";
-      const s = phase === "from" ? (sides.from || sides.to) : (sides.to || sides.from);
-      const act = s && S.idx[s.sn.file] != null ? N[S.idx[s.sn.file]] : null;
-      if (act) {
-        ctx.beginPath();
-        ctx.arc(act.x, act.y, act.r + 6 / S.scale, 0, Math.PI * 2);
-        ctx.strokeStyle = comColor(act.c, 0.95);
-        ctx.lineWidth = 2 / S.scale;
-        ctx.setLineDash([4 / S.scale, 3 / S.scale]);
-        ctx.stroke(); ctx.setLineDash([]);
-        ctx.textAlign = "center";
-        ctx.font = `600 ${10.5 / S.scale}px ui-monospace, Menlo, monospace`;
-        ctx.fillStyle = comColor(act.c, 1);
-        ctx.fillText((phase === "from" ? "1 · " : "2 · ") + s.role,
-                     act.x, act.y - act.r - 12 / S.scale);
-        ctx.textAlign = "left";
-      }
+    if (S.mode === "path" && st.gplay && st.gplay.file &&
+        S.idx[st.gplay.file] != null) {
+      // ring + tag the node the navigator is showing right now
+      const act = N[S.idx[st.gplay.file]];
+      ctx.beginPath();
+      ctx.arc(act.x, act.y, act.r + 6 / S.scale, 0, Math.PI * 2);
+      ctx.strokeStyle = comColor(act.c, 0.95);
+      ctx.lineWidth = 2 / S.scale;
+      ctx.setLineDash([4 / S.scale, 3 / S.scale]);
+      ctx.stroke(); ctx.setLineDash([]);
+      ctx.textAlign = "center";
+      ctx.font = `600 ${10.5 / S.scale}px ui-monospace, Menlo, monospace`;
+      ctx.fillStyle = comColor(act.c, 1);
+      ctx.fillText(st.gplay.kind || "", act.x, act.y - act.r - 12 / S.scale);
+      ctx.textAlign = "left";
     }
     // ── labels ──
     ctx.textAlign = "center";
@@ -1151,7 +1196,7 @@
           <div style="font-size:11.5px;color:var(--muted);margin-top:3px">${esc(a.sub_query || "")}</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
-          ${(a.files || []).slice(0, 2).map((f) => `<div class="file-pill mono">${esc(f.split("/").pop())}</div>`).join("")}
+          ${(a.files || []).slice(0, 2).map((f) => `<button class="file-pill mono" data-act="vopen" data-file="${esc(f)}" title="open ${esc(f)}">${esc(f.split("/").pop())}</button>`).join("")}
           <div class="status-pill ${badge || (a.status === "working" ? "working" : "")}">${status}</div>
         </div>
       </div>
@@ -1241,7 +1286,13 @@
         let j = i; while (j < n && isId(code[j])) j++;
         const w = code.slice(i, j);
         if (kw.has(w)) push("kw", w);
-        else { let k = j; while (k < n && code[k] === " ") k++; push(code[k] === "(" ? "fn" : null, w); }
+        else {
+          let k = j; while (k < n && code[k] === " ") k++;
+          const cls = code[k] === "(" ? "fn" : null;
+          // identifiers carry data-sym: inert in previews, go-to-definition
+          // inside the code navigator (#vcode delegates the click)
+          out.push(`<span ${cls ? `style="color:var(--syn-${cls})" ` : ""}data-sym="${esc(w)}">${esc(w)}</span>`);
+        }
         i = j; continue;
       }
       push(null, c); i++;
@@ -1730,6 +1781,9 @@
   }
 
   document.addEventListener("click", (e) => {
+    // go-to-definition: identifiers inside the navigator's code area only
+    const sym = e.target.closest("[data-sym]");
+    if (sym && e.target.closest("#vcode")) { viewerJumpSymbol(sym.dataset.sym); return; }
     const t = e.target.closest("[data-act]"); if (!t) return;
     const act = t.dataset.act;
     if (act === "view") { st.view = t.dataset.id; render(); }
@@ -1751,16 +1805,15 @@
       st.gplay = null;
       renderView();
     }
-    else if (act === "gplay") { st.gplay = { k: 1, t: 0, phase: null }; paintPlayCard(); }
-    else if (act === "gplay-next") { if (st.gplay && st.gplay.k < st.graphPath.hops.length - 1) { st.gplay.k++; st.gplay.t = 0; st.gplay.phase = null; paintPlayCard(); } }
-    else if (act === "gplay-prev") { if (st.gplay && st.gplay.k > 1) { st.gplay.k--; st.gplay.t = 0; st.gplay.phase = null; paintPlayCard(); } }
-    else if (act === "gplay-stop") { st.gplay = null; paintPlayCard(); }
-    else if (act === "gplay-phase") {
-      if (st.gplay) {                     // jump + hold the clock at that phase
-        st.gplay.phase = t.dataset.phase;
-        st.gplay.t = t.dataset.phase === "from" ? 1.5 : 3.4;
-        paintPlayCard();
-      }
+    else if (act === "gplay") { runConnection(); }
+    else if (act === "vconn-prev") { const v = st.viewer; if (v && v.conn && v.conn.k > 0) viewerConnGo(v.conn, v.conn.k - 1); }
+    else if (act === "vconn-next") { const v = st.viewer; if (v && v.conn && v.conn.k < v.conn.steps.length - 1) viewerConnGo(v.conn, v.conn.k + 1); }
+    else if (act === "viewer-close") { viewerClose(); }
+    else if (act === "vback") { viewerBack(); }
+    else if (act === "vgoto") { const v = st.viewer; if (v) { v.focus = +t.dataset.line; v.hiLines = new Set([v.focus]); paintViewer(); } }
+    else if (act === "vopen") {
+      viewerLoad(t.dataset.file, +(t.dataset.line || 1),
+                 new Set(t.dataset.line ? [+t.dataset.line] : []), null, true);
     }
     else if (act === "gzoom-in") { zoomBy(1.25); }
     else if (act === "gzoom-out") { zoomBy(0.8); }
@@ -1803,7 +1856,16 @@
       else if (st.view === "graph") runGraphQuery(); else runAsk();
     }
     if (e.key === "Enter" && document.activeElement && document.activeElement.id === "add-path") { doScan(); }
-    if (e.key === "Escape") { if (st.overlay) { st.overlay = null; st.add = null; renderOverlays(); } }
+    if (e.key === "Escape") {
+      if (st.viewer) { viewerClose(); return; }
+      if (st.overlay) { st.overlay = null; st.add = null; renderOverlays(); }
+    }
+    if (st.viewer && st.viewer.conn && !/input|textarea/i.test((document.activeElement || {}).tagName || "")) {
+      if (e.key === "ArrowRight" && st.viewer.conn.k < st.viewer.conn.steps.length - 1)
+        viewerConnGo(st.viewer.conn, st.viewer.conn.k + 1);
+      if (e.key === "ArrowLeft" && st.viewer.conn.k > 0)
+        viewerConnGo(st.viewer.conn, st.viewer.conn.k - 1);
+    }
   });
 
   function clearRepoState() {

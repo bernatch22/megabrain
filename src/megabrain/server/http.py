@@ -22,6 +22,8 @@ Endpoints:
     GET  /chunks        ?file=&q=&repo=   -> every chunk of one file (heatmap)
     GET  /prune         ?q=&rerank=&repo= -> {chunks(signal), noise, kept, pruned, …}
     GET  /graph         ?mode=&node=&source=&target=&repo= -> knowledge graph
+    GET  /symbols       ?file=&repo=  -> one file's symbol outline
+    GET  /symbol        ?name=&repo=  -> repo-wide definitions of a name
     POST /search    {query, max?, repo?}      -> raw bundle {tier1, tier2, ms}
     POST /ask       {question, model?, agents?, repo?, …} -> buffered answer
     POST /ask/stream {same}            -> SSE multi-agent live view
@@ -290,6 +292,20 @@ def _make_handler(reg: Registry, cors: str | None, enable_llm: bool,
                     from ..retrieval.bundle import chunks_for_file
                     return self._send(200, reg.get(repo_name).with_state(
                         lambda st: chunks_for_file(st, rel, q)))
+                if path == "/symbols":
+                    rel = (qs.get("file") or [""])[0]
+                    if not rel:
+                        return self._err(400, "missing file")
+                    return self._send(200, reg.get(repo_name).with_state(
+                        lambda st: {"file": rel,
+                                    "symbols": st.store.symbols_for(rel)}))
+                if path == "/symbol":
+                    nm = (qs.get("name") or [""])[0].strip()
+                    if not nm:
+                        return self._err(400, "missing name")
+                    return self._send(200, reg.get(repo_name).with_state(
+                        lambda st: {"name": nm,
+                                    "defs": st.store.find_symbols(nm)}))
                 if path == "/graph":
                     from ..graph import graph_map, graph_node, graph_path
                     mode = (qs.get("mode") or ["map"])[0]
