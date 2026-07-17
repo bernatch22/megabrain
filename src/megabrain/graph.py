@@ -452,11 +452,22 @@ def _snip(chunks: list[dict], symbol: str, at_line: int | None = None,
     return None
 
 
+def _enclosing_symbol(st: SearchState, rel: str, line: int) -> str | None:
+    """The innermost def/class containing `line` — the story's connective
+    tissue: a call site means nothing without knowing WHOSE body it's in."""
+    best = None
+    for s in st.store.symbols_for(rel):
+        end = s["end_line"] or s["line"]
+        if s["line"] <= line <= end and (best is None or s["line"] > best["line"]):
+            best = s
+    return best["name"].split(".")[-1] if best else None
+
+
 def _hop_code(st: SearchState, prev: str, cur: str,
               symbols: list[str]) -> dict | None:
     """USE + DEF snippets for a hop's top carrier symbol: the ast-verified
-    call sites in one file, the definition in the other (whichever direction
-    the edge actually runs)."""
+    call sites in one file (tagged with their ENCLOSING function), the
+    definition in the other (whichever direction the edge actually runs)."""
     for sym in symbols:                  # first carrier that has a real def
         for def_file, use_file in ((cur, prev), (prev, cur)):
             d = next((s for s in st.store.symbols_for(def_file)
@@ -465,6 +476,8 @@ def _hop_code(st: SearchState, prev: str, cur: str,
                 continue
             sites = _use_sites(st, use_file, {sym}).get(sym) or []
             use = _snip(st.store.file_chunks(use_file), sym, at_lines=sites)
+            if use and sites:
+                use["in_symbol"] = _enclosing_symbol(st, use_file, sites[0])
             dfn = _snip(st.store.file_chunks(def_file), sym, at_line=d["line"])
             if use or dfn:
                 return {"symbol": sym,

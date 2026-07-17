@@ -2483,24 +2483,33 @@
     ],
     [
      "module",
-     "_py_use_lines, _use_sites, _hop_symbols, _snip, _hop_code",
+     "_py_use_lines, _use_sites, _hop_symbols, _snip, _enclosing_symbol",
      null,
      360,
-     473,
-     "megabrain > megabrain/graph.py > [_py_use_lines, _use_sites, _hop_symbols, _snip, _hop_code]",
-     "728e7e54cdbf6c809048a199da9f30e9fc001708"
+     463,
+     "megabrain > megabrain/graph.py > [_py_use_lines, _use_sites, _hop_symbols, _snip, _enclosing_symbol]",
+     "e5861b3d373546bc937bbe9fd09049ee1918b274"
     ],
     [
      "module",
-     "_orient_hops, graph_path, graph_root, render_graph",
+     "_hop_code, _orient_hops, graph_path, graph_root",
      null,
-     474,
-     596,
-     "megabrain > megabrain/graph.py > [_orient_hops, graph_path, graph_root, render_graph]",
-     "8e9df2713f1314ef625f56ee723d448f20d14294"
+     464,
+     550,
+     "megabrain > megabrain/graph.py > [_hop_code, _orient_hops, graph_path, graph_root]",
+     "9654b8429d244b9634ce9b6b8aa6768153550ca9"
+    ],
+    [
+     "function",
+     "render_graph",
+     null,
+     551,
+     609,
+     "megabrain > megabrain/graph.py > def render_graph(res: dict) -> str",
+     "db7e56b3cebc5a2f8af59eb663558aec60758a2b"
     ]
    ],
-   "skeleton_sha": "6a3abf32c076d7417a7cdba8a673a66488ac2ec7",
+   "skeleton_sha": "8252ab52f510e19d6abafd413a6abc027c230e92",
    "symbols": [
     [
      "log",
@@ -2741,38 +2750,45 @@
      "def _snip(chunks: list[dict], symbol: str, at_line: int | None=None, at_lines: list[int] | None=None) -> dict | None"
     ],
     [
-     "_hop_code",
+     "_enclosing_symbol",
      "function",
      455,
-     473,
+     463,
+     "def _enclosing_symbol(st: SearchState, rel: str, line: int) -> str | None"
+    ],
+    [
+     "_hop_code",
+     "function",
+     466,
+     486,
      "def _hop_code(st: SearchState, prev: str, cur: str, symbols: list[str]) -> dict | None"
     ],
     [
      "_orient_hops",
      "function",
-     476,
-     501,
+     489,
+     514,
      "def _orient_hops(st: SearchState, hops: list[dict]) -> tuple[list[dict], bool]"
     ],
     [
      "graph_path",
      "function",
-     504,
-     520,
+     517,
+     533,
      "def graph_path(st: SearchState, source: str, target: str, path_filter: str | None=None) -> dict"
     ],
     [
      "graph_root",
      "function",
-     523,
-     537,
+     536,
+     550,
      "def graph_root(root: Path, mode: str='map', node: str | None=None, source: str | None=None, target: str | None=None, path_filter: str | None=None, label: bool=True) -> dict"
     ],
     [
      "render_graph",
      "function",
-     542,
-     596,
+     555,
+     609,
      "def render_graph(res: dict) -> str"
     ]
    ]

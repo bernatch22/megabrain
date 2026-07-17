@@ -366,7 +366,7 @@
         const c = h.code || {};
         const name = (f) => `<b style="color:var(--text)">${esc(f.split("/").pop())}</b>`;
         if (c.use && c.def && c.symbol)
-          return `<li>${name(c.use.file)} calls <b style="color:var(--accent)">${esc(c.symbol)}()</b>, which lives in ${name(c.def.file)}</li>`;
+          return `<li>${name(c.use.file)}${c.use.in_symbol ? ` — from inside <b style="color:var(--text)">${esc(c.use.in_symbol)}()</b> —` : ""} calls <b style="color:var(--accent)">${esc(c.symbol)}()</b>, which lives in ${name(c.def.file)}</li>`;
         if (/^semantic/.test(h.via))
           return `<li>${name(h.file)} has <b style="color:var(--text)">no code link</b> here — it's related by meaning (${esc(h.via)})</li>`;
         return `<li>reaches ${name(h.file)} via ${esc(h.via)}${(h.symbols || []).length ? ` — ${h.symbols.slice(0, 3).map(esc).join(", ")}` : ""}</li>`;
@@ -589,7 +589,7 @@
         ${tab("to", `2 · ${esc(h.file.split("/").pop())} — ${sides.to ? sides.to.role : "…"}`, phase === "to", !!sides.to)}
       </div>
       ${sn ? `<div class="mb-slide" style="display:flex;flex:1;min-height:0">${snipHtml(sn,
-          `<span style="color:var(--accent)">▸ ${phase === "from" ? "1" : "2"} · ${esc(cur.role.toUpperCase())}</span> — ${esc(code.symbol || "")} in `)}</div>`
+          `<span style="color:var(--accent)">▸ ${phase === "from" ? "1" : "2"} · ${esc(cur.role.toUpperCase())}</span> — ${esc(code.symbol || "")}${cur.role === "the call" && sn.in_symbol ? ` <span style="color:var(--muted)">inside</span> <span style="color:var(--accent)">${esc(sn.in_symbol)}()</span>` : ""} in `)}</div>`
         : `<div class="mono" style="font-size:11px;color:var(--muted)">no code snippet for this hop (semantic link — the files are related by meaning, not by a call)</div>`}`;
   }
 

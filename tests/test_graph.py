@@ -191,6 +191,8 @@ def test_graph_path_hops_carry_symbols(linked_repo):
     assert code["def"]["file"] == "web/routes.py" and "def dispatch" in code["def"]["text"]
     assert code["use"]["file"] == "web/server.py" and "dispatch" in code["use"]["text"]
     assert code["use"]["hi"] == "dispatch" and code["use"]["start_line"] >= 1
+    # the connective tissue: WHERE the call lives (its enclosing function)
+    assert code["use"]["in_symbol"] == "serve_http"
 
 
 def test_graph_path_presents_call_flow_order(linked_repo):
