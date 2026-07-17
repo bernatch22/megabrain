@@ -75,16 +75,20 @@ class Registry:
     add-repo flow) registers a new RepoSession; a re-index is picked up by
     RepoSession's own mtime invalidation, no restart needed."""
 
-    def __init__(self, boot: RepoSession):
-        self._by_name: dict[str, RepoSession] = {boot.root.name: boot}
-        self.boot_name = boot.root.name
+    def __init__(self, boot: RepoSession | None):
+        # boot may be None: studio launched with no indexed cwd and an empty
+        # registry — it opens anyway so you can add a repo from the UI. The
+        # default target is then the first repo added (add() sets boot_name).
+        self._by_name: dict[str, RepoSession] = {boot.root.name: boot} if boot else {}
+        self.boot_name = boot.root.name if boot else None
         self._lock = threading.Lock()
 
     def get(self, name: str | None) -> RepoSession:
         with self._lock:
             s = self._by_name.get(name or self.boot_name)
         if s is None:
-            raise _http_error(f"unknown repo: {name}", 404)
+            raise _http_error("no repo loaded — add one first" if not name
+                              else f"unknown repo: {name}", 404)
         return s
 
     def add(self, root: Path) -> RepoSession:
@@ -94,6 +98,8 @@ class Registry:
             if s is None or s.root != root:
                 s = RepoSession(root)
                 self._by_name[root.name] = s
+            if self.boot_name is None:   # first repo becomes the default target
+                self.boot_name = root.name
             return s
 
     def list(self) -> list[RepoSession]:
@@ -579,34 +585,58 @@ def serve(root, port: int = 2134, host: str = "127.0.0.1",
     if not os.environ.get("MEGABRAIN_CHAT_PROVIDER") and providers.find_key(required=False):
         providers.select("openrouter")
 
-    boot = RepoSession(Path(root))
-    chunks = boot.with_state(lambda st: len(st.metas))   # warm up + validate index
-    if chunks == 0:
-        print(f"⚠  index at {boot.root}/.megabrain is empty — POST /index or run "
-              f"`megabrain index {boot.root}` first")
+    root = Path(root)
+    root_indexed = (root / ".megabrain" / "db.sqlite").exists()
+    registry_repos = []
+    if serve_ui:                         # studio: the whole machine's registry
+        try:
+            from ..storage.registry import list_repos
+            registry_repos = list_repos()
+        except Exception:
+            log.debug("registry read skipped", exc_info=True)
+
+    # boot repo (the default when a request omits ?repo=): the given root when
+    # it's indexed; else — for studio launched without an indexed cwd — the
+    # newest registry repo; else none (studio still opens so you can add one).
+    if root_indexed:
+        boot = RepoSession(root)
+    elif serve_ui and registry_repos:
+        boot = RepoSession(Path(registry_repos[0]["path"]))
+    elif serve_ui:
+        boot = None                      # empty studio — add a repo from the UI
+    else:                                # serve-api is headless: needs a repo
+        boot = RepoSession(root)
+
+    chunks = 0
+    if boot is not None:
+        chunks = boot.with_state(lambda st: len(st.metas))   # warm up + validate
+        if chunks == 0:
+            print(f"⚠  index at {boot.root}/.megabrain is empty — POST /index or run "
+                  f"`megabrain index {boot.root}` first")
     if not token and host not in ("127.0.0.1", "localhost", "::1"):
         print("⚠  binding beyond localhost with no --token / MEGABRAIN_API_TOKEN — "
               "every endpoint (including POST /index) is open to the network")
 
     reg = Registry(boot)
-    # studio pre-loads EVERY repo indexed on this machine (the global registry)
-    # so they're all selectable from the rail immediately — RepoSession is lazy
-    # (its embedding matrix loads on first query, not here), so this costs
-    # nothing at boot. serve-api stays boot-repo-only (headless/embed).
-    if serve_ui:
+    # studio pre-loads EVERY repo in the registry so they're all selectable from
+    # the rail immediately — RepoSession is lazy (its matrix loads on first
+    # query, not here), so this costs nothing at boot.
+    for e in registry_repos:
         try:
-            from ..storage.registry import list_repos
-            for e in list_repos():
-                reg.add(Path(e["path"]))
+            reg.add(Path(e["path"]))
         except Exception:
-            log.debug("registry preload skipped", exc_info=True)
+            log.debug("registry preload skipped for %s", e.get("path"), exc_info=True)
     httpd = ThreadingHTTPServer((host, port),
                                 _make_handler(reg, cors, enable_llm, token, serve_ui))
     httpd.daemon_threads = True
     ui = "on" if (serve_ui and (UI_DIR / "index.html").is_file()) else "off"
     verb = "studio" if serve_ui else "serve-api"
-    print(f"megabrain {verb} → http://{host}:{port}  repo={boot.root.name} "
-          f"chunks={chunks} cors={cors or 'off'} llm={'on' if enable_llm else 'off'} "
+    n = len(reg.list())
+    where = f"repo={boot.root.name} chunks={chunks}" if boot is not None \
+        else f"repos={n} (none loaded — add one from the UI)" if n == 0 \
+        else f"repos={n} (registry)"
+    print(f"megabrain {verb} → http://{host}:{port}  {where} "
+          f"cors={cors or 'off'} llm={'on' if enable_llm else 'off'} "
           f"auth={'bearer' if token else 'off'} ui={ui}")
     try:
         httpd.serve_forever()

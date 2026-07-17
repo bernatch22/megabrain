@@ -5,7 +5,7 @@
   megabrain ask    [path] "question"           explained walkthrough
   megabrain get    [path] <file> [--symbol N]  pull code for navigation
   megabrain graph  [path] [--node F|--path A B] knowledge graph: map/node/path
-  megabrain studio   [path] --port N           studio web UI + JSON API (warm state)
+  megabrain studio   [path] --port N           web UI + JSON API — loads every indexed repo
   megabrain serve-api [path] --port N          JSON API only, no UI (warm state)
   megabrain stats  [path]                      index stats
   megabrain repos                              every repo indexed on this machine

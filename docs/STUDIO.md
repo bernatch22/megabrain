@@ -1,13 +1,14 @@
 # megabrain studio — the whole engine, in your browser
 
-> `megabrain studio ~/repo` opens a local web app that drives the real engine
+> `megabrain studio` opens a local web app that drives the real engine
 > live — no canned data, no build step, no CDN. It's the fastest way to *see*
 > what megabrain does: search, prune, ask, and a navigable knowledge graph,
 > plus a read-only code navigator. This doc is the tour: what each view is for,
 > how the server works, and the recipes.
 
 ```bash
-megabrain studio ~/repo        # UI + JSON API → open http://localhost:2134
+megabrain studio               # UI + JSON API, every indexed repo → http://localhost:2134
+megabrain studio ~/repo        # …or boot straight into one repo
 megabrain serve-api ~/repo     # the same JSON API, headless (no UI)
 ```
 
