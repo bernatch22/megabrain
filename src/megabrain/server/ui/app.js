@@ -331,7 +331,6 @@
         <div id="gwrap" style="flex:1;position:relative;min-width:0;background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden">
           <canvas id="gcanvas" style="position:absolute;inset:0;cursor:grab"></canvas>
           <div id="gtip" class="mono" style="position:absolute;display:none;pointer-events:none;z-index:5;padding:6px 10px;background:var(--panel2);border:1px solid var(--border2);border-radius:6px;font-size:11px;box-shadow:var(--shadow);max-width:360px"></div>
-          <div id="gplaycard" style="position:absolute;left:12px;right:12px;bottom:34px;z-index:6;display:none;background:var(--panel2);border:1px solid var(--border2);border-radius:10px;box-shadow:var(--shadow);padding:12px 14px"></div>
           <div style="position:absolute;right:12px;top:10px;z-index:4;display:flex;flex-direction:column;gap:5px">
             <button class="chip mono" data-act="gzoom-in" title="zoom in" style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:15px;padding:0">+</button>
             <button class="chip mono" data-act="gzoom-out" title="zoom out" style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:15px;padding:0">−</button>
@@ -344,6 +343,7 @@
               : "drag · wheel zoom · click a file for neighbors + code"}
             · <span style="color:var(--text)">solid</span> import/call · <span style="color:var(--text)">dashed</span> semantic</div>
         </div>
+        <div id="gplaycard" style="display:none;width:min(46vw,620px);flex-shrink:0;background:var(--panel);border:1px solid var(--border2);border-radius:10px;padding:12px 14px;flex-direction:column;min-height:0"></div>
         <div id="gpanel" style="width:400px;flex-shrink:0;overflow-y:auto;display:flex;flex-direction:column;gap:10px">${graphPanel()}</div>
       </div>` :
       emptyState("The repo as a living map: communities, god nodes, hidden connections.",
@@ -505,18 +505,25 @@
       const hot = pat.test(ln);
       return `<div style="display:flex;${hot ? "background:var(--accent-dim);border-radius:3px" : ""}">
         <span style="width:40px;flex-shrink:0;text-align:right;padding-right:9px;opacity:.4">${sn.start_line + i}</span>
-        <span style="white-space:pre;overflow:hidden;text-overflow:ellipsis">${hl(ln, lang)}</span></div>`;
+        <span style="white-space:pre">${hl(ln, lang)}</span></div>`;
     }).join("");
-    return `<div style="flex:1;min-width:0">
+    // fills the column: header + a code area that scrolls, never the page
+    return `<div style="flex:1;min-width:0;min-height:0;display:flex;flex-direction:column">
       <div class="mono" style="font-size:10px;color:var(--muted);margin-bottom:5px">${title}
         <b style="color:var(--text)">${esc(sn.file)}</b></div>
-      <div class="mono" style="font-size:10.5px;line-height:1.55;background:var(--code);border:1px solid var(--border);border-radius:6px;padding:8px 8px;max-height:200px;overflow:auto">${rows}</div></div>`;
+      <div class="mono" style="flex:1;min-height:0;font-size:11px;line-height:1.6;background:var(--code);border:1px solid var(--border);border-radius:6px;padding:10px;overflow:auto">${rows}</div></div>`;
   }
 
   function paintPlayCard() {
     const el = $("#gplaycard"); if (!el) return;
+    const panel = $("#gpanel");
     const gp = st.gplay, p = st.graphPath;
-    if (!gp || !p || !p.found) { el.style.display = "none"; return; }
+    if (!gp || !p || !p.found) {
+      el.style.display = "none";
+      if (panel) panel.style.display = "flex";       // hops list comes back
+      return;
+    }
+    if (panel) panel.style.display = "none";         // the code owns the space
     const h = p.hops[gp.k], prev = p.hops[gp.k - 1];
     const code = h.code || {};
     const phase = gp.phase || (code.use ? "use" : "def");
@@ -527,24 +534,27 @@
       `<button class="chip mono" data-act="gplay-phase" data-phase="${id}"
         ${enabled ? "" : "disabled style='opacity:.35'"}
         style="${on ? "background:var(--accent-dim);border-color:var(--accent-bd);color:var(--accent)" : ""}">${label}</button>`;
-    el.style.display = "block";
+    el.style.display = "flex";
     el.innerHTML = `
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-shrink:0">
         <div class="flag-reason" style="width:auto;padding:2px 8px">step ${gp.k} / ${p.hops.length - 1}</div>
-        <div class="mono" style="font-size:11.5px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">
-          <b style="color:var(--text)">${esc(prev.file.split("/").pop())}</b>
-          <span style="color:var(--accent)"> —${esc(h.via)}→ </span>
-          <b style="color:var(--text)">${esc(h.file.split("/").pop())}</b>
-          ${code.symbol ? ` · via <b style="color:var(--accent)">${esc(code.symbol)}</b>` : ""}
-        </div>
+        <div style="flex:1"></div>
+        <button class="chip mono" data-act="gplay-prev" ${gp.k <= 1 ? "disabled style='opacity:.4'" : ""}>‹</button>
+        <button class="chip mono" data-act="gplay-next" ${gp.k >= p.hops.length - 1 ? "disabled style='opacity:.4'" : ""}>›</button>
+        <button class="chip mono" data-act="gplay-stop">✕</button>
+      </div>
+      <div class="mono" style="font-size:11.5px;margin-bottom:10px;flex-shrink:0;line-height:1.5;word-break:break-all">
+        <b style="color:var(--text)">${esc(prev.file.split("/").pop())}</b>
+        <span style="color:var(--accent)"> —${esc(h.via)}→ </span>
+        <b style="color:var(--text)">${esc(h.file.split("/").pop())}</b>
+        ${code.symbol ? ` · via <b style="color:var(--accent)">${esc(code.symbol)}</b>` : ""}
+      </div>
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:10px;flex-shrink:0">
         ${tab("use", "1 · the call", phase === "use", !!code.use)}
         <span style="color:var(--muted);font-size:11px">→</span>
         ${tab("def", "2 · the definition", phase === "def", !!code.def)}
-        <button class="chip mono" data-act="gplay-prev" ${gp.k <= 1 ? "disabled style='opacity:.4'" : ""}>‹ prev</button>
-        <button class="chip mono" data-act="gplay-next" ${gp.k >= p.hops.length - 1 ? "disabled style='opacity:.4'" : ""}>next ›</button>
-        <button class="chip mono" data-act="gplay-stop">✕</button>
       </div>
-      ${sn ? `<div class="mb-slide" style="display:flex">${snipHtml(sn,
+      ${sn ? `<div class="mb-slide" style="display:flex;flex:1;min-height:0">${snipHtml(sn,
           phase === "use"
             ? `<span style="color:var(--accent)">▸ 1 · THE CALL</span> — ${esc(code.symbol || "")} used in `
             : `<span style="color:var(--accent)">▸ 2 · THE DEFINITION</span> — ${esc(code.symbol || "")} lives in `)}</div>`
@@ -552,7 +562,11 @@
   }
 
   // ── the simulation ────────────────────────────────────────────────────
-  function stopSim() { if (SIM && SIM.raf) cancelAnimationFrame(SIM.raf); SIM = null; }
+  function stopSim() {
+    if (SIM && SIM.raf) cancelAnimationFrame(SIM.raf);
+    if (SIM && SIM.ro) SIM.ro.disconnect();
+    SIM = null;
+  }
 
   function fitAll(pad) {
     const S = SIM; if (!S || !S.nodes.length) return;
@@ -660,6 +674,17 @@
       labels: Object.fromEntries(g.communities.map((c) => [c.id, c.label])) };
     if (!SIM.userView) fitAll();         // centered, everything visible, always
     bindSim();
+    // the canvas shares its row with the code card / panel: when they open or
+    // close (or the window resizes) re-measure, or the drawing skews
+    SIM.ro = new ResizeObserver(() => {
+      const S = SIM; if (!S) return;
+      const w = wrap.clientWidth, h = wrap.clientHeight;
+      if (!w || !h || (w === S.W && h === S.H)) return;
+      S.W = w; S.H = h; S.cv.width = w * S.dpr; S.cv.height = h * S.dpr;
+      if (!S.userView) fitAll();
+    });
+    SIM.ro.observe(wrap);
+    paintPlayCard();                     // a live walkthrough survives a repaint
     tickLoop();
   }
 
