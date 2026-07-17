@@ -144,11 +144,40 @@ def test_stdlib_attribute_calls_never_carry_a_hop(tmp_path, fake_embedder):
     index_repo(tmp_path)
     with load_state(tmp_path) as st:
         sites = G._use_sites(st, "worker.py", {"search"}, "engine.py")
-        lines = sites.get("search", [])
+        u = sites.get("search") or {}
+        lines = u.get("lines", [])
         src = (tmp_path / "worker.py").read_text().splitlines()
         # the re.search line is rejected; the plain call + the import remain
         assert lines and all("re.search" not in src[ln - 1] for ln in lines)
         assert any("return search(q)" in src[ln - 1] for ln in lines)
+        assert u["strong"] is True       # plain call + import = verified
+
+
+def test_meeting_point_is_declared_not_a_chain(tmp_path, fake_embedder):
+    """a.py -> hub.py <- b.py is NOT a flow: both endpoints call INTO hub and
+    never into each other. The path says so (chain=False, meet=hub)."""
+    (tmp_path / "hub.py").write_text(
+        "def serve_data(key):\n"
+        '    """Serve a data record for the key."""\n    return {key: 1}\n')
+    (tmp_path / "alpha.py").write_text(
+        "from hub import serve_data\n\n\ndef alpha_job():\n"
+        '    """Run the alpha job on served data."""\n'
+        "    return serve_data('a')\n")
+    (tmp_path / "beta.py").write_text(
+        "from hub import serve_data\n\n\ndef beta_job():\n"
+        '    """Run the beta job on served data."""\n'
+        "    return serve_data('b')\n")
+    from megabrain.indexing.indexer import index_repo
+    index_repo(tmp_path)
+    with load_state(tmp_path) as st:
+        res = G.graph_path(st, "alpha.py", "beta.py")
+    assert res["found"] and [h["file"] for h in res["hops"]] == \
+        ["alpha.py", "hub.py", "beta.py"]
+    assert res["chain"] is False and res["meet"] == "hub.py"
+    # a real chain stays chain=True
+    with load_state(tmp_path) as st:
+        res2 = G.graph_path(st, "alpha.py", "hub.py")
+    assert res2["chain"] is True
 
 
 def test_concept_resolution_prefers_source_over_tests(tmp_path, fake_embedder):

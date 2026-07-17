@@ -424,7 +424,7 @@
         const c = h.code || {};
         const name = (f) => `<b style="color:var(--text)">${esc(f.split("/").pop())}</b>`;
         if (c.use && c.def && c.symbol)
-          return `<li>${name(c.use.file)}${c.use.in_symbol ? ` — from inside <b style="color:var(--text)">${esc(c.use.in_symbol)}()</b> —` : ""} calls <b style="color:var(--accent)">${esc(c.symbol)}()</b>, which lives in ${name(c.def.file)}</li>`;
+          return `<li>${name(c.use.file)}${c.use.in_symbol ? ` — from inside <b style="color:var(--text)">${esc(c.use.in_symbol)}()</b> —` : ""} calls <b style="color:var(--accent)">${esc(c.symbol)}()</b>, which lives in ${name(c.def.file)}${c.verified === false ? ` <span style="opacity:.65">· inferred (variable receiver — unverified)</span>` : ""}</li>`;
         if (/^semantic/.test(h.via))
           return `<li>${name(h.file)} has <b style="color:var(--text)">no code link</b> here — it's related by meaning (${esc(h.via)})</li>`;
         return `<li>reaches ${name(h.file)} via ${esc(h.via)}${(h.symbols || []).length ? ` — ${h.symbols.slice(0, 3).map(esc).join(", ")}` : ""}</li>`;
@@ -458,6 +458,7 @@
         <div style="font-size:12.5px;font-weight:600">Path — ${p.found ? p.hops.length + " hops" : "not found"}</div>
         <div class="mono" style="font-size:10.5px;color:var(--muted);margin-top:4px">${esc(p.source || "?")} → ${esc(p.target || "?")}</div>
         ${p.flipped ? `<div style="font-size:10.5px;color:var(--accent);margin-top:6px">↻ shown in call-flow order — the calls actually run this way, opposite to how you asked</div>` : ""}
+        ${p.chain === false ? `<div style="font-size:11px;color:var(--bad);margin-top:8px;padding:8px 10px;background:var(--bad-bg);border:1px solid var(--bad-bd);border-radius:6px">⚠ <b>not a call chain</b> — ${esc((p.source || "").split("/").pop())} and ${esc((p.target || "").split("/").pop())} never call each other. Both connect <b>into ${esc((p.meet || "a shared file").split("/").pop())}</b> — follow the arrowheads on the canvas.</div>` : ""}
         <div style="display:flex;flex-direction:column;gap:5px;margin-top:10px">${hops || emptyMini("no route — the endpoints live on disconnected islands")}</div>
         <div style="display:flex;gap:8px;margin-top:12px">
           ${p.found && p.hops.length > 1 ? `<button class="btn-primary" data-act="gplay" style="flex:1">▶ Run the connection</button>` : ""}
@@ -688,8 +689,12 @@
           d: 0, r: 9, big: true, x: m + (W - 2 * m) * (i / span),
           y: H / 2 + (i % 2 ? 60 : -60), vx: 0, vy: 0, fix: true };
       });
-      links = hops.slice(1).map((h, i) => ({ a: i, b: i + 1, i,
-        sem: /^semantic/.test(h.via), via: h.via, symbols: h.symbols || [] }));
+      links = hops.slice(1).map((h, i) => {
+        const c = h.code || {};
+        return { a: i, b: i + 1, i, sem: /^semantic/.test(h.via), via: h.via,
+          symbols: h.symbols || [],
+          uf: c.use && c.use.file, df: c.def && c.def.file };  // true call direction
+      });
     } else {
       // com = one community's files · sub = the search result's files
       let files;
@@ -850,30 +855,35 @@
         ctx.strokeStyle = comColor(p.c, 0.9);
         ctx.globalAlpha = state === "future" ? 0.15 : state === "plain" ? 0.9 : state === "done" ? 0.95 : 0.3;
         ctx.lineWidth = (state === "done" ? 2.8 : 2.4) / S.scale;
+        // EVERY hop wears its true arrowhead (use -> def): scoring -> http <-
+        // rerank reads as a MEETING, not a flow. Hops with no verified
+        // direction get no arrow.
+        if (l.uf && l.df && S.idx[l.uf] != null && S.idx[l.df] != null) {
+          const uN = N[S.idx[l.uf]], dN = N[S.idx[l.df]];
+          const an = Math.atan2(dN.y - uN.y, dN.x - uN.x), ah = 9 / S.scale;
+          const ax = dN.x - Math.cos(an) * (dN.r + 4), ay = dN.y - Math.sin(an) * (dN.r + 4);
+          ctx.save();
+          ctx.globalAlpha = state === "future" ? 0.25 : 0.9;
+          ctx.beginPath();
+          ctx.moveTo(ax, ay);
+          ctx.lineTo(ax - ah * Math.cos(an - 0.45), ay - ah * Math.sin(an - 0.45));
+          ctx.lineTo(ax - ah * Math.cos(an + 0.45), ay - ah * Math.sin(an + 0.45));
+          ctx.closePath();
+          ctx.fillStyle = comColor(p.c, 0.95); ctx.fill();
+          ctx.restore();
+        }
         if (state === "now") {
-          // the pulse WALKS the route in path order — spatial continuity:
-          // every hop starts where the last one landed. The CALL direction
-          // (which can run against the walk; BFS is undirected) is stated by
-          // the fixed arrowhead at the definition end + the role tags.
+          // the pulse travels the hop's TRUE call direction (use -> def);
+          // with the arrows always on, truth beats left-to-right continuity
           ctx.stroke();
-          const code = (st.graphPath.hops[gp.k] || {}).code || {};
-          const t01 = Math.min(1, gp.t / 3.0);      // lands as the card flips
-          const mx = p.x + (q.x - p.x) * t01, my = p.y + (q.y - p.y) * t01;
-          ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(mx, my);
-          ctx.globalAlpha = 0.95; ctx.lineWidth = 3 / S.scale; ctx.stroke();
-          // arrowhead pointing at the DEFINITION side: the call's true direction
-          if (code.use && code.def &&
-              S.idx[code.use.file] != null && S.idx[code.def.file] != null) {
-            const uN = N[S.idx[code.use.file]], dN = N[S.idx[code.def.file]];
-            const an = Math.atan2(dN.y - uN.y, dN.x - uN.x), ah = 9 / S.scale;
-            const ax = dN.x - Math.cos(an) * (dN.r + 3), ay = dN.y - Math.sin(an) * (dN.r + 3);
-            ctx.beginPath();
-            ctx.moveTo(ax, ay);
-            ctx.lineTo(ax - ah * Math.cos(an - 0.45), ay - ah * Math.sin(an - 0.45));
-            ctx.lineTo(ax - ah * Math.cos(an + 0.45), ay - ah * Math.sin(an + 0.45));
-            ctx.closePath();
-            ctx.fillStyle = comColor(p.c, 0.95); ctx.fill();
+          let from = p, to = q;
+          if (l.uf && l.df && S.idx[l.uf] != null && S.idx[l.df] != null) {
+            from = N[S.idx[l.uf]]; to = N[S.idx[l.df]];
           }
+          const t01 = Math.min(1, gp.t / 3.0);
+          const mx = from.x + (to.x - from.x) * t01, my = from.y + (to.y - from.y) * t01;
+          ctx.beginPath(); ctx.moveTo(from.x, from.y); ctx.lineTo(mx, my);
+          ctx.globalAlpha = 0.95; ctx.lineWidth = 3 / S.scale; ctx.stroke();
           ctx.beginPath(); ctx.arc(mx, my, 5.5 / S.scale, 0, Math.PI * 2);
           ctx.shadowColor = comColor(p.c); ctx.shadowBlur = 16;
           ctx.fillStyle = comColor(p.c, 1); ctx.fill(); ctx.shadowBlur = 0;

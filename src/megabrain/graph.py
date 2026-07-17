@@ -442,22 +442,28 @@ def _use_sites(st: SearchState, uses_file: str, names: set[str],
         parsed = _py_uses(src)
         if parsed is not None:
             aliases, uses = parsed
-            out: dict[str, list[int]] = {}
+            out: dict[str, dict] = {}
             for n in names:
-                lines = []
+                lines, strong = [], False
                 for ln, recv in uses.get(n, ()):
-                    if recv is not None and recv in aliases:
+                    if recv is None:     # plain call / import site: verified
+                        lines.append(ln)
+                        strong = True
+                    elif recv in aliases:
                         files = _alias_files(st, uses_file, *aliases[recv])
                         if files is None or defs_file not in files:
                             continue     # external or a DIFFERENT module
-                    lines.append(ln)
+                        lines.append(ln)
+                        strong = True    # alias resolves to the defs file
+                    else:                # variable/self receiver: inferred only
+                        lines.append(ln)
                 if lines:
-                    out[n] = lines
+                    out[n] = {"lines": lines, "strong": strong}
             return out
     out = {}
     for n in names:
         if re.search(rf"\b{re.escape(n)}\b", src):
-            out[n] = []                  # matched, but no trustworthy lines
+            out[n] = {"lines": [], "strong": False}
     return out
 
 
@@ -472,8 +478,12 @@ def _hop_symbols(st: SearchState, prev: str, cur: str, cap: int = 4) -> list[str
                  and len(s["name"].split(".")[-1]) >= 3}
         if not names:
             continue
-        for name, lines in _use_sites(st, uses_file, names, defs_file).items():
-            counts[name] = counts.get(name, 0) + max(1, len(lines))
+        for name, u in _use_sites(st, uses_file, names, defs_file).items():
+            # verified sites (plain calls, resolved aliases) outrank inferred
+            # variable-receiver matches 10:1 — `dict.get` noise never buries
+            # a real carrier
+            w = (10 if u["strong"] else 1) * max(1, len(u["lines"]))
+            counts[name] = counts.get(name, 0) + w
     return [n for n, _ in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))][:cap]
 
 
@@ -530,13 +540,15 @@ def _hop_code(st: SearchState, prev: str, cur: str,
                       if s["name"].split(".")[-1] == sym), None)
             if d is None:
                 continue
-            sites = _use_sites(st, use_file, {sym}, def_file).get(sym) or []
+            u = _use_sites(st, use_file, {sym}, def_file).get(sym)
+            sites = (u or {}).get("lines") or []
             use = _snip(st.store.file_chunks(use_file), sym, at_lines=sites)
             if use and sites:
                 use["in_symbol"] = _enclosing_symbol(st, use_file, sites[0])
             dfn = _snip(st.store.file_chunks(def_file), sym, at_line=d["line"])
             if use or dfn:
                 return {"symbol": sym,
+                        "verified": bool(u and u["strong"]),
                         "use": {**use, "file": use_file} if use else None,
                         "def": {**dfn, "file": def_file} if dfn else None}
     return None
@@ -581,10 +593,29 @@ def graph_path(st: SearchState, source: str, target: str,
         syms = _hop_symbols(st, hops[k - 1]["file"], hops[k]["file"])
         hops[k]["symbols"] = syms
         hops[k]["code"] = _hop_code(st, hops[k - 1]["file"], hops[k]["file"], syms)
+    # is this an actual CALL CHAIN, or do the endpoints merely MEET somewhere?
+    # scoring -> http <- rerank is not a flow: both call INTO http and never
+    # into each other. Directions come from each hop's use/def sides.
+    dirs = []
+    for k in range(1, len(hops)):
+        c = hops[k].get("code") or {}
+        if c.get("use") and c.get("def"):
+            dirs.append("fwd" if c["def"]["file"] == hops[k]["file"] else "back")
+        else:
+            dirs.append(None)
+    known = [d for d in dirs if d]
+    chain = not ("fwd" in known and "back" in known)
+    meet = None
+    if not chain:
+        for i in range(len(dirs) - 1):
+            if dirs[i] == "fwd" and dirs[i + 1] == "back":
+                meet = hops[i + 1]["file"]      # both arrows point at this node
+                break
     return {"repo": st.repo,
             "source": hops[0]["file"] if hops else a,
             "target": hops[-1]["file"] if hops else b,
             "resolved_from": [source, target], "flipped": flipped,
+            "chain": chain, "meet": meet,
             "found": bool(hops), "hops": hops,
             "ms": int((time.time() - t0) * 1000)}
 
@@ -632,6 +663,9 @@ def render_graph(res: dict) -> str:
         L.append(f'# graph path — {res["source"]} → {res["target"]} · {res["ms"]}ms{flip}')
         if not res["found"]:
             L.append("no path found")
+        elif res.get("chain") is False:
+            L.append(f'⚠ NOT a call chain — the endpoints never call each other; '
+                     f'both connect INTO {res.get("meet") or "a shared file"}')
         for h in res["hops"]:
             syms = f'  · via {", ".join(h["symbols"])}' if h.get("symbols") else ""
             L.append(f'  {"└─ " + h["via"] + " → " if h["via"] else ""}{h["file"]}{syms}')
