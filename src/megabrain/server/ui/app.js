@@ -371,6 +371,27 @@
           return `<li>${name(h.file)} has <b style="color:var(--text)">no code link</b> here — it's related by meaning (${esc(h.via)})</li>`;
         return `<li>reaches ${name(h.file)} via ${esc(h.via)}${(h.symbols || []).length ? ` — ${h.symbols.slice(0, 3).map(esc).join(", ")}` : ""}</li>`;
       }).join("") : "";
+      // the full storyboard: every hop's call + definition, highlighted, inline
+      const seq = p.found ? p.hops.slice(1).map((h, i) => {
+        const c = h.code || {};
+        if (!c.use && !c.def) return "";
+        const head = `${esc((c.use || { file: p.hops[i].file }).file.split("/").pop())} → ` +
+          `${esc((c.def || { file: h.file }).file.split("/").pop())}` +
+          `${c.symbol ? ` · <span style="color:var(--accent)">${esc(c.symbol)}()</span>` : ""}`;
+        const pills = (h.symbols || []).map((s) => `<span class="file-pill mono">${esc(s)}</span>`).join("");
+        return `<details ${i === 0 ? "open" : ""} class="prov-card" style="padding:10px 14px">
+          <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px">
+            <div class="flag-reason" style="width:auto;padding:2px 8px">step ${i + 1}</div>
+            <span class="mono" style="font-size:11.5px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${head}</span>
+            <span class="chev" style="flex-shrink:0">${ico.chev}</span>
+          </summary>
+          ${pills ? `<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:9px">${pills}</div>` : ""}
+          <div style="display:flex;flex-direction:column;gap:9px;margin-top:10px">
+            ${c.use ? snipHtml(c.use, `<span style="color:var(--accent)">THE CALL</span>${c.use.in_symbol ? ` — inside <b style="color:var(--text)">${esc(c.use.in_symbol)}()</b>` : ""} · `, 220) : ""}
+            ${c.def ? snipHtml(c.def, `<span style="color:var(--accent)">THE DEFINITION</span> · `, 220) : ""}
+          </div>
+        </details>`;
+      }).join("") : "";
       return `<div class="prov-card" style="padding:14px 16px">
         <div style="font-size:12.5px;font-weight:600">Path — ${p.found ? p.hops.length + " hops" : "not found"}</div>
         <div class="mono" style="font-size:10.5px;color:var(--muted);margin-top:4px">${esc(p.source || "?")} → ${esc(p.target || "?")}</div>
@@ -378,10 +399,10 @@
         <div style="display:flex;flex-direction:column;gap:5px;margin-top:10px">${hops || emptyMini("no route — the endpoints live on disconnected islands")}</div>
         <div style="display:flex;gap:8px;margin-top:12px">
           ${p.found && p.hops.length > 1 ? `<button class="btn-primary" data-act="gplay" style="flex:1">▶ Run the connection</button>` : ""}
-          <button class="chip" data-act="goverview">← overview</button>
+          <button class="chip" data-act="goverview" style="background:var(--accent-dim);border-color:var(--accent-bd);color:var(--accent)">← overview</button>
         </div>
         ${story ? `<div class="mono" style="font-size:10px;color:var(--muted);letter-spacing:.06em;margin:14px 0 6px">HOW IT CONNECTS</div>
-        <ul style="margin:0;padding-left:18px;font-size:11.5px;line-height:1.8;color:var(--muted)">${story}</ul>` : ""}</div>`;
+        <ul style="margin:0;padding-left:18px;font-size:11.5px;line-height:1.8;color:var(--muted)">${story}</ul>` : ""}</div>${seq}`;
     }
     if (st.gmode === "sub" && st.gsub) {
       const rows = st.gsub.files.map((f) => `<button class="flag-row" data-act="gopen" data-file="${esc(f.file)}" style="width:100%;text-align:left;border:1px solid var(--border);border-radius:6px">
@@ -460,7 +481,7 @@
           <span class="file-pill mono">degree ${n.degree}</span>
           ${n.resolved_from && n.resolved_from !== n.file ? `<span class="file-pill mono" title="resolved by embedding">← "${esc(n.resolved_from)}"</span>` : ""}
         </div>
-        <button class="chip" data-act="gclear" style="margin-top:10px">back to map</button></div>
+        <button class="chip" data-act="gclear" style="margin-top:10px;background:var(--accent-dim);border-color:var(--accent-bd);color:var(--accent)">← back</button></div>
       ${n.out.length ? `<div class="prov-card" style="padding:12px 16px"><div class="mono" style="font-size:10px;color:var(--muted);letter-spacing:.06em;margin-bottom:6px">OUTGOING</div><div style="display:flex;flex-direction:column;gap:4px">${n.out.map((e) => row(e, e.kind)).join("")}</div></div>` : ""}
       ${n.in.length ? `<div class="prov-card" style="padding:12px 16px"><div class="mono" style="font-size:10px;color:var(--muted);letter-spacing:.06em;margin-bottom:6px">INCOMING</div><div style="display:flex;flex-direction:column;gap:4px">${n.in.map((e) => row(e, e.kind)).join("")}</div></div>` : ""}
       ${n.semantic.length ? `<div class="prov-card" style="padding:12px 16px"><div class="mono" style="font-size:10px;color:var(--muted);letter-spacing:.06em;margin-bottom:6px">SEMANTICALLY CLOSE</div><div style="display:flex;flex-direction:column;gap:4px">${n.semantic.map((e) => row(e, "~" + e.score)).join("")}</div></div>` : ""}
@@ -475,6 +496,7 @@
     st.graphLoading = false; renderView();
   }
   async function openGraphNode(file) {
+    if (st.gplay) { st.gplay = null; paintPlayCard(); }   // un-hide the panel
     st.graphSel = file;
     paintPanel();
     try { st.graphNode = await api.graph({ mode: "node", node: file }, st.repo); st.graphSel = st.graphNode.file; }
@@ -524,7 +546,7 @@
       code.def && code.def.file === f ? { sn: code.def, role: "the definition" } : null;
     return { h, prev, code, from: side(prev.file), to: side(h.file) };
   }
-  function snipHtml(sn, title) {
+  function snipHtml(sn, title, maxH) {
     if (!sn) return "";
     const lang = langFor(sn.file);
     const pat = new RegExp("\\b" + sn.hi.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b");
@@ -536,11 +558,12 @@
         <span style="width:40px;flex-shrink:0;text-align:right;padding-right:9px;opacity:.4">${sn.start_line + i}</span>
         <span style="white-space:pre">${hl(ln, lang)}</span></div>`;
     }).join("");
-    // fills the column: header + a code area that scrolls, never the page
+    // maxH: capped block (panel storyboard) · none: fill the column (play card)
+    const size = maxH ? `max-height:${maxH}px;` : "flex:1;min-height:0;";
     return `<div style="flex:1;min-width:0;min-height:0;display:flex;flex-direction:column">
       <div class="mono" style="font-size:10px;color:var(--muted);margin-bottom:5px">${title}
         <b style="color:var(--text)">${esc(sn.file)}</b></div>
-      <div class="mono" style="flex:1;min-height:0;font-size:11px;line-height:1.6;background:var(--code);border:1px solid var(--border);border-radius:6px;padding:10px;overflow:auto">${rows}</div></div>`;
+      <div class="mono" style="${size}font-size:11px;line-height:1.6;background:var(--code);border:1px solid var(--border);border-radius:6px;padding:10px;overflow:auto">${rows}</div></div>`;
   }
 
   function paintPlayCard() {
