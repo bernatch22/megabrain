@@ -594,11 +594,24 @@
       x0 = Math.min(x0, p.x - p.r); y0 = Math.min(y0, p.y - p.r);
       x1 = Math.max(x1, p.x + p.r); y1 = Math.max(y1, p.y + p.r);
     }
-    const s = Math.min(2.2, Math.max(0.15,
+    // path: few nodes -> an unclamped fit blows them up huge
+    const cap = S.mode === "path" ? 1.25 : 2.2;
+    const s = Math.min(cap, Math.max(0.15,
       Math.min(S.W / (x1 - x0 + pad * 2), S.H / (y1 - y0 + pad * 2))));
     S.scale = s;
     S.tx = S.W / 2 - ((x0 + x1) / 2) * s;
     S.ty = S.H / 2 - ((y0 + y1) / 2) * s;
+  }
+
+  function pathLayout() {
+    // static zigzag from the CURRENT canvas size (re-run on every resize —
+    // stale mount-time positions were pushing nodes out of the viewport)
+    const S = SIM; if (!S || S.mode !== "path") return;
+    const m = 110, span = Math.max(1, S.nodes.length - 1);
+    S.nodes.forEach((n, i) => {
+      n.x = m + (S.W - 2 * m) * (i / span);
+      n.y = S.H / 2 + (i % 2 ? 60 : -60);
+    });
   }
 
   function zoomBy(k) {
@@ -699,6 +712,7 @@
       const w = wrap.clientWidth, h = wrap.clientHeight;
       if (!w || !h || (w === S.W && h === S.H)) return;
       S.W = w; S.H = h; S.cv.width = w * S.dpr; S.cv.height = h * S.dpr;
+      pathLayout();                      // static modes re-lay for the new size
       if (!S.userView) fitAll();
     });
     SIM.ro.observe(wrap);
@@ -710,8 +724,9 @@
     if (!SIM) return;
     if (SIM.alpha > 0.012 && !document.hidden) simTick();
     // while the layout settles, keep the WHOLE graph centered on screen —
-    // until the user takes over (wheel/pan/buttons)
-    if (!SIM.userView && SIM.alpha > 0.05) fitAll();
+    // until the user takes over (wheel/pan/buttons). The path view is static
+    // (alpha 0) so it stays fitted permanently unless the user grabbed it.
+    if (!SIM.userView && (SIM.alpha > 0.05 || SIM.mode === "path")) fitAll();
     if (SIM.mode === "path" && st.gplay && st.graphPath && !document.hidden) {
       const gp = st.gplay;
       gp.t += 1 / 60;                    // ~7s per hop: pulse → use code → def code
