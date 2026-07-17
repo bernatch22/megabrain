@@ -185,6 +185,21 @@ class Store:
             else np.zeros((0, 1))
         return paths, skels, M
 
+    def all_edges(self) -> list[tuple[str, str, str]]:
+        """Every (src, dst, kind) edge — the graph feature's raw material."""
+        return [(r[0], r[1], r[2]) for r in
+                self.db.execute("SELECT src, dst, kind FROM edges")]
+
+    def file_chunks(self, path: str) -> list[dict]:
+        """Every chunk of one file in line order (no vectors) — the graph node
+        view splices these verbatim, same anti-hallucination stance as ask."""
+        rows = self.db.execute(
+            "SELECT id,kind,name,part,start_line,end_line,text,breadcrumb "
+            "FROM chunks WHERE file=? ORDER BY start_line", (path,)).fetchall()
+        return [{"id": r[0], "kind": r[1], "name": r[2], "part": r[3],
+                 "start_line": r[4], "end_line": r[5], "text": r[6],
+                 "breadcrumb": r[7]} for r in rows]
+
     def neighbors(self, path: str) -> set[str]:
         out = set()
         for r in self.db.execute("SELECT dst FROM edges WHERE src=?", (path,)):

@@ -6,9 +6,11 @@ exposes what it alone can do):
   megabrain_ask(repo_path, question, scope_path?, docs?, include_docs?)
       -> explained answer, real code spliced (docs=true -> docs-only walkthrough;
          include_docs=true -> code + docs)
-  megabrain_search(repo_path, task, scope_path?, compact?)
+  megabrain_search(repo_path, task, scope_path?, compact?, rerank?)
       -> flat relevance-ranked signal chunks with the real code, noise dropped
          (megabrain_query is a deprecated dispatch alias for it)
+  megabrain_graph(repo_path, mode?, node?, source?, target?, scope_path?)
+      -> the repo as a knowledge graph: communities map / one node / a path
   megabrain_index(repo_path)                  -> incremental index
   megabrain_forge(repo_path, ext?, list_only?, dry_run?, specialize?)
       -> COVERAGE: detect uncovered file types; LLM-generate + partition-validate
@@ -96,6 +98,36 @@ TOOLS = [
                                           "false = pure deterministic retrieval (~200ms)."},
             },
             "required": ["repo_path", "task"],
+        },
+    },
+    {
+        "name": "megabrain_graph",
+        "description": (
+            "The indexed repo as a NAVIGABLE KNOWLEDGE GRAPH — no LLM in the "
+            "structure (AST import/call edges + embedding-similarity edges; the "
+            "only LLM touch is cached community labels). mode='map' (default): "
+            "labeled communities, god nodes (core abstractions by degree) and "
+            "surprising connections (similar code with no structural link) — the "
+            "repo overview to start any unfamiliar codebase with. mode='node': "
+            "one file resolved from a path OR a concept (embedding lookup) — its "
+            "community, structural in/out edges, semantically-close files, "
+            "symbols, and its REAL chunks spliced verbatim. mode='path': BFS "
+            "route between two concepts showing what carries each hop."),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "repo_path": {"type": "string", "description": "path to the indexed repo root (a sub-path also works — the root is auto-detected from .megabrain)"},
+                "mode": {"type": "string", "enum": ["map", "node", "path"],
+                         "default": "map",
+                         "description": "map = communities overview · node = one file/concept in depth · path = route between two concepts"},
+                "node": {"type": "string",
+                         "description": "mode=node: file path or natural-language concept (resolved by embedding)"},
+                "source": {"type": "string", "description": "mode=path: start file/concept"},
+                "target": {"type": "string", "description": "mode=path: end file/concept"},
+                "scope_path": {"type": "string",
+                               "description": "optional repo-relative folder to scope the graph to files under it"},
+            },
+            "required": ["repo_path"],
         },
     },
     {
@@ -217,6 +249,13 @@ def call_tool(name: str, args: dict) -> str:
                             for a in out["agents"])
             text += f"\n\n— multi-agent: {tr}"
         return text
+    if name == "megabrain_graph":
+        from ..graph import render_graph
+        root, pf = _scope(args)
+        res = app.graph(root, mode=args.get("mode", "map"),
+                        node=args.get("node"), source=args.get("source"),
+                        target=args.get("target"), path_filter=pf)
+        return render_graph(res)
     if name == "megabrain_index":
         if args.get("list") or not args.get("repo_path"):
             from ..storage.registry import list_repos

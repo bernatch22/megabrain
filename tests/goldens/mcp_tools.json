@@ -72,6 +72,48 @@
   "name": "megabrain_search"
  },
  {
+  "description": "The indexed repo as a NAVIGABLE KNOWLEDGE GRAPH \u2014 no LLM in the structure (AST import/call edges + embedding-similarity edges; the only LLM touch is cached community labels). mode='map' (default): labeled communities, god nodes (core abstractions by degree) and surprising connections (similar code with no structural link) \u2014 the repo overview to start any unfamiliar codebase with. mode='node': one file resolved from a path OR a concept (embedding lookup) \u2014 its community, structural in/out edges, semantically-close files, symbols, and its REAL chunks spliced verbatim. mode='path': BFS route between two concepts showing what carries each hop.",
+  "inputSchema": {
+   "properties": {
+    "mode": {
+     "default": "map",
+     "description": "map = communities overview \u00b7 node = one file/concept in depth \u00b7 path = route between two concepts",
+     "enum": [
+      "map",
+      "node",
+      "path"
+     ],
+     "type": "string"
+    },
+    "node": {
+     "description": "mode=node: file path or natural-language concept (resolved by embedding)",
+     "type": "string"
+    },
+    "repo_path": {
+     "description": "path to the indexed repo root (a sub-path also works \u2014 the root is auto-detected from .megabrain)",
+     "type": "string"
+    },
+    "scope_path": {
+     "description": "optional repo-relative folder to scope the graph to files under it",
+     "type": "string"
+    },
+    "source": {
+     "description": "mode=path: start file/concept",
+     "type": "string"
+    },
+    "target": {
+     "description": "mode=path: end file/concept",
+     "type": "string"
+    }
+   },
+   "required": [
+    "repo_path"
+   ],
+   "type": "object"
+  },
+  "name": "megabrain_graph"
+ },
+ {
   "description": "Index or incrementally update a repo before querying a NEW one (fast: only changed files are re-embedded; ask/search auto-refresh a stale index). With list=true (or no repo_path) it instead returns EVERY repo indexed on this machine \u2014 the global registry \u2014 so you can discover what is already searchable without guessing paths.",
   "inputSchema": {
    "properties": {

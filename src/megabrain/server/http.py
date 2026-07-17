@@ -20,7 +20,8 @@ Endpoints:
     GET  /docsearch     ?q=&limit=&repo=  -> docs-site hits
     GET  /get           ?file=&symbol=&repo= -> {code}
     GET  /chunks        ?file=&q=&repo=   -> every chunk of one file (heatmap)
-    GET  /prune         ?q=&repo=      -> {chunks(signal), noise, kept, pruned, …}
+    GET  /prune         ?q=&rerank=&repo= -> {chunks(signal), noise, kept, pruned, …}
+    GET  /graph         ?mode=&node=&source=&target=&repo= -> knowledge graph
     POST /search    {query, max?, repo?}      -> raw bundle {tier1, tier2, ms}
     POST /ask       {question, model?, agents?, repo?, …} -> buffered answer
     POST /ask/stream {same}            -> SSE multi-agent live view
@@ -286,6 +287,25 @@ def _make_handler(reg: Registry, cors: str | None, enable_llm: bool,
                     from ..retrieval.bundle import chunks_for_file
                     return self._send(200, reg.get(repo_name).with_state(
                         lambda st: chunks_for_file(st, rel, q)))
+                if path == "/graph":
+                    from ..graph import graph_map, graph_node, graph_path
+                    mode = (qs.get("mode") or ["map"])[0]
+                    repo = reg.get(repo_name)
+                    if mode == "node":
+                        node = (qs.get("node") or [""])[0].strip()
+                        if not node:
+                            return self._err(400, "missing node")
+                        return self._send(200, repo.with_state(
+                            lambda st: graph_node(st, node)))
+                    if mode == "path":
+                        src = (qs.get("source") or [""])[0].strip()
+                        dst = (qs.get("target") or [""])[0].strip()
+                        if not (src and dst):
+                            return self._err(400, "missing source/target")
+                        return self._send(200, repo.with_state(
+                            lambda st: graph_path(st, src, dst)))
+                    return self._send(200, repo.with_state(
+                        lambda st: graph_map(st)))
                 if path == "/prune":
                     q = (qs.get("q") or qs.get("query") or [""])[0].strip()
                     if not q:

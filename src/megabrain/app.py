@@ -107,6 +107,20 @@ def ask(root: Path, question: str, path_filter: str | None = None,
                 model=model)
 
 
+def graph(root: Path, mode: str = "map", node: str | None = None,
+          source: str | None = None, target: str | None = None,
+          path_filter: str | None = None, reindex: bool = True,
+          label: bool = True) -> dict:
+    """Knowledge-graph views over the indexed repo: map (communities + god
+    nodes + surprises), node (one file: neighbors + real code), path (BFS
+    between two concepts, endpoints resolved by embedding). `label=False`
+    skips the (cached, fail-open) LLM community labels."""
+    from .graph import graph_root
+    _maybe_reindex(root, reindex)
+    return graph_root(root, mode=mode, node=node, source=source,
+                      target=target, path_filter=path_filter, label=label)
+
+
 def get(root: Path, sub: str | None, file: str, symbol: str | None = None) -> str:
     """One file or symbol. Owns resolve+rel_join so a bare name under a scope
     resolves. NOTE: get does NOT auto-reindex — faithful to today's callers

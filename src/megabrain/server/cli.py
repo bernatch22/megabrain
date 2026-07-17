@@ -4,6 +4,7 @@
   megabrain search [path] "task" [--compact]   one-shot code map (`query` = alias)
   megabrain ask    [path] "question"           explained walkthrough
   megabrain get    [path] <file> [--symbol N]  pull code for navigation
+  megabrain graph  [path] [--node F|--path A B] knowledge graph: map/node/path
   megabrain serve    [path] --port N           studio web UI + JSON API (warm state)
   megabrain serve-api [path] --port N          JSON API only, no UI (warm state)
   megabrain stats  [path]                      index stats
@@ -100,6 +101,20 @@ def main(argv=None):
     p.add_argument("path")
     p.add_argument("file")
     p.add_argument("--symbol")
+
+    p = sub.add_parser("graph",
+                       help="the repo as a knowledge graph: communities map "
+                            "(default), --node for one file/concept in depth, "
+                            "--path for the route between two concepts")
+    p.add_argument("path", nargs="?", default=".")
+    p.add_argument("--node", metavar="FILE_OR_CONCEPT",
+                   help="one node: community, in/out edges, semantic twins, "
+                        "symbols and its real chunks (concepts resolve by embedding)")
+    p.add_argument("--path", nargs=2, metavar=("SRC", "DST"), dest="graph_path",
+                   help="BFS route between two files/concepts")
+    p.add_argument("--no-labels", action="store_true",
+                   help="skip the (cached) LLM community labels — fully offline")
+    p.add_argument("--json", action="store_true")
 
     p = sub.add_parser("chunks",
                        help="every chunk of one file, scored for a query, with a selected flag (JSON)")
@@ -297,6 +312,18 @@ def _dispatch(a, raw: list[Path], root: Path) -> None:
                    docs_only=a.docs, path_filter=sp or None,
                    include_docs=a.with_docs,
                    agents=True if a.agents else (False if a.no_agents else None))
+    elif a.cmd == "graph":
+        import json as _json
+
+        from .. import app
+        from ..graph import render_graph
+        r0, sp = app.resolve_scope(root)
+        mode = "node" if a.node else ("path" if a.graph_path else "map")
+        res = app.graph(r0, mode=mode, node=a.node,
+                        source=(a.graph_path or (None, None))[0],
+                        target=(a.graph_path or (None, None))[1],
+                        path_filter=sp or None, label=not a.no_labels)
+        print(_json.dumps(res, indent=1) if a.json else render_graph(res))
     elif a.cmd == "get":
         from .. import app
         from ..storage.store import resolve_root
