@@ -168,6 +168,9 @@ with no structural edge across different communities. `--node` splices the file'
 chunks — the graph never paraphrases code. Measured: this repo is 122 files / 324 links in
 ~8 ms; graphify 630 files in ~37 ms.
 
+**New to the graph? Read [docs/GRAPH.md](GRAPH.md)** — the plain-language guide: what the
+map means, real output from real repos, and the five things it's actually good for.
+
 ### `search --rerank` — a cheap LLM pass over the pruned list (opt-in)
 
 The deterministic prune is recall-safe, so files that merely *share vocabulary* with the

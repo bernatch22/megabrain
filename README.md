@@ -372,6 +372,7 @@ chunks, live. Or run it locally: `python examples/webui/server.py`.
 ## Learn more
 
 - **[docs/GUIDE.md](docs/GUIDE.md)** — step-by-step: providers, indexing, the 2000-vs-4000 budget choice, custom chunkers, and the flow cache
+- **[docs/GRAPH.md](docs/GRAPH.md)** — the knowledge graph in plain language: what the map means, real output, and what it's actually good for
 - **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — the full design, the locked rules, and the measurements behind them
 - **[examples/](examples/)** — programmatic API · a custom `.sql` chunker · the web demo
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** — the best first PR is a new language

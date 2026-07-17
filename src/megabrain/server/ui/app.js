@@ -56,6 +56,7 @@
     ask: null, askCtl: null,
     graph: null, graphLoading: false, graphSel: null, graphNode: null,
     graphPath: null, graphPos: {},       // {file:{x,y}} — layout survives repaints
+    graphHideIso: true, graphFocusCom: null,
     overlay: null,          // 'settings' | 'add'
     add: null,              // add-repo flow state
   };
@@ -311,14 +312,24 @@
   const comColor = (cid, a) =>
     `hsla(${(cid * 137.508) % 360}, 58%, 62%, ${a == null ? 1 : a})`;
 
+  const isoFiles = (g) => {
+    const linked = new Set();
+    for (const l of g.links) { linked.add(l.s); linked.add(l.d); }
+    return new Set(g.nodes.filter((n) => !linked.has(n.file)).map((n) => n.file));
+  };
+
   function viewGraph() {
     const g = st.graph;
     const badge = st.graphLoading ? `<div class="badge"><span class="spinner"></span></div>`
       : g ? `<div class="badge"><div class="dotlive" style="animation:mb-pulse 1.6s infinite"></div><span>${g.files} files</span><span style="opacity:.5">·</span><span>${g.links.length} links</span><span style="opacity:.5">·</span><span>${g.ms}ms</span></div>` : "";
+    const nIso = g ? isoFiles(g).size : 0;
     const body = g ? `
       <div style="display:flex;gap:14px;margin-top:16px;height:calc(100vh - 200px);min-height:420px">
         <div id="gwrap" style="flex:1;position:relative;min-width:0;background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden">
           <canvas id="gcanvas" style="position:absolute;inset:0;cursor:grab"></canvas>
+          <div id="gtip" class="mono" style="position:absolute;display:none;pointer-events:none;z-index:5;padding:6px 10px;background:var(--panel2);border:1px solid var(--border2);border-radius:6px;font-size:11px;box-shadow:var(--shadow);max-width:360px"></div>
+          ${nIso ? `<button class="chip mono" data-act="giso" style="position:absolute;top:10px;right:12px;z-index:4">${st.graphHideIso ? `+${nIso} isolated files hidden` : `hide ${nIso} isolated files`}</button>` : ""}
+          ${st.graphFocusCom != null ? `<button class="chip mono" data-act="gfocus-clear" style="position:absolute;top:10px;left:12px;z-index:4;background:var(--accent-dim);border-color:var(--accent-bd);color:var(--accent)">◉ focused — show all</button>` : ""}
           <div class="mono" style="position:absolute;left:12px;bottom:10px;font-size:10px;color:var(--muted);pointer-events:none">
             drag · wheel zoom · click a node — <span style="color:var(--text)">solid</span> import/call · <span style="color:var(--text)">dashed</span> semantic</div>
         </div>
@@ -343,11 +354,24 @@
         <button class="chip" data-act="gclear" style="margin-top:10px">clear path</button></div>`;
     }
     if (st.graphNode) return nodePanel(st.graphNode);
-    // map summary: communities + god nodes + surprises
-    const coms = g.communities.map((c) => `<button class="flag-row" data-act="gcom" data-id="${c.id}" style="width:100%;text-align:left;border:1px solid var(--border);border-radius:6px">
+    // map summary: how-to + communities + god nodes + surprises
+    const comBtn = (c) => `<button class="flag-row" data-act="gcom" data-id="${c.id}" style="width:100%;text-align:left;border:1px solid ${st.graphFocusCom === c.id ? "var(--accent-bd)" : "var(--border)"};border-radius:6px;${st.graphFocusCom === c.id ? "background:var(--accent-dim)" : ""}">
         <span style="width:9px;height:9px;border-radius:3px;background:${comColor(c.id)};flex-shrink:0"></span>
         <span style="font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${esc(c.label)}</span>
-        <span class="mono" style="font-size:10px;color:var(--muted)">${c.size}</span></button>`).join("");
+        <span class="mono" style="font-size:10px;color:var(--muted)">${c.size}</span></button>`;
+    const multi = g.communities.filter((c) => c.size > 1);
+    const singles = g.communities.filter((c) => c.size === 1);
+    const coms = multi.map(comBtn).join("") + (singles.length ? `
+      <details style="margin-top:2px"><summary class="mono" style="cursor:pointer;font-size:10.5px;color:var(--muted);padding:4px 6px">+${singles.length} standalone files (docs, configs — no code links)</summary>
+      <div style="display:flex;flex-direction:column;gap:4px;margin-top:4px">${singles.map(comBtn).join("")}</div></details>` : "");
+    const hint = `<div class="prov-card" style="padding:12px 16px;font-size:11.5px;line-height:1.65;color:var(--muted)">
+        <b style="color:var(--text)">How to read this map</b><br>
+        Every dot is a <b style="color:var(--text)">file</b>; its color is the <b style="color:var(--text)">community</b>
+        the engine detected (files that import/call each other or talk about the same thing).
+        Glowing dots are <b style="color:var(--text)">god nodes</b> — the repo's core abstractions.
+        Solid lines = import/call; dashed = <b style="color:var(--text)">semantically similar with no code link</b>.<br>
+        <b style="color:var(--text)">Click a community</b> below to focus it · <b style="color:var(--text)">click a dot</b> for its neighbors + real code ·
+        type <span class="mono" style="color:var(--text)">a -> b</span> above to trace how two files connect.</div>`;
     const gods = g.god_nodes.map((n) => `<button class="flag-row" data-act="gopen" data-file="${esc(n.file)}" style="width:100%;text-align:left;border:1px solid var(--border);border-radius:6px">
         <div class="flag-reason">deg ${n.degree}</div>
         <span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(n.file)}</span></button>`).join("");
@@ -355,7 +379,7 @@
         <button class="mono" data-act="gopen" data-file="${esc(s.a)}" style="font-size:11px;color:var(--text)">${esc(s.a.split("/").pop())}</button>
         <span class="mono" style="font-size:10px;color:var(--accent)">~${s.score}~</span>
         <button class="mono" data-act="gopen" data-file="${esc(s.b)}" style="font-size:11px;color:var(--text)">${esc(s.b.split("/").pop())}</button></div>`).join("");
-    return `<div class="prov-card" style="padding:14px 16px">
+    return `${hint}<div class="prov-card" style="padding:14px 16px">
         <div class="mono" style="font-size:10px;color:var(--muted);letter-spacing:.06em;margin-bottom:8px">COMMUNITIES</div>
         <div style="display:flex;flex-direction:column;gap:5px">${coms}</div></div>
       <div class="prov-card" style="padding:14px 16px">
@@ -434,14 +458,18 @@
     const dpr = window.devicePixelRatio || 1;
     cv.width = W * dpr; cv.height = H * dpr;
     const idx = {};
+    // isolated files (no links at all) are visual noise — hidden by default,
+    // the overlay chip toggles them (they stay listed in the panel either way)
+    const iso = isoFiles(g);
+    const shown = st.graphHideIso ? g.nodes.filter((n) => !iso.has(n.file)) : g.nodes;
     // seed positions clustered by community (persisted across repaints)
-    const coms = g.communities.map((c) => c.id);
+    const coms = [...new Set(shown.map((n) => n.community))];
     const center = (cid) => {
       const k = coms.indexOf(cid), R = Math.min(W, H) * 0.32;
       const th = (k / Math.max(1, coms.length)) * Math.PI * 2;
       return [W / 2 + R * Math.cos(th), H / 2 + R * Math.sin(th)];
     };
-    const nodes = g.nodes.map((n, i) => {
+    const nodes = shown.map((n, i) => {
       idx[n.file] = i;
       const kept = st.graphPos[n.file];
       const ok = kept && isFinite(kept.x) && isFinite(kept.y);   // a past blowup
@@ -457,9 +485,11 @@
     const godSet = new Set(g.god_nodes.map((n) => n.file));
     const byCom = {};
     nodes.forEach((n, i) => (byCom[n.c] = byCom[n.c] || []).push(i));
+    const v = st.graphView || {};        // pan/zoom survives repaints too
     SIM = { cv, ctx: cv.getContext("2d"), W, H, dpr, nodes, links, idx, byCom,
-      godSet, alpha: 1, tx: 0, ty: 0, scale: 1, drag: null, panning: null,
-      raf: 0, labels: Object.fromEntries(g.communities.map((c) => [c.id, c.label])) };
+      godSet, alpha: 1, tx: v.tx || 0, ty: v.ty || 0, scale: v.scale || 1,
+      drag: null, panning: null, raf: 0,
+      labels: Object.fromEntries(g.communities.map((c) => [c.id, c.label])) };
     bindSim();
     tickLoop();
   }
@@ -468,6 +498,7 @@
     if (!SIM) return;
     if (SIM.alpha > 0.012 && !document.hidden) simTick();
     drawSim();
+    st.graphView = { tx: SIM.tx, ty: SIM.ty, scale: SIM.scale };
     SIM.raf = requestAnimationFrame(tickLoop);
   }
 
@@ -479,12 +510,13 @@
     for (const cid in S.byCom) {
       const ids = S.byCom[cid], m = ids.length;
       const stride = m > 260 ? 2 : 1;              // big community: sample pairs
+      const rep = 620 * (1 + Math.sqrt(m) / 6);  // big communities push harder
       for (let a = 0; a < m; a += 1)
         for (let b = a + stride; b < m; b += stride) {
           const p = N[ids[a]], q = N[ids[b]];
           let dx = p.x - q.x, dy = p.y - q.y;
           let d2 = dx * dx + dy * dy; if (d2 < 1) { dx = Math.random() - 0.5; dy = Math.random() - 0.5; d2 = 1; }
-          const f = Math.min(3, 620 / d2) * alpha;
+          const f = Math.min(3, rep / d2) * alpha;
           const d = Math.sqrt(d2); dx /= d; dy /= d;
           if (!p.fix) { p.vx += dx * f; p.vy += dy * f; }
           if (!q.fix) { q.vx -= dx * f; q.vy -= dy * f; }
@@ -544,9 +576,12 @@
     ctx.translate(S.tx, S.ty); ctx.scale(S.scale, S.scale);
     const cs = getComputedStyle(document.documentElement);
     const muted = cs.getPropertyValue("--muted").trim() || "#7a7a84";
+    const textCol = cs.getPropertyValue("--text").trim() || "#e9e9ec";
     const pathFiles = st.graphPath && st.graphPath.found
       ? st.graphPath.hops.map((h) => h.file) : null;
     const onPath = pathFiles ? new Set(pathFiles) : null;
+    const focus = st.graphFocusCom;                 // dim everything else
+    const dimN = (p) => focus != null && p.c !== focus;
     // edges
     for (const l of S.links) {
       const p = N[l.a], q = N[l.b];
@@ -556,36 +591,43 @@
       ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y);
       if (l.sem) ctx.setLineDash([3, 4]); else ctx.setLineDash([]);
       ctx.strokeStyle = hot ? comColor(0, 0.95) : l.sem ? comColor(p.c, 0.22) : muted;
-      ctx.globalAlpha = hot ? 0.95 : l.sem ? 0.5 : 0.22;
+      ctx.globalAlpha = (dimN(p) || dimN(q)) ? 0.04 : hot ? 0.95 : l.sem ? 0.5 : 0.22;
       ctx.lineWidth = hot ? 2.4 / S.scale : 1 / S.scale;
       ctx.stroke();
     }
     ctx.setLineDash([]); ctx.globalAlpha = 1;
     // nodes
     for (const p of N) {
-      const sel = st.graphSel === p.f || (onPath && onPath.has(p.f));
+      const sel = st.graphSel === p.f || (onPath && onPath.has(p.f)) || S.hover === p.f;
+      ctx.globalAlpha = dimN(p) ? 0.10 : 1;
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.r + (sel ? 1.5 : 0), 0, Math.PI * 2);
-      if (S.godSet.has(p.f)) { ctx.shadowColor = comColor(p.c); ctx.shadowBlur = 14; }
+      if (S.godSet.has(p.f) && !dimN(p)) { ctx.shadowColor = comColor(p.c); ctx.shadowBlur = 14; }
       ctx.fillStyle = comColor(p.c, sel ? 1 : 0.82);
       ctx.fill();
       ctx.shadowBlur = 0;
-      if (sel) { ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.4 / S.scale; ctx.stroke(); }
+      if (sel) { ctx.strokeStyle = textCol; ctx.lineWidth = 1.4 / S.scale; ctx.stroke(); }
     }
+    ctx.globalAlpha = 1;
     // labels: community names at centroids; file name for selected/hovered/gods
     ctx.font = `600 ${11 / S.scale}px ui-monospace, Menlo, monospace`;
     for (const cid in S.byCom) {
       const ids = S.byCom[cid];
-      if (ids.length < 2) continue;
+      if (ids.length < 2 || (focus != null && +cid !== focus)) continue;
       let x = 0, y = 0, top = ids[0];
       for (const i of ids) { x += N[i].x; y += N[i].y; if (N[i].d > N[top].d) top = i; }
       ctx.fillStyle = comColor(+cid, 0.9);
       ctx.fillText(S.labels[cid] || "", x / ids.length + 10, y / ids.length - 10);
     }
     ctx.font = `${10 / S.scale}px ui-monospace, Menlo, monospace`;
+    // file names appear when there's ROOM: focused community, zoomed in past
+    // 1.6x, hovered/selected/path nodes, and god nodes always.
     for (const p of N) {
-      if (st.graphSel === p.f || S.godSet.has(p.f) || (S.hover === p.f) || (onPath && onPath.has(p.f))) {
-        ctx.fillStyle = st.graphSel === p.f ? "#fff" : muted;
+      if (dimN(p)) continue;
+      const show = st.graphSel === p.f || S.hover === p.f || S.godSet.has(p.f) ||
+        (onPath && onPath.has(p.f)) || (focus != null && p.c === focus) || S.scale > 1.6;
+      if (show) {
+        ctx.fillStyle = st.graphSel === p.f || S.hover === p.f ? textCol : muted;
         ctx.fillText(p.f.split("/").pop(), p.x + p.r + 3, p.y + 3);
       }
     }
@@ -598,6 +640,23 @@
     S.tx = S.W / 2 - p.x * S.scale; S.ty = S.H / 2 - p.y * S.scale;
   }
 
+  function zoomToCommunity(cid) {
+    const S = SIM; if (!S) return;
+    const ids = S.byCom[cid]; if (!ids || !ids.length) return;
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    for (const i of ids) {
+      const p = S.nodes[i];
+      x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y);
+      x1 = Math.max(x1, p.x); y1 = Math.max(y1, p.y);
+    }
+    const pad = 70;
+    const s = Math.min(2.4, Math.max(0.3,
+      Math.min(S.W / (x1 - x0 + pad * 2), S.H / (y1 - y0 + pad * 2))));
+    S.scale = s;
+    S.tx = S.W / 2 - ((x0 + x1) / 2) * s;
+    S.ty = S.H / 2 - ((y0 + y1) / 2) * s;
+  }
+
   function bindSim() {
     const S = SIM, cv = S.cv;
     const toWorld = (e) => {
@@ -605,25 +664,49 @@
       return [(e.clientX - r.left - S.tx) / S.scale, (e.clientY - r.top - S.ty) / S.scale];
     };
     const hit = (x, y) => {
+      const slack = Math.max(4, 9 / S.scale);      // zoomed out, dots stay clickable
       for (let i = S.nodes.length - 1; i >= 0; i--) {
         const p = S.nodes[i];
+        if (st.graphFocusCom != null && p.c !== st.graphFocusCom) continue;
         const dx = x - p.x, dy = y - p.y;
-        if (dx * dx + dy * dy <= (p.r + 3) * (p.r + 3)) return p;
+        const rr = p.r + slack;
+        if (dx * dx + dy * dy <= rr * rr) return p;
       }
       return null;
+    };
+    const tip = $("#gtip");
+    const showTip = (e, p) => {
+      if (!tip) return;
+      if (!p) { tip.style.display = "none"; return; }
+      const wr = $("#gwrap").getBoundingClientRect();
+      tip.innerHTML = `<b style="color:var(--text)">${esc(p.f)}</b><br>` +
+        `<span style="color:${comColor(p.c)}">● ${esc(S.labels[p.c] || "Community " + p.c)}</span>` +
+        ` · ${p.d} link${p.d === 1 ? "" : "s"}${S.godSet.has(p.f) ? " · ★ god node" : ""}` +
+        `<br><span style="opacity:.65">click for neighbors + code</span>`;
+      tip.style.display = "block";
+      tip.style.left = Math.min(e.clientX - wr.left + 14, wr.width - 300) + "px";
+      tip.style.top = (e.clientY - wr.top + 12) + "px";
     };
     cv.onmousedown = (e) => {
       const [x, y] = toWorld(e);
       const p = hit(x, y);
-      if (p) { S.drag = { p, moved: false }; p.fix = true; }
+      if (p) { S.drag = { p, x0: e.clientX, y0: e.clientY, moved: false }; p.fix = true; }
       else S.panning = { x: e.clientX - S.tx, y: e.clientY - S.ty };
       cv.style.cursor = "grabbing";
     };
     cv.onmousemove = (e) => {
       const [x, y] = toWorld(e);
-      if (S.drag) { S.drag.p.x = x; S.drag.p.y = y; S.drag.moved = true; S.alpha = Math.max(S.alpha, 0.25); }
-      else if (S.panning) { S.tx = e.clientX - S.panning.x; S.ty = e.clientY - S.panning.y; }
-      else { const p = hit(x, y); S.hover = p ? p.f : null; cv.style.cursor = p ? "pointer" : "grab"; }
+      if (S.drag) {
+        // a click with 2px of jitter is still a click, not a drag
+        if (Math.abs(e.clientX - S.drag.x0) + Math.abs(e.clientY - S.drag.y0) > 4) S.drag.moved = true;
+        if (S.drag.moved) { S.drag.p.x = x; S.drag.p.y = y; S.alpha = Math.max(S.alpha, 0.25); }
+      }
+      else if (S.panning) { S.tx = e.clientX - S.panning.x; S.ty = e.clientY - S.panning.y; showTip(e, null); }
+      else {
+        const p = hit(x, y); S.hover = p ? p.f : null;
+        cv.style.cursor = p ? "pointer" : "grab";
+        showTip(e, p);
+      }
     };
     const up = () => {
       if (S.drag) {
@@ -633,7 +716,8 @@
       }
       S.drag = null; S.panning = null; cv.style.cursor = "grab";
     };
-    cv.onmouseup = up; cv.onmouseleave = up;
+    cv.onmouseup = up;
+    cv.onmouseleave = () => { up(); S.hover = null; showTip(null, null); };
     cv.onwheel = (e) => {
       e.preventDefault();
       const r = cv.getBoundingClientRect();
@@ -1302,7 +1386,14 @@
     else if (act === "rerank-toggle") { st.pruneRerank = !st.pruneRerank; ls.set("mb-rerank", st.pruneRerank ? "1" : "0"); if (st.q.trim()) runPrune(); else renderView(); }
     else if (act === "gopen") { openGraphNode(t.dataset.file); }
     else if (act === "gclear") { st.graphNode = null; st.graphSel = null; st.graphPath = null; paintPanel(); }
-    else if (act === "gcom") { const c = (st.graph.communities || []).find((x) => x.id === +t.dataset.id); if (c && c.files[0]) centerOn(c.files[0]); }
+    else if (act === "gcom") {
+      const id = +t.dataset.id;
+      st.graphFocusCom = st.graphFocusCom === id ? null : id;
+      renderView();                       // re-mounts overlay chips + panel state
+      if (st.graphFocusCom != null) zoomToCommunity(id);
+    }
+    else if (act === "gfocus-clear") { st.graphFocusCom = null; renderView(); }
+    else if (act === "giso") { st.graphHideIso = !st.graphHideIso; renderView(); }
     else if (act === "theme") { st.theme = st.theme === "dark" ? "light" : "dark"; ls.set("mb-theme", st.theme); render(); }
     else if (act === "settings") { st.overlay = "settings"; renderOverlays(); loadProviders(); }
     else if (act === "settings-close" || act === "settings-bg") { st.overlay = null; renderOverlays(); }
@@ -1348,6 +1439,7 @@
     st.search = st.prune = st.ask = null; st.openFile = null;
     st.graph = null; st.graphNode = null; st.graphSel = null;
     st.graphPath = null; st.graphPos = {};
+    st.graphFocusCom = null; st.graphHideIso = true; st.graphView = null;
   }
   function cycleRepo() {
     const warm = st.repos.filter((r) => r.loaded !== false);
