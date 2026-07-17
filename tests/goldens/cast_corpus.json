@@ -5437,34 +5437,34 @@
      "_make_handler",
      "1/4",
      134,
-     266,
+     264,
      "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True)",
-     "b4f24bccf3162f3598df02ee631868d3e3895bc9"
+     "03888581d1d19ea132f39980f7c69081541775a1"
     ],
     [
      "block",
      "_make_handler",
      "2/4",
-     267,
-     397,
+     265,
+     395,
      "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True)",
-     "82b766b07d423b92474d68225c3cf0447fce7b93"
+     "3052d64e4516be8006dee381acc4482bcef28e1b"
     ],
     [
      "block",
      "_make_handler",
      "3/4",
-     398,
-     467,
+     396,
+     470,
      "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True)",
-     "f04278e360692250821ca8ce19012ba89b395da0"
+     "aeab3885101a1d1e7435d1883c4e2e01af6e3d66"
     ],
     [
      "block",
      "_make_handler",
      "4/4",
-     468,
-     469,
+     471,
+     472,
      "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True)",
      "5ebaec407bc18bc3fde033e8db1a20bf3e3ec3f8"
     ],
@@ -5472,8 +5472,8 @@
      "module",
      "_valid_model, _native_pick_folder, _scan_report, _merge_ignore",
      null,
-     470,
-     544,
+     473,
+     547,
      "megabrain > megabrain/server/http.py > [_valid_model, _native_pick_folder, _scan_report, _merge_ignore]",
      "1a60519fd169e3894bbb17ae8e132a99f7846295"
     ],
@@ -5481,8 +5481,8 @@
      "function",
      "serve",
      null,
-     545,
-     583,
+     548,
+     586,
      "megabrain > megabrain/server/http.py > def serve(root, port: int=2134, host: str='127.0.0.1', cors: str | None=None, enable_llm: bool=True, token: str | None=None, serve_ui: bool=True) -> None",
      "9393f03c5365edc0ede85801e1abc3467d166008"
     ]
@@ -5570,42 +5570,42 @@
      "_make_handler",
      "function",
      138,
-     469,
+     472,
      "def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True)"
     ],
     [
      "_valid_model",
      "function",
-     472,
-     483,
+     475,
+     486,
      "def _valid_model(model) -> str | None"
     ],
     [
      "_native_pick_folder",
      "function",
-     486,
-     522,
+     489,
+     525,
      "def _native_pick_folder() -> dict"
     ],
     [
      "_scan_report",
      "function",
-     525,
-     531,
+     528,
+     534,
      "def _scan_report(path: str) -> dict"
     ],
     [
      "_merge_ignore",
      "function",
-     534,
-     544,
+     537,
+     547,
      "def _merge_ignore(root: Path, ignore: str) -> None"
     ],
     [
      "serve",
      "function",
-     547,
-     583,
+     550,
+     586,
      "def serve(root, port: int=2134, host: str='127.0.0.1', cors: str | None=None, enable_llm: bool=True, token: str | None=None, serve_ui: bool=True) -> None"
     ]
    ]

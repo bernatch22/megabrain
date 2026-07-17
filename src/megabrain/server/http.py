@@ -155,6 +155,9 @@ def _make_handler(reg: Registry, cors: str | None, enable_llm: bool,
             self.send_response(code)
             self.send_header("Content-Type", ctype or "application/json; charset=utf-8")
             self.send_header("Content-Length", str(len(body)))
+            # a live local tool: stale cached UI cost hours of "hard-reload and
+            # try again" — freshness always beats caching a few KB of JS
+            self.send_header("Cache-Control", "no-store")
             if cors:
                 self.send_header("Access-Control-Allow-Origin", cors)
                 self.send_header("Vary", "Origin")

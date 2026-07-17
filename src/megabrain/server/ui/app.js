@@ -360,6 +360,17 @@
           <div class="flag-reason">${i === 0 ? "start" : esc(h.via.split("/")[0] || "hop")}</div>
           <span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0">${esc(h.file)}</span>
           ${(h.symbols || []).length ? `<span class="mono" style="width:100%;padding-left:86px;font-size:10px;color:var(--accent)">via ${h.symbols.map(esc).join(" · ")}</span>` : ""}</button>`).join("");
+      // the connection, told in words — one bullet per hop, from the real
+      // use/def sides (who calls what, where it lives)
+      const story = p.found ? p.hops.slice(1).map((h) => {
+        const c = h.code || {};
+        const name = (f) => `<b style="color:var(--text)">${esc(f.split("/").pop())}</b>`;
+        if (c.use && c.def && c.symbol)
+          return `<li>${name(c.use.file)} calls <b style="color:var(--accent)">${esc(c.symbol)}()</b>, which lives in ${name(c.def.file)}</li>`;
+        if (/^semantic/.test(h.via))
+          return `<li>${name(h.file)} has <b style="color:var(--text)">no code link</b> here — it's related by meaning (${esc(h.via)})</li>`;
+        return `<li>reaches ${name(h.file)} via ${esc(h.via)}${(h.symbols || []).length ? ` — ${h.symbols.slice(0, 3).map(esc).join(", ")}` : ""}</li>`;
+      }).join("") : "";
       return `<div class="prov-card" style="padding:14px 16px">
         <div style="font-size:12.5px;font-weight:600">Path — ${p.found ? p.hops.length + " hops" : "not found"}</div>
         <div class="mono" style="font-size:10.5px;color:var(--muted);margin-top:4px">${esc(p.source || "?")} → ${esc(p.target || "?")}</div>
@@ -367,7 +378,9 @@
         <div style="display:flex;gap:8px;margin-top:12px">
           ${p.found && p.hops.length > 1 ? `<button class="btn-primary" data-act="gplay" style="flex:1">▶ Run the connection</button>` : ""}
           <button class="chip" data-act="goverview">← overview</button>
-        </div></div>`;
+        </div>
+        ${story ? `<div class="mono" style="font-size:10px;color:var(--muted);letter-spacing:.06em;margin:14px 0 6px">HOW IT CONNECTS</div>
+        <ul style="margin:0;padding-left:18px;font-size:11.5px;line-height:1.8;color:var(--muted)">${story}</ul>` : ""}</div>`;
     }
     if (st.gmode === "sub" && st.gsub) {
       const rows = st.gsub.files.map((f) => `<button class="flag-row" data-act="gopen" data-file="${esc(f.file)}" style="width:100%;text-align:left;border:1px solid var(--border);border-radius:6px">
@@ -594,8 +607,10 @@
       x0 = Math.min(x0, p.x - p.r); y0 = Math.min(y0, p.y - p.r);
       x1 = Math.max(x1, p.x + p.r); y1 = Math.max(y1, p.y + p.r);
     }
-    // path: few nodes -> an unclamped fit blows them up huge
+    // path: few nodes -> an unclamped fit blows them up huge; wider padding
+    // so the endpoint labels (drawn outside the node radius) never clip
     const cap = S.mode === "path" ? 1.25 : 2.2;
+    if (S.mode === "path") pad = Math.max(pad, 130);
     const s = Math.min(cap, Math.max(0.15,
       Math.min(S.W / (x1 - x0 + pad * 2), S.H / (y1 - y0 + pad * 2))));
     S.scale = s;
@@ -605,9 +620,11 @@
 
   function pathLayout() {
     // static zigzag from the CURRENT canvas size (re-run on every resize —
-    // stale mount-time positions were pushing nodes out of the viewport)
+    // stale mount-time positions were pushing nodes out of the viewport).
+    // Margin adapts: on a narrow pane a fixed 110px margin exceeded W/2 and
+    // the span went NEGATIVE (nodes rendered in reverse order).
     const S = SIM; if (!S || S.mode !== "path") return;
-    const m = 110, span = Math.max(1, S.nodes.length - 1);
+    const m = Math.min(110, S.W * 0.15), span = Math.max(1, S.nodes.length - 1);
     S.nodes.forEach((n, i) => {
       n.x = m + (S.W - 2 * m) * (i / span);
       n.y = S.H / 2 + (i % 2 ? 60 : -60);
@@ -703,6 +720,7 @@
       scale: v.user ? v.scale : 1, userView: !!v.user,
       drag: null, panning: null, raf: 0,
       labels: Object.fromEntries(g.communities.map((c) => [c.id, c.label])) };
+    pathLayout();                        // static modes lay out from live size
     if (!SIM.userView) fitAll();         // centered, everything visible, always
     bindSim();
     // the canvas shares its row with the code card / panel: when they open or
@@ -872,17 +890,21 @@
         ctx.lineWidth = 1.1 / S.scale;
       }
       ctx.stroke();
-      if (S.mode === "path" && l.via) {           // edge label ON the line
+      if (S.mode === "path" && l.via) {           // edge label ON the line —
         const mx = (p.x + q.x) / 2, my = (p.y + q.y) / 2;
+        // alternate above/below per segment: every zigzag midpoint sits at the
+        // SAME height, so same-side labels of adjacent hops collided
+        const up = l.i % 2 === 0;
         ctx.setLineDash([]);
         ctx.font = `italic 600 ${11 / S.scale}px ui-monospace, Menlo, monospace`;
         ctx.fillStyle = comColor(p.c, 0.95);
         ctx.textAlign = "center";
-        ctx.fillText(l.via, mx, my - 10);
+        ctx.fillText(l.via, mx, my + (up ? -26 : 22) / S.scale);
         if (l.symbols.length) {
           ctx.font = `${10 / S.scale}px ui-monospace, Menlo, monospace`;
           ctx.fillStyle = muted;
-          ctx.fillText("via " + l.symbols.slice(0, 2).join(", "), mx, my + 16);
+          ctx.fillText("via " + l.symbols.slice(0, 2).join(", "),
+                       mx, my + (up ? -10 : 38) / S.scale);
         }
         ctx.textAlign = "left";
       }
@@ -1802,6 +1824,8 @@
   }
 
   // ── boot ─────────────────────────────────────────────────────────────
+  // debug handle (state is IIFE-scoped; this is the only window into it)
+  window.__mb = { st, get SIM() { return SIM; } };
   render();
   refreshRepos();
   loadProviders();          // fill the topbar chip with the active provider
