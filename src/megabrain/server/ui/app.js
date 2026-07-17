@@ -332,6 +332,11 @@
           <canvas id="gcanvas" style="position:absolute;inset:0;cursor:grab"></canvas>
           <div id="gtip" class="mono" style="position:absolute;display:none;pointer-events:none;z-index:5;padding:6px 10px;background:var(--panel2);border:1px solid var(--border2);border-radius:6px;font-size:11px;box-shadow:var(--shadow);max-width:360px"></div>
           <div id="gplaycard" style="position:absolute;left:12px;right:12px;bottom:34px;z-index:6;display:none;background:var(--panel2);border:1px solid var(--border2);border-radius:10px;box-shadow:var(--shadow);padding:12px 14px"></div>
+          <div style="position:absolute;right:12px;top:10px;z-index:4;display:flex;flex-direction:column;gap:5px">
+            <button class="chip mono" data-act="gzoom-in" title="zoom in" style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:15px;padding:0">+</button>
+            <button class="chip mono" data-act="gzoom-out" title="zoom out" style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:15px;padding:0">−</button>
+            <button class="chip mono" data-act="gzoom-fit" title="fit everything" style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:13px;padding:0">⊙</button>
+          </div>
           ${st.gmode !== "overview" ? `<button class="chip mono" data-act="goverview" style="position:absolute;top:10px;left:12px;z-index:4;background:var(--accent-dim);border-color:var(--accent-bd);color:var(--accent)">← back to overview${crumb ? " · " + esc(crumb) : ""}</button>` : ""}
           <div class="mono" style="position:absolute;left:12px;bottom:10px;font-size:10px;color:var(--muted);pointer-events:none">
             ${st.gmode === "overview" ? "each bubble = a community — click one to open it"
@@ -514,8 +519,14 @@
     if (!gp || !p || !p.found) { el.style.display = "none"; return; }
     const h = p.hops[gp.k], prev = p.hops[gp.k - 1];
     const code = h.code || {};
-    const snips = [snipHtml(code.use, "USES · "), snipHtml(code.def, "DEFINED IN · ")]
-      .filter(Boolean).join("");
+    const phase = gp.phase || (code.use ? "use" : "def");
+    const sn = phase === "use" ? code.use : code.def;
+    // ONE code block; it transitions use -> def as the pulse lands. The phase
+    // tabs both show where you are and let you jump.
+    const tab = (id, label, on, enabled) =>
+      `<button class="chip mono" data-act="gplay-phase" data-phase="${id}"
+        ${enabled ? "" : "disabled style='opacity:.35'"}
+        style="${on ? "background:var(--accent-dim);border-color:var(--accent-bd);color:var(--accent)" : ""}">${label}</button>`;
     el.style.display = "block";
     el.innerHTML = `
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
@@ -526,16 +537,46 @@
           <b style="color:var(--text)">${esc(h.file.split("/").pop())}</b>
           ${code.symbol ? ` · via <b style="color:var(--accent)">${esc(code.symbol)}</b>` : ""}
         </div>
+        ${tab("use", "1 · the call", phase === "use", !!code.use)}
+        <span style="color:var(--muted);font-size:11px">→</span>
+        ${tab("def", "2 · the definition", phase === "def", !!code.def)}
         <button class="chip mono" data-act="gplay-prev" ${gp.k <= 1 ? "disabled style='opacity:.4'" : ""}>‹ prev</button>
         <button class="chip mono" data-act="gplay-next" ${gp.k >= p.hops.length - 1 ? "disabled style='opacity:.4'" : ""}>next ›</button>
         <button class="chip mono" data-act="gplay-stop">✕</button>
       </div>
-      ${snips ? `<div style="display:flex;gap:10px">${snips}</div>`
+      ${sn ? `<div class="mb-slide" style="display:flex">${snipHtml(sn,
+          phase === "use"
+            ? `<span style="color:var(--accent)">▸ 1 · THE CALL</span> — ${esc(code.symbol || "")} used in `
+            : `<span style="color:var(--accent)">▸ 2 · THE DEFINITION</span> — ${esc(code.symbol || "")} lives in `)}</div>`
         : `<div class="mono" style="font-size:11px;color:var(--muted)">no code snippet for this hop (semantic link — the files are related by meaning, not by a call)</div>`}`;
   }
 
   // ── the simulation ────────────────────────────────────────────────────
   function stopSim() { if (SIM && SIM.raf) cancelAnimationFrame(SIM.raf); SIM = null; }
+
+  function fitAll(pad) {
+    const S = SIM; if (!S || !S.nodes.length) return;
+    pad = pad || 70;
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    for (const p of S.nodes) {
+      x0 = Math.min(x0, p.x - p.r); y0 = Math.min(y0, p.y - p.r);
+      x1 = Math.max(x1, p.x + p.r); y1 = Math.max(y1, p.y + p.r);
+    }
+    const s = Math.min(2.2, Math.max(0.15,
+      Math.min(S.W / (x1 - x0 + pad * 2), S.H / (y1 - y0 + pad * 2))));
+    S.scale = s;
+    S.tx = S.W / 2 - ((x0 + x1) / 2) * s;
+    S.ty = S.H / 2 - ((y0 + y1) / 2) * s;
+  }
+
+  function zoomBy(k) {
+    const S = SIM; if (!S) return;
+    S.userView = true;                   // manual zoom pauses the auto-fit
+    const ns = Math.min(5, Math.max(0.15, S.scale * k));
+    S.tx = S.W / 2 - ((S.W / 2 - S.tx) / S.scale) * ns;   // zoom around center
+    S.ty = S.H / 2 - ((S.H / 2 - S.ty) / S.scale) * ns;
+    S.scale = ns;
+  }
 
   function mountGraph() {
     if (!st.graph) { loadGraph(); return; }
@@ -610,12 +651,14 @@
     const godSet = new Set(g.god_nodes.map((n) => n.file));
     const byCom = {};
     nodes.forEach((n, i) => (byCom[n.bubble ? "b" + i : n.c] = byCom[n.bubble ? "b" + i : n.c] || []).push(i));
-    const v = st.graphView || {};        // pan/zoom survives repaints
+    const v = st.graphView || {};        // pan/zoom survives repaints (user's only)
     SIM = { cv, ctx: cv.getContext("2d"), W, H, dpr, nodes, links, idx, byCom,
       godSet, mode, alpha: mode === "path" ? 0 : 1,
-      tx: v.tx || 0, ty: v.ty || 0, scale: v.scale || 1,
+      tx: v.user ? v.tx : 0, ty: v.user ? v.ty : 0,
+      scale: v.user ? v.scale : 1, userView: !!v.user,
       drag: null, panning: null, raf: 0,
       labels: Object.fromEntries(g.communities.map((c) => [c.id, c.label])) };
+    if (!SIM.userView) fitAll();         // centered, everything visible, always
     bindSim();
     tickLoop();
   }
@@ -623,16 +666,23 @@
   function tickLoop() {
     if (!SIM) return;
     if (SIM.alpha > 0.012 && !document.hidden) simTick();
+    // while the layout settles, keep the WHOLE graph centered on screen —
+    // until the user takes over (wheel/pan/buttons)
+    if (!SIM.userView && SIM.alpha > 0.05) fitAll();
     if (SIM.mode === "path" && st.gplay && st.graphPath && !document.hidden) {
-      st.gplay.t += 1 / 60;              // ~6s per hop: 1.4s pulse + read time
-      if (st.gplay.t > 6) {
-        if (st.gplay.k < st.graphPath.hops.length - 1) { st.gplay.k++; st.gplay.t = 0; }
+      const gp = st.gplay;
+      gp.t += 1 / 60;                    // ~7s per hop: pulse → use code → def code
+      const h = st.graphPath.hops[gp.k], code = h.code || {};
+      const want = (code.use && gp.t < 3.2 ? "use" : code.def ? "def" : "use");
+      if (want !== gp.phase) { gp.phase = want; paintPlayCard(); }
+      if (gp.t > 7) {
+        if (gp.k < st.graphPath.hops.length - 1) { gp.k++; gp.t = 0; gp.phase = null; }
         else st.gplay = null;
         paintPlayCard();
       }
     }
     drawSim();
-    st.graphView = { tx: SIM.tx, ty: SIM.ty, scale: SIM.scale };
+    st.graphView = { tx: SIM.tx, ty: SIM.ty, scale: SIM.scale, user: SIM.userView };
     SIM.raf = requestAnimationFrame(tickLoop);
   }
 
@@ -852,9 +902,9 @@
       if (S.drag) {
         // a click with 2px of jitter is still a click, not a drag
         if (Math.abs(e.clientX - S.drag.x0) + Math.abs(e.clientY - S.drag.y0) > 4) S.drag.moved = true;
-        if (S.drag.moved) { S.drag.p.x = x; S.drag.p.y = y; S.alpha = Math.max(S.alpha, 0.25); }
+        if (S.drag.moved) { S.userView = true; S.drag.p.x = x; S.drag.p.y = y; S.alpha = Math.max(S.alpha, 0.25); }
       }
-      else if (S.panning) { S.tx = e.clientX - S.panning.x; S.ty = e.clientY - S.panning.y; showTip(e, null); }
+      else if (S.panning) { S.userView = true; S.tx = e.clientX - S.panning.x; S.ty = e.clientY - S.panning.y; showTip(e, null); }
       else {
         const p = hit(x, y); S.hover = p ? p.f : null;
         cv.style.cursor = p ? "pointer" : "grab";
@@ -879,10 +929,11 @@
     cv.onmouseleave = () => { up(); S.hover = null; showTip(null, null); };
     cv.onwheel = (e) => {
       e.preventDefault();
+      S.userView = true;
       const r = cv.getBoundingClientRect();
       const mx = e.clientX - r.left, my = e.clientY - r.top;
       const k = e.deltaY < 0 ? 1.12 : 0.89;
-      const ns = Math.min(5, Math.max(0.25, S.scale * k));
+      const ns = Math.min(5, Math.max(0.15, S.scale * k));
       S.tx = mx - ((mx - S.tx) / S.scale) * ns;
       S.ty = my - ((my - S.ty) / S.scale) * ns;
       S.scale = ns;
@@ -1556,10 +1607,20 @@
       st.gplay = null;
       renderView();
     }
-    else if (act === "gplay") { st.gplay = { k: 1, t: 0 }; paintPlayCard(); }
-    else if (act === "gplay-next") { if (st.gplay && st.gplay.k < st.graphPath.hops.length - 1) { st.gplay.k++; st.gplay.t = 0; paintPlayCard(); } }
-    else if (act === "gplay-prev") { if (st.gplay && st.gplay.k > 1) { st.gplay.k--; st.gplay.t = 0; paintPlayCard(); } }
+    else if (act === "gplay") { st.gplay = { k: 1, t: 0, phase: null }; paintPlayCard(); }
+    else if (act === "gplay-next") { if (st.gplay && st.gplay.k < st.graphPath.hops.length - 1) { st.gplay.k++; st.gplay.t = 0; st.gplay.phase = null; paintPlayCard(); } }
+    else if (act === "gplay-prev") { if (st.gplay && st.gplay.k > 1) { st.gplay.k--; st.gplay.t = 0; st.gplay.phase = null; paintPlayCard(); } }
     else if (act === "gplay-stop") { st.gplay = null; paintPlayCard(); }
+    else if (act === "gplay-phase") {
+      if (st.gplay) {                     // jump + hold the clock at that phase
+        st.gplay.phase = t.dataset.phase;
+        st.gplay.t = t.dataset.phase === "use" ? 1.5 : 3.4;
+        paintPlayCard();
+      }
+    }
+    else if (act === "gzoom-in") { zoomBy(1.25); }
+    else if (act === "gzoom-out") { zoomBy(0.8); }
+    else if (act === "gzoom-fit") { if (SIM) { SIM.userView = false; fitAll(); } }
     else if (act === "theme") { st.theme = st.theme === "dark" ? "light" : "dark"; ls.set("mb-theme", st.theme); render(); }
     else if (act === "settings") { st.overlay = "settings"; renderOverlays(); loadProviders(); }
     else if (act === "settings-close" || act === "settings-bg") { st.overlay = null; renderOverlays(); }
