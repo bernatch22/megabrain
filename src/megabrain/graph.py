@@ -331,12 +331,38 @@ def graph_node(st: SearchState, term: str,
     }
 
 
+def _hop_symbols(st: SearchState, prev: str, cur: str, cap: int = 4) -> list[str]:
+    """The SYMBOLS that carry a hop: names defined in one file of the pair and
+    referenced in the other's real chunk text (word-boundary; both directions,
+    since BFS walks edges undirected). No new indexing — the symbols table and
+    chunks already know. Ordered by reference count."""
+    counts: dict[str, int] = {}
+    callable_kinds = {"class", "function", "async_function", "method",
+                      "async_method", "interface", "type", "enum"}
+    for defs_file, uses_file in ((cur, prev), (prev, cur)):
+        # functions/classes only — module constants and vars (`log`, `query`)
+        # collide with ubiquitous identifiers and drown the real carriers
+        names = {s["name"].split(".")[-1] for s in st.store.symbols_for(defs_file)
+                 if s["name"] and s["kind"] in callable_kinds
+                 and len(s["name"].split(".")[-1]) >= 3}
+        if not names:
+            continue
+        src = "\n".join(c["text"] or "" for c in st.store.file_chunks(uses_file))
+        for name in names:
+            n = len(re.findall(rf"\b{re.escape(name)}\b", src))
+            if n:
+                counts[name] = counts.get(name, 0) + n
+    return [n for n, _ in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))][:cap]
+
+
 def graph_path(st: SearchState, source: str, target: str,
                path_filter: str | None = None) -> dict:
     t0 = time.time()
     g = build_graph(st, path_filter)
     a, b = resolve_node(st, g, source), resolve_node(st, g, target)
     hops = shortest_path(g, a, b) if a and b else []
+    for k in range(1, len(hops)):        # what functions/classes carry each hop
+        hops[k]["symbols"] = _hop_symbols(st, hops[k - 1]["file"], hops[k]["file"])
     return {"repo": st.repo, "source": a, "target": b,
             "resolved_from": [source, target],
             "found": bool(hops), "hops": hops,
@@ -385,7 +411,8 @@ def render_graph(res: dict) -> str:
         if not res["found"]:
             L.append("no path found")
         for h in res["hops"]:
-            L.append(f'  {"└─ " + h["via"] + " → " if h["via"] else ""}{h["file"]}')
+            syms = f'  · via {", ".join(h["symbols"])}' if h.get("symbols") else ""
+            L.append(f'  {"└─ " + h["via"] + " → " if h["via"] else ""}{h["file"]}{syms}')
     else:                                                      # node
         c = res["community"]
         L.append(f'# graph node — {res["file"]} · [{c["id"]}] {c["label"]} '

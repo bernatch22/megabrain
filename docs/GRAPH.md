@@ -67,12 +67,15 @@ That list IS the "read these first" onboarding order for a new contributor.
 ```
 $ megabrain graph . --path scoring.py narrator.py
 src/megabrain/retrieval/scoring.py
-└─ call → src/megabrain/retrieval/bundle.py
-└─ call → src/megabrain/ask/narrator.py
+└─ call → src/megabrain/retrieval/bundle.py  · via score_chunks, chunks_for_file, search_with_state
+└─ call → src/megabrain/ask/narrator.py      · via ask, search
 ```
 
-Scores flow into the bundle, the bundle feeds the narrator. Three lines that
-would otherwise take ten minutes of grep.
+Each hop names the **functions/classes that carry it** — scores flow into the
+bundle through `score_chunks`, the bundle feeds the narrator through `ask`.
+Not just *which* files connect, but *through what*. Three lines that would
+otherwise take ten minutes of grep. (The carriers come from the symbols table
+crossed with the real chunk text — deterministic, no new indexing.)
 
 ## 3. Real output — the "surprises" (graphify, 630 files, 37 ms)
 

@@ -2474,24 +2474,24 @@
     ],
     [
      "module",
-     "graph_map, graph_node, graph_path, graph_root",
+     "graph_map, graph_node, _hop_symbols, graph_path",
      null,
      262,
-     360,
-     "megabrain > megabrain/graph.py > [graph_map, graph_node, graph_path, graph_root]",
-     "aa2146c23a6078742bf8ca65c1d44acfba879a2b"
+     369,
+     "megabrain > megabrain/graph.py > [graph_map, graph_node, _hop_symbols, graph_path]",
+     "14e739a546669134133e53c1b5ab130030efc4a7"
     ],
     [
-     "function",
-     "render_graph",
+     "module",
+     "graph_root, render_graph",
      null,
-     361,
-     416,
-     "megabrain > megabrain/graph.py > def render_graph(res: dict) -> str",
-     "327aaf071a8e7dcaafc70c474b84f899f3ec51e2"
+     370,
+     443,
+     "megabrain > megabrain/graph.py > [graph_root, render_graph]",
+     "8f9c585fdfe32e5cbd89cac668cbc882ebd4fe38"
     ]
    ],
-   "skeleton_sha": "ea08f463d7e27cb555714c2c168a2c1cf45bb505",
+   "skeleton_sha": "1987573e1679b9562a97f445a883002abe52cadf",
    "symbols": [
     [
      "log",
@@ -2683,24 +2683,31 @@
      "def graph_node(st: SearchState, term: str, path_filter: str | None=None, label: bool=True) -> dict"
     ],
     [
-     "graph_path",
+     "_hop_symbols",
      "function",
      334,
-     343,
+     355,
+     "def _hop_symbols(st: SearchState, prev: str, cur: str, cap: int=4) -> list[str]"
+    ],
+    [
+     "graph_path",
+     "function",
+     358,
+     369,
      "def graph_path(st: SearchState, source: str, target: str, path_filter: str | None=None) -> dict"
     ],
     [
      "graph_root",
      "function",
-     346,
-     360,
+     372,
+     386,
      "def graph_root(root: Path, mode: str='map', node: str | None=None, source: str | None=None, target: str | None=None, path_filter: str | None=None, label: bool=True) -> dict"
     ],
     [
      "render_graph",
      "function",
-     365,
-     416,
+     391,
+     443,
      "def render_graph(res: dict) -> str"
     ]
    ]

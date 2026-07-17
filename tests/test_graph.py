@@ -153,6 +153,17 @@ def test_graph_path_mode_resolves_concepts(linked_repo):
     assert res["found"] and len(res["hops"]) == 3
 
 
+def test_graph_path_hops_carry_symbols(linked_repo):
+    """Each hop names the functions/classes that connect the two files —
+    server.py reaches routes.py via dispatch, routes.py reaches handlers.py
+    via handle (the symbols table + chunk text, no new indexing)."""
+    res = G.graph_root(linked_repo, mode="path",
+                       source="web/server.py", target="web/handlers.py")
+    assert "dispatch" in res["hops"][1]["symbols"]
+    assert "handle" in res["hops"][2]["symbols"]
+    assert "symbols" not in res["hops"][0]          # the start hop has no via
+
+
 def test_graph_path_not_found_between_islands(linked_repo):
     res = G.graph_root(linked_repo, mode="path",
                        source="web/server.py", target="db/models.py")

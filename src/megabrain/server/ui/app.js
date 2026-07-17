@@ -344,9 +344,10 @@
     const g = st.graph; if (!g) return "";
     if (st.graphPath) {
       const p = st.graphPath;
-      const hops = p.hops.map((h, i) => `<button class="flag-row" data-act="gopen" data-file="${esc(h.file)}" style="width:100%;text-align:left;border:1px solid var(--border);border-radius:6px">
+      const hops = p.hops.map((h, i) => `<button class="flag-row" data-act="gopen" data-file="${esc(h.file)}" style="width:100%;text-align:left;border:1px solid var(--border);border-radius:6px;flex-wrap:wrap">
           <div class="flag-reason">${i === 0 ? "start" : esc(h.via.split("/")[0] || "hop")}</div>
-          <span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(h.file)}</span></button>`).join("");
+          <span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0">${esc(h.file)}</span>
+          ${(h.symbols || []).length ? `<span class="mono" style="width:100%;padding-left:86px;font-size:10px;color:var(--accent)">via ${h.symbols.map(esc).join(" · ")}</span>` : ""}</button>`).join("");
       return `<div class="prov-card" style="padding:14px 16px">
         <div style="font-size:12.5px;font-weight:600">Path — ${p.found ? p.hops.length + " hops" : "not found"}</div>
         <div class="mono" style="font-size:10.5px;color:var(--muted);margin-top:4px">${esc(p.source || "?")} → ${esc(p.target || "?")}</div>
