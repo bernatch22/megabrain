@@ -6,8 +6,9 @@ exposes what it alone can do):
   megabrain_ask(repo_path, question, scope_path?, docs?, include_docs?)
       -> explained answer, real code spliced (docs=true -> docs-only walkthrough;
          include_docs=true -> code + docs)
-  megabrain_query(repo_path, task, scope_path?, compact?, full?)
-      -> complete bundle: CORE full code + RELATED map (full=true adds RELATED code bodies)
+  megabrain_search(repo_path, task, scope_path?, compact?)
+      -> flat relevance-ranked signal chunks with the real code, noise dropped
+         (megabrain_query is a deprecated dispatch alias for it)
   megabrain_index(repo_path)                  -> incremental index
   megabrain_forge(repo_path, ext?, list_only?, dry_run?, specialize?)
       -> COVERAGE: detect uncovered file types; LLM-generate + partition-validate
@@ -68,7 +69,7 @@ TOOLS = [
         },
     },
     {
-        "name": "megabrain_query",
+        "name": "megabrain_search",
         "description": (
             "The same retrieval as megabrain_ask but with NO LLM (~200ms): a flat, "
             "relevance-ranked list of exactly the chunks worth reading "
@@ -149,7 +150,7 @@ TOOLS = [
             "Manage the self-caching workflow retrieval for a repo (OPT-IN, off by "
             "default). When on, every megabrain_ask caches its cross-file walkthrough "
             "and the next related question retrieves the whole workflow at once — no "
-            "extra call, it rides megabrain_ask/megabrain_query. Actions: 'warm' "
+            "extra call, it rides megabrain_ask/megabrain_search. Actions: 'warm' "
             "discovers the repo's main workflows and pre-caches them with N research "
             "asks (also enables the mode); 'refresh' re-asks stale flows against the "
             "current code (UPDATE, not just expire); 'enable'/'disable' toggle the "
@@ -182,7 +183,9 @@ def _scope(args: dict) -> tuple[Path, str | None]:
 
 def call_tool(name: str, args: dict) -> str:
     from .. import app
-    if name == "megabrain_query":
+    if name in ("megabrain_search", "megabrain_query"):
+        # megabrain_query = deprecated 0.9 alias (dispatch only — not in TOOLS,
+        # so it costs no agent context; registered clients keep working).
         # ALWAYS the pruned, flat signal list. The file-grouped bundle rendered
         # RELATED as a code-less map, which is a dead end over MCP (there is no
         # get/chunks tool to expand it) — and pruning keeps every bundle file

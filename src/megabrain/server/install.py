@@ -155,6 +155,6 @@ def render(results: list[dict], remove: bool = False) -> str:
     head = f"{verb} megabrain in {len(done)} platform(s):" if done else \
         "No platforms touched."
     tail = ("\n\nRestart your assistant to pick it up. Tools: megabrain_ask, "
-            "megabrain_query, megabrain_index, megabrain_forge, megabrain_flows."
+            "megabrain_search, megabrain_index, megabrain_forge, megabrain_flows."
             if done and not remove else "")
     return head + "\n" + "\n".join(lines) + tail

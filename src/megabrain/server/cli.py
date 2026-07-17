@@ -1,7 +1,7 @@
 """megabrain CLI.
 
   megabrain index  [path]                      index/update a repo (incremental)
-  megabrain query  [path] "task" [--compact]   one-shot code map
+  megabrain search [path] "task" [--compact]   one-shot code map (`query` = alias)
   megabrain ask    [path] "question"           explained walkthrough
   megabrain get    [path] <file> [--symbol N]  pull code for navigation
   megabrain serve    [path] --port N           studio web UI + JSON API (warm state)
@@ -9,7 +9,7 @@
   megabrain stats  [path]                      index stats
   megabrain repos                              every repo indexed on this machine
 
-PATH-SCOPE: for query/ask/get, `path` may be the repo root OR a sub-path inside
+PATH-SCOPE: for search/ask/get, `path` may be the repo root OR a sub-path inside
 it (e.g. ~/repo/src/dispatch). megabrain auto-detects the repo root (the nearest
 ancestor with .megabrain/db.sqlite) and scopes retrieval to files under the
 sub-path. The repo root itself behaves exactly as before (no filter).
@@ -60,17 +60,23 @@ def main(argv=None):
     p.add_argument("--write", action="store_true",
                    help="write the proposed .megabrainignore (deterministic skips only)")
 
-    p = sub.add_parser("query")
-    p.add_argument("path")
-    p.add_argument("task")
-    p.add_argument("--compact", action="store_true")
-    p.add_argument("--prune", action="store_true",
-                   help="no-LLM noise pruning: a flat relevance-ranked list of only "
-                        "the signal chunks ([id] file:lines · score + code), noise dropped")
-    p.add_argument("--full", action="store_true",
-                   help="include RELATED best-chunk code bodies (default renders "
-                        "RELATED as a map: file, match span, symbols — ~60%% fewer tokens)")
-    p.add_argument("--json", action="store_true")
+    # `search` is the primary retrieval verb; `query` is its hidden pre-0.10
+    # alias (same flags, same dispatch) so muscle memory and scripts keep working.
+    def _add_search_args(p):
+        p.add_argument("path")
+        p.add_argument("task")
+        p.add_argument("--compact", action="store_true")
+        p.add_argument("--prune", action="store_true",
+                       help="no-LLM noise pruning: a flat relevance-ranked list of only "
+                            "the signal chunks ([id] file:lines · score + code), noise dropped")
+        p.add_argument("--full", action="store_true",
+                       help="include RELATED best-chunk code bodies (default renders "
+                            "RELATED as a map: file, match span, symbols — ~60%% fewer tokens)")
+        p.add_argument("--json", action="store_true")
+    _add_search_args(sub.add_parser("search",
+                                    help="one-shot retrieval: CORE code + RELATED map "
+                                         "(--prune for the flat signal-only list)"))
+    _add_search_args(sub.add_parser("query", help=argparse.SUPPRESS))
 
     p = sub.add_parser("ask")
     p.add_argument("path")
@@ -177,9 +183,9 @@ def main(argv=None):
     # registry), not repo-level — the two verbs that take no path.
     raw = [Path(p).resolve() for p in a.path.split(",")] if hasattr(a, "path") else []
     root = raw[0] if raw else None
-    if len(raw) > 1 and a.cmd not in ("index", "query"):
+    if len(raw) > 1 and a.cmd not in ("index", "search", "query"):
         ap.error(f"`{a.cmd}` takes a single path — comma-separated multi-path "
-                 f"applies to `index` and `query` only")
+                 f"applies to `index` and `search` only")
 
     # THE one CLI catch site: engine errors print as one line + exit 2 — never
     # a raw traceback at the user. MEGABRAIN_DEBUG=1 re-raises for developers.
@@ -252,7 +258,7 @@ def _dispatch(a, raw: list[Path], root: Path) -> None:
             _merge_ignore(root, rep["proposed_ignore"])
             print(f"# wrote proposed skips to {root}/.megabrainignore\n")
         print(_json.dumps(rep, indent=1) if a.json else _render_scan(rep))
-    elif a.cmd == "query":
+    elif a.cmd in ("search", "query"):     # query = pre-0.10 alias
         import json as _json
 
         from .. import app

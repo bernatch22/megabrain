@@ -247,7 +247,7 @@ webui consume it unchanged. Expansion is multi-turn: `megabrain get <file>
 **Noise pruning (`prune_search`, no LLM).** The bundle already marks which
 chunks are *signal* — a tier-1 chunk that survives the `CHUNK_KEEP_RATIO` cut, or a
 related file's best chunk. `prune_search` (CLI `query --prune`, and the ONLY shape
-`megabrain_query` returns over MCP) simply **projects that existing selection into a flat list
+`megabrain_search` returns over MCP) simply **projects that existing selection into a flat list
 ranked by relevance** — each `[id] file:Lstart-end · score` with its code, the noise
 chunks dropped. No new scoring, no LLM, no token cost: it reuses the same
 signal/noise call the full bundle makes, just rendering the signal alone (with
@@ -373,7 +373,7 @@ single-agent ask → full bundle.
 - **MCP** (`mcp_server.py`, stdio, no deps): `megabrain_ask` (primary; `docs`,
   `include_docs`, `scope_path`, `agents` — omit for auto fan-out on broad
   questions; MCP is request/response, so the fan-out runs buffered and the trace
-  lands as a footer), `megabrain_query` (`scope_path`, `compact` — ALWAYS the flat
+  lands as a footer), `megabrain_search` (`scope_path`, `compact` — ALWAYS the flat
   signal-only chunk list with code, no LLM; the file-grouped bundle is deliberately
   not exposed, since its code-less RELATED map is a dead end without a get/chunks
   tool, while pruning still keeps every bundle file),

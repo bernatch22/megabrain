@@ -104,11 +104,11 @@ installed in, so re-running it repairs a config that drifted to an old checkout.
 to do it by hand? `claude mcp add megabrain -- python3 -m megabrain.mcp_server`, or copy
 the equivalent entry into your assistant's MCP config.
 
-Then use `megabrain_ask` / `megabrain_query` instead of grep + Read chains — one call
+Then use `megabrain_ask` / `megabrain_search` instead of grep + Read chains — one call
 replaces minutes of file-crawling. Five tools, deliberately lean — megabrain exposes
 only what it alone can do (your agent already has Read/Grep for single files):
 **`megabrain_ask`** (narrated walkthrough, real code spliced),
-**`megabrain_query`** (no LLM, ~200 ms — a flat, relevance-ranked list of exactly the
+**`megabrain_search`** (no LLM, ~200 ms — a flat, relevance-ranked list of exactly the
 chunks worth reading, with the code, noise dropped), `megabrain_index`, plus `megabrain_forge`
 (teach it a new file type) and `megabrain_flows` (the opt-in workflow cache).
 
@@ -119,8 +119,8 @@ megabrain install                                # register the MCP server with 
 megabrain index  ~/repo                          # build / update the index
 megabrain scan   ~/repo                          # census: what WOULD index + what's skipped & why
 megabrain ask    ~/repo "how does X work"        # narrated walkthrough + real code
-megabrain query  ~/repo "retry logic"            # raw code map, no LLM (~200 ms)
-megabrain query  ~/repo "retry logic" --prune    # flat signal-only chunks, no LLM (drops the noise)
+megabrain search  ~/repo "retry logic"            # raw code map, no LLM (~200 ms)
+megabrain search  ~/repo "retry logic" --prune    # flat signal-only chunks, no LLM (drops the noise)
 megabrain get    ~/repo src/x.py --symbol Foo    # one file or symbol
 megabrain forge  ~/repo                          # teach it your repo's file types (below)
 megabrain serve  ~/repo                          # studio web UI at / + the JSON API

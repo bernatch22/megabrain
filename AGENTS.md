@@ -13,7 +13,7 @@ This engine answers questions about any indexed repo, including itself:
 megabrain index ~/megabrain        # once; incremental after
 megabrain ask   ~/megabrain "how does ask splice real code"
 ```
-Via MCP, `megabrain_ask` / `megabrain_query` are registered — use them instead of grep/Read chains for code research.
+Via MCP, `megabrain_ask` / `megabrain_search` are registered — use them instead of grep/Read chains for code research.
 
 ## Hard rules (locked by experimental data — do not violate)
 

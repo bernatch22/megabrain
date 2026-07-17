@@ -139,7 +139,7 @@ splice guarantee holds regardless of which embedding retrieved the bundle.
 ```bash
 megabrain index ~/repo                       # once; incremental after, auto-refreshes on change
 megabrain ask   ~/repo "how does auth work"  # narrated walkthrough, real code spliced in
-megabrain query ~/repo "retry logic"         # raw code map, NO LLM, ~200 ms
+megabrain search ~/repo "retry logic"         # raw code map, NO LLM, ~200 ms
 megabrain get   ~/repo src/x.py --symbol Foo # pull one file/symbol to expand
 ```
 
@@ -177,12 +177,12 @@ verbatim; your own summary doesn't.
 #### The pruned (signal-only) shape
 
 ```bash
-megabrain query ~/repo "retry logic" --prune            # flat signal chunks, ranked, with code
-megabrain query ~/repo "retry logic" --prune --compact  # same, code bodies dropped (ids + spans only)
-megabrain query ~/repo "retry logic" --prune --json     # machine-readable
+megabrain search ~/repo "retry logic" --prune            # flat signal chunks, ranked, with code
+megabrain search ~/repo "retry logic" --prune --compact  # same, code bodies dropped (ids + spans only)
+megabrain search ~/repo "retry logic" --prune --json     # machine-readable
 ```
 
-**Over MCP this is the ONLY shape `megabrain_query` returns** — there is no
+**Over MCP this is the ONLY shape `megabrain_search` returns** — there is no
 `prune_noise` switch and no file-grouped-bundle mode. Why: the bundle renders
 RELATED as a *code-less map* (file, span, symbols), which is a dead end for an
 agent over MCP — there is no `get`/`chunks` tool to expand it, so the map just
@@ -231,7 +231,7 @@ before answering.
 | tool | when the agent should reach for it |
 |---|---|
 | **`megabrain_ask`** | **the default.** Any "how/where/why does X work" — returns a senior-engineer walkthrough with the REAL code spliced in, tracing the whole cross-file flow. One call instead of crawling files. |
-| `megabrain_query` | no LLM (~200 ms) — a flat, relevance-ranked list of exactly the **signal** chunks **with their code** (noise dropped, every related file still represented). When the agent wants the code to read and will reason over it itself, at zero LLM cost. |
+| `megabrain_search` | no LLM (~200 ms) — a flat, relevance-ranked list of exactly the **signal** chunks **with their code** (noise dropped, every related file still represented). When the agent wants the code to read and will reason over it itself, at zero LLM cost. (`megabrain_query` remains a deprecated dispatch alias for 0.9 clients.) |
 | `megabrain_index` | index/refresh a repo the agent hasn't seen. |
 | `megabrain_forge` | make a file type the engine can't read yet (`.toml`, `.astro`) searchable. |
 | `megabrain_flows` | manage the opt-in flow cache: `action: "warm"` pre-caches the repo's workflows, `"refresh"` updates stale ones, `"list"` / `"enable"`. |
@@ -263,7 +263,7 @@ is spliced verbatim from disk, so nothing it reads is hallucinated.
 If you `--enable` the flow cache on a team repo, each agent's `ask` leaves its
 synthesized workflow in the index; the next agent (or the next question, worded
 differently) retrieves that whole workflow at once — no extra tool, it rides the
-same `megabrain_ask`/`megabrain_query` calls.
+same `megabrain_ask`/`megabrain_search` calls.
 
 ---
 
@@ -420,7 +420,7 @@ outlive its code. Two behaviors:
 # everyday (nothing opt-in — the tuned default)
 megabrain index ~/repo
 megabrain ask   ~/repo "how does X work"
-megabrain query ~/repo "where is Y handled"
+megabrain search ~/repo "where is Y handled"
 
 # teach it a new file type
 megabrain forge ~/repo
