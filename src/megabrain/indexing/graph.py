@@ -73,12 +73,41 @@ def python_package_index(file_sources: dict[str, str], pkg_prefixes: set[str]):
     return mod2file, unique, qualdefs, trees
 
 
+def _recv_base(func: ast.Attribute) -> str | None:
+    """The base Name of an attribute call's receiver: `x.f()` -> x,
+    `Cls(...).f()` -> Cls, `a.b.c.f()` -> a. None when unresolvable."""
+    v: ast.expr = func.value
+    while isinstance(v, ast.Attribute):
+        v = v.value
+    if isinstance(v, ast.Call) and isinstance(v.func, ast.Name):
+        return v.func.id
+    return v.id if isinstance(v, ast.Name) else None
+
+
 def extract_edges(rel: str, tree: ast.Module, mod2file: dict[str, str],
                   unique_defs: dict[str, str], qualdefs: dict[str, str],
                   pkg_prefixes: set[str]) -> list[tuple[str, str]]:
-    """Return [(dst_file, kind)] for one file. kind: import | call."""
+    """Return [(dst_file, kind)] for one file. kind: import | call.
+
+    Call edges are RECEIVER-AWARE: `alias.f()` where the alias is an in-repo
+    import resolves to that alias's file; where the alias is an EXTERNAL
+    import (stdlib/site-packages) it produces no edge — `re.search(...)` once
+    fabricated an edge to the repo's unique `search()` def, and every stdlib
+    method colliding with a repo name did the same. Unknown receivers (local
+    variables, self) keep the unique-def fallback: without type inference
+    that evidence is weak but usually right, and dropping it would cost real
+    edges (validated recall)."""
     edges: set[tuple[str, str]] = set()
     imported: dict[str, str] = {}
+    ext_aliases: set[str] = set()        # imported names that are NOT this repo
+
+    def _in_repo(module: str) -> bool:
+        """Does the dotted module resolve to ANYTHING indexed? pkg_prefixes
+        alone misclassifies top-level repo modules (a repo with no packages
+        imports `web` absolutely) — external means external for real."""
+        return (module in mod2file
+                or any(k.startswith(module + ".") for k in mod2file))
+
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom) and node.module:
             if any(node.module.split(".")[0] == p for p in pkg_prefixes):
@@ -94,6 +123,9 @@ def extract_edges(rel: str, tree: ast.Module, mod2file: dict[str, str],
                         if sub:
                             edges.add((sub, "import"))
                             imported[a.asname or a.name] = sub
+            elif node.level == 0 and not _in_repo(node.module):
+                for a in node.names:     # stdlib/3rd-party: never edge material
+                    ext_aliases.add(a.asname or a.name)
         elif isinstance(node, ast.Import):
             for a in node.names:
                 if any(a.name.split(".")[0] == p for p in pkg_prefixes):
@@ -101,12 +133,24 @@ def extract_edges(rel: str, tree: ast.Module, mod2file: dict[str, str],
                     if sf:
                         edges.add((sf, "import"))
                         imported[a.asname or a.name] = sf
+                elif not _in_repo(a.name):
+                    ext_aliases.add(a.asname or a.name.split(".")[0])
     for node in ast.walk(tree):
         if isinstance(node, ast.Call):
-            callee = node.func.id if isinstance(node.func, ast.Name) else (
-                node.func.attr if isinstance(node.func, ast.Attribute) else None)
-            if not callee:
+            if isinstance(node.func, ast.Name):
+                callee, recv = node.func.id, None
+            elif isinstance(node.func, ast.Attribute):
+                callee, recv = node.func.attr, _recv_base(node.func)
+            else:
                 continue
+            if recv is not None:
+                if recv in imported:     # exact: the alias's own file
+                    tgt = imported[recv]
+                    if tgt != rel:
+                        edges.add((tgt, "call"))
+                    continue
+                if recv in ext_aliases:  # stdlib/external: never an edge
+                    continue
             tgt = imported.get(callee) or unique_defs.get(callee)
             if tgt and tgt != rel:
                 edges.add((tgt, "call"))

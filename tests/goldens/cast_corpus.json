@@ -2819,24 +2819,33 @@
    "chunks": [
     [
      "module",
-     "ts_edges, python_package_index, extract_edges",
+     "ts_edges, python_package_index, _recv_base",
      null,
      1,
-     129,
-     "megabrain > megabrain/indexing/graph.py > [ts_edges, python_package_index, extract_edges]",
-     "9c2dc52c50c6d7ce0a968ff7679109687ccadfb3"
+     84,
+     "megabrain > megabrain/indexing/graph.py > [ts_edges, python_package_index, _recv_base]",
+     "e6ed50c3e9578de6a83fb80bef161dea356dde23"
     ],
     [
      "module",
-     "php_class_index, php_edges",
+     "extract_edges, php_class_index",
      null,
-     130,
-     170,
-     "megabrain > megabrain/indexing/graph.py > [php_class_index, php_edges]",
-     "433487c09d8e381c48e93e67d58bacd2e9564053"
+     85,
+     189,
+     "megabrain > megabrain/indexing/graph.py > [extract_edges, php_class_index]",
+     "842b1b9d0b078db0a2db27eaf43711aca85cc9ea"
+    ],
+    [
+     "function",
+     "php_edges",
+     null,
+     190,
+     214,
+     "megabrain > megabrain/indexing/graph.py > def php_edges(rel: str, source: str, fqcn2file: dict[str, str]) -> list[tuple[str, str]]",
+     "933f3a478984109cc48f90bb1e0d638e8a5148bb"
     ]
    ],
-   "skeleton_sha": "cc07d7d94df57b1f1012abc101537517b8e282b7",
+   "skeleton_sha": "c1aa0367da048481fce56cbf286acfd3073805af",
    "symbols": [
     [
      "_TS_IMPORT",
@@ -2860,52 +2869,59 @@
      "def python_package_index(file_sources: dict[str, str], pkg_prefixes: set[str])"
     ],
     [
-     "extract_edges",
+     "_recv_base",
      "function",
      76,
-     113,
+     84,
+     "def _recv_base(func: ast.Attribute) -> str | None"
+    ],
+    [
+     "extract_edges",
+     "function",
+     87,
+     157,
      "def extract_edges(rel: str, tree: ast.Module, mod2file: dict[str, str], unique_defs: dict[str, str], qualdefs: dict[str, str], pkg_prefixes: set[str]) -> list[tuple[str, str]]"
     ],
     [
      "_PHP_NS",
      "constant",
-     118,
-     118,
+     162,
+     162,
      "_PHP_NS = re.compile('^\\\\s*namespace\\\\s+([A-Za-z_][\\\\w\\\\\\\\]*)\\\\s*[;{]', re.M)"
     ],
     [
      "_PHP_DECL",
      "constant",
-     119,
-     121,
+     163,
+     165,
      "_PHP_DECL = re.compile('^\\\\s*(?:abstract\\\\s+|final\\\\s+|readonly\\\\s+)*(?:class|interface|trait|enum)\\\\s+([A-Za-z_]\\\\w*)',"
     ],
     [
      "_PHP_USE",
      "constant",
-     125,
-     126,
+     169,
+     170,
      "_PHP_USE = re.compile('^\\\\s*use\\\\s+(?!function\\\\b|const\\\\b)([A-Za-z_][\\\\w\\\\\\\\]*)(?:\\\\s+as\\\\s+\\\\w+)?\\\\s*;', re.M)"
     ],
     [
      "_PHP_USE_GROUP",
      "constant",
-     128,
-     129,
+     172,
+     173,
      "_PHP_USE_GROUP = re.compile('^\\\\s*use\\\\s+(?!function\\\\b|const\\\\b)([A-Za-z_][\\\\w\\\\\\\\]*)\\\\\\\\\\\\{([^}]+)\\\\}\\\\s*;', re.M)"
     ],
     [
      "php_class_index",
      "function",
-     132,
-     145,
+     176,
+     189,
      "def php_class_index(sources: dict[str, str]) -> dict[str, str]"
     ],
     [
      "php_edges",
      "function",
-     148,
-     170,
+     192,
+     214,
      "def php_edges(rel: str, source: str, fqcn2file: dict[str, str]) -> list[tuple[str, str]]"
     ]
    ]
