@@ -101,6 +101,8 @@
       j("/get?file=" + encodeURIComponent(file) + (repo ? "&repo=" + encodeURIComponent(repo) : "")),
     fileSymbols: (file, repo) =>
       j("/symbols?file=" + encodeURIComponent(file) + (repo ? "&repo=" + encodeURIComponent(repo) : "")),
+    symbolNames: (repo) =>
+      j("/symbols" + (repo ? "?repo=" + encodeURIComponent(repo) : "")),
     symbolDefs: (name, repo) =>
       j("/symbol?name=" + encodeURIComponent(name) + (repo ? "&repo=" + encodeURIComponent(repo) : "")),
     askStream: (body, onEvent) => sse("/ask/stream", body, onEvent),

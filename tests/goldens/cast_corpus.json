@@ -5444,7 +5444,7 @@
      1,
      101,
      "megabrain > megabrain/server/http.py > [_http_error, Registry]",
-     "a872a9fa3dc00bd0182405d63ac254bb019888a3"
+     "2985799c8e1c94893d27bde26282195ca5f6c3c2"
     ],
     [
      "module",
@@ -5469,25 +5469,25 @@
      "_make_handler",
      "2/4",
      267,
-     398,
+     396,
      "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True)",
-     "4d1b4c96e2ce9d634dead2bd0646d5aed8664ad2"
+     "d94b31ad26f2760df54e35b28aa8d6d31a9e87e5"
     ],
     [
      "block",
      "_make_handler",
      "3/4",
-     399,
-     486,
+     397,
+     487,
      "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True)",
-     "6d9f98e155ff040076d3818fb074ed8c95262725"
+     "84f668db3506f5034586e2675e40166a84f6afd6"
     ],
     [
      "block",
      "_make_handler",
      "4/4",
-     487,
      488,
+     489,
      "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True)",
      "5ebaec407bc18bc3fde033e8db1a20bf3e3ec3f8"
     ],
@@ -5495,8 +5495,8 @@
      "module",
      "_valid_model, _native_pick_folder, _scan_report, _merge_ignore",
      null,
-     489,
-     563,
+     490,
+     564,
      "megabrain > megabrain/server/http.py > [_valid_model, _native_pick_folder, _scan_report, _merge_ignore]",
      "1a60519fd169e3894bbb17ae8e132a99f7846295"
     ],
@@ -5504,8 +5504,8 @@
      "function",
      "serve",
      null,
-     564,
-     602,
+     565,
+     603,
      "megabrain > megabrain/server/http.py > def serve(root, port: int=2134, host: str='127.0.0.1', cors: str | None=None, enable_llm: bool=True, token: str | None=None, serve_ui: bool=True) -> None",
      "9393f03c5365edc0ede85801e1abc3467d166008"
     ]
@@ -5593,42 +5593,42 @@
      "_make_handler",
      "function",
      140,
-     488,
+     489,
      "def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True)"
     ],
     [
      "_valid_model",
      "function",
-     491,
-     502,
+     492,
+     503,
      "def _valid_model(model) -> str | None"
     ],
     [
      "_native_pick_folder",
      "function",
-     505,
-     541,
+     506,
+     542,
      "def _native_pick_folder() -> dict"
     ],
     [
      "_scan_report",
      "function",
-     544,
-     550,
+     545,
+     551,
      "def _scan_report(path: str) -> dict"
     ],
     [
      "_merge_ignore",
      "function",
-     553,
-     563,
+     554,
+     564,
      "def _merge_ignore(root: Path, ignore: str) -> None"
     ],
     [
      "serve",
      "function",
-     566,
-     602,
+     567,
+     603,
      "def serve(root, port: int=2134, host: str='127.0.0.1', cors: str | None=None, enable_llm: bool=True, token: str | None=None, serve_ui: bool=True) -> None"
     ]
    ]
@@ -6098,15 +6098,15 @@
     ],
     [
      "method",
-     "Store.file_chunks, Store.neighbors, Store.symbols_for, Store.find_symbols, Store.stats, Store.set_meta, Store.get_meta, Store.insert_flow, Store.delete_flow, Store.stale_flows, Store.prune_stale_flows, Store.load_flows",
+     "Store.file_chunks, Store.neighbors, Store.symbols_for, Store.symbol_names, Store.find_symbols, Store.stats, Store.set_meta, Store.get_meta, Store.insert_flow, Store.delete_flow, Store.stale_flows, Store.prune_stale_flows, Store.load_flows",
      null,
      192,
-     290,
-     "megabrain > megabrain/storage/store.py > class Store > [Store.file_chunks, Store.neighbors, Store.symbols_for, Store.find_symbols, Store.stats, Store.set_meta, Store.get_meta, Store.insert_flow, Store.delete_flow, Store.stale_flows, Store.prune_stale_flows, Store.load_flows]",
-     "027ed04260d3eb5cb2e38a0e7ff2b3bf4be3ce42"
+     298,
+     "megabrain > megabrain/storage/store.py > class Store > [Store.file_chunks, Store.neighbors, Store.symbols_for, Store.symbol_names, Store.find_symbols, Store.stats, Store.set_meta, Store.get_meta, Store.insert_flow, Store.delete_flow, Store.stale_flows, Store.prune_stale_flows, Store.load_flows]",
+     "52770372ab403ba8c65dfc3c65972014e0ed1708"
     ]
    ],
-   "skeleton_sha": "d0e36523d9649df7827b1a99b56806242e6c757c",
+   "skeleton_sha": "8d6e7ee75a12af93f679c2c6715410a29b7ebb04",
    "symbols": [
     [
      "resolve_root",
@@ -6126,7 +6126,7 @@
      "Store",
      "class",
      83,
-     290,
+     298,
      "class Store"
     ],
     [
@@ -6256,66 +6256,73 @@
      "def symbols_for(self, path: str) -> list[dict]"
     ],
     [
-     "Store.find_symbols",
+     "Store.symbol_names",
      "method",
      218,
-     227,
+     224,
+     "def symbol_names(self) -> list[str]"
+    ],
+    [
+     "Store.find_symbols",
+     "method",
+     226,
+     235,
      "def find_symbols(self, name: str) -> list[dict]"
     ],
     [
      "Store.stats",
      "method",
-     229,
-     235,
+     237,
+     243,
      "def stats(self) -> dict"
     ],
     [
      "Store.set_meta",
      "method",
-     237,
-     238,
+     245,
+     246,
      "def set_meta(self, k: str, v)"
     ],
     [
      "Store.get_meta",
      "method",
-     240,
-     242,
+     248,
+     250,
      "def get_meta(self, k: str)"
     ],
     [
      "Store.insert_flow",
      "method",
-     246,
-     253,
+     254,
+     261,
      "def insert_flow(self, question: str, text: str, files: dict, vec: np.ndarray, qvec: np.ndarray | None=None) -> int"
     ],
     [
      "Store.delete_flow",
      "method",
-     255,
-     256,
+     263,
+     264,
      "def delete_flow(self, flow_id: int)"
     ],
     [
      "Store.stale_flows",
      "method",
-     258,
-     265,
+     266,
+     273,
      "def stale_flows(self) -> list[dict]"
     ],
     [
      "Store.prune_stale_flows",
      "method",
-     267,
-     274,
+     275,
+     282,
      "def prune_stale_flows(self) -> int"
     ],
     [
      "Store.load_flows",
      "method",
-     276,
-     290,
+     284,
+     298,
      "def load_flows(self) -> tuple[list[dict], np.ndarray, np.ndarray]"
     ]
    ]

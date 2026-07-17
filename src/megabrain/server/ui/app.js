@@ -171,7 +171,9 @@
       body = `<div class="stats-row">
           <div><b>${r.tier1.length}</b> core files</div><div class="sdot"></div>
           <div><b>${r.tier2.length}</b> related via graph</div><div class="sdot"></div>
-          <div><b>${scanned}</b> chunks in core</div>
+          <div><b>${scanned}</b> chunks in core</div><div class="sdot"></div>
+          <div title="CORE ships full code; each RELATED file contributes its best chunk — that sum is what Prune calls 'kept'">
+            <span style="color:var(--muted)">signal =</span> ${scanned} core + ${r.tier2.length} related best = <b>${scanned + r.tier2.length}</b></div>
         </div>
         <div class="section-head"><div class="section-label mono">CORE</div><div class="section-rule"></div><div class="mono" style="font-size:10.5px;color:var(--muted);letter-spacing:.06em">RANKED · TIER 1</div></div>
         <div style="display:flex;flex-direction:column;gap:10px">${r.tier1.map(tier1Card).join("")}</div>`;
@@ -324,15 +326,26 @@
     return m ? m[1] : String(code);
   }
 
-  async function viewerLoad(file, focus, hiLines, conn, fresh) {
-    let gc, sy;
+  async function symbolIndex() {
+    // one cheap fetch per repo: which names are worth linking (~1.3K here)
+    if (st.symIndex && st.symIndexRepo === st.repo) return st.symIndex;
     try {
-      [gc, sy] = await Promise.all([api.fileCode(file, st.repo),
-                                    api.fileSymbols(file, st.repo)]);
+      const r = await api.symbolNames(st.repo);
+      st.symIndex = new Set(r.names || []); st.symIndexRepo = st.repo;
+    } catch (e) { st.symIndex = new Set(); }   // no links beats fake links
+    return st.symIndex;
+  }
+
+  async function viewerLoad(file, focus, hiLines, conn, fresh) {
+    let gc, sy, links;
+    try {
+      [gc, sy, links] = await Promise.all([api.fileCode(file, st.repo),
+                                           api.fileSymbols(file, st.repo),
+                                           symbolIndex()]);
     } catch (e) { toast(e.message); return; }
     const stack = fresh || !st.viewer ? [] : st.viewer.stack;
     st.viewer = { file, code: stripFence(gc.code), lang: langFor(file),
-      symbols: (sy && sy.symbols) || [], focus: focus || 1,
+      symbols: (sy && sy.symbols) || [], focus: focus || 1, links,
       hiLines: hiLines || new Set(), conn: conn || null, stack };
     paintViewer();
   }
@@ -385,7 +398,7 @@
     const body = lines.map((ln, i) => {
       const n = i + 1;
       return `<div class="vln ${v.hiLines.has(n) ? "hi" : ""}" id="v-ln-${n}">
-        <span class="vno mono">${n}</span><span class="vcode mono">${hl(ln, v.lang)}</span></div>`;
+        <span class="vno mono">${n}</span><span class="vcode mono">${hl(ln, v.lang, v.links)}</span></div>`;
     }).join("");
     const outline = v.symbols.map((s) =>
       `<button class="flag-row" data-act="vgoto" data-line="${s.line}" style="width:100%;text-align:left;border-radius:5px">
@@ -1262,7 +1275,10 @@
     return langAlias({ py: "python", js: "js", jsx: "js", ts: "js", tsx: "js",
       go: "go", rs: "rust" }[e] || "default");
   }
-  function hl(code, lang) {
+  // `links` (a Set of indexed symbol names) turns identifiers into
+  // go-to-definition links — ONLY in the navigator, and only for names that
+  // actually have a definition: a clickable word that leads nowhere is a lie.
+  function hl(code, lang, links) {
     const kw = KWSET[lang] || KWSET.default;
     const hash = lang === "python" || lang === "rust" || /^(sh|bash|yaml|toml|ruby|rb)$/.test(lang);
     const isId = (c) => c && /[A-Za-z0-9_$]/.test(c);
@@ -1289,9 +1305,9 @@
         else {
           let k = j; while (k < n && code[k] === " ") k++;
           const cls = code[k] === "(" ? "fn" : null;
-          // identifiers carry data-sym: inert in previews, go-to-definition
-          // inside the code navigator (#vcode delegates the click)
-          out.push(`<span ${cls ? `style="color:var(--syn-${cls})" ` : ""}data-sym="${esc(w)}">${esc(w)}</span>`);
+          if (links && links.has(w))
+            out.push(`<span ${cls ? `style="color:var(--syn-${cls})" ` : ""}data-sym="${esc(w)}">${esc(w)}</span>`);
+          else push(cls, w);
         }
         i = j; continue;
       }

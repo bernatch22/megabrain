@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import threading
+import urllib.parse
 import urllib.request
 from http.server import ThreadingHTTPServer
 
@@ -295,23 +296,36 @@ def test_graph_path_route(server, monkeypatch):
 
 
 def test_symbols_and_symbol_routes(server):
-    """The code navigator's two lookups: one file's outline, and repo-wide
-    go-to-definition by bare name."""
+    """The code navigator's lookups: one file's outline, the repo-wide name
+    index (which words become links), and go-to-definition by bare name."""
     base, _ = server
     status, body = _get(base, "/symbols?file=auth%2Flogin.py")
     assert status == 200
     names = {s["name"] for s in body["symbols"]}
     assert "login_user" in names and "check_password" in names
+    # no file -> every linkable name in the repo
+    status, body = _get(base, "/symbols")
+    assert status == 200
+    assert {"login_user", "check_password", "create_invoice"} <= set(body["names"])
     status, body = _get(base, "/symbol?name=check_password")
     assert status == 200
     assert body["defs"] and body["defs"][0]["file"] == "auth/login.py"
     assert body["defs"][0]["line"] >= 1 and body["defs"][0]["kind"]
-    # missing params -> 400
     import urllib.error
-    for bad in ("/symbols", "/symbol"):
-        with pytest.raises(urllib.error.HTTPError) as ei:
-            _get(base, bad)
-        assert ei.value.code == 400
+    with pytest.raises(urllib.error.HTTPError) as ei:
+        _get(base, "/symbol")
+    assert ei.value.code == 400
+
+
+def test_search_signal_equals_prune_kept(server):
+    """The Search stats line claims signal = core chunks + one best chunk per
+    related file. That must be exactly what Prune reports as kept."""
+    base, _ = server
+    q = "user login password check"
+    _, s = _post(base, "/search", {"query": q})
+    core = sum(len(t["chunks"]) for t in s["tier1"])
+    _, p = _get(base, "/prune?q=" + urllib.parse.quote(q))
+    assert p["kept"] == core + len(s["tier2"])
 
 
 def test_unknown_repo_404(server):
