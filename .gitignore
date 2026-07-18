@@ -31,3 +31,7 @@ examples/
 
 # local brainbank MCP index (private)
 .brainbank/
+
+# local working notes, not for public history
+REFACTOR.md
+NEXT.md
