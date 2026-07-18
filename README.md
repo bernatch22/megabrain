@@ -20,15 +20,24 @@
 ---
 
 Point megabrain at a repo and ask **"how does auth work"** in plain English. It finds
-*all* the related code in ~200 ms with **no LLM** — just math on embeddings — then an
-LLM narrates a walkthrough with the **real code spliced in from disk**, line for line.
+*all* the related code in ~200 ms with **no LLM** — just math on embeddings, all stored
+in **one SQLite file** (no vector DB, no containers, no services). Want it *explained*?
+`ask` adds a single LLM call that narrates a walkthrough with the **real code spliced in
+from disk**, line for line — but the model is optional: `search` and `graph` never need one.
 
 - **Retrieval that cannot hallucinate.** The search path has no LLM at all: dense chunk
   vectors fused with a file-skeleton signal and the import/call graph. The narrator only
   ever *cites* spans — the engine splices the verbatim bytes, so no line is ever invented.
+  An optional **LLM rerank** rides on top (`search --rerank`; on by default over MCP) to
+  drop vocabulary-only matches — fail-open, never inside the core path.
 - **A knowledge graph, for free.** The same index doubles as a navigable graph: communities,
   god nodes, and the real call-path between any two files — built from AST edges + embedding
-  similarity, numpy-only, no vector DB. `megabrain graph .`
+  similarity, numpy-only. `megabrain graph .`
+- **It learns from itself.** On by default: every `ask` remembers its walkthrough — ask the
+  same thing again, even reworded, and the answer serves in **~0 ms with zero LLM**
+  (measured: 27.8 s → **0.19 s**), guarded by a byte-level sha recheck so it can never
+  describe code that changed. Cached in the same SQLite file; opt out per repo with
+  `megabrain flows --disable`, or kill globally with `MEGABRAIN_FLOW_CACHE=0`.
 - **Everywhere you work.** A terminal CLI, an **MCP server** inside Claude Code / Codex /
   Cursor / Gemini CLI (+more), a Python library, and a full **local web studio**.
 
@@ -169,16 +178,19 @@ the equivalent entry into your assistant's MCP config.
 Then use `megabrain_ask` / `megabrain_search` instead of grep + Read chains — one call
 replaces minutes of file-crawling. The tools are deliberately lean — megabrain exposes
 only what it alone can do (your agent already has Read/Grep for single files):
-**`megabrain_ask`** (narrated walkthrough, real code spliced),
-**`megabrain_search`** (no core LLM, ~200 ms — a flat, relevance-ranked list of exactly the
-chunks worth reading, with the code, noise dropped; an **LLM rerank runs by default**
-(`rerank: true`) to cut vocabulary-only matches, fail-open to the raw list),
-**`megabrain_graph`** (the repo as a knowledge graph — `mode=map` for communities + core
-abstractions + surprising links, `mode=node` for one file's neighbours/symbols/real chunks,
-`mode=path` to route between two concepts), `megabrain_index` (index a repo, or `list: true`
-to enumerate every repo indexed on this machine), plus `megabrain_forge` (teach it a new file
-type) and `megabrain_flows` (the opt-in workflow cache). `megabrain_query` stays as a
-deprecated dispatch alias for `megabrain_search`.
+
+| tool | what it returns | key params (besides `repo_path`) |
+|---|---|---|
+| **`megabrain_ask`** | The primary tool. A narrated senior-engineer walkthrough of the whole relevant flow with the **real code spliced in** (verbatim, true line numbers — the model narrates, never rewrites). No LLM in retrieval; one chat call writes it. **Broad** questions auto fan out into parallel sub-agents. ~6–19 s (fan-out up to ~40 s). | `question` *(req)* · `scope_path` (limit to a folder) · `docs` (explain markdown instead of code) · `include_docs` (code **and** docs) · `agents` (`true`/`false` forces/​disables fan-out; omit = AUTO) |
+| **`megabrain_search`** | The same retrieval, **no LLM** in the core (~200 ms): a flat, relevance-ranked list of exactly the chunks worth reading (`[id] file:lines · score` + the code), noise dropped. Every related file still appears. **This *is* the prune** — the signal list an agent should read. | `task` *(req)* · `scope_path` · `compact` (signatures only, drop bodies) · **`rerank`** *(default `true`)* — a cheap LLM pass drops vocabulary-only matches and reorders (~1–2 s), fail-open to the deterministic list; `false` = pure retrieval |
+| **`megabrain_graph`** | The repo as a navigable knowledge graph (AST import/call edges + embedding-similarity edges; the only LLM touch is cached community labels). | `mode` (`map` default = communities + god nodes + surprising links · `node` = one file/concept in depth · `path` = route between two) · `node` (for `node`) · `source`+`target` (for `path`) · `scope_path` |
+| **`megabrain_index`** | Index / incrementally update a repo before querying a new one (only changed files re-embed). | `repo_path` (omit + `list: true` → return the **registry of every indexed repo** on this machine) |
+| **`megabrain_forge`** | Teach megabrain a file type it can't index yet (an LLM writes + validates a chunking strategy, installed only if it partitions every matching file cleanly). | `ext` (one extension, e.g. `.toml`) · `list_only` (free census) · `dry_run` (generate without installing) · `specialize` (census of poorly-chunked covered files) |
+| **`megabrain_flows`** | Manage the workflow cache (**on by default**): each `ask` caches its walkthrough, related questions retrieve the whole flow at once, and a near-exact repeat is served with **no LLM** (~0 ms, sha-guarded). | `action` (`list` · `warm` · `refresh` · `disable` to opt the repo out · `enable`) · `n` (for `warm`: how many workflows to pre-cache) |
+
+Every tool auto-detects the repo root from any sub-path, and `ask`/`search` auto-refresh a
+stale index — no manual re-index step. `megabrain_query` stays as a deprecated dispatch
+alias for `megabrain_search`.
 
 ## Commands
 
@@ -194,6 +206,7 @@ megabrain graph  ~/repo                          # the repo as a knowledge graph
 megabrain graph  ~/repo --node scoring.py        # one file: neighbours, semantic twins, real chunks
 megabrain graph  ~/repo --path "auth" "billing"  # BFS route between two concepts (resolved by embedding)
 megabrain repos                                  # every repo indexed on this machine (the registry)
+megabrain flows  ~/repo                          # cached ask-flows (on by default) · --warm N · --refresh · --disable
 megabrain get    ~/repo src/x.py --symbol Foo    # one file or symbol
 megabrain forge  ~/repo                          # teach it your repo's file types (below)
 megabrain studio                                 # studio web UI + JSON API — loads every indexed repo
@@ -234,7 +247,7 @@ export MEGABRAIN_EMBED_MODEL=perplexity/pplx-embed-v1-0.6b         # the embeddi
 ```
 
 The full provider matrix — native APIs, hybrid, fully-local GPU, per-provider defaults —
-is in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+is in [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## 100% open-source stack (measured, no closed-weight anything)
 
@@ -325,10 +338,10 @@ search a partial index. Run it yourself before believing either of us.
 | stage | what happens |
 |---|---|
 | **index** | code is split over its syntax tree (whole functions / classes, never arbitrary line windows), embedded once, stored in SQLite. Incremental by hash. |
-| **query** | **no LLM** — your question is embedded and matched by vector similarity. Returns every related file in ~200 ms; nothing is dropped. |
+| **query** | **no LLM** — your question is embedded and matched by vector similarity. Returns every related file in ~200 ms; nothing is dropped. An optional **LLM rerank** (`--rerank`; on by default over MCP) then prunes vocabulary-only matches — fail-open to the deterministic list. |
 | **ask** | one LLM call narrates the answer and cites code as `[[k]]`; the engine replaces each citation with the verbatim block from disk. The model can only *point* at code, never rewrite it — so nothing is hallucinated. Broad questions fan out into parallel sub-agents, then a parent synthesizes. |
 | **forge** | for a file type the engine doesn't index yet (`.toml`, `.astro`, a private DSL), an LLM writes a chunking strategy — accepted only after it partitions *every* matching file exactly. One-time, at your command, off the query path. |
-| **flows** *(opt-in)* | turn it on and every `ask` caches its cross-file walkthrough; the next related question retrieves the whole workflow at once. Off by default — plain query/ask are unchanged. |
+| **flows** *(on by default)* | every `ask` caches its cross-file walkthrough; the next related question retrieves the whole workflow at once, and a near-exact repeat is **served with no LLM** (~0 ms), sha-guarded against changed code. `megabrain flows --disable` / `MEGABRAIN_FLOW_CACHE=0` to turn off. |
 
 Languages: **Python · JS/TS · Markdown** built in; **Ruby · Go · Rust · PHP** with
 `pip install 'megabrain[languages]'`; **anything else** via `megabrain forge` (below).
@@ -389,29 +402,42 @@ whisper of improvement.
 > you measure a win.** Specialization is for the rare pathological file, gated
 > hard.
 
-## flows — self-caching workflow retrieval (opt-in, off by default)
+## flows — it learns from itself (on by default)
 
 Every `ask` synthesizes a cross-file **workflow** ("VAD detects speech →
 `TurnController.on_vad_start` → cancel TTS") that the engine used to discard.
-Turn the flow cache on and it keeps them: the next related question — even
-worded completely differently — retrieves the whole workflow at once.
+The flow cache keeps them — **on by default**, in the same SQLite file as the
+index, zero infrastructure — so megabrain accumulates your repo's workflows
+from use. The next related question — even worded completely differently —
+retrieves the whole workflow at once, and a **near-exact repeat skips the LLM
+entirely**:
+
+| ask | time | LLM |
+|---|---|---|
+| first time | 27.8 s | pays once, caches |
+| repeated (even reworded) | **0.19 s** | **none — served from cache** |
+| after the cited file changed | 21.9 s | sha recheck refuses the stale answer, narrates fresh, re-caches |
+
+*(measured on this repo — the exact run is reproducible with any question)*
 
 ```bash
-megabrain ask ~/repo "how does X work"       # unchanged: flows are OFF by default
-megabrain flows ~/repo --enable              # opt in for this repo; asks now cache their flows
-megabrain index ~/repo --warm-flows 12       # or pre-fill: discover the repo's 12 top workflows now
+megabrain ask ~/repo "how does X work"       # caches its flow automatically
 megabrain flows ~/repo                        # list what's cached · --clear to reset
+megabrain index ~/repo --warm-flows 12       # pre-fill: discover the repo's 12 top workflows now
+megabrain flows ~/repo --disable             # opt this repo out (--enable to return)
+export MEGABRAIN_FLOW_CACHE=0                # kill switch: off everywhere, beats everything
 ```
 
-- **Off by default** — plain `search`/`ask` behave byte-for-byte as before, at
-  zero cost. It's a mode a team turns on so its megabrain accumulates the repo's
-  workflows from use (great for onboarding).
+- **It can never lie about changed code.** A flow records the sha256 of every
+  file it cites; serving re-checks each one **byte-for-byte at that instant**
+  and falls back to a fresh narrate on any mismatch. The next `index` prunes
+  stale flows automatically, and `flows --refresh` re-asks their original
+  questions to *update* them instead.
 - **Rules intact:** the LLM + the one embed happen at *ask* time (write path);
   the read path is pure cosine. Flows only *add* their source files to the
   bundle when missing (never displace real files → completeness only rises), and
-  the narrator gets the cached flow as non-citable context. Any flow whose cited
-  files change sha is pruned on the next index — a stale walkthrough can't
-  outlive its code, and `ask` splices real code regardless.
+  the narrator gets the cached flow as non-citable context — it still splices
+  real code from disk regardless.
 
 Validated on sdk-server: `--warm-flows 5` discovered and cached the system's
 main workflows; a paraphrase ("how does the bot stop talking when the user cuts
@@ -428,7 +454,7 @@ chunks, live. Or run it locally: `python examples/webui/server.py`.
 - **[docs/GUIDE.md](docs/GUIDE.md)** — step-by-step: providers, indexing, the 2000-vs-4000 budget choice, custom chunkers, and the flow cache
 - **[docs/STUDIO.md](docs/STUDIO.md)** — the studio web app: every view, the JSON API, and the deploy recipes
 - **[docs/GRAPH.md](docs/GRAPH.md)** — the knowledge graph in plain language: what the map means, real output, and what it's actually good for
-- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — the full design, the locked rules, and the measurements behind them
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** — the full design, the locked rules, and the measurements behind them
 - **[examples/](examples/)** — programmatic API · a custom `.sql` chunker · the web demo
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** — the best first PR is a new language
 

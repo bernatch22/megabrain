@@ -41,9 +41,10 @@ def main(argv=None):
                         "merged with built-ins and .megabrainignore")
     p.add_argument("--warm-flows", nargs="?", const=6, default=None, type=int,
                    metavar="N",
-                   help="OPT-IN: after indexing, discover the system's main workflows "
-                        "and pre-cache them as flows — N research asks (default 6), "
-                        "so the flow cache starts full instead of building up lazily")
+                   help="after indexing, discover the system's main workflows and "
+                        "pre-cache them as flows — N research asks (default 6, costs "
+                        "one LLM ask each), so the flow cache starts full instead of "
+                        "building up lazily from your own asks")
     p.add_argument("--scan", action="store_true", dest="index_scan",
                    help="print the scan census (what will index + what's skipped and "
                         "why: .gitignore/vendored/generated), THEN index honoring those "
@@ -182,8 +183,10 @@ def main(argv=None):
                    help="re-ask stale flows against the current code (UPDATE, not just "
                         "expire) — reindex first so sha changes are seen")
     p.add_argument("--enable", action="store_true",
-                   help="turn the flow-cache mode ON for this repo (off by default)")
-    p.add_argument("--disable", action="store_true", help="turn the mode OFF")
+                   help="turn the flow cache back ON for this repo (it is on by default)")
+    p.add_argument("--disable", action="store_true",
+                   help="opt this repo out of the flow cache "
+                        "(MEGABRAIN_FLOW_CACHE=0 disables it everywhere)")
 
     p = sub.add_parser("trust",
                        help="approve this repo's .megabrain/strategies/*.py (records "
@@ -392,8 +395,9 @@ def _dispatch(a, raw: list[Path], root: Path) -> None:
             print(_json.dumps(refresh_stale(root), indent=1))
             return
         if not _flows_on(root):
-            print("flow cache is OFF for this repo (opt-in). Enable with: "
-                  "megabrain flows --enable   ·   or pre-fill: megabrain flows --warm")
+            print("flow cache is OFF for this repo (it is on by default — this repo "
+                  "opted out, or MEGABRAIN_FLOW_CACHE=0 is set). Re-enable with: "
+                  "megabrain flows --enable")
             return
         with Store(root) as s:
             metas, _, _ = s.load_flows()

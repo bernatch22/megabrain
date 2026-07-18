@@ -1,9 +1,9 @@
-"""flows — self-caching workflow retrieval (OPT-IN, off by default).
+"""flows — self-caching workflow retrieval (ON by default since 0.11).
 
-This is a MODE the developer turns on per repo (`megabrain flows --enable`, or
-implied by `--warm-flows`); the env var MEGABRAIN_FLOW_CACHE forces it on/off
-globally. When OFF — the default — nothing here runs: `query`/`ask` behave
-exactly as they did before, at zero cost. When ON:
+A repo can opt OUT (`megabrain flows --disable`, persisted in the index meta);
+the env var MEGABRAIN_FLOW_CACHE forces it on/off globally (=0 is the kill
+switch and wins over everything). When OFF nothing here runs: `query`/`ask`
+behave exactly as before, at zero cost. When ON — the default:
 
 Every `ask` synthesizes a cross-file walkthrough (a WORKFLOW: "VAD detects
 speech → TurnController.on_vad_start → cancel TTS"). That synthesis is
@@ -76,21 +76,23 @@ def strip_code(text: str) -> str:
 
 
 def enabled(root=None) -> bool:
-    """OFF by default — the flow cache is an opt-in MODE. Plain `query`/`ask`
-    behave exactly as before unless a dev turns it on for a repo (persisted in
-    the index meta via set_enabled / `megabrain flows --enable`, or implied by
-    `--warm-flows`). The env var overrides both ways as a global switch/kill:
-    MEGABRAIN_FLOW_CACHE=1 forces on, =0 forces off (kill wins over the flag)."""
+    """ON by default (since 0.11) — the flow cache runs unless a repo opts out
+    via set_enabled(False) / `megabrain flows --disable` (persisted in the
+    index meta; meta ABSENT = default on, so existing indexes flip on without
+    a re-index). The env var overrides both ways as a global switch/kill:
+    MEGABRAIN_FLOW_CACHE=0 forces off everywhere, =1 forces on (kill wins
+    over the per-repo flag)."""
     env = os.environ.get("MEGABRAIN_FLOW_CACHE")
     if env is not None:
         return env != "0"
     if root is None:
-        return False
+        return True
     try:
         with Store(Path(root)) as store:
-            return bool(store.get_meta(_META))
+            v = store.get_meta(_META)
+            return True if v is None else bool(v)
     except Exception:                                       # noqa: BLE001
-        return False
+        return True
 
 
 def set_enabled(root, on: bool) -> None:

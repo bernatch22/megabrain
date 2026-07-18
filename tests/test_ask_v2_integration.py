@@ -140,7 +140,11 @@ def test_openrouter_orchestration_and_synthesis(tiny_repo, fake_openrouter):
 
 def test_openrouter_buffered_ask_and_mcp_footer(tiny_repo, fake_openrouter):
     """The buffered path (what MCP/POST /ask use): ask(agents=True) -> trace in
-    the dict, render_ask splices, and the MCP tool appends the agent footer."""
+    the dict, render_ask splices, and the MCP tool appends the agent footer.
+    Flow cache off for this repo: the footer only exists on a FRESH narrate —
+    with the (default-on) cache, the repeat ask would serve verbatim instead."""
+    from megabrain.storage.flows import set_enabled
+    set_enabled(tiny_repo, False)
     out = ask(tiny_repo, QUESTION, agents=True)
     assert out["agents"] and len(out["agents"]) >= 2
     rendered = render_ask(out)

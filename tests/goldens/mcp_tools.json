@@ -163,7 +163,7 @@
   "name": "megabrain_forge"
  },
  {
-  "description": "Manage the self-caching workflow retrieval for a repo (OPT-IN, off by default). When on, every megabrain_ask caches its cross-file walkthrough and the next related question retrieves the whole workflow at once \u2014 no extra call, it rides megabrain_ask/megabrain_search. Actions: 'warm' discovers the repo's main workflows and pre-caches them with N research asks (also enables the mode); 'refresh' re-asks stale flows against the current code (UPDATE, not just expire); 'enable'/'disable' toggle the mode; 'list' shows what's cached. Use 'warm' once on a repo an agent team will work in, so its workflows are searchable from the first question.",
+  "description": "Manage the self-caching workflow retrieval for a repo (ON by default). Every megabrain_ask caches its cross-file walkthrough and the next related question retrieves the whole workflow at once \u2014 a near-exact repeat serves the cached answer with NO LLM (~0 ms), guarded by a per-file sha recheck so it can never describe changed code. No extra call needed: it rides megabrain_ask/megabrain_search. Actions: 'warm' discovers the repo's main workflows and pre-caches them with N research asks; 'refresh' re-asks stale flows against the current code (UPDATE, not just expire); 'disable' opts the repo out / 'enable' opts back in (MEGABRAIN_FLOW_CACHE=0 kills it globally); 'list' shows what's cached. Use 'warm' once on a repo an agent team will work in, so its workflows are searchable from the first question.",
   "inputSchema": {
    "properties": {
     "action": {

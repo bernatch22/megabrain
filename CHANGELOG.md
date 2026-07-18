@@ -2,6 +2,19 @@
 
 ## Unreleased — megabrain_graph · search + LLM rerank · repo registry
 
+- **Flow cache ON by default** (was opt-in since its introduction). Measured
+  on this repo: a repeated ask (even reworded) drops from 27.8 s to **0.19 s
+  with zero LLM**, and correctness is guarded per serve by a byte-level
+  sha256 recheck of every cited file — editing a cited file makes the next
+  ask narrate fresh and re-cache, never serve stale. Meta absent = on, so
+  existing indexes flip on without a re-index. Opt out per repo with
+  `megabrain flows --disable` (persisted), or globally with
+  `MEGABRAIN_FLOW_CACHE=0` (the kill beats a per-repo enable). The two costs
+  this trades: `ask` now writes to the repo's `.megabrain/db.sqlite` (one
+  embed + one INSERT), and related questions may attach up to 3 flow-source
+  files to the bundle (pure additions, never displacing ranked files).
+  `--warm-flows` / `flows --warm` stay explicit commands (they cost real LLM
+  asks); warming re-enables an opted-out repo.
 - **`megabrain_graph` — the repo as a navigable knowledge graph (new MCP tool
   / CLI verb / `GET /graph` / studio tab).** Built from what indexing already
   owns: AST import/call edges (structural lane) + skeleton-embedding cosine

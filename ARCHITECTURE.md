@@ -273,12 +273,14 @@ CLI (`search --rerank`, which implies `--prune`); **default-on over MCP**
 `MEGABRAIN_RERANK_MODEL`, falling back to `ask_model()`. Measured on this repo's
 scoring query: 21 signal chunks → 6.
 
-### 3.4 Flow cache — self-caching workflow retrieval (`flows.py`, opt-in)
+### 3.4 Flow cache — self-caching workflow retrieval (`flows.py`, on by default)
 
-**OFF by default** — a mode a dev enables per repo (`megabrain flows --enable`,
-or implied by `--warm-flows`; env `MEGABRAIN_FLOW_CACHE` forces on/off). When
-off, `load_state` skips flows entirely and `search`/`ask` are byte-for-byte the
-prior behavior at zero cost. When on:
+**ON by default (since 0.11)** — a repo opts out with `megabrain flows
+--disable` (persisted in the index meta; meta absent = on, so existing indexes
+flip on without a re-index), and env `MEGABRAIN_FLOW_CACHE=0` is the global
+kill that beats even a per-repo enable. When off, `load_state` skips flows
+entirely and `search`/`ask` are byte-for-byte the prior behavior at zero cost.
+When on — the default:
 
 Every successful `ask` synthesizes a cross-file WORKFLOW ("VAD detects speech →
 `TurnController.on_vad_start` → cancel TTS") that used to be thrown away. It is
@@ -299,7 +301,7 @@ fully re-worded paraphrase. The hard rules stay intact by construction:
   describes. And `ask` splices real code from disk regardless: a stale flow
   could only mis-prioritize, never fabricate (rule 5 untouched).
 
-**Warmup (opt-in):** `megabrain index --warm-flows N` / `flows --warm N` — right
+**Warmup (explicit, costs LLM):** `megabrain index --warm-flows N` / `flows --warm N` — right
 after the first index, an index-time LLM planner reads the graph's hub files (top
 edge-degree) + their doclines and writes N research questions covering the main
 workflows, then runs one `ask` each, so the cache starts full on day one instead

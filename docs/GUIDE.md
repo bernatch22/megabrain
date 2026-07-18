@@ -282,7 +282,7 @@ before answering.
 | `megabrain_graph` | the repo as a knowledge graph: `mode: "map"` (default) = communities + core "god node" files + surprising cross-community links; `mode: "node"` (`node:`) = one file's community, in/out edges, semantic twins, symbols and REAL chunks (a concept resolves to its file by embedding); `mode: "path"` (`source:`/`target:`) = the route between two concepts. Deterministic bar one cached LLM call that only names communities. |
 | `megabrain_index` | index/refresh a repo the agent hasn't seen — **or `list: true` (or no `repo_path`)** to enumerate every repo indexed on this machine (the global registry), so the agent can discover what's available. |
 | `megabrain_forge` | make a file type the engine can't read yet (`.toml`, `.astro`) searchable. |
-| `megabrain_flows` | manage the opt-in flow cache: `action: "warm"` pre-caches the repo's workflows, `"refresh"` updates stale ones, `"list"` / `"enable"`. |
+| `megabrain_flows` | manage the flow cache (on by default): `action: "warm"` pre-caches the repo's workflows, `"refresh"` updates stale ones, `"list"` shows them, `"disable"` opts the repo out. |
 
 Every tool costs the calling agent context and a routing
 decision, so megabrain exposes only what it alone can do — pulling a single file or
@@ -306,12 +306,12 @@ That single instruction is the difference between an agent that burns 15 turns
 reconstructing a flow and one that gets it in a single grounded call — the code
 is spliced verbatim from disk, so nothing it reads is hallucinated.
 
-### With the flow cache on (§7), it compounds
+### The flow cache (§7, on by default) makes it compound
 
-If you `--enable` the flow cache on a team repo, each agent's `ask` leaves its
-synthesized workflow in the index; the next agent (or the next question, worded
-differently) retrieves that whole workflow at once — no extra tool, it rides the
-same `megabrain_ask`/`megabrain_search` calls.
+Each agent's `ask` leaves its synthesized workflow in the index; the next agent
+(or the next question, worded differently) retrieves that whole workflow at
+once — no extra tool, it rides the same `megabrain_ask`/`megabrain_search`
+calls. A near-exact repeat is served with **no LLM at all** (~0 ms).
 
 ---
 
@@ -391,22 +391,26 @@ doesn't install.
 
 ---
 
-## 7. Flow cache — self-caching workflow retrieval (opt-in)
+## 7. Flow cache — self-caching workflow retrieval (on by default)
 
-**Off by default.** Plain `search`/`ask` never touch it. Turn it on when a repo
-has several devs and you want megabrain to *accumulate the team's understanding*
-of the codebase.
+**On by default** (since 0.11) — every `ask` already caches its flow, in the
+same SQLite file as the index, and megabrain *accumulates your (or your
+team's) understanding* of the codebase from use. Opt a repo out with
+`megabrain flows --disable`, or kill it everywhere with
+`MEGABRAIN_FLOW_CACHE=0` — off, `search`/`ask` behave byte-for-byte as if the
+cache never existed.
 
 The idea: every `ask` synthesizes a cross-file **workflow** ("VAD detects speech
-→ `TurnController.on_vad_start` → cancel TTS"). Normally that's thrown away. With
-the cache on, it's stored — and the next related question, even worded
-completely differently, retrieves the whole workflow at once.
+→ `TurnController.on_vad_start` → cancel TTS"). That used to be thrown away.
+Now it's stored — and the next related question, even worded completely
+differently, retrieves the whole workflow at once.
 
 ```bash
-megabrain flows ~/repo --enable          # opt in; from now, each ask caches its flow
-megabrain index ~/repo --warm-flows 12   # OR pre-fill: discover the repo's 12 top workflows now
-megabrain flows ~/repo                    # list what's cached
-megabrain flows ~/repo --clear           # wipe · MEGABRAIN_FLOW_CACHE=0 kills it globally
+megabrain flows ~/repo                    # list what's cached (asks cache automatically)
+megabrain index ~/repo --warm-flows 12   # pre-fill: discover the repo's 12 top workflows now
+megabrain flows ~/repo --clear           # wipe the cached flows (stays enabled)
+megabrain flows ~/repo --disable         # opt this repo out · --enable to come back
+export MEGABRAIN_FLOW_CACHE=0            # global kill switch (beats per-repo enable)
 ```
 
 ### How it works — and why it's safe
@@ -438,8 +442,9 @@ after the first index, an **index-time planner** reads the graph's hub files
 (highest edge degree) + their doclines and writes **N research questions**
 covering the system's main workflows, then runs **one `ask` per question** —
 expansive queries whose whole purpose is to fill the cache. So the cache starts
-full on day one instead of building up lazily. (It also *enables* the mode for
-that repo.) The `ask` multi-agent fan-out and this warmup compose: a broad ask
+full on day one instead of building up lazily. (Warming implies intent, so it
+also *re-enables* the cache on a repo that had opted out.) The `ask`
+multi-agent fan-out and this warmup compose: a broad ask
 that fans out ALSO caches its synthesized flow.
 
 ### What happens when a file changes — expire OR update

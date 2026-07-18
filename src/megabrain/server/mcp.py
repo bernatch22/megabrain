@@ -17,7 +17,7 @@ exposes what it alone can do):
          + install a chunker per type (repo-local, trust-gated). specialize=true
          only lists poorly-chunked covered files (LLM specialization was removed;
          hand-write + gate via megabrain.forge.specialize.gate_strategy)
-  megabrain_flows(repo_path, action?, n?)   -> manage the opt-in flow cache
+  megabrain_flows(repo_path, action?, n?)   -> manage the flow cache (on by default)
       -> action list|warm|refresh|enable|disable (warm pre-caches N workflows)
 
 Run: python3 -m megabrain.mcp_server
@@ -184,15 +184,18 @@ TOOLS = [
     {
         "name": "megabrain_flows",
         "description": (
-            "Manage the self-caching workflow retrieval for a repo (OPT-IN, off by "
-            "default). When on, every megabrain_ask caches its cross-file walkthrough "
-            "and the next related question retrieves the whole workflow at once — no "
-            "extra call, it rides megabrain_ask/megabrain_search. Actions: 'warm' "
+            "Manage the self-caching workflow retrieval for a repo (ON by default). "
+            "Every megabrain_ask caches its cross-file walkthrough and the next "
+            "related question retrieves the whole workflow at once — a near-exact "
+            "repeat serves the cached answer with NO LLM (~0 ms), guarded by a "
+            "per-file sha recheck so it can never describe changed code. No extra "
+            "call needed: it rides megabrain_ask/megabrain_search. Actions: 'warm' "
             "discovers the repo's main workflows and pre-caches them with N research "
-            "asks (also enables the mode); 'refresh' re-asks stale flows against the "
-            "current code (UPDATE, not just expire); 'enable'/'disable' toggle the "
-            "mode; 'list' shows what's cached. Use 'warm' once on a repo an agent team "
-            "will work in, so its workflows are searchable from the first question."),
+            "asks; 'refresh' re-asks stale flows against the current code (UPDATE, "
+            "not just expire); 'disable' opts the repo out / 'enable' opts back in "
+            "(MEGABRAIN_FLOW_CACHE=0 kills it globally); 'list' shows what's cached. "
+            "Use 'warm' once on a repo an agent team will work in, so its workflows "
+            "are searchable from the first question."),
         "inputSchema": {
             "type": "object",
             "properties": {

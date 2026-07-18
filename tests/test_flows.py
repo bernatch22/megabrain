@@ -35,8 +35,23 @@ def repo(tmp_path, fake_embedder):
     (tmp_path / "turn.py").write_text(TURN)
     (tmp_path / "billing.py").write_text(OTHER)
     index_repo(tmp_path)
-    flows_mod.set_enabled(tmp_path, True)     # opt-in mode; off by default
+    flows_mod.set_enabled(tmp_path, True)     # explicit (it's also the default)
     return tmp_path
+
+
+def test_default_on_and_opt_out(tmp_path, fake_embedder, monkeypatch):
+    """The cache is ON by default (no meta written) — a repo opts OUT with
+    set_enabled(False), and MEGABRAIN_FLOW_CACHE=0 is the global kill that
+    beats even an explicit per-repo enable."""
+    monkeypatch.delenv("MEGABRAIN_FLOW_CACHE", raising=False)
+    (tmp_path / "a.py").write_text("def f():\n    return 1\n")
+    index_repo(tmp_path)
+    assert flows_mod.enabled(tmp_path) is True          # meta absent -> default on
+    flows_mod.set_enabled(tmp_path, False)
+    assert flows_mod.enabled(tmp_path) is False         # per-repo opt-out sticks
+    flows_mod.set_enabled(tmp_path, True)
+    monkeypatch.setenv("MEGABRAIN_FLOW_CACHE", "0")
+    assert flows_mod.enabled(tmp_path) is False         # kill switch wins
 
 
 def _cache(repo):
@@ -194,13 +209,15 @@ def test_warm_flows_respects_kill_switch(repo, monkeypatch):
     assert rep["warmed"] == 0 and rep["skipped"]
 
 
-def test_mode_off_by_default_is_a_total_noop(tmp_path, fake_embedder):
-    """The load-bearing requirement: a repo that never opted in behaves EXACTLY
-    as before — no flow written, none loaded, no flows in the result."""
+def test_opted_out_repo_is_a_total_noop(tmp_path, fake_embedder):
+    """The load-bearing requirement: a repo that opted OUT behaves EXACTLY as
+    if the cache never existed — no flow written, none loaded, none in the
+    result. (On by default since 0.11; opt-out must stay a hard off.)"""
     (tmp_path / "vad.py").write_text(VAD)
     (tmp_path / "turn.py").write_text(TURN)
     index_repo(tmp_path)
-    assert not flows_mod.enabled(tmp_path)          # off by default
+    flows_mod.set_enabled(tmp_path, False)
+    assert not flows_mod.enabled(tmp_path)          # opted out
     from tests.conftest import FakeEmbedder
     assert cache_flow(tmp_path, FLOW_Q, FLOW_TEXT, ["vad.py"],
                       emb=FakeEmbedder()) is None   # write path no-op

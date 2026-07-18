@@ -7,7 +7,8 @@ running research `ask`s so each walkthrough lands in the cache via ask's write
 path. It sits in the ask layer because it drives the narrator — storage never
 imports upward.
 
-Both entries are OPT-IN and cost LLM calls: `megabrain index --warm-flows` /
+The cache itself is ON by default (see storage.flows); these two entries stay
+EXPLICIT commands because they cost LLM calls: `megabrain index --warm-flows` /
 `flows --warm` (warm_flows) and `flows --refresh` (refresh_stale).
 """
 
@@ -62,16 +63,17 @@ def _research_questions(root: Path, limit: int) -> list[str]:
 
 
 def warm_flows(root: Path, limit: int = 6, ask_fn=None, quiet: bool = False) -> dict:
-    """OPT-IN warmup (`megabrain index --warm-flows` / `flows --warm`): right
+    """EXPLICIT warmup (`megabrain index --warm-flows` / `flows --warm`): right
     after the first indexing, discover the system's main workflows and run one
     research `ask` per question — each successful walkthrough lands in the flow
     cache via ask's write path, so the cache starts full instead of building up
-    lazily. Costs `limit` LLM calls; never runs unless explicitly requested.
-    Warming implies intent, so it TURNS THE MODE ON for this repo."""
+    lazily from your own asks. Costs `limit` LLM calls; never runs unless
+    explicitly requested. Warming implies intent, so it re-enables the cache
+    even on a repo that had opted out."""
     if os.environ.get("MEGABRAIN_FLOW_CACHE") == "0":
         return {"warmed": 0, "questions": [], "skipped": "flow cache killed (env)"}
     root = Path(root)
-    set_enabled(root, True)                                  # opt-in by warming
+    set_enabled(root, True)                                  # warming implies intent
     questions = _research_questions(root, limit)
     if ask_fn is None:
         from .narrator import ask as ask_fn  # noqa: PLW0127
