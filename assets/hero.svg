@@ -1,95 +1,125 @@
-<?xml version="1.0" ?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 360" width="900" height="360" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" role="img" aria-label="megabrain graph path lighting up a knowledge graph, hop by hop, with no LLM">
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 400" width="900" height="400" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" role="img" aria-label="Left: megabrain_search retrieval with the LLM rerank striking vocabulary-only matches. Right: megabrain_ask narrating once, caching the flow in SQLite, and serving a reworded repeat in 0.19s with zero LLM.">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#0b0a08"/>
-      <stop offset="1" stop-color="#12100b"/>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d0c0a"/>
+      <stop offset="1" stop-color="#100e0b"/>
     </linearGradient>
-    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
-      <stop offset="0" stop-color="#ffa64d" stop-opacity="0.38"/>
-      <stop offset="1" stop-color="#ffa64d" stop-opacity="0"/>
+    <radialGradient id="serveGlow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#8ac89a" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#8ac89a" stop-opacity="0"/>
     </radialGradient>
   </defs>
-  <rect x="1" y="1" width="898" height="358" rx="14" fill="url(#bg)" stroke="#2a2118" stroke-width="1.5"/>
-  <line x1="336" y1="18" x2="336" y2="342" stroke="#241d15" stroke-width="1"/>
-  <circle cx="28" cy="30" r="4.5" fill="#ff5f56"/>
-  <circle cx="46" cy="30" r="4.5" fill="#ffbd2e"/>
-  <circle cx="64" cy="30" r="4.5" fill="#27c93f"/>
-  <text x="320" y="34" text-anchor="end" font-size="10" fill="#8a7f70">megabrain</text>
 
-  <!-- typed command -->
-  <text x="20" y="74" font-size="11" fill="#ffa64d" font-weight="600">$</text>
-  <text x="33" y="74" font-size="11" fill="#e9e4dc" opacity="0">megabrain graph<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.04;0.08;0.96;1" dur="11s" repeatCount="indefinite"/></text>
-  <text x="128" y="74" font-size="11" fill="#c6bcae" opacity="0">--path scoring narrator<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.10;0.16;0.96;1" dur="11s" repeatCount="indefinite"/></text>
-  <rect y="65" width="7" height="12" fill="#ffa64d" x="270" opacity="0.9">
-    <animate attributeName="opacity" values="0.9;0.9;0.15;0.9;0.15;0.9;0" keyTimes="0;0.18;0.26;0.34;0.42;0.96;1" dur="11s" repeatCount="indefinite"/>
+  <rect x="0.5" y="0.5" width="899" height="399" rx="12" fill="url(#bg)" stroke="#2a2118"/>
+
+  <!-- ═══════════════ LEFT PANEL — search + rerank ═══════════════ -->
+  <rect x="16" y="16" width="420" height="368" rx="10" fill="#12100c" stroke="#241d15"/>
+  <text x="30" y="42" font-size="13" font-weight="700" fill="#ffa64d">megabrain_search</text>
+  <text x="422" y="42" text-anchor="end" font-size="9" fill="#8a7f70">retrieval → prune → LLM rerank</text>
+
+  <text x="30" y="66" font-size="10.5" fill="#e9e4dc" opacity="0">$ megabrain search . "how does the rerank drop noise"<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.03;0.06;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+
+  <!-- chunk rows: y = 84 + i*26 -->
+  <!-- row 0 · signal -->
+  <g><rect x="28" y="84" width="392" height="20" rx="4" fill="#171310" stroke="#241d15" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.080;0.100;0.95;1" dur="16s" repeatCount="indefinite"/></rect>
+  <text x="38" y="98" font-size="9.5" fill="#c6bcae" opacity="0">[1552] retrieval/rerank.py L1-101 · llm_rerank<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.080;0.100;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+  <text x="412" y="98" text-anchor="end" font-size="9.5" fill="#8a7f70" opacity="0">1.06<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.080;0.100;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+  <rect x="28" y="84" width="3" height="20" rx="1.5" fill="#ffa64d" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.48;0.50;0.95;1" dur="16s" repeatCount="indefinite"/></rect></g>
+  <!-- row 1 · signal -->
+  <g><rect x="28" y="110" width="392" height="20" rx="4" fill="#171310" stroke="#241d15" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.093;0.113;0.95;1" dur="16s" repeatCount="indefinite"/></rect>
+  <text x="38" y="124" font-size="9.5" fill="#c6bcae" opacity="0">[1772] retrieval/bundle.py L1-121 · search_with_state<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.093;0.113;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+  <text x="412" y="124" text-anchor="end" font-size="9.5" fill="#8a7f70" opacity="0">0.95<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.093;0.113;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+  <rect x="28" y="110" width="3" height="20" rx="1.5" fill="#ffa64d" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.48;0.50;0.95;1" dur="16s" repeatCount="indefinite"/></rect></g>
+  <!-- row 2 · noise, struck at 0.38 -->
+  <g><rect x="28" y="136" width="392" height="20" rx="4" fill="#171310" stroke="#241d15" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0.22;0.22;0" keyTimes="0;0.106;0.126;0.38;0.40;0.95;1" dur="16s" repeatCount="indefinite"/></rect>
+  <text x="38" y="150" font-size="9.5" fill="#c6bcae" opacity="0">[1633] tests/test_scoring_lanes.py L1-60<animate attributeName="opacity" values="0;0;1;1;0.22;0.22;0" keyTimes="0;0.106;0.126;0.38;0.40;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+  <text x="412" y="150" text-anchor="end" font-size="9.5" fill="#8a7f70" opacity="0">0.93<animate attributeName="opacity" values="0;0;1;1;0.22;0.22;0" keyTimes="0;0.106;0.126;0.38;0.40;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+  <line x1="36" y1="146" x2="300" y2="146" stroke="#e06c60" stroke-width="1" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.38;0.40;0.95;1" dur="16s" repeatCount="indefinite"/></line>
+  <text x="412" y="150" text-anchor="end" font-size="9" fill="#e06c60" opacity="0">vocabulary-only ✕<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.38;0.40;0.95;1" dur="16s" repeatCount="indefinite"/></text></g>
+  <!-- row 3 · signal -->
+  <g><rect x="28" y="162" width="392" height="20" rx="4" fill="#171310" stroke="#241d15" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.119;0.139;0.95;1" dur="16s" repeatCount="indefinite"/></rect>
+  <text x="38" y="176" font-size="9.5" fill="#c6bcae" opacity="0">[1410] retrieval/scoring.py L88-140 · score_chunks<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.119;0.139;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+  <text x="412" y="176" text-anchor="end" font-size="9.5" fill="#8a7f70" opacity="0">0.91<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.119;0.139;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+  <rect x="28" y="162" width="3" height="20" rx="1.5" fill="#ffa64d" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.48;0.50;0.95;1" dur="16s" repeatCount="indefinite"/></rect></g>
+  <!-- row 4 · noise, struck at 0.41 -->
+  <g><rect x="28" y="188" width="392" height="20" rx="4" fill="#171310" stroke="#241d15" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0.22;0.22;0" keyTimes="0;0.132;0.152;0.41;0.43;0.95;1" dur="16s" repeatCount="indefinite"/></rect>
+  <text x="38" y="202" font-size="9.5" fill="#c6bcae" opacity="0">[1287] evals/ab_gate.py L20-77<animate attributeName="opacity" values="0;0;1;1;0.22;0.22;0" keyTimes="0;0.132;0.152;0.41;0.43;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+  <text x="412" y="202" text-anchor="end" font-size="9.5" fill="#8a7f70" opacity="0">0.88<animate attributeName="opacity" values="0;0;1;1;0.22;0.22;0" keyTimes="0;0.132;0.152;0.41;0.43;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+  <line x1="36" y1="198" x2="240" y2="198" stroke="#e06c60" stroke-width="1" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.41;0.43;0.95;1" dur="16s" repeatCount="indefinite"/></line>
+  <text x="412" y="202" text-anchor="end" font-size="9" fill="#e06c60" opacity="0">vocabulary-only ✕<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.41;0.43;0.95;1" dur="16s" repeatCount="indefinite"/></text></g>
+  <!-- row 5 · signal -->
+  <g><rect x="28" y="214" width="392" height="20" rx="4" fill="#171310" stroke="#241d15" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.145;0.165;0.95;1" dur="16s" repeatCount="indefinite"/></rect>
+  <text x="38" y="228" font-size="9.5" fill="#c6bcae" opacity="0">[1119] app.py L340-395 · prune<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.145;0.165;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+  <text x="412" y="228" text-anchor="end" font-size="9.5" fill="#8a7f70" opacity="0">0.84<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.145;0.165;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+  <rect x="28" y="214" width="3" height="20" rx="1.5" fill="#ffa64d" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.48;0.50;0.95;1" dur="16s" repeatCount="indefinite"/></rect></g>
+  <!-- row 6 · noise, struck at 0.44 -->
+  <g><rect x="28" y="240" width="392" height="20" rx="4" fill="#171310" stroke="#241d15" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0.22;0.22;0" keyTimes="0;0.158;0.178;0.44;0.46;0.95;1" dur="16s" repeatCount="indefinite"/></rect>
+  <text x="38" y="254" font-size="9.5" fill="#c6bcae" opacity="0">[1093] tests/conftest.py L1-44<animate attributeName="opacity" values="0;0;1;1;0.22;0.22;0" keyTimes="0;0.158;0.178;0.44;0.46;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+  <text x="412" y="254" text-anchor="end" font-size="9.5" fill="#8a7f70" opacity="0">0.80<animate attributeName="opacity" values="0;0;1;1;0.22;0.22;0" keyTimes="0;0.158;0.178;0.44;0.46;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+  <line x1="36" y1="250" x2="238" y2="250" stroke="#e06c60" stroke-width="1" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.44;0.46;0.95;1" dur="16s" repeatCount="indefinite"/></line>
+  <text x="412" y="254" text-anchor="end" font-size="9" fill="#e06c60" opacity="0">vocabulary-only ✕<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.44;0.46;0.95;1" dur="16s" repeatCount="indefinite"/></text></g>
+
+  <!-- rerank sweep band -->
+  <rect x="28" y="80" width="392" height="24" rx="4" fill="#ffa64d" opacity="0">
+    <animate attributeName="opacity" values="0;0;0.14;0.14;0;0" keyTimes="0;0.34;0.36;0.44;0.47;1" dur="16s" repeatCount="indefinite"/>
+    <animate attributeName="y" values="80;80;238;238" keyTimes="0;0.35;0.45;1" dur="16s" repeatCount="indefinite"/>
   </rect>
 
-  <!-- warning + the answer, printed line by line -->
-  <text x="20" y="106" font-size="10.5" fill="#d68a5a" opacity="0" style="white-space:pre">scoring.py and narrator.py never call each other —<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.30;0.32;0.96;1" dur="11s" repeatCount="indefinite"/></text>
-  <text x="20" y="122" font-size="10.5" fill="#d68a5a" opacity="0" style="white-space:pre">shown in call-flow order (the calls run this way)<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.315;0.335;0.96;1" dur="11s" repeatCount="indefinite"/></text>
+  <!-- status lines -->
+  <text x="30" y="288" font-size="10" fill="#8a7f70" opacity="0">19 signal chunks (31 pruned) · 2 ms · no LLM<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.19;0.21;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+  <text x="30" y="310" font-size="10" fill="#ffb86b" opacity="0">rerank: one cheap LLM pass · ~1–2 s · fail-open<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.32;0.34;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+  <text x="30" y="338" font-size="11.5" font-weight="700" fill="#8ac89a" opacity="0">→ your agent reads signal, not a haystack<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.55;0.57;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+  <text x="30" y="364" font-size="8.5" fill="#8a7f70" opacity="0">the rerank can only drop, never invent — retrieval stays deterministic<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.60;0.62;0.95;1" dur="16s" repeatCount="indefinite"/></text>
 
-  <text x="20" y="152" font-size="11" fill="#ffa64d" opacity="0" style="white-space:pre">narrator.py<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.345;0.365;0.96;1" dur="11s" repeatCount="indefinite"/></text>
-  <text x="20" y="174" font-size="11" fill="#c6bcae" opacity="0" style="white-space:pre">  └─ call → agents.py    · via stream_events<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.42;0.44;0.96;1" dur="11s" repeatCount="indefinite"/></text>
-  <text x="20" y="196" font-size="11" fill="#c6bcae" opacity="0" style="white-space:pre">  └─ call → scoring.py   · via ident_tokens<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.49;0.51;0.96;1" dur="11s" repeatCount="indefinite"/></text>
+  <!-- ═══════════════ RIGHT PANEL — ask + flow cache ═══════════════ -->
+  <rect x="464" y="16" width="420" height="368" rx="10" fill="#12100c" stroke="#241d15"/>
+  <text x="478" y="42" font-size="13" font-weight="700" fill="#ffa64d">megabrain_ask</text>
+  <text x="870" y="42" text-anchor="end" font-size="9" fill="#8a7f70">narrate once · cache · repeats free</text>
 
-  <text x="20" y="236" font-size="11.5" fill="#8ac89a" font-weight="600" opacity="0" style="white-space:pre">2 hops · real call sites · 0 files opened<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.56;0.58;0.96;1" dur="11s" repeatCount="indefinite"/></text>
-  <text x="20" y="330" font-size="10" fill="#8a7f70" opacity="0" style="white-space:pre">no LLM in the retrieval path · ~200ms<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.60;0.62;0.96;1" dur="11s" repeatCount="indefinite"/></text>
+  <text x="478" y="66" font-size="10.5" fill="#e9e4dc" opacity="0">$ megabrain ask . "how does the llm rerank work?"<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.05;0.08;0.95;1" dur="16s" repeatCount="indefinite"/></text>
 
-  <!-- background graph (faint) -->
-  <g stroke="#2a2118" stroke-width="1">
-    <line x1="412.9" y1="59.4" x2="379.4" y2="90.4"/><line x1="417.1" y1="114.5" x2="398.1" y2="146.0"/>
-    <line x1="476.6" y1="183.6" x2="448.7" y2="145.4"/><line x1="412.9" y1="59.4" x2="417.1" y2="114.5"/>
-    <line x1="850.3" y1="132.3" x2="828.8" y2="169.5"/><line x1="866.7" y1="224.6" x2="828.8" y2="169.5"/>
-    <line x1="775.6" y1="32.0" x2="817.4" y2="56.4"/><line x1="773.7" y1="242.2" x2="738.7" y2="235.7"/>
-    <line x1="481.9" y1="39.8" x2="481.3" y2="118.0"/><line x1="817.4" y1="56.4" x2="806.0" y2="120.0"/>
-    <line x1="448.7" y1="145.4" x2="481.3" y2="118.0"/><line x1="766.8" y1="158.3" x2="806.0" y2="120.0"/>
-    <line x1="870.8" y1="184.9" x2="828.8" y2="169.5"/><line x1="379.4" y1="90.4" x2="412.9" y2="59.4"/>
-    <line x1="637.3" y1="325.8" x2="738.7" y2="235.7"/><line x1="557.5" y1="197.8" x2="531.0" y2="118.0"/>
-    <line x1="579.5" y1="39.1" x2="531.0" y2="118.0"/><line x1="452.6" y1="251.7" x2="406.0" y2="205.0"/>
-    <line x1="689.5" y1="37.6" x2="650.1" y2="109.9"/><line x1="637.3" y1="325.8" x2="671.0" y2="210.0"/>
-    <line x1="501.1" y1="314.7" x2="557.5" y2="197.8"/><line x1="398.1" y1="146.0" x2="448.7" y2="145.4"/>
-    <line x1="650.1" y1="109.9" x2="689.5" y2="37.6"/><line x1="687.7" y1="140.9" x2="671.0" y2="210.0"/>
-    <line x1="452.6" y1="251.7" x2="476.6" y2="183.6"/><line x1="579.5" y1="39.1" x2="481.9" y2="39.8"/>
-    <line x1="689.5" y1="37.6" x2="775.6" y2="32.0"/><line x1="817.4" y1="56.4" x2="775.6" y2="32.0"/>
-    <line x1="738.7" y1="235.7" x2="794.8" y2="213.5"/>
-    <circle cx="689.5" cy="37.6" r="3.4" fill="#3a3128"/><circle cx="738.7" cy="235.7" r="3.4" fill="#3a3128"/>
-    <circle cx="817.4" cy="56.4" r="3.4" fill="#3a3128"/><circle cx="579.5" cy="39.1" r="3.4" fill="#3a3128"/>
-    <circle cx="476.6" cy="183.6" r="3.4" fill="#3a3128"/><circle cx="379.4" cy="90.4" r="3.4" fill="#3a3128"/>
-    <circle cx="775.6" cy="32.0" r="3.4" fill="#3a3128"/><circle cx="773.7" cy="242.2" r="3.4" fill="#3a3128"/>
-    <circle cx="850.3" cy="132.3" r="3.4" fill="#3a3128"/><circle cx="412.9" cy="59.4" r="3.4" fill="#3a3128"/>
-    <circle cx="794.8" cy="213.5" r="3.4" fill="#3a3128"/><circle cx="637.3" cy="325.8" r="3.4" fill="#3a3128"/>
-    <circle cx="557.5" cy="197.8" r="3.4" fill="#3a3128"/><circle cx="481.3" cy="118.0" r="3.4" fill="#3a3128"/>
-    <circle cx="417.1" cy="114.5" r="3.4" fill="#3a3128"/><circle cx="687.7" cy="140.9" r="3.4" fill="#3a3128"/>
-    <circle cx="501.1" cy="314.7" r="3.4" fill="#3a3128"/><circle cx="452.6" cy="251.7" r="3.4" fill="#3a3128"/>
-    <circle cx="481.9" cy="39.8" r="3.4" fill="#3a3128"/><circle cx="828.8" cy="169.5" r="3.4" fill="#3a3128"/>
-    <circle cx="870.8" cy="184.9" r="3.4" fill="#3a3128"/><circle cx="766.8" cy="158.3" r="3.4" fill="#3a3128"/>
-    <circle cx="398.1" cy="146.0" r="3.4" fill="#3a3128"/><circle cx="866.7" cy="224.6" r="3.4" fill="#3a3128"/>
-    <circle cx="850.3" cy="132.3" r="3.4" fill="#3a3128"/>
+  <!-- the narrated answer -->
+  <rect x="476" y="74" width="392" height="98" rx="6" fill="#141210" stroke="#241d15" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.09;0.11;0.95;1" dur="16s" repeatCount="indefinite"/></rect>
+  <text x="860" y="88" text-anchor="end" font-size="8" fill="#8ac89a" opacity="0">verbatim from disk · rerank.py L74<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.23;0.25;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+  <text x="486" y="92" font-size="9.5" fill="#c6bcae" opacity="0">The pruned list goes to a cheap model that returns<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.10;0.12;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+  <text x="486" y="106" font-size="9.5" fill="#c6bcae" opacity="0">only the chunk ids that answer the question:<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.13;0.15;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+  <rect x="484" y="114" width="376" height="50" rx="4" fill="#0f0d0a" stroke="#241d15" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.155;0.17;0.95;1" dur="16s" repeatCount="indefinite"/></rect>
+  <text x="492" y="128" font-size="9" fill="#ffb86b" opacity="0">def llm_rerank(query, chunks, model=None):<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.16;0.18;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+  <text x="492" y="142" font-size="9" fill="#c6bcae" opacity="0">    keep = _model_pass(query, chunks)   # ids only<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.19;0.21;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+  <text x="492" y="156" font-size="9" fill="#c6bcae" opacity="0">    return keep or chunks               # fail-open<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.22;0.24;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+  <text x="478" y="188" font-size="10" fill="#8a7f70" opacity="0">27.8 s · one LLM call — cached ↓<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.27;0.29;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+
+  <!-- arrow into the store -->
+  <line x1="674" y1="176" x2="674" y2="198" stroke="#ffa64d" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="22" stroke-dashoffset="22">
+    <animate attributeName="stroke-dashoffset" values="22;22;0;0;22" keyTimes="0;0.30;0.34;0.95;1" dur="16s" repeatCount="indefinite"/>
+  </line>
+  <path d="M 670 195 L 674 201 L 678 195" fill="none" stroke="#ffa64d" stroke-width="1.6" stroke-linecap="round" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.33;0.35;0.95;1" dur="16s" repeatCount="indefinite"/></path>
+
+  <!-- SQLite cylinder -->
+  <g>
+    <path d="M 584 214 A 90 10 0 0 0 764 214 L 764 248 A 90 10 0 0 1 584 248 Z" fill="#171310" stroke="#3a3128"/>
+    <ellipse cx="674" cy="214" rx="90" ry="10" fill="#1c1813" stroke="#3a3128"/>
+    <path d="M 584 214 A 90 10 0 0 0 764 214 L 764 248 A 90 10 0 0 1 584 248 Z" fill="none" stroke="#ffa64d" stroke-width="1.4" opacity="0"><animate attributeName="opacity" values="0;0;1;0.5;0.5;0" keyTimes="0;0.34;0.37;0.42;0.95;1" dur="16s" repeatCount="indefinite"/></path>
+    <text x="674" y="240" text-anchor="middle" font-size="9.5" fill="#c6bcae">.megabrain/db.sqlite</text>
   </g>
+  <text x="674" y="266" text-anchor="middle" font-size="8.5" fill="#8a7f70" opacity="0">flow cached: question-vector + rendered answer + sha256 of every cited file<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.37;0.39;0.95;1" dur="16s" repeatCount="indefinite"/></text>
 
-  <!-- the path: narrator (806,120) → agents (671,210) → scoring (531,118), lit hop by hop -->
-  <line x1="806" y1="120" x2="671" y2="210" stroke="#2a2118" stroke-width="1.2"/>
-  <line x1="671" y1="210" x2="531" y2="118" stroke="#2a2118" stroke-width="1.2"/>
-  <line x1="806" y1="120" x2="671" y2="210" stroke="#ffa64d" stroke-width="2" stroke-linecap="round" stroke-dasharray="162.2" stroke-dashoffset="162.2">
-    <animate attributeName="stroke-dashoffset" values="162.2;162.2;0;0;162.2" keyTimes="0;0.42;0.47;0.96;1" dur="11s" repeatCount="indefinite"/>
-  </line>
-  <text x="738.5" y="159" font-size="9" fill="#ffb86b" text-anchor="middle" opacity="0" font-style="italic">stream_events<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.445;0.46;0.96;1" dur="11s" repeatCount="indefinite"/></text>
-  <line x1="671" y1="210" x2="531" y2="118" stroke="#ffa64d" stroke-width="2" stroke-linecap="round" stroke-dasharray="167.5" stroke-dashoffset="167.5">
-    <animate attributeName="stroke-dashoffset" values="167.5;167.5;0;0;167.5" keyTimes="0;0.49;0.54;0.96;1" dur="11s" repeatCount="indefinite"/>
-  </line>
-  <text x="601" y="158" font-size="9" fill="#ffb86b" text-anchor="middle" opacity="0" font-style="italic">ident_tokens<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.515;0.53;0.96;1" dur="11s" repeatCount="indefinite"/></text>
+  <!-- the reworded repeat -->
+  <text x="478" y="290" font-size="10.5" fill="#e9e4dc" opacity="0">$ megabrain ask . "how do noisy chunks get dropped?"<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.46;0.49;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+  <text x="870" y="290" text-anchor="end" font-size="8.5" font-style="italic" fill="#8a7f70" opacity="0">reworded<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.48;0.50;0.95;1" dur="16s" repeatCount="indefinite"/></text>
 
-  <!-- node A: narrator.py -->
-  <circle cx="806" cy="120" r="20" fill="url(#glow)" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.345;0.36;0.96;1" dur="11s" repeatCount="indefinite"/></circle>
-  <circle cx="806" cy="120" r="4" fill="#3a3128"><animate attributeName="fill" values="#3a3128;#3a3128;#ffc98a;#ffa64d;#ffa64d;#3a3128" keyTimes="0;0.345;0.351;0.365;0.96;1" dur="11s" repeatCount="indefinite"/><animate attributeName="r" values="4;4;8;5.6;5.6;4" keyTimes="0;0.345;0.35;0.363;0.96;1" dur="11s" repeatCount="indefinite"/></circle>
-  <text x="806" y="106" font-size="10.5" fill="#e9e4dc" text-anchor="middle" opacity="0" font-weight="600">narrator.py<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.355;0.367;0.96;1" dur="11s" repeatCount="indefinite"/></text>
-  <!-- node B: agents.py -->
-  <circle cx="671" cy="210" r="20" fill="url(#glow)" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.465;0.48;0.96;1" dur="11s" repeatCount="indefinite"/></circle>
-  <circle cx="671" cy="210" r="4" fill="#3a3128"><animate attributeName="fill" values="#3a3128;#3a3128;#ffc98a;#ffa64d;#ffa64d;#3a3128" keyTimes="0;0.465;0.471;0.485;0.96;1" dur="11s" repeatCount="indefinite"/><animate attributeName="r" values="4;4;8;5.6;5.6;4" keyTimes="0;0.465;0.47;0.483;0.96;1" dur="11s" repeatCount="indefinite"/></circle>
-  <text x="671" y="232" font-size="10.5" fill="#e9e4dc" text-anchor="middle" opacity="0" font-weight="600">agents.py<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.475;0.487;0.96;1" dur="11s" repeatCount="indefinite"/></text>
-  <!-- node C: scoring.py -->
-  <circle cx="531" cy="118" r="20" fill="url(#glow)" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.535;0.55;0.96;1" dur="11s" repeatCount="indefinite"/></circle>
-  <circle cx="531" cy="118" r="4" fill="#3a3128"><animate attributeName="fill" values="#3a3128;#3a3128;#ffc98a;#ffa64d;#ffa64d;#3a3128" keyTimes="0;0.535;0.541;0.555;0.96;1" dur="11s" repeatCount="indefinite"/><animate attributeName="r" values="4;4;8;5.6;5.6;4" keyTimes="0;0.535;0.54;0.553;0.96;1" dur="11s" repeatCount="indefinite"/></circle>
-  <text x="531" y="104" font-size="10.5" fill="#e9e4dc" text-anchor="middle" opacity="0" font-weight="600">scoring.py<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.545;0.557;0.96;1" dur="11s" repeatCount="indefinite"/></text>
+  <!-- cosine meter · serve threshold 0.88 sits at x = 478 + 0.88*250 = 698 -->
+  <rect x="478" y="300" width="250" height="8" rx="4" fill="#241d15" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.50;0.52;0.95;1" dur="16s" repeatCount="indefinite"/></rect>
+  <rect x="478" y="300" width="0" height="8" rx="4" fill="#ffa64d"><animate attributeName="width" values="0;0;227;227;0" keyTimes="0;0.52;0.57;0.95;1" dur="16s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.50;0.52;0.95;1" dur="16s" repeatCount="indefinite"/></rect>
+  <line x1="698" y1="296" x2="698" y2="312" stroke="#8a7f70" stroke-width="1" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.50;0.52;0.95;1" dur="16s" repeatCount="indefinite"/></line>
+  <text x="698" y="322" text-anchor="middle" font-size="8" fill="#8a7f70" opacity="0">0.88 = serve<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.50;0.52;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+  <text x="740" y="308" font-size="9.5" fill="#ffb86b" opacity="0">cosine 0.91 ✓<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.57;0.59;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+
+  <text x="478" y="334" font-size="9.5" fill="#8ac89a" opacity="0">sha256 recheck: every cited file byte-identical ✓<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.60;0.62;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+
+  <rect x="472" y="342" width="404" height="24" rx="6" fill="url(#serveGlow)" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.64;0.66;0.95;1" dur="16s" repeatCount="indefinite"/></rect>
+  <text x="478" y="358" font-size="12" font-weight="700" fill="#8ac89a" opacity="0">⚡ served from flow cache · 0.19 s · zero LLM<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.64;0.66;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+
+  <text x="478" y="378" font-size="8.5" fill="#8a7f70" opacity="0">a cited file changed? sha mismatch → narrates fresh &amp; re-caches — never stale<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.72;0.74;0.95;1" dur="16s" repeatCount="indefinite"/></text>
 </svg>

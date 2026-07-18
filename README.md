@@ -42,11 +42,13 @@ from disk**, line for line — but the model is optional: `search` and `graph` n
   Cursor / Gemini CLI (+more), a Python library, and a full **local web studio**.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/bernatch22/megabrain/master/assets/hero.svg" alt="megabrain tracing the call path between two files, hop by hop, with no LLM" width="900">
+  <img src="https://raw.githubusercontent.com/bernatch22/megabrain/master/assets/hero.svg" alt="Left: megabrain_search retrieval with the LLM rerank striking vocabulary-only matches. Right: megabrain_ask narrating once, caching the flow in SQLite, and serving a reworded repeat in 0.19s with zero LLM." width="900">
 </p>
 <p align="center">
-  <em>`megabrain graph . --path` — the real call route between two files, each hop showing the
-  function that carries it. No LLM, ~200 ms, built from the index.</em>
+  <em>Left — <code>search</code>: no-LLM retrieval ranks the signal chunks, then the rerank strikes
+  the vocabulary-only look-alikes. Right — <code>ask</code>: narrates once, caches the flow in the
+  index's SQLite file; a reworded repeat clears the 0.88 cosine bar and the sha recheck, and
+  serves in 0.19 s with zero LLM.</em>
 </p>
 
 **Get started** (no keys needed — narrate on your Claude Code plan, embed locally):
