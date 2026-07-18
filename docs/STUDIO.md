@@ -63,12 +63,25 @@ a **⚡ served from flow cache** banner (no LLM, ~0 ms) with the original
 question; a *related* question shows **known flows** chips — the cached asks
 that attached as context for the narrator (click one to open the Flows tab).
 
-**Starter queries** — if the repo commits a `.megabrainqueries` file at its
-root (one query per line, `#` comments), they appear as one-click chips under
-the ask bar. The onboarding play: a newcomer opens the repo, clicks through
-the starters, and sees the main workflows. **⚡ Warm all** runs every starter
-once (explicit — costs N LLM asks) and caches each as a flow, so from then on
-those asks serve instantly for everyone on the machine.
+**Starter queries** — one-click chips under the ask bar, and **every indexed
+repo gets them**. The server picks the best source it has and says which, so
+the label is honest:
+
+| source | where it comes from |
+|---|---|
+| `file` | the repo committed a **`.megabrainqueries`** at its root (one query per line, `#` comments) — authored intent wins |
+| `flows` | the questions already in the flow cache — their answers are **cached, so the chip serves instantly**, no LLM, no rate-limit cost |
+| `derived` | deterministic, no-LLM questions over the repo's central files — always something |
+
+The onboarding play: a newcomer opens a repo, clicks through the starters,
+and sees the main workflows. **⚡ Warm all** runs every starter once
+(explicit — costs N LLM asks) and caches each as a flow, so from then on
+those asks serve instantly for everyone on the machine. It's hidden on a
+`--readonly` box, and when the chips already come from the cache.
+
+Committing a `.megabrainqueries` is worth it twice over: it drives the chips
+**and** seeds `megabrain flows --warm`, which then caches exactly those
+answers instead of paying a planner to guess the questions.
 
 ### Flows
 The **ask cache, listed**: every successful ask is stored as a flow (question

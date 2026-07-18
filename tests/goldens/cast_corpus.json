@@ -91,12 +91,12 @@
      "example_queries",
      null,
      210,
-     222,
-     "megabrain > megabrain/app.py > def example_queries(root: Path) -> dict",
-     "b5c8fb8bd802f45e22a9c7224072e74f3826d34f"
+     238,
+     "megabrain > megabrain/app.py > def example_queries(root: Path, limit: int=6) -> dict",
+     "a0578f4a1ed278c7b4e96af8aae2fc1a99308f46"
     ]
    ],
-   "skeleton_sha": "d2218c6a6012b440fe82d20e882ae8baa8a326f4",
+   "skeleton_sha": "3b52038490f75fdb4c793586287c1a15d015b633",
    "symbols": [
     [
      "resolve_scope",
@@ -221,8 +221,8 @@
      "example_queries",
      "function",
      212,
-     222,
-     "def example_queries(root: Path) -> dict"
+     238,
+     "def example_queries(root: Path, limit: int=6) -> dict"
     ]
    ]
   },
@@ -688,24 +688,24 @@
    "chunks": [
     [
      "module",
-     "_research_questions, warm_flows",
+     "_is_side_path, _label, central_files, derive_questions",
      null,
      1,
-     94,
-     "megabrain > megabrain/ask/warmup.py > [_research_questions, warm_flows]",
-     "78e2cd5d660cc2894dc7f2a56068c290cb6e8824"
+     113,
+     "megabrain > megabrain/ask/warmup.py > [_is_side_path, _label, central_files, derive_questions]",
+     "7f408edef42b67a557917ce0d8060e3624820fc2"
     ],
     [
-     "function",
-     "refresh_stale",
+     "module",
+     "authored_questions, _research_questions, warm_flows, refresh_stale",
      null,
-     95,
-     127,
-     "megabrain > megabrain/ask/warmup.py > def refresh_stale(root, ask_fn=None, quiet: bool=False) -> dict",
-     "e22b03c6089fbfa46bfa986b81468e45b6b1b0df"
+     114,
+     223,
+     "megabrain > megabrain/ask/warmup.py > [authored_questions, _research_questions, warm_flows, refresh_stale]",
+     "082280e2b99e430bd326184b1ce6f422c6a930be"
     ]
    ],
-   "skeleton_sha": "4a47008365b5fb17390323ef7012a52818f19594",
+   "skeleton_sha": "5882f66b7114dd15495d7059ae5d1087b2ed9b6f",
    "symbols": [
     [
      "log",
@@ -715,24 +715,73 @@
      "log = logging.getLogger(__name__)"
     ],
     [
+     "_TEST_SEG",
+     "constant",
+     27,
+     28,
+     "_TEST_SEG = ('test', 'tests', 'spec', 'specs', '__tests__', 'example', 'examples', 'benchmark', 'benchmarks', 'vendor', "
+    ],
+    [
+     "_is_side_path",
+     "function",
+     31,
+     34,
+     "def _is_side_path(relpath: str) -> bool"
+    ],
+    [
+     "_NAMEABLE",
+     "constant",
+     37,
+     37,
+     "_NAMEABLE = ('class', 'function', 'async_function', 'interface', 'struct', 'module')"
+    ],
+    [
+     "_label",
+     "function",
+     40,
+     66,
+     "def _label(docline: str, symbols: list[tuple[str, str]], relpath: str) -> str"
+    ],
+    [
+     "central_files",
+     "function",
+     69,
+     97,
+     "def central_files(root: Path, limit: int) -> list[tuple[str, str]]"
+    ],
+    [
+     "derive_questions",
+     "function",
+     100,
+     113,
+     "def derive_questions(root: Path, limit: int=6) -> list[str]"
+    ],
+    [
+     "authored_questions",
+     "function",
+     116,
+     126,
+     "def authored_questions(root: Path) -> list[str]"
+    ],
+    [
      "_research_questions",
      "function",
-     27,
-     62,
+     129,
+     158,
      "def _research_questions(root: Path, limit: int) -> list[str]"
     ],
     [
      "warm_flows",
      "function",
-     65,
-     94,
+     161,
+     190,
      "def warm_flows(root: Path, limit: int=6, ask_fn=None, quiet: bool=False) -> dict"
     ],
     [
      "refresh_stale",
      "function",
-     97,
-     127,
+     193,
+     223,
      "def refresh_stale(root, ask_fn=None, quiet: bool=False) -> dict"
     ]
    ]

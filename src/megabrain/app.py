@@ -209,14 +209,30 @@ def flow_delete(root: Path, flow_id: int) -> dict:
     return {"deleted": flow_id}
 
 
-def example_queries(root: Path) -> dict:
-    """Starter queries a team commits at <root>/.megabrainqueries — one per
-    line, `#` comments. The studio surfaces them as one-click chips in Ask so
-    a newcomer opens the repo, runs them, and sees the main workflows (and a
-    'warm' run pre-caches them as flows for instant serves)."""
-    f = Path(root) / ".megabrainqueries"
-    if not f.is_file():
-        return {"exists": False, "queries": []}
-    lines = f.read_text(encoding="utf-8", errors="replace").splitlines()
-    qs = [ln.strip() for ln in lines if ln.strip() and not ln.strip().startswith("#")]
-    return {"exists": True, "queries": qs}
+def example_queries(root: Path, limit: int = 6) -> dict:
+    """Starter questions for the studio's Ask chips — EVERY indexed repo gets
+    some, so a newcomer never faces a blank box. Three tiers, best first:
+
+      "file"    <root>/.megabrainqueries — the repo AUTHORED its main
+                workflows (one per line, `#` comments). Committed intent wins.
+      "flows"   the questions already in the flow cache. These are the best
+                fallback by far: each one's answer is CACHED, so clicking the
+                chip serves instantly with no LLM and no rate-limit cost.
+      "derived" deterministic, no-LLM questions over the repo's central files
+                (see ask.warmup.derive_questions) — always something.
+
+    `source` tells the UI which tier it got so it can label the row honestly
+    (an already-answered question is worth advertising as instant)."""
+    from .ask.warmup import authored_questions, derive_questions
+    authored = authored_questions(root)
+    if authored:
+        return {"source": "file", "queries": authored[:limit]}
+    try:
+        from .storage.store import Store
+        with Store(Path(root)) as s:
+            cached = [m["question"] for m in reversed(s.load_flows()[0])]
+        if cached:
+            return {"source": "flows", "queries": cached[:limit]}
+    except Exception:                       # noqa: BLE001 — never break the chips
+        pass
+    return {"source": "derived", "queries": derive_questions(root, limit)}

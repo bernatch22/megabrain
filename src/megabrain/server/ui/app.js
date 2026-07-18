@@ -1158,17 +1158,30 @@
   // starter queries — the repo's committed .megabrainqueries, as one-click
   // chips. A newcomer opens the repo, runs them, and sees the main workflows;
   // "Warm all" pre-caches every one as a flow (instant serves afterwards).
+  // Every repo gets starter chips — the server picks the best source it has
+  // (see app.example_queries) and says which, so the label stays honest.
+  const CHIP_SRC = {
+    file: { label: "STARTER QUERIES · .megabrainqueries", tip: "a question this repo committed as one of its main workflows" },
+    flows: { label: "⚡ ALREADY ANSWERED · instant, from cache", tip: "this exact question is in the flow cache — the answer serves instantly, no LLM" },
+    derived: { label: "SUGGESTED · from this repo's central files", tip: "auto-derived from the index (no LLM) — commit a .megabrainqueries to choose your own" },
+  };
+
   function starterChips() {
     const qz = st.queries && st.queries.queries;
     if (!qz || !qz.length) return "";
+    const src = CHIP_SRC[(st.queries && st.queries.source) || "file"] || CHIP_SRC.file;
     const w = st.warm;
     const chips = qz.map((q) => `<button class="chip mono" data-act="ask-starter" data-q="${esc(q)}"
-        style="${w && w.q === q ? "background:var(--accent-dim);border-color:var(--accent-bd);color:var(--accent)" : ""}" title="run this ask">${esc(q)}</button>`).join("");
-    const warmBtn = w
-      ? `<button class="chip mono" data-act="warm-stop" style="flex-shrink:0;color:var(--accent)"><span class="spinner"></span>&nbsp;warming ${w.i + 1}/${w.n} — click to stop</button>`
-      : `<button class="chip mono" data-act="warm-all" style="flex-shrink:0" title="run every starter ask once and cache it as a flow — later identical asks serve instantly, no LLM (costs ${qz.length} LLM call${qz.length > 1 ? "s" : ""})">⚡ Warm all (${qz.length})</button>`;
+        style="${w && w.q === q ? "background:var(--accent-dim);border-color:var(--accent-bd);color:var(--accent)" : ""}" title="${esc(src.tip)}">${esc(q)}</button>`).join("");
+    // cached questions are ALREADY warm — offering to warm them is noise; and
+    // on a public read-only box one click would burn N LLM asks of someone
+    // else's budget (and the visitor's whole rate-limit window).
+    const warmBtn = (st.queries.source === "flows" || RO()) ? ""
+      : w
+        ? `<button class="chip mono" data-act="warm-stop" style="flex-shrink:0;color:var(--accent)"><span class="spinner"></span>&nbsp;warming ${w.i + 1}/${w.n} — click to stop</button>`
+        : `<button class="chip mono" data-act="warm-all" style="flex-shrink:0" title="run every starter ask once and cache it as a flow — later identical asks serve instantly, no LLM (costs ${qz.length} LLM call${qz.length > 1 ? "s" : ""})">⚡ Warm all (${qz.length})</button>`;
     return `<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:10px">
-      <span class="mono" style="font-size:10px;color:var(--muted);letter-spacing:.06em;flex-shrink:0">STARTER QUERIES · .megabrainqueries</span>
+      <span class="mono" style="font-size:10px;color:var(--muted);letter-spacing:.06em;flex-shrink:0">${src.label}</span>
       ${chips}${warmBtn}</div>`;
   }
   const paintStarters = () => { const s = $("#ask-starters"); if (s) s.innerHTML = starterChips(); };

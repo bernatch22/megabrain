@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.13.0 — every repo gets starter questions
+
+- **`GET /queries` now answers for EVERY indexed repo**, in three tiers, so
+  the studio's Ask tab is never a blank box:
+  1. `file` — the repo committed a `.megabrainqueries` (authored intent wins).
+  2. `flows` — the questions already in the flow cache. The best fallback by
+     far: each one's answer is *cached*, so clicking the chip serves
+     instantly with no LLM and no rate-limit cost. The UI labels the row
+     "⚡ ALREADY ANSWERED · instant, from cache".
+  3. `derived` — deterministic, no-LLM questions over the repo's central
+     files (`ask.warmup.derive_questions`).
+  The response carries `source` so the UI can say honestly where the chips
+  came from. Previously only tier 1 existed: a repo without the file got
+  nothing.
+- **Central-file ranking is language-agnostic.** It was edge degree alone,
+  but the import/call graph only covers py/ts/js/php — measured on the demo
+  box, ky has **0** edges, sinatra 1, gin 9, so degree-only ranking
+  degenerated to arbitrary order on exactly the repos that need help. Ranking
+  is now degree *plus symbol density*, and tests/examples/vendored paths are
+  excluded from seeding a question.
+- **`flows --warm` reuses `.megabrainqueries` when present** instead of
+  paying an LLM planner call to guess. Writing the file once now both
+  documents the repo's main workflows AND pre-caches exactly the answers the
+  studio offers as chips — so every chip serves instantly afterwards.
+- The studio hides "Warm all" on a `--readonly` box: one click would burn N
+  LLM asks of the host's budget and the visitor's whole rate-limit window.
+
 ## 0.12.1 — studio: Ask opens first · clean repo switches
 
 - **Ask is the first tab and the default view.** It's the star of the studio;
