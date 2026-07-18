@@ -175,14 +175,14 @@
           ${rr ? `<div class="sdot"></div><div>✨ reranked by <b class="mono">${esc(shortModel(rr.model))}</b> · dropped <b>${rr.dropped}</b> tangential · +${(rr.ms / 1000).toFixed(1)}s</div>`
              : st.rerank && r.reranked === false ? `<div class="sdot"></div><div style="color:var(--muted)">rerank failed open — deterministic list shown</div>` : ""}
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:22px">
-          <div>
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;margin-top:22px">
+          <div style="min-width:0">
             <div class="section-head" style="margin-top:0"><div class="signal-label mono"><div class="dotlive"></div>SIGNAL · KEPT</div><div class="section-rule"></div><div class="mono" style="font-size:10.5px;font-weight:600">${r.kept}</div></div>
-            <div style="display:flex;flex-direction:column;gap:8px">${(r.chunks || []).map(signalCard).join("") || emptyMini("nothing kept")}</div>
+            <div style="display:flex;flex-direction:column;gap:8px;min-width:0">${(r.chunks || []).map(signalCard).join("") || emptyMini("nothing kept")}</div>
           </div>
-          <div>
+          <div style="min-width:0">
             <div class="section-head" style="margin-top:0"><div class="noise-label mono">${ico.x} NOISE · PRUNED</div><div class="section-rule"></div><div class="mono" style="font-size:10.5px">${r.pruned}</div></div>
-            <div style="display:flex;flex-direction:column;gap:5px">${(r.noise || []).map(noiseRow).join("") || emptyMini("no noise")}</div>
+            <div style="display:flex;flex-direction:column;gap:5px;min-width:0">${(r.noise || []).map(noiseRow).join("") || emptyMini("no noise")}</div>
           </div>
         </div>`;
     } else {
