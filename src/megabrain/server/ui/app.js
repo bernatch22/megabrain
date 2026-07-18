@@ -1378,12 +1378,18 @@
       st.add.excluded = new Set();
       st.add.expanded = new Set(Object.values(st.add.tree.children)
         .filter((c) => c.dir).map((c) => c.path));   // top-level dirs open
+      st.add.treeFilter = "";
+      st.add.focusPath = null;
       st.add.step = "review";
     } catch (e) { toast(e.message); }
     st.add.scanning = false; renderOverlays(); bindOverlay();
   }
 
   // ── scan tree (choose what indexes / what's ignored) ─────────────────
+  // Model: st.add.excluded is a Set of repo-relative paths (dirs or files); a
+  // path is excluded iff it or an ancestor is in the set. The set maps 1:1 to
+  // `.megabrainignore` lines (which has no `!` negation), so re-including a
+  // child under an excluded dir SPLITS that dir's rule into sibling rules.
   function buildTree(paths) {
     const root = { name: "", path: "", dir: true, count: 0, children: {} };
     for (const p of paths) {
@@ -1403,6 +1409,11 @@
   }
   const sortedChildren = (node) => Object.values(node.children)
     .sort((a, b) => (a.dir === b.dir ? a.name.localeCompare(b.name) : a.dir ? -1 : 1));
+  function nodeAt(path) {
+    let node = st.add.tree;
+    for (const part of path.split("/")) { node = node && node.children[part]; }
+    return node || null;
+  }
   function isExcluded(path) {
     const ex = st.add.excluded;
     if (ex.has(path)) return true;
@@ -1413,8 +1424,14 @@
     for (const e of st.add.excluded) if (e.startsWith(path + "/")) return true;
     return false;
   };
-  function includedCount() {
-    return (st.add.scan.paths || []).filter((p) => !isExcluded(p)).length;
+  function subtreeCounts(node) {          // [included, total] files under node
+    if (!node.dir) return isExcluded(node.path) ? [0, 1] : [1, 1];
+    if (node.path && isExcluded(node.path)) return [0, node.count];
+    let inc = 0, tot = 0;
+    for (const c of Object.values(node.children)) {
+      const [i, t] = subtreeCounts(c); inc += i; tot += t;
+    }
+    return [inc, tot];
   }
   function excludedIgnoreLines() {
     // one .megabrainignore line per user-excluded node (dir → `path/`, file → `path`)
@@ -1422,36 +1439,145 @@
     (st.add.scan.paths || []).forEach((p) => { const parts = p.split("/"); for (let i = 1; i < parts.length; i++) dirSet.add(parts.slice(0, i).join("/")); });
     return [...st.add.excluded].map((e) => (dirSet.has(e) ? e + "/" : e));
   }
+  function setExcluded(path) {
+    const ex = st.add.excluded;
+    for (const e of [...ex]) if (e === path || e.startsWith(path + "/")) ex.delete(e);
+    ex.add(path);
+  }
+  function reInclude(path) {
+    // re-include a node excluded directly or via ancestors: each excluded
+    // ancestor is replaced by exclusions of its OTHER children (rule split),
+    // so the result stays expressible as plain ignore lines.
+    const ex = st.add.excluded;
+    ex.delete(path);
+    const parts = path.split("/");
+    for (let i = parts.length - 1; i >= 1; i--) {
+      const anc = parts.slice(0, i).join("/");
+      if (!ex.has(anc)) continue;
+      ex.delete(anc);
+      const node = nodeAt(anc);
+      if (!node) continue;
+      for (const c of Object.values(node.children)) if (c.name !== parts[i]) ex.add(c.path);
+    }
+  }
   function treeToggleExpand(path) {
     const ex = st.add.expanded;
     if (ex.has(path)) ex.delete(path); else ex.add(path);
-    renderOverlays(); bindOverlay();
+    paintTree();
   }
   function treeToggleInclude(path) {
-    const ex = st.add.excluded;
-    if (ex.has(path)) ex.delete(path);
-    else if (isExcluded(path)) { /* excluded via ancestor — re-include ancestor first */ toast("re-include the parent folder first"); return; }
-    else ex.add(path);
-    renderOverlays(); bindOverlay();
+    if (isExcluded(path)) reInclude(path);
+    else if (descendantExcluded(path)) {   // indeterminate dir → include all under it
+      for (const e of [...st.add.excluded]) if (e.startsWith(path + "/")) st.add.excluded.delete(e);
+    } else setExcluded(path);
+    paintTree();
   }
-  function treeRows(node, depth) {
+  function collectDirs(node, out) {
+    for (const c of Object.values(node.children)) if (c.dir) { out.push(c.path); collectDirs(c, out); }
+    return out;
+  }
+  function treeRowHtml(c, depth, open, f) {
+    const excl = isExcluded(c.path);
+    let cb, countHtml = "";
+    if (c.dir) {
+      const [inc, tot] = subtreeCounts(c);
+      cb = inc === 0 ? "off" : inc < tot ? "mixed" : "on";
+      countHtml = `<span class="stree-count mono ${cb === "mixed" ? "part" : ""}">${inc === tot ? tot : inc + "/" + tot}</span>`;
+    } else cb = excl ? "off" : "on";
+    const hi = f ? c.name.toLowerCase().indexOf(f) : -1;
+    const name = hi >= 0
+      ? esc(c.name.slice(0, hi)) + '<b class="stree-hit">' + esc(c.name.slice(hi, hi + f.length)) + "</b>" + esc(c.name.slice(hi + f.length))
+      : esc(c.name);
+    return `<div class="stree-row ${c.dir ? "dir" : ""} ${excl ? "excl" : ""} ${st.add.focusPath === c.path ? "kfocus" : ""}"
+        data-act="tree-row" data-path="${esc(c.path)}" data-dir="${c.dir ? 1 : 0}">
+      ${'<span class="stree-ind"></span>'.repeat(depth)}
+      <span class="stree-tw ${open ? "open" : ""}">${c.dir ? ico.chevronR : ""}</span>
+      <button class="stree-cb ${cb}" data-act="tree-check" data-path="${esc(c.path)}" tabindex="-1"
+        title="${excl ? "excluded — click to include" : cb === "mixed" ? "partially included — click to include all" : "included — click to exclude"}">${ico[cb === "on" ? "checked" : cb === "mixed" ? "indeterminate" : "unchecked"]}</button>
+      <span class="stree-ico">${c.dir ? (open ? ico.folderOpen : ico.folderL) : ico.fileL}</span>
+      <span class="stree-name mono">${name}</span>${countHtml}
+    </div>`;
+  }
+  function treeRows(node, depth, f) {
     let out = "";
     for (const c of sortedChildren(node)) {
-      const excl = isExcluded(c.path);
-      const box = excl ? "unchecked" : (c.dir && descendantExcluded(c.path) ? "indeterminate" : "checked");
-      const open = c.dir && st.add.expanded.has(c.path);
-      out += `<div style="display:flex;align-items:center;gap:7px;padding:3px 6px;border-radius:6px;padding-left:${8 + depth * 16}px" class="tree-row">
-        <button data-act="tree-check" data-path="${esc(c.path)}" style="display:flex;color:${excl ? "var(--muted)" : box === "indeterminate" ? "var(--accent)" : "var(--accent)"};flex-shrink:0" title="${excl ? "excluded" : "included"}">${ico[box]}</button>
-        ${c.dir
-          ? `<button data-act="tree-toggle" data-path="${esc(c.path)}" style="display:flex;color:var(--muted);flex-shrink:0;transition:transform 150ms;transform:rotate(${open ? 90 : 0}deg)">${ico.chevronR}</button>
-             <span style="display:flex;color:${excl ? "var(--muted)" : "var(--accent)"};flex-shrink:0">${open ? ico.folderOpen : ico.folderL}</span>`
-          : `<span style="width:14px;flex-shrink:0"></span><span style="display:flex;color:var(--muted);flex-shrink:0">${ico.fileL}</span>`}
-        <span class="mono" style="font-size:12px;color:${excl ? "var(--muted)" : "var(--text)"};text-decoration:${excl ? "line-through" : "none"};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${esc(c.name)}</span>
-        ${c.dir ? `<span class="mono" style="font-size:10px;color:var(--muted);flex-shrink:0">${c.count}</span>` : ""}
-      </div>`;
-      if (open) out += treeRows(c, depth + 1);
+      const selfHit = !f || c.path.toLowerCase().includes(f);
+      if (c.dir) {
+        const kids = treeRows(c, depth + 1, selfHit ? "" : f);
+        if (f && !selfHit && !kids) continue;      // nothing matches below
+        const open = f ? true : st.add.expanded.has(c.path);
+        out += treeRowHtml(c, depth, open, selfHit ? f : "");
+        if (open) out += kids;
+      } else {
+        if (!selfHit) continue;
+        out += treeRowHtml(c, depth, false, f);
+      }
     }
     return out;
+  }
+  function treeBody() {
+    const f = (st.add.treeFilter || "").trim().toLowerCase();
+    const rows = treeRows(st.add.tree, 0, f);
+    const trunc = st.add.scan.paths_truncated
+      ? '<div class="stree-empty">… tree truncated (very large repo)</div>' : "";
+    return (rows || `<div class="stree-empty">no files match “${esc(st.add.treeFilter || "")}”</div>`) + trunc;
+  }
+  const streeFootHtml = (inc, tot) => {
+    const n = st.add.excluded.size;
+    return `<span><b style="color:var(--text)">${inc}</b> of ${tot} files selected</span>
+      ${n ? `<span class="sdot"></span><span>${n} ignore rule${n > 1 ? "s" : ""} → <span class="mono">.megabrainignore</span></span>` : ""}
+      <span style="flex:1"></span>
+      <span class="mono" style="font-size:10px">↑↓ navigate · space toggles</span>`;
+  };
+  const incSubHtml = (inc, tot) =>
+    `files will index${tot - inc ? ` · <span style="color:var(--text)">${tot - inc}</span> excluded by you` : ""}`;
+  function paintTree() {
+    // targeted repaint: tree body + counters only — never the whole overlay,
+    // so the scroll position and the filter input's focus survive every toggle
+    const box = $("#stree"); if (!box) return;
+    const sc = box.scrollTop;
+    box.innerHTML = treeBody();
+    box.scrollTop = sc;
+    const [inc, tot] = subtreeCounts(st.add.tree);
+    const foot = $("#stree-foot"); if (foot) foot.innerHTML = streeFootHtml(inc, tot);
+    const big = $("#add-inc"); if (big) big.textContent = inc;
+    const sub = $("#add-inc-sub"); if (sub) sub.innerHTML = incSubHtml(inc, tot);
+    const btn = $('[data-act="do-index"]');
+    if (btn) { btn.disabled = !inc; btn.innerHTML = `${ico.hardDrive}<span>Index ${inc} files</span>`; }
+  }
+  function treeKeydown(e) {
+    const box = $("#stree"); if (!box) return;
+    const rows = [...box.querySelectorAll(".stree-row")];
+    if (!rows.length) return;
+    let i = rows.findIndex((r) => r.dataset.path === st.add.focusPath);
+    const go = (j) => {
+      i = Math.max(0, Math.min(rows.length - 1, j));
+      st.add.focusPath = rows[i].dataset.path;
+      rows.forEach((r) => r.classList.toggle("kfocus", r.dataset.path === st.add.focusPath));
+      rows[i].scrollIntoView({ block: "nearest" });
+    };
+    if (e.key === "ArrowDown") { e.preventDefault(); go(i + 1); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); go(i - 1); }
+    else if ((e.key === " " || e.key === "Enter") && i >= 0) {
+      e.preventDefault(); treeToggleInclude(rows[i].dataset.path);
+    }
+    else if (e.key === "ArrowRight" && i >= 0 && rows[i].dataset.dir === "1") {
+      e.preventDefault();
+      if (!st.add.expanded.has(rows[i].dataset.path)) treeToggleExpand(rows[i].dataset.path);
+      else go(i + 1);
+    }
+    else if (e.key === "ArrowLeft" && i >= 0) {
+      e.preventDefault();
+      const p = rows[i].dataset.path;
+      if (rows[i].dataset.dir === "1" && st.add.expanded.has(p)) treeToggleExpand(p);
+      else {
+        const parent = p.split("/").slice(0, -1).join("/");
+        if (parent) {
+          const j = rows.findIndex((r) => r.dataset.path === parent);
+          if (j >= 0) go(j);
+        }
+      }
+    }
   }
   async function doAddIndex() {
     const p = st.add.path.trim();
@@ -1529,25 +1655,28 @@
     } else if (a.step === "review") {
       const s = a.scan;
       const byExt = Object.entries(s.by_ext || {}).slice(0, 6).map(([e, n]) => `<span class="file-pill mono">${esc(e)} ${n}</span>`).join("");
-      const inc = includedCount();
-      const excl = s.would_index - inc;
+      const [inc, tot] = subtreeCounts(a.tree);
       const reasons = {};
       (s.flagged || []).forEach((f) => reasons[f.reason] = (reasons[f.reason] || 0) + 1);
       const rsum = Object.entries(reasons).map(([r, n]) => `${n} ${r}`).join(" · ");
       const flags = (s.flagged || []).slice(0, 60).map((f) => `<div class="flag-row"><div class="flag-reason">${esc(f.reason)}</div><span class="mono" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f.path)}</span></div>`).join("");
       body = `<div style="padding:0 24px 22px;overflow-y:auto">
         <div style="display:flex;align-items:baseline;gap:10px;margin:4px 0 14px">
-          <div style="font-size:28px;font-weight:700;letter-spacing:-.02em;color:var(--accent)">${inc}</div>
-          <div style="font-size:12.5px;color:var(--muted)">files will index${excl ? ` · <span style="color:var(--text)">${excl}</span> excluded by you` : ""}</div>
+          <div id="add-inc" style="font-size:28px;font-weight:700;letter-spacing:-.02em;color:var(--accent)">${inc}</div>
+          <div id="add-inc-sub" style="font-size:12.5px;color:var(--muted)">${incSubHtml(inc, tot)}</div>
           <div style="flex:1"></div><div style="display:flex;gap:6px;flex-wrap:wrap">${byExt}</div>
         </div>
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-          <div class="mono" style="font-size:10px;color:var(--muted);letter-spacing:.06em">CHOOSE WHAT INDEXES</div>
-          <div class="section-rule"></div>
-          <button class="chip" data-act="tree-all">All</button>
-          <button class="chip" data-act="tree-none">None</button>
+        <div class="stree-wrap">
+          <div class="stree-bar">
+            <label class="stree-filter">${ico.search}<input id="tree-filter" placeholder="Filter files…" value="${esc(a.treeFilter || "")}" spellcheck="false"/></label>
+            <button class="chip" data-act="tree-all" title="include every file">All</button>
+            <button class="chip" data-act="tree-none" title="exclude every file">None</button>
+            <button class="chip" data-act="tree-expand" title="expand all folders">Expand</button>
+            <button class="chip" data-act="tree-collapse" title="collapse all folders">Collapse</button>
+          </div>
+          <div id="stree" class="stree" tabindex="0">${treeBody()}</div>
+          <div id="stree-foot" class="stree-foot">${streeFootHtml(inc, tot)}</div>
         </div>
-        <div style="max-height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:6px 4px;background:var(--panel2)">${treeRows(a.tree, 0)}${s.paths_truncated ? '<div class="flag-row" style="opacity:.6;padding-left:8px">… tree truncated (very large repo)</div>' : ""}</div>
         <details ${(s.flagged || []).length ? "" : "hidden"} style="margin-top:12px">
           <summary class="mono" style="cursor:pointer;font-size:11px;color:var(--muted);padding:4px 0">${(s.flagged || []).length} auto-skipped${rsum ? " — " + rsum : ""}</summary>
           <div style="max-height:150px;overflow-y:auto;margin-top:6px;border:1px solid var(--border);border-radius:6px;padding:4px">${flags}${(s.flagged || []).length > 60 ? `<div class="flag-row" style="opacity:.6">… +${s.flagged.length - 60} more</div>` : ""}</div>
@@ -1565,7 +1694,7 @@
     } else {
       body = `<div style="padding:0 24px 22px">${indexProgress(a.index, a.scan ? a.scan.name : "")}</div>`;
     }
-    return `<div class="overlay-bg" data-act="add-close-bg"><div class="card" data-stop>
+    return `<div class="overlay-bg" data-act="add-close-bg"><div class="card" data-stop style="${a.step === "review" ? "width:min(680px,94vw)" : ""}">
       <div class="card-head">
         <div><div class="card-title">${a.step === "index" ? "Indexing repo" : "Add repository"}</div>
           <div class="card-sub mono">${a.step === "path" ? "scan → review → index" : esc(a.path)}</div></div>
@@ -1757,6 +1886,15 @@
   function bindOverlay() {
     const ap = $("#add-path"); if (ap) ap.oninput = (e) => { st.add.path = e.target.value; };
     const ai = $("#add-ignore"); if (ai) ai.oninput = (e) => { st.add.ignore = e.target.value; };
+    const tr = $("#stree"); if (tr) tr.onkeydown = treeKeydown;
+    const tf = $("#tree-filter");
+    if (tf) {
+      tf.oninput = (e) => { st.add.treeFilter = e.target.value; paintTree(); };
+      tf.onkeydown = (e) => {
+        if (e.key === "Escape" && tf.value) { e.stopPropagation(); tf.value = ""; st.add.treeFilter = ""; paintTree(); }
+        else if (e.key === "ArrowDown") { e.preventDefault(); const s = $("#stree"); if (s) s.focus(); }
+      };
+    }
     const om = $("#or-model");
     if (om) om.onkeydown = (e) => { if (e.key === "Enter") { const v = e.target.value.trim(); if (v) doSelect("openrouter", v); } };
     const rm = $("#rx-model"); if (rm) rm.oninput = (e) => { st.reindex.embed_model = e.target.value; };
@@ -1822,10 +1960,15 @@
     else if (act === "do-scan") { doScan(); }
     else if (act === "add-browse") { pickFolder(); }
     else if (act === "add-back") { st.add.step = "path"; renderOverlays(); bindOverlay(); }
-    else if (act === "tree-toggle") { treeToggleExpand(t.dataset.path); }
-    else if (act === "tree-check") { treeToggleInclude(t.dataset.path); }
-    else if (act === "tree-all") { st.add.excluded.clear(); renderOverlays(); bindOverlay(); }
-    else if (act === "tree-none") { st.add.excluded = new Set(sortedChildren(st.add.tree).map((c) => c.path)); renderOverlays(); bindOverlay(); }
+    else if (act === "tree-row") {
+      const p = t.dataset.path; st.add.focusPath = p;
+      if (t.dataset.dir === "1") treeToggleExpand(p); else treeToggleInclude(p);
+    }
+    else if (act === "tree-check") { st.add.focusPath = t.dataset.path; treeToggleInclude(t.dataset.path); }
+    else if (act === "tree-all") { st.add.excluded.clear(); paintTree(); }
+    else if (act === "tree-none") { st.add.excluded = new Set(sortedChildren(st.add.tree).map((c) => c.path)); paintTree(); }
+    else if (act === "tree-expand") { st.add.expanded = new Set(collectDirs(st.add.tree, [])); paintTree(); }
+    else if (act === "tree-collapse") { st.add.expanded.clear(); paintTree(); }
     else if (act === "do-index") { doAddIndex(); }
     else if (act === "add-done") { st.overlay = null; st.repo = st.add.scan ? st.add.scan.name : st.repo; st.add = null; render(); }
     else if (act === "model") { doSelect(t.dataset.provider, t.dataset.model); }
