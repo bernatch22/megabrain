@@ -42,13 +42,13 @@ from disk**, line for line — but the model is optional: `search` and `graph` n
   Cursor / Gemini CLI (+more), a Python library, and a full **local web studio**.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/bernatch22/megabrain/master/assets/hero.svg" alt="Left: megabrain_search retrieval with the LLM rerank striking vocabulary-only matches. Right: megabrain_ask narrating once, caching the flow in SQLite, and serving a reworded repeat in 0.19s with zero LLM." width="900">
+  <img src="https://raw.githubusercontent.com/bernatch22/megabrain/master/assets/ask-agents.svg" alt="A broad megabrain_ask fans out into three parallel sub-agents, each searching its own subsystem; one synthesis merges their cited answers, the engine splices the verbatim code, and the whole workflow lands in the flow cache." width="900">
 </p>
 <p align="center">
-  <em>Left — <code>search</code>: no-LLM retrieval ranks the signal chunks, then the rerank strikes
-  the vocabulary-only look-alikes. Right — <code>ask</code>: narrates once, caches the flow in the
-  index's SQLite file; a reworded repeat clears the 0.88 cosine bar and the sha recheck, and
-  serves in 0.19 s with zero LLM.</em>
+  <em>A broad <code>ask</code> fans out into parallel sub-agents — one per subsystem, each armed with
+  retrieval tools only. One synthesis merges their cited answers, the engine replaces every
+  <code>[[k]]</code> with the verbatim bytes from disk, and the finished workflow lands in the flow
+  cache — so the next related question is already answered.</em>
 </p>
 
 **Get started** (no keys needed — narrate on your Claude Code plan, embed locally):
@@ -213,17 +213,9 @@ never described stale. A team of agents working a repo makes megabrain *smarter 
 that repo with every question* — and all of it lives in **one SQLite file inside the
 repo**: fully local, no vector DB, no embedding service, nothing to host.
 
-And on a **broad** question, `ask` becomes its own multi-agent system:
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/bernatch22/megabrain/master/assets/ask-agents.svg" alt="A broad megabrain_ask fans out into three parallel sub-agents, each searching its own subsystem; one synthesis merges their cited answers, the engine splices the verbatim code, and the whole workflow lands in the flow cache." width="900">
-</p>
-<p align="center">
-  <em>A broad <code>ask</code> fans out into parallel sub-agents — one per subsystem, each armed with
-  retrieval tools only. One synthesis merges their cited answers, the engine replaces every
-  <code>[[k]]</code> with the verbatim bytes from disk, and the finished workflow lands in the flow
-  cache for the next question.</em>
-</p>
+And on a **broad** question, `ask` becomes its own multi-agent system — it fans out into
+parallel sub-agents, one per subsystem, then synthesizes their cited answers into a single
+grounded walkthrough ([diagram above](#megabrain)).
 
 ### Wire it up
 
