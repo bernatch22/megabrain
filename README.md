@@ -9,6 +9,10 @@
 </p>
 
 <p align="center">
+  <sub>The repo walk your coding agent does in <b>10–30 grep-and-open turns</b> — in <b>one MCP call</b>.</sub>
+</p>
+
+<p align="center">
   <a href="https://pypi.org/project/megabrain/"><img src="https://img.shields.io/pypi/v/megabrain?style=flat-square&color=3776AB" alt="PyPI"></a>
   <a href="https://github.com/bernatch22/megabrain/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/bernatch22/megabrain/ci.yml?style=flat-square&label=CI" alt="CI"></a>
   <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="MIT">
@@ -25,6 +29,13 @@ in **one SQLite file** (no vector DB, no containers, no services). Want it *expl
 `ask` adds a single LLM call that narrates a walkthrough with the **real code spliced in
 from disk**, line for line — but the model is optional: `search` and `graph` never need one.
 
+- **Your coding agent stops spelunking.** Dropped into an unfamiliar repo, an agent burns
+  **10–30 tool turns** — grep a keyword, open a file, follow an import, grep again — before
+  it writes a line, and the picture it assembles is still its own guess. One `megabrain_search`
+  returns **exactly the signal chunks, noise pruned**; one `megabrain_ask` returns the whole
+  cross-file story with the real code spliced in. **One call, not thirty turns** — and every
+  turn saved is context window, latency and tokens you keep.
+  [How it wires into Claude Code →](#built-for-coding-agents--one-call-instead-of-thirty-turns)
 - **Retrieval that cannot hallucinate.** The search path has no LLM at all: dense chunk
   vectors fused with a file-skeleton signal and the import/call graph. The narrator only
   ever *cites* spans — the engine splices the verbatim bytes, so no line is ever invented.
@@ -87,21 +98,30 @@ megabrain studio ~/repo       #  …or boot straight into one
   <a href="https://bernardocastro.dev/megabrain/demo/"><strong>→ bernardocastro.dev/megabrain/demo</strong></a> — the live demo, read-only
 </p>
 
-Three tabs, each one a view into a different half of the engine:
+Four tabs, each one a view into a different half of the engine:
 
+- **Ask** — watch a broad question **fan out into parallel sub-agents**, their tool calls
+  and prose streaming into per-agent cards, then a synthesis with the **real code spliced
+  in** as it types. A repeat of a cached question shows a **⚡ served from flow cache**
+  banner instead (no LLM, ~0 ms); a *related* one shows the **known flows** it pulled in as
+  context. **Starter query chips** sit under the bar — every indexed repo gets them.
 - **Search** — the money shot: **`SIGNAL · KEPT` and `NOISE · PRUNED` side by side**, so you
   see exactly what the engine read *and* what it threw away. Chunks scanned, retrieval ms,
   and a kept/pruned badge on top. Flip on **✨ LLM rerank** and the header tells you which
   model ran, how many tangential chunks it dropped and what it cost — or says
   *"rerank failed open — deterministic list shown"* when the model misbehaves.
-- **Ask** — watch a broad question **fan out into parallel sub-agents**, their tool calls
-  and prose streaming into per-agent cards, then a synthesis with the **real code spliced
-  in** as it types.
+- **Flows** — **the ask cache, listed.** Every successful ask is stored (question + the
+  rendered walkthrough + the sha of each cited file), newest first, with the cited files
+  openable in the navigator. Repeats of a listed question answer **from cache, zero LLM
+  cost**; `stale` marks flows whose sources changed on disk (the next index prunes them).
 - **Graph** — the repo as a **force-directed knowledge graph**, in four modes: an
   **overview** of community bubbles (click one to open it), a **community** expanded, a
   **search subgraph** (real retrieval drawn as a graph), and a **path** between two
   concepts with **`▶ Run the connection`** — a step-through of the call→definition chain,
   hop by hop.
+
+And around them:
+
 - **The code navigator** (opens over any view) — a read-only IDE over the index. Click any
   file — a search chunk, an ask agent's file pill, a graph node, a path step — and the
   **whole file** opens: real bytes, syntax-highlighted, scrolled to the exact line. **Every
