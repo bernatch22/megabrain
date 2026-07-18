@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.14.0 — the studio on a phone
+
+The UI had no media queries at all: a fixed 248px rail ate two thirds of a
+375px screen, every side-by-side layout stayed side-by-side, and the slide-
+overs left a dead strip. One breakpoint at 860px:
+
+- **The rail becomes an off-canvas drawer** behind a hamburger, with a scrim.
+  It closes on repo pick (its whole job), scrim tap, tab change, or Escape.
+- **Side-by-side layouts stack**: Search's signal|noise becomes one column,
+  Graph puts the canvas above its panel.
+- **Slide-overs go full-screen** (code navigator, settings) — `min(1060px,
+  82vw)` left an unusable strip on a phone. The navigator's symbol rail is
+  hidden there; it costs more width than it returns.
+- **The topbar keeps only what you navigate with.** The model chip (dot +
+  provider + model + chevron) could not share a 375px row with four tabs —
+  it overlapped the Graph tab — so it moves into the drawer footer.
+- `dvh` instead of `vh` (mobile `100vh` is the address-bar-hidden viewport,
+  so the app's bottom sat under the browser chrome), 16px query input (iOS
+  zooms anything smaller on focus), full-width tabs for ~44px touch targets,
+  and `@media (hover:none)` drops hover states that stick after a tap.
+
+Several of these layouts were inline styles, which a media query cannot
+override — they are now classes (`.split-2`, `.graph-layout`, `.graph-canvas`,
+`.graph-panel`, `.viewer-syms`).
+
 ## 0.13.1 — derived questions that read like questions
 
 Measured against the demo box's real repos, 0.13.0's derived tier produced

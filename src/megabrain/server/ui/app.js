@@ -27,6 +27,7 @@
     plus: I('<path d="M12 5v14M5 12h14"/>', 12),
     chev: I('<path d="M6 9l6 6 6-6"/>', 12),
     close: I('<path d="M18 6L6 18M6 6l12 12"/>', 14),
+    menu: I('<path d="M3 12h18M3 6h18M3 18h18"/>', 17),
     link: I('<path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>', 10),
     refresh: I('<path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>', 11),
     check: I('<path d="M20 6L9 17l-5-5"/>', 11),
@@ -66,6 +67,7 @@
     overlay: null,          // 'settings' | 'add'
     add: null,              // add-repo flow state
     config: null,           // GET /config — {readonly, rate_limit, version}
+    railOpen: false,        // mobile: the repo rail is an off-canvas drawer
   };
 
   // read-only server (public demo): the SAME bundle hides every mutating
@@ -87,7 +89,10 @@
   // ── top-level render ─────────────────────────────────────────────────
   function render() {
     document.documentElement.setAttribute("data-theme", st.theme);
-    $("#app").innerHTML = rail() + main();
+    // .rail-open drives the mobile drawer (and its scrim) purely in CSS
+    $("#app").className = "shell" + (st.railOpen ? " rail-open" : "");
+    $("#app").innerHTML = rail() + main() +
+      '<div class="rail-scrim" data-act="rail-close"></div>';
     renderOverlays();
     bind();
     const q = $("#q"); if (q && document.activeElement !== q) { /* keep value */ }
@@ -121,6 +126,11 @@
         ${RO() ? "" : `<button class="add-repo" data-act="add-open">${ico.plus}<span>Add repo</span></button>`}
       </div>
       <div class="rail-foot">
+        <div class="rail-model mono" ${RO() ? "" : 'data-act="settings" role="button"'}>
+          <div class="dotlive" style="flex-shrink:0"></div>
+          <span style="color:var(--muted);flex-shrink:0">${esc(activeProvider())}</span>
+          <span style="font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(shortModel(activeModel()))}</span>
+        </div>
         ${RO() ? "" : `<button class="rail-foot-btn" data-act="settings">${ico.gear}<span>Settings &amp; providers</span></button>`}
         <button class="rail-foot-btn" data-act="theme">${st.theme === "dark" ? ico.moon : ico.sun}<span>${st.theme === "dark" ? "Dark" : "Light"} theme</span></button>
       </div>
@@ -134,6 +144,7 @@
     return `<main class="main">
       <header class="topbar">
         <div style="display:flex;align-items:center;gap:14px;min-width:0;flex:1">
+          <button class="rail-burger" data-act="rail-open" aria-label="repositories">${ico.menu}</button>
           <div class="crumb mono"><span>${esc(root)}</span></div>
           <div class="divider"></div>
           <div class="tabs">${tabs}</div>
@@ -190,7 +201,7 @@
           ${rr ? `<div class="sdot"></div><div>✨ reranked by <b class="mono">${esc(shortModel(rr.model))}</b> · dropped <b>${rr.dropped}</b> tangential · +${(rr.ms / 1000).toFixed(1)}s</div>`
              : st.rerank && r.reranked === false ? `<div class="sdot"></div><div style="color:var(--muted)">rerank failed open — deterministic list shown</div>` : ""}
         </div>
-        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;margin-top:22px">
+        <div class="split-2">
           <div style="min-width:0">
             <div class="section-head" style="margin-top:0"><div class="signal-label mono"><div class="dotlive"></div>SIGNAL · KEPT</div><div class="section-rule"></div><div class="mono" style="font-size:10.5px;font-weight:600">${r.kept}</div></div>
             <div style="display:flex;flex-direction:column;gap:8px;min-width:0">${(r.chunks || []).map(signalCard).join("") || emptyMini("nothing kept")}</div>
@@ -324,7 +335,7 @@
       ${stepBar}
       <div style="flex:1;display:flex;min-height:0">
         <div id="vcode" style="flex:1;overflow:auto;padding:8px 0;min-width:0">${body}</div>
-        <div style="width:216px;border-left:1px solid var(--border);overflow-y:auto;padding:10px 8px;flex-shrink:0">
+        <div class="viewer-syms">
           <div class="mono" style="font-size:9.5px;color:var(--muted);letter-spacing:.06em;padding:0 6px 8px">SYMBOLS</div>
           ${outline || emptyMini("no symbols indexed")}</div>
       </div>
@@ -460,8 +471,8 @@
       path: st.graphPath ? `${(st.graphPath.source || "?").split("/").pop()} → ${(st.graphPath.target || "?").split("/").pop()}` : "",
     }[st.gmode] || "";
     const body = g ? `
-      <div style="display:flex;gap:14px;margin-top:16px;height:calc(100vh - 200px);min-height:420px">
-        <div id="gwrap" style="flex:1;position:relative;min-width:0;background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+      <div class="graph-layout">
+        <div id="gwrap" class="graph-canvas">
           <canvas id="gcanvas" style="position:absolute;inset:0;cursor:grab"></canvas>
           <div id="gtip" class="mono" style="position:absolute;display:none;pointer-events:none;z-index:5;padding:6px 10px;background:var(--panel2);border:1px solid var(--border2);border-radius:6px;font-size:11px;box-shadow:var(--shadow);max-width:360px"></div>
           <div style="position:absolute;right:12px;top:10px;z-index:4;display:flex;flex-direction:column;gap:5px">
@@ -476,8 +487,8 @@
               : "drag · wheel zoom · click a file for neighbors + code"}
             · <span style="color:var(--text)">solid</span> import/call · <span style="color:var(--text)">dashed</span> semantic</div>
         </div>
-        <div id="gplaycard" style="display:none;width:min(44vw,600px);flex-shrink:0;background:var(--panel);border:1px solid var(--border2);border-radius:10px;padding:12px 14px;flex-direction:column;min-height:0"></div>
-        <div id="gpanel" style="flex:0 1 380px;min-width:260px;max-width:34%;overflow-y:auto;display:flex;flex-direction:column;gap:10px">${graphPanel()}</div>
+        <div id="gplaycard" class="graph-play"></div>
+        <div id="gpanel" class="graph-panel">${graphPanel()}</div>
       </div>` :
       emptyState("The repo as a living map: communities, god nodes, hidden connections.",
         st.graphLoading ? "Building the graph…" : "Loads by itself — or search anything, or  a -> b  for a path.");
@@ -2060,8 +2071,11 @@
     }
     const t = e.target.closest("[data-act]"); if (!t) return;
     const act = t.dataset.act;
-    if (act === "view") { st.view = t.dataset.id; render(); }
+    if (act === "view") { st.view = t.dataset.id; st.railOpen = false; render(); }
+    else if (act === "rail-open") { st.railOpen = true; render(); }
+    else if (act === "rail-close") { st.railOpen = false; render(); }
     else if (act === "repo") {
+      st.railOpen = false;            // picking one is the drawer's whole job
       if (t.dataset.cold) { loadColdRepo(t.dataset.name); return; }
       st.repo = t.dataset.name; clearRepoState(); render();
     }
@@ -2153,7 +2167,8 @@
     if (e.key === "Escape") {
       if (st.viewer) { viewerClose(); return; }
       if (st.gplay) { st.gplay = null; paintPlayCard(); return; }
-      if (st.overlay) { st.overlay = null; st.add = null; renderOverlays(); }
+      if (st.overlay) { st.overlay = null; st.add = null; renderOverlays(); return; }
+      if (st.railOpen) { st.railOpen = false; render(); }
     }
     if (st.viewer && st.viewer.conn && !/input|textarea/i.test((document.activeElement || {}).tagName || "")) {
       if (e.key === "ArrowRight" && st.viewer.conn.k < st.viewer.conn.steps.length - 1)
