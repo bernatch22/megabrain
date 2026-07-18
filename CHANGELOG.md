@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased — megabrain_graph · search + LLM rerank · repo registry
+## 0.10.0 — the repo as a graph · flow cache on by default · search rerank
 
 - **Flow cache ON by default** (was opt-in since its introduction). Measured
   on this repo: a repeated ask (even reworded) drops from 27.8 s to **0.19 s
@@ -60,8 +60,22 @@
   node for its neighbors + symbols + real chunks, and `A -> B` in the query
   bar traces a highlighted path. Physics stays cheap via per-community
   repulsion (no global O(n²)). Prune view gains the LLM-rerank toggle.
+- **Studio: the add-repo file tree, rebuilt.** The old tree re-rendered the
+  whole overlay on every toggle, so each click threw the scroll position back
+  to the top, and re-including one file under an excluded folder was flatly
+  refused ("re-include the parent folder first"). Now: a targeted repaint
+  keeps scroll and input focus; whole rows are clickable (folders expand,
+  files toggle, VS-Code style); re-including a child performs a **rule split**
+  — the excluded ancestor is replaced by exclusions of its siblings, so the
+  selection stays expressible as plain `.megabrainignore` lines (which have no
+  `!` negation). Adds tri-state folder checkboxes with real `included/total`
+  counts, a filter box with match highlighting and auto-expansion of hits,
+  full keyboard navigation (↑↓ move, →← expand/collapse, space toggles),
+  All/None/Expand/Collapse actions, indent guides, and a footer stating how
+  many ignore rules the choice will write. Light theme: the brand glyph is
+  white on the accent gradient (it was near-black, unreadable).
 
-### Also in Unreleased — local-model knobs
+### Also in 0.10.0 — local-model knobs
 
 - **`MEGABRAIN_CHAT_EXTRA`** — a JSON object shallow-merged into every
   OpenAI-compat chat body (streamed and not; extras win, so a knob can be
