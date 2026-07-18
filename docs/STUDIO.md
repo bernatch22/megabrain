@@ -70,8 +70,14 @@ a symbols outline rail, `Esc` to close.
 Paste a path or pick a folder (native OS dialog). Studio **censuses it before
 committing**: how many files WILL index, the by-extension breakdown, and
 everything skipped with a reason (`.gitignore` · vendored · generated ·
-too-big). Edit the proposed `.megabrainignore` in a tree of checkboxes, then a
-**live progress bar** indexes it file by file. The new repo joins the rail.
+too-big). Refine the selection in a **tri-state file tree** — click a row to
+expand a folder or toggle a file, filter by name, navigate with the keyboard
+(↑↓ move, →← expand/collapse, space toggles), All/None/Expand/Collapse. Each
+folder shows `included/total`, and the footer states how many
+`.megabrainignore` lines your choice will write (excluding a folder then
+re-including one child splits the rule into siblings, since the format has no
+`!` negation). Then a **live progress bar** indexes it file by file. The new
+repo joins the rail.
 
 ### Settings / providers
 Claude SDK · OpenRouter · Ollama, auto-detected with a why ("no OPENROUTER_API_KEY",
