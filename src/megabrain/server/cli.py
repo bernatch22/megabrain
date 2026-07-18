@@ -131,6 +131,17 @@ def main(argv=None):
         p.add_argument("--token", default=os.environ.get("MEGABRAIN_API_TOKEN"),
                        help="require `Authorization: Bearer <token>` on every request except "
                             "/health (default: $MEGABRAIN_API_TOKEN; recommended off-localhost)")
+        p.add_argument("--readonly", action="store_true",
+                       help="public-demo mode: serve the indexed repos but refuse every "
+                            "mutating/config route (index, add-repo, scan, provider "
+                            "switching, flow deletes) with a 403; the UI hides those "
+                            "affordances too")
+        p.add_argument("--rate-limit", type=int, default=None, metavar="N",
+                       help="at most N LLM asks per hour per client IP (429 beyond); "
+                            "retrieval routes stay unlimited — they're local and ~free")
+        p.add_argument("--trust-proxy", action="store_true",
+                       help="take the client IP from X-Forwarded-For (set this ONLY "
+                            "behind your own reverse proxy — the header is spoofable)")
     _add_serve_args(sub.add_parser("studio",
                                    help="the studio web UI at / + the JSON API (warm state)"))
     _add_serve_args(sub.add_parser("serve-api",
@@ -351,7 +362,9 @@ def _dispatch(a, raw: list[Path], root: Path) -> None:
     elif a.cmd in ("studio", "serve-api"):
         from .http import serve
         serve(root, port=a.port, host=a.host, cors=a.cors, enable_llm=not a.no_llm,
-              token=a.token, serve_ui=(a.cmd == "studio"))
+              token=a.token, serve_ui=(a.cmd == "studio"),
+              readonly=a.readonly, rate_limit=a.rate_limit,
+              trust_proxy=a.trust_proxy)
     elif a.cmd == "forge":
         import json as _json
         if a.specialize:

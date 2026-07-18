@@ -36,8 +36,21 @@ Endpoints:
     POST /repos/add {path, ignore?}    -> register a repo (+ write .megabrainignore)
 
 Optional auth: --token / MEGABRAIN_API_TOKEN requires `Authorization: Bearer
-<token>` on every route except /health and the UI. CORS off by default; pass
---cors <origin> for a cross-origin browser client.
+<token>` on every route except /health, /config and the UI. CORS off by
+default; pass --cors <origin> for a cross-origin browser client.
+
+Public-demo hardening (both opt-in, no effect otherwise):
+  --readonly       serve the indexed repos, refuse every mutating/config route
+                   (/index, /index/stream, /repos/add, /scan, /fs/pick,
+                   /providers/select, /providers/ollama/serve, /flows/delete)
+                   with a 403 — enforced HERE, server-side; the UI reads
+                   `GET /config` and hides those affordances, but the lock
+                   never depends on it.
+  --rate-limit N   at most N LLM asks (/ask + /ask/stream) per hour per client
+                   IP (429 + retry seconds). Retrieval routes are local and
+                   ~free, so they stay unlimited. Behind a proxy, add
+                   --trust-proxy so the client IP comes from X-Forwarded-For
+                   (never trusted by default — the header is spoofable).
 """
 
 from __future__ import annotations
@@ -72,6 +85,44 @@ def _http_error(msg: str, status: int) -> MegabrainError:
     e = MegabrainError(msg)
     e.http_status = status
     return e
+
+
+# routes a --readonly server refuses (403): everything that mutates state or
+# reconfigures the process. One set, checked before dispatch, so a new
+# mutating route must be ADDED here consciously — forgetting fails closed only
+# for the routes listed, which is why the set lives next to the route table.
+READONLY_BLOCKED = frozenset({
+    "/scan", "/fs/pick",                                   # census/dialog (GET)
+    "/index", "/index/stream", "/repos/add",               # index mutation
+    "/providers/select", "/providers/ollama/serve",        # process config
+    "/flows/delete",                                       # cache mutation
+})
+
+
+class RateLimiter:
+    """Sliding-window per-IP limiter for the LLM routes (stdlib, in-process).
+    check(ip) records a hit and returns None when allowed, or the seconds
+    until the next slot frees when over the limit (the 429 Retry-After)."""
+
+    def __init__(self, limit: int, window_s: int = 3600):
+        self.limit, self.window = limit, window_s
+        self._hits: dict[str, list[float]] = {}
+        self._lock = threading.Lock()
+
+    def check(self, ip: str) -> int | None:
+        now = time.time()
+        with self._lock:
+            hits = [t for t in self._hits.get(ip, []) if t > now - self.window]
+            if len(hits) >= self.limit:
+                self._hits[ip] = hits
+                return int(hits[0] + self.window - now) + 1
+            hits.append(now)
+            self._hits[ip] = hits
+            # bound memory on a public box: drop other IPs' expired windows
+            if len(self._hits) > 10_000:
+                self._hits = {k: v for k, v in self._hits.items()
+                              if v and v[-1] > now - self.window}
+            return None
 
 
 class Registry:
@@ -162,7 +213,11 @@ def _repo_stats(s: RepoSession) -> dict:
 # ── HTTP ──────────────────────────────────────────────────────────────────
 
 def _make_handler(reg: Registry, cors: str | None, enable_llm: bool,
-                  token: str | None = None, serve_ui: bool = True):
+                  token: str | None = None, serve_ui: bool = True,
+                  readonly: bool = False, rate_limit: int | None = None,
+                  trust_proxy: bool = False):
+    limiter = RateLimiter(rate_limit) if rate_limit else None
+
     class Handler(BaseHTTPRequestHandler):
         protocol_version = "HTTP/1.1"
 
@@ -170,11 +225,34 @@ def _make_handler(reg: Registry, cors: str | None, enable_llm: bool,
             pass
 
         def _authed(self, path: str) -> bool:
-            """When a token is configured, every route except /health and the
-            static UI requires `Authorization: Bearer <token>`."""
-            if not token or path == "/health" or path == "/" or path.startswith("/ui"):
+            """When a token is configured, every route except /health, /config
+            and the static UI requires `Authorization: Bearer <token>`."""
+            if not token or path in ("/health", "/config", "/") or path.startswith("/ui"):
                 return True
             return self.headers.get("Authorization") == f"Bearer {token}"
+
+        def _client_ip(self) -> str:
+            if trust_proxy:
+                xf = self.headers.get("X-Forwarded-For")
+                if xf:
+                    return xf.split(",")[0].strip()
+            return self.client_address[0]
+
+        def _gate(self, path: str) -> bool:
+            """The public-demo gates, shared by GET and POST: readonly blocks
+            every mutating route; the rate limiter meters the LLM asks. Sends
+            the error and returns True when the request must not proceed."""
+            if readonly and path in READONLY_BLOCKED:
+                self._err(403, "read-only server — indexing and "
+                               "configuration are disabled")
+                return True
+            if limiter and path in ("/ask", "/ask/stream"):
+                retry = limiter.check(self._client_ip())
+                if retry is not None:
+                    self._err(429, f"rate limit: {rate_limit} asks/hour — "
+                                   f"try again in {retry}s")
+                    return True
+            return False
 
         def _send(self, code: int, payload, ctype: str | None = None) -> None:
             body = payload if isinstance(payload, bytes) else json.dumps(payload).encode()
@@ -272,8 +350,18 @@ def _make_handler(reg: Registry, cors: str | None, enable_llm: bool,
                 return
             if not self._authed(path):
                 return self._err(401, "unauthorized")
+            if self._gate(path):
+                return
             repo_name = (qs.get("repo") or [None])[0]
             try:
+                if path == "/config":
+                    # what kind of server this is — the UI adapts to it (a
+                    # readonly demo hides add-repo/settings/deletes). Auth-
+                    # exempt like /health: it leaks no repo content.
+                    from .. import __version__
+                    return self._send(200, {"readonly": readonly,
+                                            "rate_limit": rate_limit,
+                                            "version": __version__})
                 if path == "/health":
                     return self._send(200, reg.get(repo_name).with_state(lambda st: {
                         "ok": True, "repo": st.repo, "files": len(st.fpaths),
@@ -386,6 +474,8 @@ def _make_handler(reg: Registry, cors: str | None, enable_llm: bool,
             path = (urllib.parse.urlparse(self.path).path).rstrip("/") or "/"
             if not self._authed(path):
                 return self._err(401, "unauthorized")
+            if self._gate(path):
+                return
             body = self._read_json()
             repo_name = body.get("repo")
             try:
@@ -610,7 +700,9 @@ def _merge_ignore(root: Path, ignore: str) -> None:
 
 def serve(root, port: int = 2134, host: str = "127.0.0.1",
           cors: str | None = None, enable_llm: bool = True,
-          token: str | None = None, serve_ui: bool = True) -> None:
+          token: str | None = None, serve_ui: bool = True,
+          readonly: bool = False, rate_limit: int | None = None,
+          trust_proxy: bool = False) -> None:
     import os
 
     from .. import providers
@@ -663,7 +755,9 @@ def serve(root, port: int = 2134, host: str = "127.0.0.1",
         except Exception:
             log.debug("registry preload skipped for %s", e.get("path"), exc_info=True)
     httpd = ThreadingHTTPServer((host, port),
-                                _make_handler(reg, cors, enable_llm, token, serve_ui))
+                                _make_handler(reg, cors, enable_llm, token, serve_ui,
+                                              readonly=readonly, rate_limit=rate_limit,
+                                              trust_proxy=trust_proxy))
     httpd.daemon_threads = True
     ui = "on" if (serve_ui and (UI_DIR / "index.html").is_file()) else "off"
     verb = "studio" if serve_ui else "serve-api"
@@ -671,9 +765,11 @@ def serve(root, port: int = 2134, host: str = "127.0.0.1",
     where = f"repo={boot.root.name} chunks={chunks}" if boot is not None \
         else f"repos={n} (none loaded — add one from the UI)" if n == 0 \
         else f"repos={n} (registry)"
+    hard = (" mode=read-only" if readonly else "") + \
+        (f" rate={rate_limit}asks/h" if rate_limit else "")
     print(f"megabrain {verb} → http://{host}:{port}  {where} "
           f"cors={cors or 'off'} llm={'on' if enable_llm else 'off'} "
-          f"auth={'bearer' if token else 'off'} ui={ui}")
+          f"auth={'bearer' if token else 'off'} ui={ui}{hard}")
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:

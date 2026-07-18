@@ -65,7 +65,13 @@
     gplay: null,                         // path walkthrough: {k: hop idx, t: seconds}
     overlay: null,          // 'settings' | 'add'
     add: null,              // add-repo flow state
+    config: null,           // GET /config — {readonly, rate_limit, version}
   };
+
+  // read-only server (public demo): the SAME bundle hides every mutating
+  // affordance — the server 403s those routes anyway; this just keeps the UI
+  // honest about what it can do here.
+  const RO = () => !!(st.config && st.config.readonly);
 
   const accentDim = () => getComputedStyle(document.documentElement).getPropertyValue("--accent-dim");
   const activeModel = () => st.model || (st.providers && st.providers.active && st.providers.active.model) || "default";
@@ -88,7 +94,10 @@
   }
 
   function rail() {
-    const repos = st.repos.length ? st.repos.map((r) => {
+    // readonly: cold registry entries need POST /repos/add to load — blocked,
+    // so they'd be dead rows; show only what this server can actually answer
+    const visible = RO() ? st.repos.filter((r) => r.loaded !== false) : st.repos;
+    const repos = visible.length ? visible.map((r) => {
       const active = st.repo === r.name;
       const cold = r.loaded === false;      // in the machine registry, not warm here
       return `<button class="repo-row ${active ? "active" : ""}" data-act="repo" data-name="${esc(r.name)}"
@@ -109,10 +118,10 @@
       <div class="rail-section">
         <div class="rail-label mono">INDEXED REPOS</div>
         ${repos}
-        <button class="add-repo" data-act="add-open">${ico.plus}<span>Add repo</span></button>
+        ${RO() ? "" : `<button class="add-repo" data-act="add-open">${ico.plus}<span>Add repo</span></button>`}
       </div>
       <div class="rail-foot">
-        <button class="rail-foot-btn" data-act="settings">${ico.gear}<span>Settings &amp; providers</span></button>
+        ${RO() ? "" : `<button class="rail-foot-btn" data-act="settings">${ico.gear}<span>Settings &amp; providers</span></button>`}
         <button class="rail-foot-btn" data-act="theme">${st.theme === "dark" ? ico.moon : ico.sun}<span>${st.theme === "dark" ? "Dark" : "Light"} theme</span></button>
       </div>
     </aside>`;
@@ -129,12 +138,12 @@
           <div class="divider"></div>
           <div class="tabs">${tabs}</div>
         </div>
-        <button class="model-chip mono" data-act="settings">
+        <button class="model-chip mono" ${RO() ? "" : 'data-act="settings"'}>
           <div class="dotlive"></div>
           <span style="color:var(--muted)">${esc(activeProvider())}</span>
           <span style="opacity:0.4">·</span>
           <span style="font-weight:600">${esc(shortModel(activeModel()))}</span>
-          ${ico.chev}
+          ${RO() ? "" : ico.chev}
         </button>
       </header>
       <div class="viewport"><div id="view"></div></div>
@@ -1199,7 +1208,7 @@
         <div style="display:flex;align-items:center;gap:10px">
           <button class="chip mono" data-act="flow-back">← all flows</button>
           <div style="flex:1"></div>
-          <button class="chip mono" data-act="flow-del" data-id="${fl.id}" style="color:var(--bad,#e5534b)">${ico.x} delete</button>
+          ${RO() ? "" : `<button class="chip mono" data-act="flow-del" data-id="${fl.id}" style="color:var(--bad,#e5534b)">${ico.x} delete</button>`}
         </div>
         <div style="margin-top:16px;font-size:15px;font-weight:650;line-height:1.4">“${esc(fl.question)}”</div>
         <div style="display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap">
@@ -1218,7 +1227,7 @@
           </div>
           ${m.stale ? '<span class="file-pill mono" title="a cited file changed on disk since this was cached — it will not serve, and the next index prunes it">stale</span>' : ""}
           <span class="file-pill mono" style="flex-shrink:0">${fmtDate(m.created)}</span>
-          <button class="chip mono" data-act="flow-del" data-id="${m.id}" title="delete this flow" style="flex-shrink:0">${ico.x}</button>
+          ${RO() ? "" : `<button class="chip mono" data-act="flow-del" data-id="${m.id}" title="delete this flow" style="flex-shrink:0">${ico.x}</button>`}
         </div>
       </div>`).join("");
       body = `<div class="stats-row">
@@ -2187,6 +2196,9 @@
   // debug handle (state is IIFE-scoped; this is the only window into it)
   window.__mb = { st, get SIM() { return SIM; } };
   render();
+  if (api.config)           // mock api may not implement it
+    api.config().then((c) => { st.config = c; render(); })
+      .catch(() => {});     // pre-/config server: everything stays visible
   refreshRepos();
   loadProviders();          // fill the topbar chip with the active provider
 })();

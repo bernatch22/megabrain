@@ -5447,23 +5447,23 @@
      121,
      207,
      "megabrain > megabrain/server/cli.py > def main(argv=None)",
-     "1a9f8f10192f9e14f020a0907e55158b62f61edb"
+     "02c33479add2cb71ad7ecd2f5c7a69502740bfe3"
     ],
     [
      "block",
      "main",
      "3/3",
      208,
-     217,
+     228,
      "megabrain > megabrain/server/cli.py > def main(argv=None)",
-     "4da70d1ee7b364f958dd0f9c683ae37f02bbf265"
+     "131ba10e2119297474aa09fe23064d19173aa98d"
     ],
     [
      "module",
      "_scan, _render_scan",
      null,
-     218,
-     251,
+     229,
+     262,
      "megabrain > megabrain/server/cli.py > [_scan, _render_scan]",
      "6c4d106b3f64799ed33c25ecfbc89235a70f8628"
     ],
@@ -5471,26 +5471,26 @@
      "block",
      "_dispatch",
      "1/2",
-     252,
-     373,
+     263,
+     385,
      "megabrain > megabrain/server/cli.py > def _dispatch(a, raw: list[Path], root: Path) -> None",
-     "23c928fe699e1f03414e93312e361906dada4f6d"
+     "881e9c73a2dc128f520fcf7eccbc4da21168d3bb"
     ],
     [
      "block",
      "_dispatch",
      "2/2",
-     374,
-     441,
+     386,
+     454,
      "megabrain > megabrain/server/cli.py > def _dispatch(a, raw: list[Path], root: Path) -> None",
-     "0f6deca3abe8060125dc121f7c40668c3e868c82"
+     "814a35ac7a3249c94c7883d3cde8902324a7e80f"
     ],
     [
      "module",
      null,
      null,
-     442,
-     445,
+     455,
+     458,
      "megabrain > megabrain/server/cli.py (module level)",
      "494c28ef72c62a5924f4316a400d4193725ae15a"
     ]
@@ -5501,28 +5501,28 @@
      "main",
      "function",
      28,
-     217,
+     228,
      "def main(argv=None)"
     ],
     [
      "_scan",
      "function",
-     220,
-     222,
+     231,
+     233,
      "def _scan(root: Path) -> dict"
     ],
     [
      "_render_scan",
      "function",
-     225,
-     251,
+     236,
+     262,
      "def _render_scan(rep: dict) -> str"
     ],
     [
      "_dispatch",
      "function",
-     254,
-     441,
+     265,
+     454,
      "def _dispatch(a, raw: list[Path], root: Path) -> None"
     ]
    ]
@@ -5530,65 +5530,83 @@
   "megabrain/server/http.py": {
    "chunks": [
     [
-     "module",
-     "_http_error, Registry",
+     "function",
+     "_http_error",
      null,
      1,
-     112,
-     "megabrain > megabrain/server/http.py > [_http_error, Registry]",
-     "c43b24135b644281cf36d05361cc734672025294"
+     99,
+     "megabrain > megabrain/server/http.py > def _http_error(msg: str, status: int) -> MegabrainError",
+     "216144de828c252233d27c5495300e2d5485f7be"
     ],
     [
      "module",
-     "_root_key, _all_repos, _repo_stats",
+     "RateLimiter, Registry, _root_key, _all_repos, _repo_stats",
      null,
-     113,
-     159,
-     "megabrain > megabrain/server/http.py > [_root_key, _all_repos, _repo_stats]",
-     "66b479ea233e888c967f10d5905246899e35667a"
+     100,
+     210,
+     "megabrain > megabrain/server/http.py > [RateLimiter, Registry, _root_key, _all_repos, _repo_stats]",
+     "6731ad46127e262b7509f70d1009140c4e36131b"
     ],
     [
      "block",
      "_make_handler",
-     "1/4",
-     160,
-     290,
-     "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True)",
-     "03888581d1d19ea132f39980f7c69081541775a1"
+     "1/6",
+     211,
+     219,
+     "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True, readonly: bool=False, rate_limit: int | None=None, trust_proxy: bool=False)",
+     "1ae6375ab420ab220bb6da6e034e7ab1904bf286"
     ],
     [
      "block",
      "_make_handler",
-     "2/4",
-     291,
-     420,
-     "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True)",
-     "ba79aab3dd64f8957ecabaed362d2975c7b1bfed"
+     "2/6",
+     220,
+     352,
+     "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True, readonly: bool=False, rate_limit: int | None=None, trust_proxy: bool=False)",
+     "4dd4024fa1a44130b25a92cc3786f191e0bb5718"
     ],
     [
      "block",
      "_make_handler",
-     "3/4",
-     421,
-     531,
-     "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True)",
-     "f7b0336024afcb692dec20b4b5fa3f1b66975e02"
+     "3/6",
+     353,
+     482,
+     "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True, readonly: bool=False, rate_limit: int | None=None, trust_proxy: bool=False)",
+     "aebfa28b28651224bf0a1a212401cc62f0e8f204"
     ],
     [
      "block",
      "_make_handler",
-     "4/4",
-     532,
-     533,
-     "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True)",
+     "4/6",
+     483,
+     611,
+     "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True, readonly: bool=False, rate_limit: int | None=None, trust_proxy: bool=False)",
+     "9683d19822673fc446e02f0c848e6cc05447b7ba"
+    ],
+    [
+     "block",
+     "_make_handler",
+     "5/6",
+     612,
+     621,
+     "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True, readonly: bool=False, rate_limit: int | None=None, trust_proxy: bool=False)",
+     "73e1ed22b34834cccce8134122938563482750a5"
+    ],
+    [
+     "block",
+     "_make_handler",
+     "6/6",
+     622,
+     623,
+     "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True, readonly: bool=False, rate_limit: int | None=None, trust_proxy: bool=False)",
      "5ebaec407bc18bc3fde033e8db1a20bf3e3ec3f8"
     ],
     [
      "module",
      "_valid_model, _native_pick_folder, _scan_report, _merge_ignore",
      null,
-     534,
-     608,
+     624,
+     698,
      "megabrain > megabrain/server/http.py > [_valid_model, _native_pick_folder, _scan_report, _merge_ignore]",
      "1a60519fd169e3894bbb17ae8e132a99f7846295"
     ],
@@ -5596,139 +5614,167 @@
      "function",
      "serve",
      null,
-     609,
-     682,
-     "megabrain > megabrain/server/http.py > def serve(root, port: int=2134, host: str='127.0.0.1', cors: str | None=None, enable_llm: bool=True, token: str | None=None, serve_ui: bool=True) -> None",
-     "dbf80b262c8416184d62171bf0d91b9a06156857"
+     699,
+     778,
+     "megabrain > megabrain/server/http.py > def serve(root, port: int=2134, host: str='127.0.0.1', cors: str | None=None, enable_llm: bool=True, token: str | None=None, serve_ui: bool=True, readonly: bool=False, rate_limit: int | None=None, trust_proxy: bool=False) -> None",
+     "845519f4272837babd8c0b6307c51170e06e77ae"
     ]
    ],
-   "skeleton_sha": "8fe96e566d19873766a1e9bde4f65c9173d80c3c",
+   "skeleton_sha": "183afc39da6605b52496e1be0f964c6e5446c179",
    "symbols": [
     [
      "log",
      "constant",
-     60,
-     60,
+     73,
+     73,
      "log = logging.getLogger(__name__)"
     ],
     [
      "UI_DIR",
      "constant",
-     62,
-     62,
+     75,
+     75,
      "UI_DIR = Path(__file__).parent / 'ui'"
     ],
     [
      "_CTYPES",
      "constant",
-     63,
-     66,
+     76,
+     79,
      "_CTYPES = {'.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json"
     ],
     [
      "_http_error",
      "function",
-     69,
-     74,
+     82,
+     87,
      "def _http_error(msg: str, status: int) -> MegabrainError"
+    ],
+    [
+     "READONLY_BLOCKED",
+     "constant",
+     94,
+     99,
+     "READONLY_BLOCKED = frozenset({'/scan', '/fs/pick', '/index', '/index/stream', '/repos/add', '/providers/select', '/provi"
+    ],
+    [
+     "RateLimiter",
+     "class",
+     102,
+     125,
+     "class RateLimiter"
+    ],
+    [
+     "RateLimiter.__init__",
+     "method",
+     107,
+     110,
+     "def __init__(self, limit: int, window_s: int=3600)"
+    ],
+    [
+     "RateLimiter.check",
+     "method",
+     112,
+     125,
+     "def check(self, ip: str) -> int | None"
     ],
     [
      "Registry",
      "class",
-     77,
-     112,
+     128,
+     163,
      "class Registry"
     ],
     [
      "Registry.__init__",
      "method",
-     83,
-     89,
+     134,
+     140,
      "def __init__(self, boot: RepoSession | None)"
     ],
     [
      "Registry.get",
      "method",
-     91,
-     97,
+     142,
+     148,
      "def get(self, name: str | None) -> RepoSession"
     ],
     [
      "Registry.add",
      "method",
-     99,
-     108,
+     150,
+     159,
      "def add(self, root: Path) -> RepoSession"
     ],
     [
      "Registry.list",
      "method",
-     110,
-     112,
+     161,
+     163,
      "def list(self) -> list[RepoSession]"
     ],
     [
      "_root_key",
      "function",
-     115,
-     125,
+     166,
+     176,
      "def _root_key(p) -> str"
     ],
     [
      "_all_repos",
      "function",
-     128,
-     146,
+     179,
+     197,
      "def _all_repos(reg: Registry) -> list[dict]"
     ],
     [
      "_repo_stats",
      "function",
-     149,
-     159,
+     200,
+     210,
      "def _repo_stats(s: RepoSession) -> dict"
     ],
     [
      "_make_handler",
      "function",
-     164,
-     533,
-     "def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True)"
+     215,
+     623,
+     "def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True, readonly: bool=False, rate_limit: int | None=None, trust_proxy: bool=False)"
     ],
     [
      "_valid_model",
      "function",
-     536,
-     547,
+     626,
+     637,
      "def _valid_model(model) -> str | None"
     ],
     [
      "_native_pick_folder",
      "function",
-     550,
-     586,
+     640,
+     676,
      "def _native_pick_folder() -> dict"
     ],
     [
      "_scan_report",
      "function",
-     589,
-     595,
+     679,
+     685,
      "def _scan_report(path: str) -> dict"
     ],
     [
      "_merge_ignore",
      "function",
-     598,
-     608,
+     688,
+     698,
      "def _merge_ignore(root: Path, ignore: str) -> None"
     ],
     [
      "serve",
      "function",
-     611,
-     682,
-     "def serve(root, port: int=2134, host: str='127.0.0.1', cors: str | None=None, enable_llm: bool=True, token: str | None=None, serve_ui: bool=True) -> None"
+     701,
+     778,
+     "def serve(root, port: int=2134, host: str='127.0.0.1', cors: str | None=None, enable_llm: bool=True, token: str | None=None, serve_ui: bool=True, readonly: bool=False, rate_limit: int | None=None, trust_proxy: bool=False) -> None"
     ]
    ]
   },

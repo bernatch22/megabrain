@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.12.0 — the studio as a public demo: --readonly + --rate-limit
+
+- **`--readonly`** (studio / serve-api): serve the indexed repos, refuse every
+  mutating/config route server-side with a 403 (`/index`, `/index/stream`,
+  `/repos/add`, `/scan`, `/fs/pick`, `/providers/select`,
+  `/providers/ollama/serve`, `/flows/delete` — one `READONLY_BLOCKED` set next
+  to the route table). The SAME UI bundle adapts: it reads the new
+  `GET /config` (`{readonly, rate_limit, version}`, auth-exempt like /health)
+  and hides Add repo, settings/providers, re-index, flow deletes and cold
+  registry rows — no forked demo UI, one source of truth; the lock never
+  depends on the UI.
+- **`--rate-limit N`**: at most N LLM asks (`/ask` + `/ask/stream`) per hour
+  per client IP — 429 with the retry seconds. Retrieval routes stay unlimited
+  (local, ~free). `--trust-proxy` takes the client IP from X-Forwarded-For
+  (off by default: the header is spoofable).
+- **The studio now works behind a path prefix.** api.js resolved every route
+  absolutely (`/repos`), so nginx-mounting the studio under
+  `/megabrain/demo/` broke every fetch; routes now resolve relative to the
+  page's directory. At the root nothing changes.
+- Together these replace the hand-rolled demo backend on bernardocastro.dev:
+  the public demo becomes `pip install megabrain` + `megabrain studio
+  --readonly --rate-limit 30 --trust-proxy` behind nginx.
+
 ## 0.11.0 — the cache you can read: a Flows tab, starter queries, flows over MCP
 
 - **Studio Flows tab — the ask cache, listed and viewable.** Every cached ask

@@ -11,7 +11,14 @@
  * are plain GET JSON. */
 (function () {
   const MOCK = false;                 // ← flip to true for offline/design mode
-  const BASE = "";                    // same-origin (served by serve-api)
+  // Same-origin, PREFIX-AWARE: the studio may be mounted under a sub-path
+  // behind a reverse proxy (nginx /megabrain/demo/ → :2134/). Routes are
+  // resolved relative to the page's directory, so "/repos" becomes
+  // "/megabrain/demo/repos" there and stays "/repos" at the root.
+  const BASE = (() => {
+    try { return new URL(".", location.href).pathname.replace(/\/$/, ""); }
+    catch (e) { return ""; }
+  })();
 
   // When serve-api runs with --token (e.g. a public demo box), the API routes
   // require `Authorization: Bearer <token>`. The studio reads it once from
@@ -76,6 +83,7 @@
   }
 
   const real = {
+    config: () => j("/config"),       // {readonly, rate_limit, version}
     repos: () => j("/repos"),
     providers: () => j("/providers"),
     selectProvider: (provider, model) => post("/providers/select", { provider, model }),

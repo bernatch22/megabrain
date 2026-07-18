@@ -361,6 +361,74 @@ def test_search_signal_equals_prune_kept(server):
     assert p["kept"] == core + len(s["tier2"])
 
 
+@pytest.fixture
+def ro_server(tiny_repo):
+    """A public-demo server: readonly + a 2-asks/hour rate limit."""
+    reg = Registry(RepoSession(tiny_repo))
+    httpd = ThreadingHTTPServer(
+        ("127.0.0.1", 0),
+        _make_handler(reg, None, True, readonly=True, rate_limit=2))
+    httpd.daemon_threads = True
+    t = threading.Thread(target=httpd.serve_forever, daemon=True)
+    t.start()
+    base = f"http://127.0.0.1:{httpd.server_address[1]}"
+    yield base, tiny_repo
+    httpd.shutdown()
+
+
+def test_config_route_defaults(server):
+    base, _ = server
+    status, body = _get(base, "/config")
+    assert status == 200
+    assert body["readonly"] is False and body["rate_limit"] is None
+    assert body["version"]
+
+
+def test_readonly_blocks_every_mutating_route(ro_server):
+    """--readonly is a SERVER-side lock: each mutating/config route 403s
+    regardless of what any UI shows."""
+    import urllib.error
+    base, repo = ro_server
+    _, cfg = _get(base, "/config")
+    assert cfg["readonly"] is True and cfg["rate_limit"] == 2
+    for method, path, body in [
+        ("GET", "/scan?path=" + str(repo), None),
+        ("GET", "/fs/pick", None),
+        ("POST", "/index", {}),
+        ("POST", "/index/stream", {}),
+        ("POST", "/repos/add", {"path": str(repo)}),
+        ("POST", "/providers/select", {"provider": "openrouter"}),
+        ("POST", "/providers/ollama/serve", {}),
+        ("POST", "/flows/delete", {"id": 1}),
+    ]:
+        with pytest.raises(urllib.error.HTTPError) as ei:
+            (_get(base, path) if method == "GET" else _post(base, path, body))
+        assert ei.value.code == 403, f"{method} {path} must 403 in readonly"
+    # ...while the read paths keep answering
+    status, body = _post(base, "/search", {"query": "user login"})
+    assert status == 200 and body["tier1"]
+    status, body = _get(base, "/flows")
+    assert status == 200 and "flows" in body
+
+
+def test_rate_limit_meters_asks_only(ro_server):
+    """The limiter counts /ask attempts per IP (2 here); retrieval stays
+    unlimited. The 3rd ask 429s with a retry hint."""
+    import urllib.error
+    base, _ = ro_server
+    for _i in range(2):                       # counted (400: missing question)
+        with pytest.raises(urllib.error.HTTPError) as ei:
+            _post(base, "/ask", {})
+        assert ei.value.code == 400
+    with pytest.raises(urllib.error.HTTPError) as ei:
+        _post(base, "/ask", {})
+    assert ei.value.code == 429
+    assert "rate limit" in json.loads(ei.value.read())["error"]
+    for _i in range(4):                       # retrieval is never metered
+        status, _ = _post(base, "/search", {"query": "billing"})
+        assert status == 200
+
+
 def test_unknown_repo_404(server):
     base, _ = server
     req = urllib.request.Request(base + "/search",

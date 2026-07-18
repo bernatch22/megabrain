@@ -29,10 +29,18 @@ same warm state.
   left rail, selectable immediately. `RepoSession` is lazy, so this costs
   nothing at boot — a repo's matrix loads the first time you query it.
 - **Auth** — `--token <t>` (or `$MEGABRAIN_API_TOKEN`) requires
-  `Authorization: Bearer <t>` on every route except `/health` and the UI.
-  Off by default (localhost). `--cors <origin>` for a cross-origin browser.
+  `Authorization: Bearer <t>` on every route except `/health`, `/config` and
+  the UI. Off by default (localhost). `--cors <origin>` for a cross-origin
+  browser.
 - **No LLM?** — `--no-llm` disables `/ask`. Search, prune, and graph never
   need one.
+- **Public demo?** — `--readonly` refuses every mutating/config route with a
+  403 (indexing, add-repo, scan, provider switching, flow deletes) and the
+  UI hides those affordances (it reads `GET /config`); `--rate-limit 30`
+  caps LLM asks per hour per IP (retrieval stays unlimited); `--trust-proxy`
+  reads the client IP from X-Forwarded-For behind your own nginx. The studio
+  also works mounted under a path prefix (routes are prefix-aware), so
+  `location /demo/ { proxy_pass http://127.0.0.1:2134/; }` just works.
 
 ## 2. The views
 
@@ -113,6 +121,7 @@ Every route accepts an optional `?repo=` / `"repo"` (absent = the boot repo).
 | route | returns |
 |---|---|
 | `GET /health` | `{ok, repo, files, chunks, embed_model, uptime}` |
+| `GET /config` | `{readonly, rate_limit, version}` — what kind of server this is |
 | `GET /repos` | warm sessions (`loaded: true`) + registry repos (`loaded: false`) |
 | `GET /providers` | detection for the settings panel |
 | `GET /scan?path=` | the add-repo census |
@@ -140,8 +149,13 @@ Every route accepts an optional `?repo=` / `"repo"` (absent = the boot repo).
 MEGABRAIN_CHAT_BASE_URL=http://localhost:11434/v1 \
   megabrain studio ~/repo --host 0.0.0.0 --token "$(openssl rand -hex 16)"
 
-# headless backend for your own frontend (the bernardocastro.dev demo does this)
+# headless backend for your own frontend
 megabrain serve-api ~/repo --cors https://yourdomain.com
+
+# public read-only demo behind nginx (the bernardocastro.dev demo does this):
+# no indexing/config surface, 30 asks/hour/IP, client IP from X-Forwarded-For
+megabrain studio --readonly --rate-limit 30 --trust-proxy --port 2137
+# nginx:  location /megabrain/demo/ { proxy_pass http://127.0.0.1:2137/; }
 
 # share a tokenized studio link — the token rides in ?token=, stashed to localStorage
 open "http://localhost:2134/?token=abc123"
