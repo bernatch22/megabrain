@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="MIT">
   <img src="https://img.shields.io/badge/retrieval-no%20LLM%20·%20~200ms-2ea44f?style=flat-square" alt="No LLM in the retrieval path">
   <img src="https://img.shields.io/badge/MCP-ready-000000?style=flat-square" alt="MCP ready">
-  <img src="https://img.shields.io/badge/studio-web%20UI-ff8c3a?style=flat-square" alt="Studio web UI">
+  <img src="https://img.shields.io/badge/studio-web%20UI-493ada?style=flat-square" alt="Studio web UI">
 </p>
 
 ---

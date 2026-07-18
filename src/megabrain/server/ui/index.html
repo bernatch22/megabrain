@@ -16,8 +16,10 @@
     --bg:#0a0a0c; --panel:#111114; --panel2:#16161a; --code:#0c0c0f;
     --border:#232329; --border2:#2b2b32;
     --text:#e9e9ec; --muted:#7a7a84;
-    --accent:oklch(0.78 0.16 55); --accent2:oklch(0.62 0.18 32);
-    --accent-dim:rgba(255,164,80,0.14); --accent-bd:rgba(255,164,80,0.30);
+    /* dark theme lifts the brand blue: the light-theme accent (L .48) is too
+       dark to read on #0a0a0c, so lightness/chroma rise while the hues hold. */
+    --accent:oklch(0.72 0.17 267); --accent2:oklch(0.66 0.15 258);
+    --accent-dim:rgba(117,158,255,0.16); --accent-bd:rgba(117,158,255,0.34);
     --chunk-dim:rgba(255,255,255,0.06);
     --ok:#8ac89a; --ok-bg:rgba(100,180,120,0.12); --ok-bd:rgba(100,180,120,0.25);
     --bad:#d68a8a; --bad-bg:rgba(180,80,80,0.12); --bad-bd:rgba(180,80,80,0.25);
@@ -29,8 +31,8 @@
     --bg:#f8f7f4; --panel:#ffffff; --panel2:#f2f1ec; --code:#faf9f5;
     --border:#e5e3dc; --border2:#d8d5cc;
     --text:#171718; --muted:#7a7770;
-    --accent:oklch(0.66 0.17 45); --accent2:oklch(0.58 0.18 32);
-    --accent-dim:rgba(220,120,30,0.12); --accent-bd:rgba(220,120,30,0.28);
+    --accent:oklch(0.48 0.23 277.46); --accent2:oklch(0.52 0.16 257.92);
+    --accent-dim:rgba(73,58,218,0.11); --accent-bd:rgba(73,58,218,0.26);
     --chunk-dim:rgba(0,0,0,0.06);
     --ok:#3f7f4f; --ok-bg:rgba(70,140,80,0.10); --ok-bd:rgba(70,140,80,0.2);
     --bad:#a04040; --bad-bg:rgba(180,80,80,0.08); --bad-bd:rgba(180,80,80,0.2);
@@ -46,7 +48,7 @@
     -webkit-font-smoothing:antialiased;background:var(--bg);color:var(--text);
   }
   .mono{font-family:ui-monospace,'SF Mono','JetBrains Mono',Menlo,Consolas,monospace}
-  ::selection{background:rgba(255,150,60,0.28)}
+  ::selection{background:rgba(117,158,255,0.30)}
   ::-webkit-scrollbar{width:10px;height:10px}
   ::-webkit-scrollbar-track{background:transparent}
   ::-webkit-scrollbar-thumb{background:rgba(140,140,150,0.18);border-radius:10px;border:2px solid transparent;background-clip:padding-box}
@@ -73,7 +75,7 @@
         display:flex;flex-direction:column;position:relative;z-index:1}
   .rail-brand{display:flex;align-items:center;gap:10px;padding:18px 18px 14px}
   .logo{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;
-        color:#1a0f00;background:linear-gradient(135deg,var(--accent) 0%,var(--accent2) 100%);
+        color:#0a0f24;background:linear-gradient(135deg,var(--accent) 0%,var(--accent2) 100%);
         box-shadow:0 0 20px var(--accent-dim)}
   /* light theme darkens the accent gradient — a near-black glyph on it is unreadable */
   :root[data-theme="light"] .logo{color:#fff}
@@ -227,7 +229,9 @@
   .field.mono{font-size:12px}
   textarea.field{resize:vertical;min-height:88px;line-height:1.5}
   .btn-primary{display:flex;align-items:center;justify-content:center;gap:7px;padding:10px 16px;border-radius:8px;
-               font-size:12.5px;font-weight:600;color:#1a0f00;background:var(--accent);transition:filter 150ms}
+               font-size:12.5px;font-weight:600;color:#0a0f24;background:var(--accent);transition:filter 150ms}
+  /* the light-theme accent is a deep indigo — dark label text vanishes on it */
+  :root[data-theme="light"] .btn-primary{color:#fff}
   .btn-primary:hover{filter:brightness(1.08)}
   .btn-primary:disabled{opacity:0.5;cursor:not-allowed}
 
