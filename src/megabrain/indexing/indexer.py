@@ -12,7 +12,13 @@ from pathlib import Path
 from ..chunkers import embed_text, validate_partition
 from ..providers.embeddings import Embedder
 from ..storage.store import Store
-from .strategies import all_exts, build_registry, load_repo_strategies, strategy_for
+from .strategies import (
+    EDGE_SCHEMA,
+    all_exts,
+    build_registry,
+    load_repo_strategies,
+    strategy_for,
+)
 
 # Universal build/vendor/cache dirs only — anything project-specific belongs in
 # the repo's own `.megabrainignore` (or `--exclude`), never baked in here.
@@ -182,6 +188,11 @@ def _index_into(store: Store, emb: Embedder, root: Path, name: str, *,
     changed, unchanged, removed = 0, 0, 0
     stats = {"chunks": 0, "violations": 0}
     n = len(paths)
+    # An extractor upgrade (or a language gaining one) must reach files whose
+    # bytes never changed — see EDGE_SCHEMA. Collect them here and re-extract
+    # below; edges are derived, so this costs no embeddings.
+    regraph = store.get_meta("edge_schema") != EDGE_SCHEMA
+    stale_graph: list[str] = []
 
     def _tick(i: int, rel: str, was_changed: bool) -> None:
         if on_progress is not None:
@@ -197,6 +208,8 @@ def _index_into(store: Store, emb: Embedder, root: Path, name: str, *,
         sha = hashlib.sha256(src.encode()).hexdigest()
         if not force and store.file_sha(rel) == sha:
             unchanged += 1
+            if regraph:
+                stale_graph.append(rel)
             _tick(i, rel, False)
             continue
         store.delete_file(rel)
@@ -216,6 +229,16 @@ def _index_into(store: Store, emb: Embedder, root: Path, name: str, *,
         changed += 1
         _tick(i, rel, True)
 
+    # edge-schema catch-up: the sha-unchanged files this engine would otherwise
+    # never re-read. Runs once per schema bump, then the meta below stops it.
+    for rel in stale_graph:
+        strat = strategy_for(registry, rel)
+        edges = strat.extract_edges(rel, sources[rel], edge_ctx[strat]) \
+            if strat is not None else None
+        if edges is not None:
+            store.replace_edges(rel, edges)
+    stats["regraphed"] = len(stale_graph)
+
     # orphans: indexed files no longer on disk — here incoming edges die too
     for gone in store.all_paths() - set(rels.values()):
         store.delete_file(gone, drop_incoming=True)
@@ -231,10 +254,12 @@ def _index_into(store: Store, emb: Embedder, root: Path, name: str, *,
 
     store.set_meta("repo_name", name)
     store.set_meta("embed_model", emb.model)
+    store.set_meta("edge_schema", EDGE_SCHEMA)
     store.set_meta("last_index", {"t": time.time(), "files": len(paths)})
     store.commit()
     return {"files": len(paths), "changed": changed, "unchanged": unchanged,
             "removed": removed, "new_chunks": stats["chunks"],
+            "regraphed": stats["regraphed"],
             "partition_violations": stats["violations"],
             "stale_flows_pruned": stale_flows, "embed_model": emb.model,
             "embed_tokens": emb.tokens, "embed_cost_usd": round(emb.cost, 6),

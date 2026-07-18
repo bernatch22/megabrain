@@ -353,6 +353,56 @@ def test_label_cache_roundtrip(linked_repo, monkeypatch):
     assert l1[0] == "Web serving"
 
 
+def test_truncated_labels_keep_what_arrived(linked_repo, monkeypatch):
+    """A reply cut off mid-JSON (the output budget ran out) must still name
+    the communities it DID reach. The old parse required a closing brace and
+    lost every label to one truncation — express showed "Community 0…74"."""
+    import megabrain.providers as providers
+    monkeypatch.setattr(
+        providers, "chat_text",
+        lambda *a, **kw: '{\n "0": "Web serving",\n "1": "Database rows",\n "2": "Ema')
+    with load_state(linked_repo) as st:
+        g = G.build_graph(st)
+        labels = G.label_communities(st, g)
+    assert labels[0] == "Web serving" and labels[1] == "Database rows"
+    assert labels[2].startswith("Community ")      # the cut entry, not garbage
+
+
+def test_label_budget_scales_with_community_count(linked_repo, monkeypatch):
+    """The token budget is per-community, not a flat cap — that cap is what
+    truncated big repos in the first place."""
+    import megabrain.providers as providers
+    seen = []
+
+    def fake_chat(model, prompt, max_tokens, **kw):
+        seen.append(max_tokens)
+        return '{"0": "Web serving"}'
+    monkeypatch.setattr(providers, "chat_text", fake_chat)
+    with load_state(linked_repo) as st:
+        g = G.build_graph(st)
+        n = len(set(g.comm.values()))
+        G.label_communities(st, g)
+    assert seen == [max(G.LABEL_MIN_TOKENS, G.LABEL_TOKENS_PER_COMMUNITY * n)]
+
+
+def test_unusable_reply_is_not_cached(linked_repo, monkeypatch):
+    """Fail-open must not POISON the cache: a garbage reply falls back, and the
+    next call retries instead of serving "Community N" from meta forever."""
+    import megabrain.providers as providers
+    calls = []
+
+    def flaky(model, prompt, max_tokens, **kw):
+        calls.append(1)
+        return "sorry, I can't do that" if len(calls) == 1 else '{"0": "Web serving"}'
+    monkeypatch.setattr(providers, "chat_text", flaky)
+    with load_state(linked_repo) as st:
+        g = G.build_graph(st)
+        first = G.label_communities(st, g)
+        assert first[0].startswith("Community ")
+        assert G.label_communities(st, g)[0] == "Web serving"
+    assert len(calls) == 2
+
+
 def test_mode_errors(linked_repo):
     from megabrain.errors import MegabrainError
     with pytest.raises(MegabrainError, match="needs `node`"):

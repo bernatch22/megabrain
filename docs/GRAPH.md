@@ -131,7 +131,14 @@ Everything is derived from what indexing **already stored** — the graph costs
 nothing extra at index time and milliseconds at query time:
 
 1. **Structural lane.** At index time the chunkers extract import/call edges
-   from the AST into SQLite (`edges` table). Deterministic; no LLM.
+   into SQLite (`edges` table). Deterministic; no LLM. Covered: **Python**
+   (AST imports + calls), **TS/JS** (relative imports), **PHP** (`use`
+   statements), **Ruby** (`require_relative` exact, `require`/`autoload`
+   through load-path candidates incl. sub-gem `*/lib`), **Go** (in-repo
+   imports pinned to the defining file via `alias.Name` uses, **plus**
+   same-package edges — sibling files of one Go package call each other with
+   no import, and that's most of a Go repo's structure). Rust indexes without
+   a graph for now.
 2. **Semantic lane.** Every file already has a *skeleton embedding* (its
    signatures + docstrings as one vector). Cosine ≥ 0.80 between two files
    (top-3 per file) adds a dashed edge. This is what graph tools call

@@ -1,5 +1,54 @@
 # Changelog
 
+## 0.15.0 — Ruby and Go join the graph
+
+Ruby and Go repos indexed fine but drew an EMPTY graph: their strategies had
+no edge extractor, so every file was an island — sinatra showed 2-file
+communities and `base.rb → indifferent_hash.rb` reported "no route", gin had
+no paths at all (reported live from the bernardocastro.dev demo).
+
+- **Ruby require graph** (`ruby_edges`): `require_relative` resolves exactly
+  against the file; `require`/`autoload` resolve through load-path candidates
+  — repo-root `lib/<spec>.rb`, the bare path, the requiring file's own dir
+  (test suites put it on `$LOAD_PATH` for `require 'test_helper'`), then any
+  sub-gem's `*/lib/<spec>.rb` (sinatra ships rack-protection + contrib in
+  one repo). `autoload :Const, 'path'` counts — it loads through the same
+  path, and it's how rack-protection wires every strategy. Unresolved =
+  stdlib/gem = no edge.
+- **Go two-lane graph** (`go_edges` + `go_package_index`): the prepass maps
+  each package's TOP-LEVEL decl names to their defining file (exact — Go
+  enforces uniqueness; methods deliberately excluded, they're only reachable
+  through a receiver). Import lane: in-repo import paths resolve by
+  dir-suffix (go.mod isn't indexed, so the module prefix is stripped by
+  trial), the module ROOT by package name for dotted module paths; each
+  `alias.Name` use then pins the edge to Name's defining file. Package lane:
+  files of one package call siblings with no import — a bare use of a
+  sibling's top-level name is a `call` edge, scanned over comment/string-
+  stripped source with a `(?<![.\w])` guard so `other.Name` never leaks in.
+- Wired as `RubyStrategy`/`GoStrategy` subclassing `TreeSitterStrategy`
+  (the registry's OCP point — the indexer is untouched). Measured on the
+  demo repos: sinatra 0 → 53 struct edges (5 real communities, the path
+  above now resolves), gin 0 → 296 (god nodes: `context.go`, `gin.go`,
+  `routergroup.go`, `binding/binding.go` — exactly the core).
+- **Existing indexes heal themselves** (`EDGE_SCHEMA`): edges only ever
+  re-extracted for sha-changed files, so a repo indexed by an older engine
+  kept its old — or, for Ruby/Go, EMPTY — graph forever, and the only cure
+  was `--force`, which re-embeds every file for real money. The schema
+  version now lives in the index; when it moves, the next ordinary `index`
+  re-extracts edges for untouched files and touches no embeddings. Measured
+  on the demo repos: sinatra 0 → 53 edges in 0.08 s for $0. Any future
+  extractor improvement reaches old indexes the same way — bump the constant.
+  `index` reports it as `regraphed`.
+- **Community labels no longer vanish wholesale.** The naming call had a flat
+  500-token output cap; express's 75 communities landed on *exactly* 500, so
+  a repo with a few more truncated the JSON — and the parser demanded a
+  closing brace, so one truncation cost EVERY label and the graph read
+  "Community 0…74". The budget now scales per community
+  (`LABEL_TOKENS_PER_COMMUNITY`), and the parser salvages whatever
+  `"id": "label"` pairs arrived, so a cut reply loses only its tail. A reply
+  with nothing usable is no longer cached either — the next view retries
+  instead of serving the fallback from meta forever.
+
 ## 0.14.0 — the studio on a phone
 
 The UI had no media queries at all: a fixed 248px rail ate two thirds of a

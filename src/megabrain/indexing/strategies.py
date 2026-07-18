@@ -41,7 +41,26 @@ from ..chunkers import (
     TreeSitterChunker,
     TsChunker,
 )
-from .graph import extract_edges, php_class_index, php_edges, python_package_index, ts_edges
+from .graph import (
+    extract_edges,
+    go_edges,
+    go_package_index,
+    php_class_index,
+    php_edges,
+    python_package_index,
+    ruby_edges,
+    ts_edges,
+)
+
+# Bump whenever an edge extractor changes or a language GAINS one. Edges are
+# derived data with no embedding cost, but the indexer only re-extracts them
+# for sha-changed files — so without this, a repo indexed by an older engine
+# keeps its old (or empty) graph forever, and only a full `--force` (which
+# re-embeds everything, for real money) would fix it. On a version change the
+# indexer re-extracts edges for every file, embeddings untouched.
+#   1: python + ts/js + php
+#   2: ruby (require/autoload) + go (imports + same-package siblings)
+EDGE_SCHEMA = 2
 
 
 @runtime_checkable
@@ -107,9 +126,10 @@ class TsJsStrategy:
 
 
 class TreeSitterStrategy:
-    """Generic strategy for a tree-sitter LangSpec with no graph yet (Ruby, Go,
+    """Generic strategy for a tree-sitter LangSpec with no graph yet (Rust,
     …). A language starts without an import resolver and retrieval still works;
-    an edge extractor can be added later without touching the indexer."""
+    an edge extractor is added later by SUBCLASSING (Php/Ruby/GoStrategy),
+    never by touching the indexer."""
 
     def __init__(self, spec: LangSpec, exts: tuple[str, ...], repo: str = ""):
         self.spec = spec
@@ -161,10 +181,39 @@ class PhpStrategy(TreeSitterStrategy):
         return php_edges(relpath, source, ctx)
 
 
+class RubyStrategy(TreeSitterStrategy):
+    """Ruby = generic tree-sitter chunking + a require graph: `require_relative`
+    resolves against the file, `require`/`autoload` through load-path
+    candidates (lib/, sub-gem lib/, the file's own dir). See ruby_edges."""
+
+    def __init__(self, repo: str = ""):
+        super().__init__(RUBY_SPEC, (".rb",), repo=repo)
+
+    def build_edge_ctx(self, sources: dict[str, str], repo_name: str):
+        return set(sources)              # all repo files, for require resolution
+
+    def extract_edges(self, relpath, source, ctx):
+        return ruby_edges(relpath, source, ctx)
+
+
+class GoStrategy(TreeSitterStrategy):
+    """Go = generic tree-sitter chunking + a two-lane graph: in-repo imports
+    pinned to the defining file via `alias.Name` uses, plus same-package edges
+    (sibling files of one package need no import to call each other — that IS
+    most of a Go repo's structure). See go_edges/go_package_index."""
+
+    def __init__(self, repo: str = ""):
+        super().__init__(GO_SPEC, (".go",), repo=repo)
+
+    def build_edge_ctx(self, sources: dict[str, str], repo_name: str):
+        return go_package_index(sources)
+
+    def extract_edges(self, relpath, source, ctx):
+        return go_edges(relpath, source, ctx)
+
+
 # Language strategies gated on their grammar being importable. (spec, exts, module)
 _TREE_SITTER_LANGS = [
-    (RUBY_SPEC, (".rb",), "tree_sitter_ruby"),
-    (GO_SPEC, (".go",), "tree_sitter_go"),
     (RUST_SPEC, (".rs",), "tree_sitter_rust"),
 ]
 
@@ -183,6 +232,10 @@ def build_registry(repo: str = "", extra: Sequence[ChunkStrategy] = ()) -> list:
     for spec, exts, module in _TREE_SITTER_LANGS:
         if _grammar_available(module):
             reg.append(TreeSitterStrategy(spec, exts, repo))
+    if _grammar_available("tree_sitter_ruby"):
+        reg.append(RubyStrategy(repo))   # chunker + require graph
+    if _grammar_available("tree_sitter_go"):
+        reg.append(GoStrategy(repo))     # chunker + import/package graph
     if _grammar_available("tree_sitter_php"):
         reg.append(PhpStrategy(repo))    # chunker + `use`-import graph
     return reg

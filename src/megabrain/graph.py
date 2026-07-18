@@ -44,7 +44,13 @@ SEM_EDGE_MIN = 0.80      # min cosine for a semantic edge
 SEM_TOP_K = 3            # semantic edges per node cap (keeps the graph sparse)
 SEM_WEIGHT = 0.5         # label-prop weight of a semantic edge (struct = 1.0)
 SURPRISE_MIN = 0.85      # surprises need to be MORE similar than a mere edge
-LABEL_MAX_TOKENS = 500
+# Output budget SCALES with the number of communities: one `"12": "Some
+# label",` line costs ~10 tokens, and a flat cap silently truncated the reply
+# on any repo with many communities (express, 75 -> the answer landed on
+# exactly 500 tokens). Truncation used to cost EVERY label, not the tail —
+# see _parse_labels.
+LABEL_TOKENS_PER_COMMUNITY = 16
+LABEL_MIN_TOKENS = 500
 LABEL_TIMEOUT = 45
 MAX_LP_ITERS = 50
 
@@ -272,6 +278,25 @@ def shortest_path(g: RepoGraph, src: str, dst: str) -> list[dict]:
     return list(reversed(hops))
 
 
+_LABEL_PAIR = re.compile(r'"(\d+)"\s*:\s*"((?:[^"\\]|\\.)*)"')
+
+
+def _parse_labels(reply: str, valid: dict[int, str]) -> dict[int, str]:
+    """Every `"id": "label"` pair the model returned, whether or not the JSON
+    is well-formed. The old parse demanded a `{...}` match and json.loads'd it,
+    so ONE truncated reply lost EVERY label — a 75-community repo fell back to
+    "Community 0…74" wholesale. A partial answer is worth its named part."""
+    try:                                 # well-formed: json handles escapes
+        m = re.search(r"\{.*\}", reply, re.S)
+        if m:
+            return {int(k): str(v)[:60] for k, v in json.loads(m.group(0)).items()
+                    if k.lstrip("-").isdigit() and int(k) in valid}
+    except (ValueError, AttributeError):
+        pass
+    return {int(m.group(1)): m.group(2).encode().decode("unicode_escape")[:60]
+            for m in _LABEL_PAIR.finditer(reply) if int(m.group(1)) in valid}
+
+
 def label_communities(st: SearchState, g: RepoGraph) -> dict[int, str]:
     """The one LLM touch: 2-4 word names per community, cached in meta under
     the graph fingerprint. Fail-open to 'Community N'."""
@@ -297,11 +322,12 @@ def label_communities(st: SearchState, g: RepoGraph) -> dict[int, str]:
               '\n\nReturn ONLY a JSON object {"0": "label", ...} for every id.')
     try:
         from . import providers
+        budget = max(LABEL_MIN_TOKENS, LABEL_TOKENS_PER_COMMUNITY * len(cids))
         reply = providers.chat_text(providers.ask_model(), prompt,
-                                    LABEL_MAX_TOKENS, timeout=LABEL_TIMEOUT)
-        m = re.search(r"\{.*\}", reply, re.S)
-        labels = {int(k): str(v)[:60] for k, v in json.loads(m.group(0)).items()
-                  if int(k) in fallback}
+                                    budget, timeout=LABEL_TIMEOUT)
+        labels = _parse_labels(reply, fallback)
+        if not labels:
+            return fallback               # nothing usable: don't cache a miss
         out = {**fallback, **labels}
         st.store.set_meta("graph_labels", {"fp": fp,
                                            "labels": {str(k): v for k, v in out.items()}})
