@@ -151,7 +151,45 @@ on your plan). Bump it with a Claude alias — `export MEGABRAIN_ASK_MODEL=sonne
 `opus`). ⚠️ On the `claude` provider this must be a **Claude** model (`haiku`/`sonnet`/
 `opus`/a `claude-*` id), not an OpenRouter slug like `google/…`.
 
-## Inside your AI coding assistant
+## Built for coding agents — one call instead of thirty turns
+
+Watch any coding agent meet an unfamiliar repo: grep a keyword, open a file, follow an
+import, open another file, grep again… **10–30 tool turns** before it writes a line of
+code. Every turn burns context window, latency, and tokens — and the understanding it
+assembles at the end is its own guess about how the pieces connect. megabrain collapses
+that whole walk into **one MCP call**:
+
+| | exploring by hand (grep + Read chains) | one megabrain call |
+|---|---|---|
+| tool turns | 10–30 | **1** |
+| what lands in context | whole files, mostly irrelevant | **exactly the signal chunks** — noise pruned before the agent sees it |
+| the cross-file story | reconstructed by the agent, unverified | **narrated with the real code spliced in from disk** (`ask`) |
+| asking again later | the full re-exploration, every time | **~0 ms — served from the flow cache** |
+
+Two ways to hand your agent the repo — both grounded, pick by **who does the reasoning**:
+
+- **`megabrain_search` + LLM rerank** *(rerank on by default over MCP)* — for a strong
+  agent (Claude Code) that wants to reason over the raw code itself. ~200 ms of pure
+  no-LLM retrieval returns the exact chunks worth reading; then the rerank — one cheap,
+  fail-open LLM pass (~1–2 s) — drops the *vocabulary-only* matches (tests, eval scripts,
+  tangential files) that embeddings alone can't tell from the real thing. The agent gets
+  signal, not a haystack.
+- **`megabrain_ask`** — the repo **explained, not just retrieved**: a senior-engineer
+  walkthrough tracing the whole cross-file flow, with the verbatim code spliced in by the
+  engine (the narrator only ever *points* — it cannot rewrite a line). This is relevance
+  curation for whatever model reads it: an agent on a **smaller, cheaper LLM** that could
+  never navigate the repo on its own gets handed the connected story, already assembled
+  and grounded. It's also the tool that **learns**:
+
+**Every `ask` makes the next one cheaper.** The walkthrough it writes lands in the flow
+cache (on by default) — the next related question, from the same agent or a teammate's,
+retrieves the whole workflow at once, and a near-exact repeat is served with **no LLM at
+all** — measured: **27.8 s → 0.19 s** — sha-guarded byte-for-byte so changed code is
+never described stale. A team of agents working a repo makes megabrain *smarter about
+that repo with every question* — and all of it lives in **one SQLite file inside the
+repo**: fully local, no vector DB, no embedding service, nothing to host.
+
+### Wire it up
 
 megabrain speaks **MCP**, and MCP is portable — the same stdio server runs in every
 assistant. One command wires up whichever ones you have installed:
@@ -175,9 +213,8 @@ installed in, so re-running it repairs a config that drifted to an old checkout.
 to do it by hand? `claude mcp add megabrain -- python3 -m megabrain.mcp_server`, or copy
 the equivalent entry into your assistant's MCP config.
 
-Then use `megabrain_ask` / `megabrain_search` instead of grep + Read chains — one call
-replaces minutes of file-crawling. The tools are deliberately lean — megabrain exposes
-only what it alone can do (your agent already has Read/Grep for single files):
+The tools are deliberately lean — megabrain exposes only what it alone can do (your
+agent already has Read/Grep for single files):
 
 | tool | what it returns | key params (besides `repo_path`) |
 |---|---|---|
