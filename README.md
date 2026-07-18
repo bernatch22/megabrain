@@ -191,6 +191,18 @@ never described stale. A team of agents working a repo makes megabrain *smarter 
 that repo with every question* — and all of it lives in **one SQLite file inside the
 repo**: fully local, no vector DB, no embedding service, nothing to host.
 
+And on a **broad** question, `ask` becomes its own multi-agent system:
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/bernatch22/megabrain/master/assets/ask-agents.svg" alt="A broad megabrain_ask fans out into three parallel sub-agents, each searching its own subsystem; one synthesis merges their cited answers, the engine splices the verbatim code, and the whole workflow lands in the flow cache." width="900">
+</p>
+<p align="center">
+  <em>A broad <code>ask</code> fans out into parallel sub-agents — one per subsystem, each armed with
+  retrieval tools only. One synthesis merges their cited answers, the engine replaces every
+  <code>[[k]]</code> with the verbatim bytes from disk, and the finished workflow lands in the flow
+  cache for the next question.</em>
+</p>
+
 ### Wire it up
 
 megabrain speaks **MCP**, and MCP is portable — the same stdio server runs in every

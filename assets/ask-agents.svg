@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 420" width="900" height="420" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" role="img" aria-label="A broad megabrain_ask fans out into three parallel sub-agents, each searching its own subsystem; one synthesis merges their cited answers, the engine splices the verbatim code, and the whole workflow lands in the flow cache.">
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d0c0a"/>
+      <stop offset="1" stop-color="#100e0b"/>
+    </linearGradient>
+    <radialGradient id="cacheGlow2" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#8ac89a" stop-opacity="0.20"/>
+      <stop offset="1" stop-color="#8ac89a" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect x="0.5" y="0.5" width="899" height="419" rx="12" fill="url(#bg2)" stroke="#2a2118"/>
+
+  <!-- query + classifier -->
+  <text x="24" y="38" font-size="11" fill="#e9e4dc" opacity="0">$ megabrain ask . "how does indexing work end to end?"<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.03;0.06;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+  <text x="876" y="38" text-anchor="end" font-size="9" font-style="italic" fill="#8a7f70" opacity="0">a broad question<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.05;0.07;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+  <text x="24" y="62" font-size="9.5" fill="#ffb86b" opacity="0">classifier reads the bundle shape — BROAD → fan out · no LLM<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.08;0.10;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+  <text x="876" y="62" text-anchor="end" font-size="9" fill="#8a7f70" opacity="0">3 sub-agents · in parallel<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.10;0.12;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+
+  <!-- ── agent card 1 · chunking ── -->
+  <g>
+    <rect x="24" y="76" width="276" height="156" rx="8" fill="#12100c" stroke="#241d15" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.12;0.14;0.95;1" dur="16s" repeatCount="indefinite"/></rect>
+    <text x="34" y="96" font-size="10" font-weight="700" fill="#ffa64d" opacity="0">agent 1 · chunking (cAST)<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.12;0.14;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+    <line x1="34" y1="104" x2="290" y2="104" stroke="#241d15" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.12;0.14;0.95;1" dur="16s" repeatCount="indefinite"/></line>
+    <text x="34" y="122" font-size="9" fill="#ffb86b" opacity="0">⚒ search_more("AST merge budget")<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.20;0.22;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+    <text x="34" y="138" font-size="9" fill="#8a7f70" opacity="0">→ 6 chunks · chunker.py · cast.py<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.27;0.29;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+    <text x="34" y="162" font-size="9" fill="#c6bcae" opacity="0">Code splits over its syntax tree —<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.33;0.35;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+    <text x="34" y="176" font-size="9" fill="#c6bcae" opacity="0">whole functions and classes, merged<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.34;0.36;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+    <text x="34" y="190" font-size="9" fill="#c6bcae" opacity="0">to 4000 chars per chunk <tspan fill="#ffa64d">[[0]]</tspan><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.35;0.37;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+    <text x="34" y="218" font-size="8.5" fill="#8a7f70" opacity="0">retrieval tools only · no file writes<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.36;0.38;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+  </g>
+
+  <!-- ── agent card 2 · embeddings ── -->
+  <g>
+    <rect x="312" y="76" width="276" height="156" rx="8" fill="#12100c" stroke="#241d15" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.135;0.155;0.95;1" dur="16s" repeatCount="indefinite"/></rect>
+    <text x="322" y="96" font-size="10" font-weight="700" fill="#ffa64d" opacity="0">agent 2 · embeddings<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.135;0.155;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+    <line x1="322" y1="104" x2="578" y2="104" stroke="#241d15" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.135;0.155;0.95;1" dur="16s" repeatCount="indefinite"/></line>
+    <text x="322" y="122" font-size="9" fill="#ffb86b" opacity="0">⚒ search_more("embed one batch")<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.215;0.235;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+    <text x="322" y="138" font-size="9" fill="#8a7f70" opacity="0">→ 5 chunks · embeddings.py<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.285;0.305;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+    <text x="322" y="162" font-size="9" fill="#c6bcae" opacity="0">Every chunk embeds in ONE batch<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.335;0.355;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+    <text x="322" y="176" font-size="9" fill="#c6bcae" opacity="0">call — pplx by default, or any local<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.345;0.365;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+    <text x="322" y="190" font-size="9" fill="#c6bcae" opacity="0">OpenAI-compatible endpoint <tspan fill="#ffa64d">[[3]]</tspan><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.355;0.375;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+    <text x="322" y="218" font-size="8.5" fill="#8a7f70" opacity="0">retrieval tools only · no file writes<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.365;0.385;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+  </g>
+
+  <!-- ── agent card 3 · storage ── -->
+  <g>
+    <rect x="600" y="76" width="276" height="156" rx="8" fill="#12100c" stroke="#241d15" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.15;0.17;0.95;1" dur="16s" repeatCount="indefinite"/></rect>
+    <text x="610" y="96" font-size="10" font-weight="700" fill="#ffa64d" opacity="0">agent 3 · storage<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.15;0.17;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+    <line x1="610" y1="104" x2="866" y2="104" stroke="#241d15" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.15;0.17;0.95;1" dur="16s" repeatCount="indefinite"/></line>
+    <text x="610" y="122" font-size="9" fill="#ffb86b" opacity="0">⚒ search_more("sqlite chunks vectors")<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.23;0.25;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+    <text x="610" y="138" font-size="9" fill="#8a7f70" opacity="0">→ 4 chunks · store.py<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.30;0.32;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+    <text x="610" y="162" font-size="9" fill="#c6bcae" opacity="0">Chunks + vectors land in one SQLite<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.34;0.36;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+    <text x="610" y="176" font-size="9" fill="#c6bcae" opacity="0">file — incremental by sha, no vector<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.35;0.37;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+    <text x="610" y="190" font-size="9" fill="#c6bcae" opacity="0">DB, nothing to host <tspan fill="#ffa64d">[[5]]</tspan><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.36;0.38;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+    <text x="610" y="218" font-size="8.5" fill="#8a7f70" opacity="0">retrieval tools only · no file writes<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.37;0.39;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+  </g>
+
+  <!-- converging arrows into synthesis -->
+  <line x1="162" y1="232" x2="430" y2="260" stroke="#ffa64d" stroke-width="1.4" stroke-linecap="round" stroke-dasharray="270" stroke-dashoffset="270">
+    <animate attributeName="stroke-dashoffset" values="270;270;0;0;270" keyTimes="0;0.42;0.47;0.95;1" dur="16s" repeatCount="indefinite"/>
+  </line>
+  <line x1="450" y1="232" x2="450" y2="260" stroke="#ffa64d" stroke-width="1.4" stroke-linecap="round" stroke-dasharray="28" stroke-dashoffset="28">
+    <animate attributeName="stroke-dashoffset" values="28;28;0;0;28" keyTimes="0;0.42;0.47;0.95;1" dur="16s" repeatCount="indefinite"/>
+  </line>
+  <line x1="738" y1="232" x2="470" y2="260" stroke="#ffa64d" stroke-width="1.4" stroke-linecap="round" stroke-dasharray="270" stroke-dashoffset="270">
+    <animate attributeName="stroke-dashoffset" values="270;270;0;0;270" keyTimes="0;0.42;0.47;0.95;1" dur="16s" repeatCount="indefinite"/>
+  </line>
+
+  <!-- synthesis -->
+  <rect x="24" y="264" width="852" height="90" rx="8" fill="#12100c" stroke="#241d15" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.48;0.50;0.95;1" dur="16s" repeatCount="indefinite"/></rect>
+  <text x="34" y="284" font-size="10" font-weight="700" fill="#ffa64d" opacity="0">synthesis — one model merges the agents' answers, citing their [[k]] spans<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.50;0.52;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+  <text x="866" y="284" text-anchor="end" font-size="8" fill="#8ac89a" opacity="0">the model points · the engine splices<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.52;0.54;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+  <text x="34" y="302" font-size="9.5" fill="#c6bcae" opacity="0">Indexing chunks code over its AST <tspan fill="#ffa64d">[[0]]</tspan>, embeds it in one batch <tspan fill="#ffa64d">[[3]]</tspan>, and stores vectors in SQLite <tspan fill="#ffa64d">[[5]]</tspan> —<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.54;0.56;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+  <rect x="32" y="310" width="836" height="36" rx="4" fill="#0f0d0a" stroke="#241d15" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.57;0.59;0.95;1" dur="16s" repeatCount="indefinite"/></rect>
+  <text x="42" y="324" font-size="9" fill="#ffb86b" opacity="0">def index_repo(root: Path, force: bool = False) -> dict:<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.58;0.60;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+  <text x="42" y="338" font-size="9" fill="#c6bcae" opacity="0">    changed = [f for f in walk(root) if sha_changed(f)]      # incremental<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.60;0.62;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+  <text x="866" y="338" text-anchor="end" font-size="8" fill="#8ac89a" opacity="0">indexer.py L40 · verbatim, true line numbers<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.62;0.64;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+
+  <!-- the flow cache lands -->
+  <rect x="18" y="366" width="864" height="26" rx="6" fill="url(#cacheGlow2)" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.70;0.72;0.95;1" dur="16s" repeatCount="indefinite"/></rect>
+  <text x="24" y="383" font-size="11" font-weight="700" fill="#8ac89a" opacity="0">⚡ the whole workflow lands in the flow cache — the next related ask retrieves it at once, a near-exact repeat serves with zero LLM<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.70;0.72;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+  <text x="24" y="406" font-size="8.5" fill="#8a7f70" opacity="0">sub-agents carry retrieval tools only — every citation resolves to real disk bytes before it renders, so nothing here can be invented<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.78;0.80;0.95;1" dur="16s" repeatCount="indefinite"/></text>
+</svg>
