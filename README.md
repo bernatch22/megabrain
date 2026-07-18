@@ -42,13 +42,13 @@ from disk**, line for line — but the model is optional: `search` and `graph` n
   Cursor / Gemini CLI (+more), a Python library, and a full **local web studio**.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/bernatch22/megabrain/master/assets/ask-agents.svg" alt="A broad megabrain_ask fans out into three parallel sub-agents, each searching its own subsystem; one synthesis merges their cited answers, the engine splices the verbatim code, and the whole workflow lands in the flow cache." width="900">
+  <img src="https://raw.githubusercontent.com/bernatch22/megabrain/master/assets/ask-agents.svg" alt="Two acts. First, megabrain_search: no-LLM retrieval ranks the chunks and the LLM rerank strikes the vocabulary-only matches. Then megabrain_ask: a broad question fans out into three parallel sub-agents, one synthesis merges their cited answers with the verbatim code spliced in, and the workflow lands in the flow cache." width="900">
 </p>
 <p align="center">
-  <em>A broad <code>ask</code> fans out into parallel sub-agents — one per subsystem, each armed with
-  retrieval tools only. One synthesis merges their cited answers, the engine replaces every
-  <code>[[k]]</code> with the verbatim bytes from disk, and the finished workflow lands in the flow
-  cache — so the next related question is already answered.</em>
+  <em>Act one — <code>search</code>: no-LLM retrieval ranks the signal, then the rerank strikes the
+  vocabulary-only look-alikes. Act two — a broad <code>ask</code> fans out into parallel sub-agents,
+  one per subsystem, each armed with retrieval tools only; one synthesis merges their cited answers,
+  the engine splices the verbatim code, and the finished workflow lands in the flow cache.</em>
 </p>
 
 **Get started** (no keys needed — narrate on your Claude Code plan, embed locally):
