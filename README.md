@@ -69,6 +69,19 @@ megabrain studio              #  every repo you've indexed → open http://local
 megabrain studio ~/repo       #  …or boot straight into one
 ```
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/bernatch22/megabrain/master/assets/studio-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/bernatch22/megabrain/master/assets/studio-light.png">
+    <img alt="megabrain studio: the left rail lists every indexed repo, and the Search tab shows SIGNAL · KEPT beside NOISE · PRUNED for the query 'how are routes defined and dispatched?' against sinatra — 23 kept, 19 pruned, 3 ms retrieval." src="https://raw.githubusercontent.com/bernatch22/megabrain/master/assets/studio-light.png" width="900">
+  </picture>
+</p>
+<p align="center">
+  <em>The Search tab on <code>sinatra</code>: what the engine <b>read</b> (left, with the code) beside what
+  it <b>ignored</b> (right) — 23 kept, 19 pruned, 3 ms. Every repo you've indexed sits in the rail.
+  Light or dark follows your GitHub theme, and the studio's.</em>
+</p>
+
 Three tabs, each one a view into a different half of the engine:
 
 - **Search** — the money shot: **`SIGNAL · KEPT` and `NOISE · PRUNED` side by side**, so you
