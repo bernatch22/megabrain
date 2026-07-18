@@ -42,13 +42,15 @@ from disk**, line for line — but the model is optional: `search` and `graph` n
   Cursor / Gemini CLI (+more), a Python library, and a full **local web studio**.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/bernatch22/megabrain/master/assets/ask-agents.svg" alt="Two acts. First, megabrain_search: no-LLM retrieval ranks the chunks and the LLM rerank strikes the vocabulary-only matches. Then megabrain_ask: a broad question fans out into three parallel sub-agents, one synthesis merges their cited answers with the verbatim code spliced in, and the workflow lands in the flow cache." width="900">
+  <img src="https://raw.githubusercontent.com/bernatch22/megabrain/master/assets/ask-agents.svg" alt="Three acts. One, megabrain_search: no-LLM retrieval ranks the chunks and the LLM rerank strikes the vocabulary-only matches. Two, megabrain_ask: a broad question fans out into three parallel sub-agents, one synthesis merges their cited answers with the verbatim code spliced in, and the workflow lands in the flow cache. Three, megabrain_graph: a path query between two files reports that they never call each other and names app.py as the file bridging them, each hop labelled with the function that carries it." width="900">
 </p>
 <p align="center">
   <em>Act one — <code>search</code>: no-LLM retrieval ranks the signal, then the rerank strikes the
   vocabulary-only look-alikes. Act two — a broad <code>ask</code> fans out into parallel sub-agents,
-  one per subsystem, each armed with retrieval tools only; one synthesis merges their cited answers,
-  the engine splices the verbatim code, and the finished workflow lands in the flow cache.</em>
+  one per subsystem; one synthesis merges their cited answers, the engine splices the verbatim code,
+  and the finished workflow lands in the flow cache. Act three — <code>graph</code> traces how two
+  files really relate: it reports that they <b>never call each other</b>, names the file that bridges
+  them, and labels every hop with the function that carries it.</em>
 </p>
 
 **Get started** (no keys needed — narrate on your Claude Code plan, embed locally):
