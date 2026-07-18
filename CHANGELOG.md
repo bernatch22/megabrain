@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.12.1 — studio: Ask opens first · clean repo switches
+
+- **Ask is the first tab and the default view.** It's the star of the studio;
+  it opened on Search only for historical reasons.
+- **Switching repos no longer leaves a stale query behind.** The results were
+  cleared but the input kept the previous repo's question, which read as a
+  pending request against the new repo (and made the empty Ask view look like
+  a broken Search). The query clears with the rest of the per-repo state.
+
 ## 0.12.0 — the studio as a public demo: --readonly + --rate-limit
 
 - **`--readonly`** (studio / serve-api): serve the indexed repos, refuse every

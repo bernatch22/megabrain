@@ -46,7 +46,7 @@
   // ── state ────────────────────────────────────────────────────────────
   const st = {
     theme: ls.get("mb-theme", "dark"),
-    view: "search",   // search | bundle | ask | graph
+    view: "ask",      // ask | search | flows | graph — ask is the star, it opens first
     repos: [], repo: null,
     providers: null,
     provider: ls.get("mb-provider", ""), model: ls.get("mb-model", ""),
@@ -128,7 +128,7 @@
   }
 
   function main() {
-    const tabs = [["search", "Search"], ["ask", "Ask"], ["flows", "Flows"], ["graph", "Graph"]].map(([id, l]) =>
+    const tabs = [["ask", "Ask"], ["search", "Search"], ["flows", "Flows"], ["graph", "Graph"]].map(([id, l]) =>
       `<button class="tab ${st.view === id ? "active" : ""}" data-act="view" data-id="${id}">${l}</button>`).join("");
     const root = st.repo ? (st.repos.find((r) => r.name === st.repo) || {}).root || "" : "";
     return `<main class="main">
@@ -2151,7 +2151,8 @@
   });
 
   function clearRepoState() {
-    st.search = st.ask = null;
+    st.q = "";                 // the input belonged to the previous repo —
+    st.search = st.ask = null; // leaving it filled reads as a stale request
     st.flows = null; st.flowSel = null; st.queries = null; st.warm = null;
     st.graph = null; st.graphNode = null; st.graphSel = null;
     st.graphPath = null; st.graphPos = {};
