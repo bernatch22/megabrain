@@ -53,11 +53,13 @@ from disk**, line for line — but the model is optional: `search` and `graph` n
   Cursor / Gemini CLI (+more), a Python library, and a full **local web studio**.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/bernatch22/megabrain/master/assets/ask-agents.svg" alt="Three acts. One, megabrain_search: no-LLM retrieval ranks the chunks and the LLM rerank strikes the vocabulary-only matches. Two, megabrain_ask: a broad question fans out into three parallel sub-agents, one synthesis merges their cited answers with the verbatim code spliced in, and the workflow lands in the flow cache. Three, megabrain_graph: a path query between two files reports that they never call each other and names app.py as the file bridging them, each hop labelled with the function that carries it." width="900">
+  <img src="https://raw.githubusercontent.com/bernatch22/megabrain/master/assets/ask-agents.svg" alt="Three acts. One, megabrain_search: no-LLM retrieval ranks the chunks, then the LLM rerank strikes the vocabulary-only matches and reorders what survives — app.py's prune function climbs from fourth to second, past two higher-scoring chunks, leaving the score column out of order. Two, megabrain_ask: a broad question fans out into three parallel sub-agents, one synthesis merges their cited answers with the verbatim code spliced in, and the workflow lands in the flow cache. Three, megabrain_graph: a path query between two files reports that they never call each other and names app.py as the file bridging them, each hop labelled with the function that carries it." width="900">
 </p>
 <p align="center">
   <em>Act one — <code>search</code>: no-LLM retrieval ranks the signal, then the rerank strikes the
-  vocabulary-only look-alikes. Act two — a broad <code>ask</code> fans out into parallel sub-agents,
+  vocabulary-only look-alikes <b>and reorders what survives</b> — <code>app.py · prune</code> climbs
+  past two higher-scoring chunks because it's the function that actually does the dropping, leaving
+  the score column deliberately out of order. Act two — a broad <code>ask</code> fans out into parallel sub-agents,
   one per subsystem; one synthesis merges their cited answers, the engine splices the verbatim code,
   and the finished workflow lands in the flow cache. Act three — <code>graph</code> traces how two
   files really relate: it reports that they <b>never call each other</b>, names the file that bridges
