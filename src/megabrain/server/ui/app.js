@@ -54,6 +54,9 @@
     search: null, loading: false,
     prune: null, pruneRerank: ls.get("mb-rerank", "0") === "1",
     ask: null, askCtl: null,
+    flows: null, flowsLoading: false, flowSel: null,   // flow-cache list + viewer
+    queries: null,                       // .megabrainqueries starter chips
+    warm: null,                          // warm-all progress {i, n, q, stop}
     graph: null, graphLoading: false, graphSel: null, graphNode: null,
     graphPath: null, graphPos: {},       // {file:{x,y}} — layout survives repaints
     graphFocusCom: null,
@@ -116,7 +119,7 @@
   }
 
   function main() {
-    const tabs = [["search", "Search"], ["ask", "Ask"], ["graph", "Graph"]].map(([id, l]) =>
+    const tabs = [["search", "Search"], ["ask", "Ask"], ["flows", "Flows"], ["graph", "Graph"]].map(([id, l]) =>
       `<button class="tab ${st.view === id ? "active" : ""}" data-act="view" data-id="${id}">${l}</button>`).join("");
     const root = st.repo ? (st.repos.find((r) => r.name === st.repo) || {}).root || "" : "";
     return `<main class="main">
@@ -147,9 +150,12 @@
     stopSim();                            // leaving/repainting kills the RAF loop
     if (st.view === "search") v.innerHTML = viewSearch();
     else if (st.view === "graph") v.innerHTML = viewGraph();
+    else if (st.view === "flows") v.innerHTML = viewFlows();
     else v.innerHTML = viewAsk();
     bindView();
     if (st.view === "graph") mountGraph();
+    if (st.view === "flows" && st.flows === null && !st.flowsLoading) loadFlows();
+    if (st.view === "ask" && st.queries === null) loadQueries();
   }
 
   function queryBar(placeholder, right) {
@@ -1137,7 +1143,118 @@
     } else {
       body = emptyState("The star: a senior-engineer walkthrough with the REAL code spliced in.", "Broad questions fan out into parallel sub-agents you can watch work. Hit ⏎.");
     }
-    return `<div class="view-wrap mb-fade" style="max-width:1000px;padding-bottom:80px">${queryBar("Ask how something works…", right)}${body}</div>`;
+    return `<div class="view-wrap mb-fade" style="max-width:1000px;padding-bottom:80px">${queryBar("Ask how something works…", right)}<div id="ask-starters">${starterChips()}</div>${body}</div>`;
+  }
+
+  // starter queries — the repo's committed .megabrainqueries, as one-click
+  // chips. A newcomer opens the repo, runs them, and sees the main workflows;
+  // "Warm all" pre-caches every one as a flow (instant serves afterwards).
+  function starterChips() {
+    const qz = st.queries && st.queries.queries;
+    if (!qz || !qz.length) return "";
+    const w = st.warm;
+    const chips = qz.map((q) => `<button class="chip mono" data-act="ask-starter" data-q="${esc(q)}"
+        style="${w && w.q === q ? "background:var(--accent-dim);border-color:var(--accent-bd);color:var(--accent)" : ""}" title="run this ask">${esc(q)}</button>`).join("");
+    const warmBtn = w
+      ? `<button class="chip mono" data-act="warm-stop" style="flex-shrink:0;color:var(--accent)"><span class="spinner"></span>&nbsp;warming ${w.i + 1}/${w.n} — click to stop</button>`
+      : `<button class="chip mono" data-act="warm-all" style="flex-shrink:0" title="run every starter ask once and cache it as a flow — later identical asks serve instantly, no LLM (costs ${qz.length} LLM call${qz.length > 1 ? "s" : ""})">⚡ Warm all (${qz.length})</button>`;
+    return `<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:10px">
+      <span class="mono" style="font-size:10px;color:var(--muted);letter-spacing:.06em;flex-shrink:0">STARTER QUERIES · .megabrainqueries</span>
+      ${chips}${warmBtn}</div>`;
+  }
+  const paintStarters = () => { const s = $("#ask-starters"); if (s) s.innerHTML = starterChips(); };
+
+  async function loadQueries() {
+    if (!st.repo) return;
+    try { st.queries = await api.queries(st.repo); }
+    catch (e) { st.queries = { exists: false, queries: [] }; }
+    paintStarters();
+  }
+
+  async function warmAll() {
+    const qz = (st.queries && st.queries.queries) || [];
+    if (!qz.length || st.warm) return;
+    st.warm = { i: 0, n: qz.length, q: qz[0], stop: false };
+    paintStarters();
+    for (let i = 0; i < qz.length; i++) {
+      if (!st.warm || st.warm.stop) break;
+      st.warm.i = i; st.warm.q = qz[i]; paintStarters();
+      try { await api.ask({ question: qz[i], repo: st.repo, agents: "auto" }); }
+      catch (e) { toast("warm: " + e.message); }
+    }
+    const stopped = st.warm && st.warm.stop;
+    st.warm = null; st.flows = null;     // the flows list is stale now
+    paintStarters();
+    toast(stopped ? "warm stopped" : "warmed " + qz.length + " starter quer" + (qz.length > 1 ? "ies" : "y") + " — cached as flows");
+  }
+
+  // ── flows view — the ask cache, listed + viewable ────────────────────
+  function viewFlows() {
+    const f = st.flows;
+    const fmtDate = (t) => t ? new Date(t * 1000).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
+    if (st.flowSel) {
+      const fl = st.flowSel;
+      const pills = fl.files.map((p) => `<button class="file-pill mono" data-act="vopen" data-file="${esc(p)}" title="open ${esc(p)}">${esc(p)}</button>`).join("");
+      return `<div class="view-wrap mb-fade" style="max-width:1000px;padding-bottom:80px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <button class="chip mono" data-act="flow-back">← all flows</button>
+          <div style="flex:1"></div>
+          <button class="chip mono" data-act="flow-del" data-id="${fl.id}" style="color:var(--bad,#e5534b)">${ico.x} delete</button>
+        </div>
+        <div style="margin-top:16px;font-size:15px;font-weight:650;line-height:1.4">“${esc(fl.question)}”</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <span class="file-pill mono">cached ${fmtDate(fl.created)}</span>${pills}</div>
+        <div class="synth" style="margin-top:20px">${md(fl.text)}</div>
+      </div>`;
+    }
+    let body;
+    if (st.flowsLoading) body = `<div style="padding:40px;display:flex;justify-content:center"><span class="spinner"></span></div>`;
+    else if (f && f.flows.length) {
+      const rows = f.flows.map((m) => `<div class="chunk" data-act="flow-open" data-id="${m.id}" style="cursor:pointer;border-left:2px solid ${m.stale ? "var(--muted)" : "var(--accent)"}">
+        <div style="display:flex;align-items:center;gap:10px;padding:11px 14px">
+          <div style="min-width:0;flex:1">
+            <div style="font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">“${esc(m.question)}”</div>
+            <div class="mono" style="font-size:10.5px;color:var(--muted);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m.files.length} file${m.files.length > 1 ? "s" : ""} · ${esc(m.files.map((p) => p.split("/").pop()).slice(0, 4).join(" · "))}${m.files.length > 4 ? " · …" : ""}</div>
+          </div>
+          ${m.stale ? '<span class="file-pill mono" title="a cited file changed on disk since this was cached — it will not serve, and the next index prunes it">stale</span>' : ""}
+          <span class="file-pill mono" style="flex-shrink:0">${fmtDate(m.created)}</span>
+          <button class="chip mono" data-act="flow-del" data-id="${m.id}" title="delete this flow" style="flex-shrink:0">${ico.x}</button>
+        </div>
+      </div>`).join("");
+      body = `<div class="stats-row">
+          <div><b>${f.flows.length}</b> cached ask${f.flows.length > 1 ? "s" : ""}</div><div class="sdot"></div>
+          <div style="color:var(--muted)">every successful ask is cached — a near-exact repeat serves <b style="color:var(--text)">instantly, no LLM</b>; a related question attaches it as KNOWN FLOW context</div>
+          <div style="flex:1"></div>
+          <button class="chip mono" data-act="flows-refresh">${ico.refresh} refresh</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:16px">${rows}</div>`;
+    } else if (f && !f.enabled) {
+      body = emptyState("The flow cache is OFF for this repo.",
+        "Re-enable it with `megabrain flows --enable` — every ask then caches its walkthrough for instant repeats.");
+    } else {
+      body = emptyState("Every ask you run is remembered here.",
+        "Flows accumulate as you Ask (or via `megabrain flows --warm N`). A near-exact repeat question serves from cache instantly — no LLM, no cost.");
+    }
+    return `<div class="view-wrap mb-fade" style="max-width:1000px;padding-bottom:80px">${body}</div>`;
+  }
+
+  async function loadFlows() {
+    if (!st.repo || st.flowsLoading) return;   // renderView repaints mid-load —
+    st.flowsLoading = true; renderView();      // without this guard it loops
+    try { st.flows = await api.flows(st.repo); }
+    catch (e) { toast("flows: " + e.message); st.flows = { enabled: true, flows: [] }; }
+    st.flowsLoading = false; renderView();
+  }
+  async function openFlow(id) {
+    try { st.flowSel = await api.flowGet(id, st.repo); renderView(); }
+    catch (e) { toast("flow: " + e.message); }
+  }
+  async function deleteFlow(id) {
+    try {
+      await api.flowDelete(id, st.repo);
+      if (st.flowSel && st.flowSel.id === id) st.flowSel = null;
+      st.flows = null; renderView();     // triggers a reload
+    } catch (e) { toast("flow: " + e.message); }
   }
 
   function askRender() {
@@ -1146,6 +1263,10 @@
     const info = $("#ask-info");
     if (info) {
       let h = "";
+      if (a.cached) h += `<div style="display:flex;align-items:center;gap:8px">
+        <div style="font-size:13px">⚡</div>
+        <div style="font-size:12px;font-weight:600;color:var(--accent)">served from flow cache</div>
+        <div class="mono" style="font-size:11px;color:var(--muted)">no LLM · ${a.cached.ms || 0}ms · cached ask: “${esc(a.cached.question || "")}”</div></div>`;
       if (a.retrieval) h += `<div style="display:flex;align-items:center;gap:8px">
         <div class="chip-ic">${ico.check}</div><div class="mono" style="font-size:11px;color:var(--muted)">retrieval</div>
         <div class="mono" style="font-size:12px;font-weight:600">${a.retrieval.ms}ms · ${a.retrieval.files} files</div></div>`;
@@ -1154,7 +1275,13 @@
         <div class="mono" style="font-size:11px;color:var(--muted)">classified</div>
         <div style="font-size:12px;font-weight:600">${a.classified.broad ? "broad" : "scoped"}</div>
         ${a.classified.broad ? `<div style="font-size:11px;color:var(--muted)">· fans out into <b style="color:var(--text)">${a.agents.length || "…"}</b> agents</div>` : ""}</div>`;
-      info.innerHTML = h ? `<div class="info-bar">${h}</div>` : "";
+      // cached flows that ATTACHED as KNOWN-FLOW context (0.62–0.88 match):
+      // the narrator saw them; a ≥0.88 match would have served verbatim instead
+      const kf = (a.retrieval && a.retrieval.flows) || [];
+      if (kf.length) h += `<div class="divider"></div><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0">
+        <div class="mono" style="font-size:11px;color:var(--muted);flex-shrink:0">known flows</div>
+        ${kf.map((fl) => `<button class="chip mono" data-act="view-flows" title="a cached ask attached as context for the narrator — open the Flows tab" style="max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">⚡ ${esc(fl.question)} · ${fl.score.toFixed(2)}</button>`).join("")}</div>`;
+      info.innerHTML = h ? `<div class="info-bar" style="flex-wrap:wrap">${h}</div>` : "";
     }
     const ag = $("#ask-agents");
     if (ag) ag.innerHTML = a.agents.map(agentCard).join("");
@@ -1162,8 +1289,8 @@
     if (sy) {
       if (a.synthText || a.synthActive) {
         sy.innerHTML = `<div class="section-head" style="margin-top:0"><div class="signal-label mono">
-            <div class="dotlive" style="animation:mb-pulse 1.6s infinite"></div>SYNTHESIS${a.done ? "" : " · STREAMING"}</div>
-            <div class="section-rule"></div><div class="mono" style="font-size:10.5px;color:var(--muted)">${esc(shortModel(a.model || activeModel()))}</div></div>
+            <div class="dotlive" style="animation:mb-pulse 1.6s infinite"></div>${a.cached ? "⚡ FROM CACHE" : "SYNTHESIS"}${a.done ? "" : " · STREAMING"}</div>
+            <div class="section-rule"></div><div class="mono" style="font-size:10.5px;color:var(--muted)">${a.cached ? "flow cache · no LLM" : esc(shortModel(a.model || activeModel()))}</div></div>
           <div class="synth">${md(a.synthText)}${a.done ? "" : '<span class="caret"></span>'}</div>`;
       } else if (a.bundle) {
         sy.innerHTML = `<div class="synth">${a.bundleNote ? `<p style="color:var(--muted)">${esc(a.bundleNote)} — full bundle:</p>` : ""}<pre class="mono">${esc(a.bundle)}</pre></div>`;
@@ -1338,7 +1465,7 @@
     const find = (id) => a.agents.find((x) => x.id === id);
     switch (ev.type) {
       case "retrieval": a.retrieval = ev; a.model = ev.model || a.model; break;
-      case "cached": a.synthText = ev.text; a.done = { spans: 0, files: 0, retrieval_ms: ev.ms || 0, llm_ms: 0, n_dropped: 0 }; break;
+      case "cached": a.cached = ev; a.synthText = ev.text; a.done = { spans: 0, files: 0, retrieval_ms: ev.ms || 0, llm_ms: 0, n_dropped: 0 }; break;
       case "classified": a.classified = ev; break;
       case "planning": a.model = ev.model || a.model; break;
       case "plan": a.agents = ev.agents.map((p) => ({ id: p.id, label: p.label, sub_query: p.sub_query,
@@ -1955,6 +2082,14 @@
     else if (act === "settings") { st.overlay = "settings"; renderOverlays(); loadProviders(); }
     else if (act === "settings-close" || act === "settings-bg") { st.overlay = null; renderOverlays(); }
     else if (act === "ask-run") { runAsk(); }
+    else if (act === "ask-starter") { st.q = t.dataset.q; const q = $("#q"); if (q) q.value = st.q; runAsk(); }
+    else if (act === "warm-all") { warmAll(); }
+    else if (act === "warm-stop") { if (st.warm) st.warm.stop = true; }
+    else if (act === "view-flows") { st.view = "flows"; render(); }
+    else if (act === "flow-open") { openFlow(+t.dataset.id); }
+    else if (act === "flow-back") { st.flowSel = null; renderView(); }
+    else if (act === "flow-del") { e.stopPropagation(); deleteFlow(+t.dataset.id); }
+    else if (act === "flows-refresh") { st.flows = null; loadFlows(); }
     else if (act === "add-open") { openAdd(); }
     else if (act === "add-close" || act === "add-close-bg") { if (act === "add-close-bg" && !e.target.classList.contains("overlay-bg")) return; st.overlay = null; st.add = null; renderOverlays(); }
     else if (act === "do-scan") { doScan(); }
@@ -2008,6 +2143,7 @@
 
   function clearRepoState() {
     st.search = st.ask = null;
+    st.flows = null; st.flowSel = null; st.queries = null; st.warm = null;
     st.graph = null; st.graphNode = null; st.graphSel = null;
     st.graphPath = null; st.graphPos = {};
     st.graphFocusCom = null; st.graphView = null;

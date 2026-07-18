@@ -512,7 +512,11 @@ def stream_events(root, question: str, on_event, *, agents: bool | None = None,
 
     emit({"type": "retrieval", "repo": res["repo"], "ms": retrieval_ms,
           "files": len(res["tier1"]) + len(res["tier2"]),
-          "model": model, "llm": bool(key and cands)})
+          "model": model, "llm": bool(key and cands),
+          # which cached flows ATTACHED as KNOWN-FLOW context (surfaced so the
+          # UI can show the cache working; empty when none matched / cache off)
+          "flows": [{"question": f["question"], "score": f["score"]}
+                    for f in res.get("flows") or []]})
     if not key or not cands:
         emit({"type": "bundle", "note": None, "text": render(res)})
         return {**base, "text": "", "llm_ms": 0}

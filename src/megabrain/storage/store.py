@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import time
 from pathlib import Path
 from typing import TYPE_CHECKING, Sequence
 
@@ -75,7 +76,8 @@ CREATE TABLE IF NOT EXISTS flows (
     text TEXT NOT NULL,                   -- the rendered walkthrough (prose+code)
     files TEXT NOT NULL,                  -- JSON {relpath: sha} of cited sources
     vec BLOB,                             -- question+prose embedding (ATTACH lane)
-    qvec BLOB                             -- question-only embedding (SERVE lane)
+    qvec BLOB,                            -- question-only embedding (SERVE lane)
+    created REAL                          -- unix time the flow was cached
 );
 """
 
@@ -90,10 +92,11 @@ class Store:
         d.mkdir(exist_ok=True)
         self.db = sqlite3.connect(d / "db.sqlite", check_same_thread=check_same_thread)
         self.db.executescript(SCHEMA)
-        try:                        # migrate pre-qvec flow tables in place
-            self.db.execute("ALTER TABLE flows ADD COLUMN qvec BLOB")
-        except sqlite3.OperationalError:
-            pass                    # column already exists
+        for col in ("qvec BLOB", "created REAL"):
+            try:                    # migrate older flow tables in place
+                self.db.execute(f"ALTER TABLE flows ADD COLUMN {col}")
+            except sqlite3.OperationalError:
+                pass                # column already exists
 
     def close(self):
         self.db.close()
@@ -257,10 +260,11 @@ class Store:
     def insert_flow(self, question: str, text: str, files: dict, vec: np.ndarray,
                     qvec: np.ndarray | None = None) -> int:
         cur = self.db.execute(
-            "INSERT INTO flows(question,text,files,vec,qvec) VALUES (?,?,?,?,?)",
+            "INSERT INTO flows(question,text,files,vec,qvec,created) VALUES (?,?,?,?,?,?)",
             (question, text, json.dumps(files, sort_keys=True),
              vec.astype(np.float32).tobytes(),
-             qvec.astype(np.float32).tobytes() if qvec is not None else None))
+             qvec.astype(np.float32).tobytes() if qvec is not None else None,
+             time.time()))
         return cur.lastrowid
 
     def delete_flow(self, flow_id: int):
@@ -288,10 +292,10 @@ class Store:
         """(metas, attach matrix, question-only matrix). Rows cached before the
         qvec migration get a zero qvec — they still attach, never serve."""
         rows = self.db.execute(
-            "SELECT id,question,text,files,vec,qvec FROM flows WHERE vec IS NOT NULL "
+            "SELECT id,question,text,files,vec,qvec,created FROM flows WHERE vec IS NOT NULL "
             "ORDER BY id").fetchall()
         metas = [{"id": r[0], "question": r[1], "text": r[2],
-                  "files": json.loads(r[3])} for r in rows]
+                  "files": json.loads(r[3]), "created": r[6]} for r in rows]
         if not rows:
             return metas, np.zeros((0, 1)), np.zeros((0, 1))
         M = np.stack([np.frombuffer(r[4], dtype=np.float32) for r in rows])

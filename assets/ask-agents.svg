@@ -9,22 +9,17 @@
       <stop offset="0" stop-color="#8ac89a" stop-opacity="0.20"/>
       <stop offset="1" stop-color="#8ac89a" stop-opacity="0"/>
     </radialGradient>
-    <radialGradient id="nodeGlow" cx="0.5" cy="0.5" r="0.5">
-      <stop offset="0" stop-color="#5fe3a1" stop-opacity="0.40"/>
-      <stop offset="1" stop-color="#5fe3a1" stop-opacity="0"/>
-    </radialGradient>
-    <radialGradient id="hubGlow" cx="0.5" cy="0.5" r="0.5">
-      <stop offset="0" stop-color="#7df0b4" stop-opacity="0.52"/>
-      <stop offset="0.55" stop-color="#5fe3a1" stop-opacity="0.18"/>
-      <stop offset="1" stop-color="#5fe3a1" stop-opacity="0"/>
-    </radialGradient>
     <!-- userSpaceOnUse: a horizontal line has a zero-height bbox, so an
          objectBoundingBox gradient degenerates and the stroke never paints -->
-    <linearGradient id="edge1" gradientUnits="userSpaceOnUse" x1="186" y1="306" x2="444" y2="306">
+    <linearGradient id="edge1" gradientUnits="userSpaceOnUse" x1="130" y1="306" x2="325" y2="306">
       <stop offset="0" stop-color="#ffa64d"/>
+      <stop offset="1" stop-color="#c9dc8f"/>
+    </linearGradient>
+    <linearGradient id="edge2" gradientUnits="userSpaceOnUse" x1="325" y1="306" x2="520" y2="306">
+      <stop offset="0" stop-color="#c9dc8f"/>
       <stop offset="1" stop-color="#5fe3a1"/>
     </linearGradient>
-    <linearGradient id="edge2" gradientUnits="userSpaceOnUse" x1="459" y1="306" x2="714" y2="306">
+    <linearGradient id="edge3" gradientUnits="userSpaceOnUse" x1="520" y1="306" x2="725" y2="306">
       <stop offset="0" stop-color="#5fe3a1"/>
       <stop offset="1" stop-color="#7df0b4"/>
     </linearGradient>
@@ -184,48 +179,59 @@
     <rect x="16" y="16" width="868" height="388" rx="10" fill="#12100c" stroke="#241d15" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.680;0.690;0.985;1" dur="42s" repeatCount="indefinite"/></rect>
     <text x="34" y="44" font-size="13" font-weight="700" fill="#ffa64d" opacity="0">megabrain_graph<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.680;0.690;0.985;1" dur="42s" repeatCount="indefinite"/></text>
     <text x="866" y="44" text-anchor="end" font-size="9" fill="#8a7f70" opacity="0">AST import/call edges · no LLM in the structure<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.680;0.690;0.985;1" dur="42s" repeatCount="indefinite"/></text>
-    <text x="34" y="72" font-size="10.5" fill="#e9e4dc" opacity="0">$ megabrain graph . --path server/mcp.py retrieval/rerank.py<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.688;0.698;0.985;1" dur="42s" repeatCount="indefinite"/></text>
+    <text x="34" y="72" font-size="10.5" fill="#e9e4dc" opacity="0">$ megabrain graph . --path mcp rerank<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.688;0.698;0.985;1" dur="42s" repeatCount="indefinite"/></text>
+    <text x="34" y="90" font-size="8.5" fill="#9fe8c4" opacity="0">  ↳ plain concepts — the endpoints resolve by embedding, no exact paths needed<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.698;0.708;0.985;1" dur="42s" repeatCount="indefinite"/></text>
 
-    <text x="34" y="100" font-size="9.5" fill="#8a7f70" opacity="0"># graph path — src/megabrain/server/mcp.py → src/megabrain/retrieval/rerank.py · 11ms<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.700;0.710;0.985;1" dur="42s" repeatCount="indefinite"/></text>
+    <text x="34" y="112" font-size="9.5" fill="#8a7f70" opacity="0"># graph path — src/megabrain/mcp_server.py → src/megabrain/retrieval/rerank.py · 558ms<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.708;0.718;0.985;1" dur="42s" repeatCount="indefinite"/></text>
 
     <!-- the tree, verbatim -->
-    <text x="34" y="132" font-size="10.5" fill="#ffa64d" opacity="0">  src/megabrain/server/mcp.py<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.714;0.724;0.985;1" dur="42s" repeatCount="indefinite"/></text>
-    <text x="34" y="154" font-size="10" fill="#c6bcae" opacity="0">  └─ call/import → src/megabrain/app.py  · <tspan fill="#9fe8c4">via ask, graph, index, prune</tspan><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.726;0.736;0.985;1" dur="42s" repeatCount="indefinite"/></text>
-    <text x="34" y="176" font-size="10" fill="#c6bcae" opacity="0">  └─ call/import → src/megabrain/retrieval/rerank.py  · <tspan fill="#9fe8c4">via llm_rerank, get</tspan><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.738;0.748;0.985;1" dur="42s" repeatCount="indefinite"/></text>
+    <text x="34" y="138" font-size="10.5" fill="#ffa64d" opacity="0">  src/megabrain/mcp_server.py<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.718;0.728;0.985;1" dur="42s" repeatCount="indefinite"/></text>
+    <text x="34" y="158" font-size="10" fill="#c6bcae" opacity="0">  └─ call/import → src/megabrain/server/mcp.py  · <tspan fill="#9fe8c4">via main, call_tool</tspan><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.728;0.738;0.985;1" dur="42s" repeatCount="indefinite"/></text>
+    <text x="34" y="178" font-size="10" fill="#c6bcae" opacity="0">  └─ call/import → src/megabrain/app.py  · <tspan fill="#9fe8c4">via ask, graph, index, prune</tspan><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.738;0.748;0.985;1" dur="42s" repeatCount="indefinite"/></text>
+    <text x="34" y="198" font-size="10" fill="#c6bcae" opacity="0">  └─ call/import → src/megabrain/retrieval/rerank.py  · <tspan fill="#9fe8c4">via llm_rerank, get</tspan><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.748;0.758;0.985;1" dur="42s" repeatCount="indefinite"/></text>
 
-    <text x="34" y="204" font-size="9" fill="#5fe3a1" opacity="0">✓ a real call chain — every hop is a resolved call site, verified against the AST<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.752;0.762;0.985;1" dur="42s" repeatCount="indefinite"/></text>
+    <text x="34" y="222" font-size="9" fill="#5fe3a1" opacity="0">✓ a real call chain — every hop is a resolved call site, verified against the AST<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.760;0.770;0.985;1" dur="42s" repeatCount="indefinite"/></text>
 
-    <!-- node chain: mcp.py ── app.py ── rerank.py -->
-    <text x="180" y="262" text-anchor="middle" font-size="10.5" font-weight="600" fill="#e9e4dc" opacity="0">mcp.py<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.770;0.780;0.985;1" dur="42s" repeatCount="indefinite"/></text>
-    <text x="180" y="276" text-anchor="middle" font-size="8" fill="#8a7f70" opacity="0">the tool your agent calls<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.774;0.784;0.985;1" dur="42s" repeatCount="indefinite"/></text>
-    <circle cx="180" cy="306" r="19" fill="url(#nodeGlow)" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.770;0.780;0.985;1" dur="42s" repeatCount="indefinite"/></circle>
-    <circle cx="180" cy="306" r="6" fill="#5fe3a1" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.770;0.778;0.985;1" dur="42s" repeatCount="indefinite"/></circle>
+    <!-- node chain, revealed strictly in order: node → edge draws → node → … -->
+    <text x="130" y="266" text-anchor="middle" font-size="10" font-weight="600" fill="#e9e4dc" opacity="0">mcp_server.py<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.772;0.782;0.985;1" dur="42s" repeatCount="indefinite"/></text>
+    <text x="130" y="279" text-anchor="middle" font-size="7.5" fill="#8a7f70" opacity="0">the stdio entrypoint<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.776;0.786;0.985;1" dur="42s" repeatCount="indefinite"/></text>
 
-    <line x1="186" y1="306" x2="444" y2="306" stroke="url(#edge1)" stroke-width="2" stroke-linecap="round" stroke-dasharray="258" stroke-dashoffset="258" opacity="0">
-      <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.786;0.792;0.985;1" dur="42s" repeatCount="indefinite"/>
-      <animate attributeName="stroke-dashoffset" values="258;258;0;0;258" keyTimes="0;0.788;0.810;0.985;1" dur="42s" repeatCount="indefinite"/>
+    <line x1="130" y1="306" x2="325" y2="306" stroke="url(#edge1)" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="195" stroke-dashoffset="195" opacity="0">
+      <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.784;0.788;0.985;1" dur="42s" repeatCount="indefinite"/>
+      <animate attributeName="stroke-dashoffset" values="195;195;0;0;195" keyTimes="0;0.786;0.806;0.985;1" dur="42s" repeatCount="indefinite"/>
     </line>
-    <text x="315" y="298" text-anchor="middle" font-size="8.5" font-style="italic" fill="#9fe8c4" opacity="0">via ask, graph, index, prune<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.800;0.810;0.985;1" dur="42s" repeatCount="indefinite"/></text>
+    <text x="227" y="298" text-anchor="middle" font-size="8" font-style="italic" fill="#9fe8c4" opacity="0">via main, call_tool<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.798;0.808;0.985;1" dur="42s" repeatCount="indefinite"/></text>
 
-    <text x="450" y="262" text-anchor="middle" font-size="11" font-weight="700" fill="#e9e4dc" opacity="0">app.py<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.810;0.820;0.985;1" dur="42s" repeatCount="indefinite"/></text>
-    <text x="450" y="276" text-anchor="middle" font-size="8" fill="#8a7f70" opacity="0">the orchestrator<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.814;0.824;0.985;1" dur="42s" repeatCount="indefinite"/></text>
-    <circle cx="450" cy="306" r="27" fill="url(#hubGlow)" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.810;0.820;0.985;1" dur="42s" repeatCount="indefinite"/></circle>
-    <circle cx="450" cy="306" r="8.5" fill="#7df0b4" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.810;0.818;0.985;1" dur="42s" repeatCount="indefinite"/></circle>
+    <text x="325" y="266" text-anchor="middle" font-size="10" font-weight="600" fill="#e9e4dc" opacity="0">server/mcp.py<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.808;0.818;0.985;1" dur="42s" repeatCount="indefinite"/></text>
+    <text x="325" y="279" text-anchor="middle" font-size="7.5" fill="#8a7f70" opacity="0">the tool your agent calls<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.812;0.822;0.985;1" dur="42s" repeatCount="indefinite"/></text>
 
-    <line x1="459" y1="306" x2="714" y2="306" stroke="url(#edge2)" stroke-width="2" stroke-linecap="round" stroke-dasharray="255" stroke-dashoffset="255" opacity="0">
-      <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.820;0.826;0.985;1" dur="42s" repeatCount="indefinite"/>
-      <animate attributeName="stroke-dashoffset" values="255;255;0;0;255" keyTimes="0;0.822;0.844;0.985;1" dur="42s" repeatCount="indefinite"/>
+    <line x1="325" y1="306" x2="520" y2="306" stroke="url(#edge2)" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="195" stroke-dashoffset="195" opacity="0">
+      <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.818;0.822;0.985;1" dur="42s" repeatCount="indefinite"/>
+      <animate attributeName="stroke-dashoffset" values="195;195;0;0;195" keyTimes="0;0.820;0.840;0.985;1" dur="42s" repeatCount="indefinite"/>
     </line>
-    <text x="586" y="298" text-anchor="middle" font-size="8.5" font-style="italic" fill="#9fe8c4" opacity="0">via llm_rerank, get<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.834;0.844;0.985;1" dur="42s" repeatCount="indefinite"/></text>
+    <text x="422" y="298" text-anchor="middle" font-size="8" font-style="italic" fill="#9fe8c4" opacity="0">via ask, graph, index, prune<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.832;0.842;0.985;1" dur="42s" repeatCount="indefinite"/></text>
 
-    <text x="720" y="262" text-anchor="middle" font-size="10.5" font-weight="600" fill="#e9e4dc" opacity="0">rerank.py<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.844;0.854;0.985;1" dur="42s" repeatCount="indefinite"/></text>
-    <text x="720" y="276" text-anchor="middle" font-size="8" fill="#8a7f70" opacity="0">act one's rerank<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.848;0.858;0.985;1" dur="42s" repeatCount="indefinite"/></text>
-    <circle cx="720" cy="306" r="19" fill="url(#nodeGlow)" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.844;0.854;0.985;1" dur="42s" repeatCount="indefinite"/></circle>
-    <circle cx="720" cy="306" r="6" fill="#5fe3a1" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.844;0.852;0.985;1" dur="42s" repeatCount="indefinite"/></circle>
+    <text x="520" y="266" text-anchor="middle" font-size="10.5" font-weight="700" fill="#e9e4dc" opacity="0">app.py<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.842;0.852;0.985;1" dur="42s" repeatCount="indefinite"/></text>
+    <text x="520" y="279" text-anchor="middle" font-size="7.5" fill="#8a7f70" opacity="0">the orchestrator<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.846;0.856;0.985;1" dur="42s" repeatCount="indefinite"/></text>
 
-    <text x="450" y="352" text-anchor="middle" font-size="9.5" fill="#8a7f70" opacity="0">2 hops · 11 ms · 0 files opened<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.862;0.872;0.985;1" dur="42s" repeatCount="indefinite"/></text>
+    <line x1="520" y1="306" x2="725" y2="306" stroke="url(#edge3)" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="205" stroke-dashoffset="205" opacity="0">
+      <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.852;0.856;0.985;1" dur="42s" repeatCount="indefinite"/>
+      <animate attributeName="stroke-dashoffset" values="205;205;0;0;205" keyTimes="0;0.854;0.874;0.985;1" dur="42s" repeatCount="indefinite"/>
+    </line>
+    <text x="622" y="298" text-anchor="middle" font-size="8" font-style="italic" fill="#9fe8c4" opacity="0">via llm_rerank, get<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.866;0.876;0.985;1" dur="42s" repeatCount="indefinite"/></text>
 
-    <text x="34" y="380" font-size="11" font-weight="700" fill="#5fe3a1" opacity="0">→ every hop names the function that carries it — a resolved call site, never a bare-name guess<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.886;0.896;0.985;1" dur="42s" repeatCount="indefinite"/></text>
-    <text x="34" y="398" font-size="8.5" fill="#8a7f70" opacity="0">so `re.search(...)` can never masquerade as your repo's own search() — and when two files DON'T connect, it says so<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.914;0.924;0.985;1" dur="42s" repeatCount="indefinite"/></text>
+    <text x="725" y="266" text-anchor="middle" font-size="10" font-weight="600" fill="#e9e4dc" opacity="0">rerank.py<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.876;0.886;0.985;1" dur="42s" repeatCount="indefinite"/></text>
+    <text x="725" y="279" text-anchor="middle" font-size="7.5" fill="#8a7f70" opacity="0">act one's rerank<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.880;0.890;0.985;1" dur="42s" repeatCount="indefinite"/></text>
+
+    <!-- the dots, drawn last so they cap the lines cleanly -->
+    <circle cx="130" cy="306" r="6.5" fill="#5fe3a1" stroke="#12100c" stroke-width="3" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.772;0.780;0.985;1" dur="42s" repeatCount="indefinite"/></circle>
+    <circle cx="325" cy="306" r="6.5" fill="#5fe3a1" stroke="#12100c" stroke-width="3" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.808;0.816;0.985;1" dur="42s" repeatCount="indefinite"/></circle>
+    <circle cx="520" cy="306" r="9" fill="#7df0b4" stroke="#12100c" stroke-width="3" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.842;0.850;0.985;1" dur="42s" repeatCount="indefinite"/></circle>
+    <circle cx="725" cy="306" r="6.5" fill="#5fe3a1" stroke="#12100c" stroke-width="3" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.876;0.884;0.985;1" dur="42s" repeatCount="indefinite"/></circle>
+
+    <text x="450" y="344" text-anchor="middle" font-size="9.5" fill="#8a7f70" opacity="0">3 hops · 558 ms · 0 files opened<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.890;0.900;0.985;1" dur="42s" repeatCount="indefinite"/></text>
+
+    <text x="34" y="376" font-size="11" font-weight="700" fill="#5fe3a1" opacity="0">→ every hop names the function that carries it — a resolved call site, never a bare-name guess<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.908;0.918;0.985;1" dur="42s" repeatCount="indefinite"/></text>
+    <text x="34" y="395" font-size="8.5" fill="#8a7f70" opacity="0">so `re.search(...)` can never masquerade as your repo's own search() — and when two files DON'T connect, it says so<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.932;0.942;0.985;1" dur="42s" repeatCount="indefinite"/></text>
   </g>
 </svg>

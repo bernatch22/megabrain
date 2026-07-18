@@ -1,0 +1,8 @@
+# Starter queries — one per line, `#` comments. The studio's Ask tab shows
+# these as one-click chips ("STARTER QUERIES"); "Warm all" pre-caches each
+# answer as a flow so later identical asks serve instantly, no LLM.
+How does retrieval score and rank chunks end to end?
+How does the flow cache store, attach and serve cached asks?
+How does ask decide between a single narrator and the multi-agent fan-out?
+How does indexing chunk a file, and what guarantees the line partition?
+How do the serving surfaces (CLI, MCP, HTTP) share the same use-case layer?

@@ -107,6 +107,12 @@
       j("/symbol?name=" + encodeURIComponent(name) + (repo ? "&repo=" + encodeURIComponent(repo) : "")),
     askStream: (body, onEvent) => sse("/ask/stream", body, onEvent),
     indexStream: (body, onEvent) => sse("/index/stream", body, onEvent),
+    ask: (body) => post("/ask", body),    // buffered — the warm-all runner
+    flows: (repo) => j("/flows" + (repo ? "?repo=" + encodeURIComponent(repo) : "")),
+    flowGet: (id, repo) =>
+      j("/flow?id=" + id + (repo ? "&repo=" + encodeURIComponent(repo) : "")),
+    flowDelete: (id, repo) => post("/flows/delete", { id, repo }),
+    queries: (repo) => j("/queries" + (repo ? "?repo=" + encodeURIComponent(repo) : "")),
   };
 
   window.api = (MOCK && window.mockApi) ? window.mockApi() : real;

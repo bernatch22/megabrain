@@ -163,3 +163,60 @@ def stats(root: Path) -> dict:
     from .storage.store import Store
     with Store(root) as s:
         return s.stats()
+
+
+def flows_list(root: Path) -> dict:
+    """The flow cache as a listing: every cached ask (id, question, cited
+    files, when, size) WITHOUT the stored text — the light shape for a list
+    view. `stale` marks flows whose cited files changed since caching (they
+    survive until the next index prunes them)."""
+    from .storage.flows import enabled, files_current
+    from .storage.store import Store
+    with Store(root) as s:
+        metas, _, _ = s.load_flows()
+    # staleness vs DISK, the same check the serve path makes — NOT the index's
+    # shas (Store.stale_flows), which can lag disk by the 60 s refresh TTL and
+    # would flag a perfectly serveable flow as doomed.
+    return {"enabled": enabled(root),
+            "flows": [{"id": m["id"], "question": m["question"],
+                       "files": sorted(m["files"]), "created": m["created"],
+                       "chars": len(m["text"]),
+                       "stale": not files_current(root, m["files"])}
+                      for m in reversed(metas)]}      # newest first
+
+
+def flow_get(root: Path, flow_id: int) -> dict:
+    """One cached flow in full — the stored walkthrough (prose + real code
+    spliced at cache time) for the viewer."""
+    from .errors import MegabrainError
+    from .storage.store import Store
+    with Store(root) as s:
+        for m in s.load_flows()[0]:
+            if m["id"] == flow_id:
+                return {"id": m["id"], "question": m["question"],
+                        "files": sorted(m["files"]), "created": m["created"],
+                        "text": m["text"]}
+    e = MegabrainError(f"no cached flow with id {flow_id}")
+    e.http_status = 404
+    raise e
+
+
+def flow_delete(root: Path, flow_id: int) -> dict:
+    from .storage.store import Store
+    with Store(root) as s:
+        s.delete_flow(flow_id)
+        s.commit()
+    return {"deleted": flow_id}
+
+
+def example_queries(root: Path) -> dict:
+    """Starter queries a team commits at <root>/.megabrainqueries — one per
+    line, `#` comments. The studio surfaces them as one-click chips in Ask so
+    a newcomer opens the repo, runs them, and sees the main workflows (and a
+    'warm' run pre-caches them as flows for instant serves)."""
+    f = Path(root) / ".megabrainqueries"
+    if not f.is_file():
+        return {"exists": False, "queries": []}
+    lines = f.read_text(encoding="utf-8", errors="replace").splitlines()
+    qs = [ln.strip() for ln in lines if ln.strip() and not ln.strip().startswith("#")]
+    return {"exists": True, "queries": qs}

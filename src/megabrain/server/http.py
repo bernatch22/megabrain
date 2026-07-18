@@ -24,6 +24,10 @@ Endpoints:
     GET  /graph         ?mode=&node=&source=&target=&repo= -> knowledge graph
     GET  /symbols       ?file=&repo=  -> one file's outline (no file: every name)
     GET  /symbol        ?name=&repo=  -> repo-wide definitions of a name
+    GET  /flows         ?repo=        -> cached ask flows (list, no text)
+    GET  /flow          ?id=&repo=    -> one cached flow in full (the viewer)
+    GET  /queries       ?repo=        -> starter queries from .megabrainqueries
+    POST /flows/delete  {id, repo?}   -> drop one cached flow
     POST /search    {query, max?, repo?}      -> raw bundle {tier1, tier2, ms}
     POST /ask       {question, model?, agents?, repo?, …} -> buffered answer
     POST /ask/stream {same}            -> SSE multi-agent live view
@@ -348,6 +352,18 @@ def _make_handler(reg: Registry, cors: str | None, enable_llm: bool,
                             lambda st: graph_path(st, src, dst)))
                     return self._send(200, repo.with_state(
                         lambda st: graph_map(st)))
+                if path == "/flows":
+                    from .. import app
+                    return self._send(200, app.flows_list(reg.get(repo_name).root))
+                if path == "/flow":
+                    fid = (qs.get("id") or [""])[0]
+                    if not fid.isdigit():
+                        return self._err(400, "missing id")
+                    from .. import app
+                    return self._send(200, app.flow_get(reg.get(repo_name).root, int(fid)))
+                if path == "/queries":
+                    from .. import app
+                    return self._send(200, app.example_queries(reg.get(repo_name).root))
                 if path == "/prune":
                     q = (qs.get("q") or qs.get("query") or [""])[0].strip()
                     if not q:
@@ -435,6 +451,12 @@ def _make_handler(reg: Registry, cors: str | None, enable_llm: bool,
                 if path == "/providers/ollama/serve":
                     from .. import providers
                     return self._send(200, providers.start_ollama())
+                if path == "/flows/delete":
+                    fid = body.get("id")
+                    if not isinstance(fid, int):
+                        return self._err(400, "missing id")
+                    from .. import app
+                    return self._send(200, app.flow_delete(reg.get(repo_name).root, fid))
                 if path == "/index/stream":
                     return self._index_stream(body)
                 if path == "/repos/add":

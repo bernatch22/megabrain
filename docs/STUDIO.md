@@ -50,6 +50,27 @@ agent, its tool calls and prose streaming in — then a synthesis with the
 **real code spliced in** as it types. A scoped question skips straight to the
 answer. Every citation is verbatim from disk; the model never emits code.
 
+The **flow cache is visible here**: a near-exact repeat of a cached ask shows
+a **⚡ served from flow cache** banner (no LLM, ~0 ms) with the original
+question; a *related* question shows **known flows** chips — the cached asks
+that attached as context for the narrator (click one to open the Flows tab).
+
+**Starter queries** — if the repo commits a `.megabrainqueries` file at its
+root (one query per line, `#` comments), they appear as one-click chips under
+the ask bar. The onboarding play: a newcomer opens the repo, clicks through
+the starters, and sees the main workflows. **⚡ Warm all** runs every starter
+once (explicit — costs N LLM asks) and caches each as a flow, so from then on
+those asks serve instantly for everyone on the machine.
+
+### Flows
+The **ask cache, listed**: every successful ask is stored as a flow (question
++ the rendered walkthrough + the sha of each cited file). This tab lists them
+newest-first — question, cited files, when — with a viewer showing the stored
+answer exactly as it will be served, each cited file openable in the
+navigator. `stale` marks flows whose sources changed (the next index prunes
+them). Delete any flow inline; repeats of a listed question answer from cache
+with zero LLM cost.
+
 ### Graph
 The repo as a navigable knowledge graph — see **[docs/GRAPH.md](GRAPH.md)** for
 the full guide. Four views: an **overview** of community bubbles, one
@@ -99,6 +120,10 @@ Every route accepts an optional `?repo=` / `"repo"` (absent = the boot repo).
 | `GET /symbols?file=` | a file's symbol outline · no `file` = the repo's name→def-count index |
 | `GET /symbol?name=` | repo-wide definitions of a bare name (go-to-definition) |
 | `GET /chunks?file=&q=` | every chunk of one file, scored + `selected` |
+| `GET /flows` | the flow cache, listed (id · question · files · created · stale) |
+| `GET /flow?id=` | one cached flow in full (the stored walkthrough) |
+| `GET /queries` | starter queries from the repo's `.megabrainqueries` |
+| `POST /flows/delete {id}` | drop one cached flow |
 | `GET /prune?q=&rerank=` | the flat signal list (+ `rerank=1` for the LLM lane) |
 | `GET /graph?mode=&node=&source=&target=` | knowledge graph: map / node / path |
 | `POST /search {query}` | the raw CORE/RELATED bundle |

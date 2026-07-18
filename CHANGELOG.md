@@ -1,5 +1,43 @@
 # Changelog
 
+## 0.11.0 — the cache you can read: a Flows tab, starter queries, flows over MCP
+
+- **Studio Flows tab — the ask cache, listed and viewable.** Every cached ask
+  (flow) newest-first: question, cited files, when it was cached, `stale`
+  when a source changed; click one for the stored walkthrough exactly as it
+  will be served, each cited file openable in the code navigator; delete
+  inline. New routes `GET /flows` (list, no text), `GET /flow?id=` (full),
+  `POST /flows/delete {id}` — thin adapters over new `app.flows_list/
+  flow_get/flow_delete` use-cases. Flow rows now record a `created` timestamp
+  (in-place ALTER migration, like qvec; old rows show "—").
+- **The cache is visible in Ask.** A verbatim serve shows a
+  "⚡ served from flow cache" banner (no LLM · retrieval ms · the original
+  cached question) and the synthesis header reads "FROM CACHE" instead of a
+  model name. Flows that ATTACH as KNOWN-FLOW context (0.62–0.88 match) show
+  as "known flows" chips in the info bar — the `retrieval` stream event now
+  carries `flows: [{question, score}]`.
+- **`megabrain_flows` gains `get` and `delete` (MCP).** The action enum now
+  covers `list` (which finally returns flow **ids**, plus `created` and
+  `stale`), `get` (one cached walkthrough in full, by id — free: no LLM, no
+  retrieval) and `delete`. All three route through the same `app.*`
+  use-cases serve-api calls, replacing the hand-rolled Store query that had
+  drifted from it. An agent can now read what a teammate already asked
+  instead of paying to re-ask it.
+- **Staleness is measured against DISK, not the index.** `stale_flows()`
+  compares a flow's cited shas to the *index*, which legitimately lags disk
+  by up to the 60 s refresh TTL — so a freshly cached, perfectly serveable
+  flow showed up as `stale`. The listing now uses the same disk check the
+  serve path makes, extracted as `flows.files_current()` and shared by both
+  (it was inline in `serve_verbatim`). `Store.stale_flows()` is unchanged —
+  index consistency is the right question for the *pruning* path.
+- **`.megabrainqueries` — committable starter queries.** One query per line
+  (`#` comments) at the repo root; `GET /queries` serves them and the studio
+  renders them as one-click chips under the Ask bar, plus an explicit
+  **⚡ Warm all** button that runs each starter once (buffered `POST /ask`)
+  and caches it as a flow. The onboarding play: a newcomer opens the repo,
+  clicks through the starters, and sees the main workflows — instantly if
+  someone already warmed them. This repo ships its own `.megabrainqueries`.
+
 ## 0.10.0 — the repo as a graph · flow cache on by default · search rerank
 
 - **Flow cache ON by default** (was opt-in since its introduction). Measured

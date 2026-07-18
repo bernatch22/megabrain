@@ -189,19 +189,27 @@ TOOLS = [
             "related question retrieves the whole workflow at once — a near-exact "
             "repeat serves the cached answer with NO LLM (~0 ms), guarded by a "
             "per-file sha recheck so it can never describe changed code. No extra "
-            "call needed: it rides megabrain_ask/megabrain_search. Actions: 'warm' "
+            "call needed: it rides megabrain_ask/megabrain_search. Actions: 'list' "
+            "shows what's cached (id · question · cited files · when · stale) — the "
+            "repo's accumulated knowledge, so you can see what a teammate or an "
+            "earlier session already asked instead of re-asking it; 'get' returns ONE "
+            "cached walkthrough in full by id (prose + the real code spliced at cache "
+            "time) — free, no LLM, no retrieval; 'delete' drops one by id; 'warm' "
             "discovers the repo's main workflows and pre-caches them with N research "
             "asks; 'refresh' re-asks stale flows against the current code (UPDATE, "
             "not just expire); 'disable' opts the repo out / 'enable' opts back in "
-            "(MEGABRAIN_FLOW_CACHE=0 kills it globally); 'list' shows what's cached. "
+            "(MEGABRAIN_FLOW_CACHE=0 kills it globally). "
             "Use 'warm' once on a repo an agent team will work in, so its workflows "
             "are searchable from the first question."),
         "inputSchema": {
             "type": "object",
             "properties": {
                 "repo_path": {"type": "string", "description": "path to the repo root"},
-                "action": {"type": "string", "enum": ["list", "warm", "refresh", "enable", "disable"],
+                "action": {"type": "string",
+                           "enum": ["list", "get", "delete", "warm", "refresh", "enable", "disable"],
                            "description": "default 'list'"},
+                "id": {"type": "integer",
+                       "description": "for action='get'/'delete': the flow id from action='list'"},
                 "n": {"type": "integer",
                       "description": "for action='warm': how many top workflows to discover + cache (default 6)"},
             },
@@ -287,9 +295,10 @@ def call_tool(name: str, args: dict) -> str:
         return text
     if name == "megabrain_flows":
         # cache MECHANICS live in storage.flows; the LLM warm/refresh
-        # orchestration lives up in ask.warmup (storage never imports upward)
-        from ..storage.flows import enabled, set_enabled
-        from ..storage.store import Store
+        # orchestration lives up in ask.warmup (storage never imports upward).
+        # list/get/delete go through app.* — the same use-cases serve-api calls,
+        # so the two surfaces can never drift.
+        from ..storage.flows import set_enabled
         root = Path(args["repo_path"]).expanduser().resolve()
         action = args.get("action", "list")
         if action == "warm":
@@ -303,11 +312,20 @@ def call_tool(name: str, args: dict) -> str:
         if action in ("enable", "disable"):
             set_enabled(root, action == "enable")
             return json.dumps({"flow_cache": action == "enable", "repo": root.as_posix()})
-        with Store(Path(root)) as s:
-            metas, _, _ = s.load_flows()
-        return json.dumps({"enabled": enabled(root),
-                           "flows": [{"question": m["question"],
-                                      "files": sorted(m["files"])} for m in metas]}, indent=1)
+        if action in ("get", "delete"):
+            fid = args.get("id")
+            if not isinstance(fid, int):
+                from ..errors import MegabrainError
+                raise MegabrainError(f"action='{action}' needs an integer `id` "
+                                     "(run action='list' to see the ids)")
+            if action == "delete":
+                return json.dumps(app.flow_delete(root, fid))
+            fl = app.flow_get(root, fid)
+            # the stored walkthrough is the payload — render it readable, not
+            # JSON-escaped, so the consuming agent reads it like an ask answer
+            return (f'# cached flow [{fl["id"]}] — "{fl["question"]}"\n'
+                    f'cited: {", ".join(fl["files"])}\n\n{fl["text"]}')
+        return json.dumps(app.flows_list(root), indent=1)
     from ..errors import UnknownTool
     raise UnknownTool(f"unknown tool {name}")
 

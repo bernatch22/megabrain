@@ -79,15 +79,24 @@
     ],
     [
      "module",
-     "graph, get, chunks, index, scan, stats",
+     "graph, get, chunks, index, scan, stats, flows_list, flow_get, flow_delete",
      null,
      108,
-     165,
-     "megabrain > megabrain/app.py > [graph, get, chunks, index, scan, stats]",
-     "eb1b164a1c3e8ff4b9efec15d596df20e1da7a96"
+     209,
+     "megabrain > megabrain/app.py > [graph, get, chunks, index, scan, stats, flows_list, flow_get, flow_delete]",
+     "9c92b856647f9b2e3b0956b27f624706730ec271"
+    ],
+    [
+     "function",
+     "example_queries",
+     null,
+     210,
+     222,
+     "megabrain > megabrain/app.py > def example_queries(root: Path) -> dict",
+     "b5c8fb8bd802f45e22a9c7224072e74f3826d34f"
     ]
    ],
-   "skeleton_sha": "c330c641f9ed95372a293975c9a709389a84dd8d",
+   "skeleton_sha": "d2218c6a6012b440fe82d20e882ae8baa8a326f4",
    "symbols": [
     [
      "resolve_scope",
@@ -186,6 +195,34 @@
      161,
      165,
      "def stats(root: Path) -> dict"
+    ],
+    [
+     "flows_list",
+     "function",
+     168,
+     185,
+     "def flows_list(root: Path) -> dict"
+    ],
+    [
+     "flow_get",
+     "function",
+     188,
+     201,
+     "def flow_get(root: Path, flow_id: int) -> dict"
+    ],
+    [
+     "flow_delete",
+     "function",
+     204,
+     209,
+     "def flow_delete(root: Path, flow_id: int) -> dict"
+    ],
+    [
+     "example_queries",
+     "function",
+     212,
+     222,
+     "def example_queries(root: Path) -> dict"
     ]
    ]
   },
@@ -264,18 +301,18 @@
      "stream_events",
      "1/2",
      460,
-     570,
+     565,
      "megabrain > megabrain/ask/agents.py > def stream_events(root, question: str, on_event, *, agents: bool | None=None, show_map: bool=True, docs_only: bool=False, include_docs: bool=False, path_filter: str | None=None, state=None, model: str | None=None) -> dict",
-     "3964b5b15ba236e9246dfd4ac540d64bf08fbdf2"
+     "600c3471590ab930ed54e4dd8b3896f59053c512"
     ],
     [
      "block",
      "stream_events",
      "2/2",
-     571,
-     588,
+     566,
+     592,
      "megabrain > megabrain/ask/agents.py > def stream_events(root, question: str, on_event, *, agents: bool | None=None, show_map: bool=True, docs_only: bool=False, include_docs: bool=False, path_filter: str | None=None, state=None, model: str | None=None) -> dict",
-     "e6fa3f67eb4454db3295e65c95c6767ba15289b5"
+     "b146a49fd7276630a27c0497c4f0662b675056e9"
     ]
    ],
    "skeleton_sha": "2a2fd884706b77eb11b4a1aa382124579eb04f72",
@@ -452,7 +489,7 @@
      "stream_events",
      "function",
      464,
-     588,
+     592,
      "def stream_events(root, question: str, on_event, *, agents: bool | None=None, show_map: bool=True, docs_only: bool=False, include_docs: bool=False, path_filter: str | None=None, state=None, model: str | None=None) -> dict"
     ]
    ]
@@ -5497,16 +5534,16 @@
      "_http_error, Registry",
      null,
      1,
-     108,
+     112,
      "megabrain > megabrain/server/http.py > [_http_error, Registry]",
-     "a6b62a0ae36dd0105473b27b6a3b81b09fbfd933"
+     "c43b24135b644281cf36d05361cc734672025294"
     ],
     [
      "module",
      "_root_key, _all_repos, _repo_stats",
      null,
-     109,
-     155,
+     113,
+     159,
      "megabrain > megabrain/server/http.py > [_root_key, _all_repos, _repo_stats]",
      "66b479ea233e888c967f10d5905246899e35667a"
     ],
@@ -5514,8 +5551,8 @@
      "block",
      "_make_handler",
      "1/4",
-     156,
-     286,
+     160,
+     290,
      "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True)",
      "03888581d1d19ea132f39980f7c69081541775a1"
     ],
@@ -5523,26 +5560,26 @@
      "block",
      "_make_handler",
      "2/4",
-     287,
-     417,
+     291,
+     420,
      "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True)",
-     "a65fd614a32f75d699f43172ed679e5f677cacc3"
+     "ba79aab3dd64f8957ecabaed362d2975c7b1bfed"
     ],
     [
      "block",
      "_make_handler",
      "3/4",
-     418,
-     509,
+     421,
+     531,
      "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True)",
-     "fe5fff2ff4b1f0e50658226b42fd87ae7abb29dd"
+     "f7b0336024afcb692dec20b4b5fa3f1b66975e02"
     ],
     [
      "block",
      "_make_handler",
      "4/4",
-     510,
-     511,
+     532,
+     533,
      "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True)",
      "5ebaec407bc18bc3fde033e8db1a20bf3e3ec3f8"
     ],
@@ -5550,8 +5587,8 @@
      "module",
      "_valid_model, _native_pick_folder, _scan_report, _merge_ignore",
      null,
-     512,
-     586,
+     534,
+     608,
      "megabrain > megabrain/server/http.py > [_valid_model, _native_pick_folder, _scan_report, _merge_ignore]",
      "1a60519fd169e3894bbb17ae8e132a99f7846295"
     ],
@@ -5559,8 +5596,8 @@
      "function",
      "serve",
      null,
-     587,
-     660,
+     609,
+     682,
      "megabrain > megabrain/server/http.py > def serve(root, port: int=2134, host: str='127.0.0.1', cors: str | None=None, enable_llm: bool=True, token: str | None=None, serve_ui: bool=True) -> None",
      "dbf80b262c8416184d62171bf0d91b9a06156857"
     ]
@@ -5570,127 +5607,127 @@
     [
      "log",
      "constant",
-     56,
-     56,
+     60,
+     60,
      "log = logging.getLogger(__name__)"
     ],
     [
      "UI_DIR",
      "constant",
-     58,
-     58,
+     62,
+     62,
      "UI_DIR = Path(__file__).parent / 'ui'"
     ],
     [
      "_CTYPES",
      "constant",
-     59,
-     62,
+     63,
+     66,
      "_CTYPES = {'.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json"
     ],
     [
      "_http_error",
      "function",
-     65,
-     70,
+     69,
+     74,
      "def _http_error(msg: str, status: int) -> MegabrainError"
     ],
     [
      "Registry",
      "class",
-     73,
-     108,
+     77,
+     112,
      "class Registry"
     ],
     [
      "Registry.__init__",
      "method",
-     79,
-     85,
+     83,
+     89,
      "def __init__(self, boot: RepoSession | None)"
     ],
     [
      "Registry.get",
      "method",
-     87,
-     93,
+     91,
+     97,
      "def get(self, name: str | None) -> RepoSession"
     ],
     [
      "Registry.add",
      "method",
-     95,
-     104,
+     99,
+     108,
      "def add(self, root: Path) -> RepoSession"
     ],
     [
      "Registry.list",
      "method",
-     106,
-     108,
+     110,
+     112,
      "def list(self) -> list[RepoSession]"
     ],
     [
      "_root_key",
      "function",
-     111,
-     121,
+     115,
+     125,
      "def _root_key(p) -> str"
     ],
     [
      "_all_repos",
      "function",
-     124,
-     142,
+     128,
+     146,
      "def _all_repos(reg: Registry) -> list[dict]"
     ],
     [
      "_repo_stats",
      "function",
-     145,
-     155,
+     149,
+     159,
      "def _repo_stats(s: RepoSession) -> dict"
     ],
     [
      "_make_handler",
      "function",
-     160,
-     511,
+     164,
+     533,
      "def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True)"
     ],
     [
      "_valid_model",
      "function",
-     514,
-     525,
+     536,
+     547,
      "def _valid_model(model) -> str | None"
     ],
     [
      "_native_pick_folder",
      "function",
-     528,
-     564,
+     550,
+     586,
      "def _native_pick_folder() -> dict"
     ],
     [
      "_scan_report",
      "function",
-     567,
-     573,
+     589,
+     595,
      "def _scan_report(path: str) -> dict"
     ],
     [
      "_merge_ignore",
      "function",
-     576,
-     586,
+     598,
+     608,
      "def _merge_ignore(root: Path, ignore: str) -> None"
     ],
     [
      "serve",
      "function",
-     589,
-     660,
+     611,
+     682,
      "def serve(root, port: int=2134, host: str='127.0.0.1', cors: str | None=None, enable_llm: bool=True, token: str | None=None, serve_ui: bool=True) -> None"
     ]
    ]
@@ -5815,25 +5852,34 @@
      null,
      "2/2",
      125,
-     211,
+     219,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "23e371c084bbf574e9309b1673f79cd36a2add09"
+     "05f9f1dd06078ee3f801bc37ff5678fbe60e0b90"
     ],
     [
-     "module",
-     "_scope, call_tool",
+     "function",
+     "_scope",
      null,
-     212,
-     312,
-     "megabrain > megabrain/server/mcp.py > [_scope, call_tool]",
-     "f79c64c1ffe50e23eab1a986ab5ecfa7c86ca84f"
+     220,
+     229,
+     "megabrain > megabrain/server/mcp.py > def _scope(args: dict) -> tuple[Path, str | None]",
+     "1d10e662f4d499a37f52ced42ddfed4a6e7cd428"
+    ],
+    [
+     "function",
+     "call_tool",
+     null,
+     230,
+     330,
+     "megabrain > megabrain/server/mcp.py > def call_tool(name: str, args: dict) -> str",
+     "95a3737a18a13ccd79bf109768e22c83a5a08ced"
     ],
     [
      "function",
      "main",
      null,
-     313,
-     354,
+     331,
+     372,
      "megabrain > megabrain/server/mcp.py > def main()",
      "494cf17f80c3e1afe9632a2577e0beb051e44aa6"
     ]
@@ -5851,28 +5897,28 @@
      "TOOLS",
      "constant",
      39,
-     211,
+     219,
      "TOOLS = [{'name': 'megabrain_ask', 'description': 'THE primary tool for any how/where/why question about an indexed repo"
     ],
     [
      "_scope",
      "function",
-     214,
-     221,
+     222,
+     229,
      "def _scope(args: dict) -> tuple[Path, str | None]"
     ],
     [
      "call_tool",
      "function",
-     224,
-     312,
+     232,
+     330,
      "def call_tool(name: str, args: dict) -> str"
     ],
     [
      "main",
      "function",
-     315,
-     350,
+     333,
+     368,
      "def main()"
     ]
    ]
@@ -5949,15 +5995,15 @@
     ],
     [
      "module",
-     "cache_flow, match_flows, serve_verbatim",
+     "cache_flow, match_flows, files_current, serve_verbatim",
      null,
      102,
-     188,
-     "megabrain > megabrain/storage/flows.py > [cache_flow, match_flows, serve_verbatim]",
-     "72b999bcc686a114a2c16e936dfca487a38aca84"
+     197,
+     "megabrain > megabrain/storage/flows.py > [cache_flow, match_flows, files_current, serve_verbatim]",
+     "7998b26dfbbde9684df6ac50fae7167705287e27"
     ]
    ],
-   "skeleton_sha": "6bc9f7b91c95977eab8d167909898932d3298c5d",
+   "skeleton_sha": "3b78f7a5d5195742c1d5078baeb56e58625ad931",
    "symbols": [
     [
      "log",
@@ -6065,10 +6111,17 @@
      "def match_flows(flow_metas: list[dict], FL: np.ndarray, qv: np.ndarray, FLQ: np.ndarray | None=None) -> list[dict]"
     ],
     [
-     "serve_verbatim",
+     "files_current",
      "function",
      172,
-     188,
+     182,
+     "def files_current(root, files: dict) -> bool"
+    ],
+    [
+     "serve_verbatim",
+     "function",
+     185,
+     197,
      "def serve_verbatim(root, flows: list[dict]) -> dict | None"
     ]
    ]
@@ -6145,36 +6198,36 @@
      "resolve_root",
      null,
      1,
-     80,
+     82,
      "megabrain > megabrain/storage/store.py > def resolve_root(path: Path) -> tuple[Path, str]",
-     "40500df3f6c6acd925566c62dec7617dbb6752ba"
+     "bd071a0eb2d443ce854de3c40946afa2973d8b6e"
     ],
     [
      "method",
      "Store.__init__, Store.close, Store.__enter__, Store.__exit__, Store.file_sha, Store.delete_file, Store.upsert_file, Store.insert_chunks, Store.insert_symbols, Store.replace_edges, Store.all_paths, Store.commit, Store.load_matrix, Store.load_file_matrix, Store.all_edges",
      null,
-     81,
-     191,
+     83,
+     194,
      "megabrain > megabrain/storage/store.py > class Store > [Store.__init__, Store.close, Store.__enter__, Store.__exit__, Store.file_sha, Store.delete_file, Store.upsert_file, Store.insert_chunks, Store.insert_symbols, Store.replace_edges, Store.all_paths, Store.commit, Store.load_matrix, Store.load_file_matrix, Store.all_edges]",
-     "d25dd9efeac4587c7f1d0e9a64e903fb007bba9b"
+     "c9b07c861fc2f1816c0bbd4429ce429b779af551"
     ],
     [
      "method",
      "Store.file_chunks, Store.neighbors, Store.symbols_for, Store.symbol_names, Store.find_symbols, Store.stats, Store.set_meta, Store.get_meta, Store.insert_flow, Store.delete_flow, Store.stale_flows, Store.prune_stale_flows",
      null,
-     192,
-     285,
+     195,
+     289,
      "megabrain > megabrain/storage/store.py > class Store > [Store.file_chunks, Store.neighbors, Store.symbols_for, Store.symbol_names, Store.find_symbols, Store.stats, Store.set_meta, Store.get_meta, Store.insert_flow, Store.delete_flow, Store.stale_flows, Store.prune_stale_flows]",
-     "63be0f64c5597e74782c79f8cd2e8f596463d636"
+     "783ac2f2f8b700723b91e4cf2f90144200d5cef0"
     ],
     [
      "method",
      "Store.load_flows",
      null,
-     286,
-     301,
+     290,
+     305,
      "megabrain > megabrain/storage/store.py > class Store > def load_flows(self) -> tuple[list[dict], np.ndarray, np.ndarray]",
-     "b5828e1060714852ff11e3c03fea28f1f2c5f8ff"
+     "9998421158f7638467f8b0ebaf94bcc3cf6165d0"
     ]
    ],
    "skeleton_sha": "19251ff8a1d8299c68e38c08cfe1d7a651c8b8ea",
@@ -6182,218 +6235,218 @@
     [
      "resolve_root",
      "function",
-     23,
-     41,
+     24,
+     42,
      "def resolve_root(path: Path) -> tuple[Path, str]"
     ],
     [
      "SCHEMA",
      "constant",
-     44,
-     80,
+     45,
+     82,
      "SCHEMA = '\\nCREATE TABLE IF NOT EXISTS files (\\n    path TEXT PRIMARY KEY,\\n    sha  TEXT NOT NULL,\\n    skeleton TEXT,\\"
     ],
     [
      "Store",
      "class",
-     83,
-     301,
+     85,
+     305,
      "class Store"
     ],
     [
      "Store.__init__",
      "method",
-     84,
-     96,
+     86,
+     99,
      "def __init__(self, repo_root: Path, check_same_thread: bool=True)"
     ],
     [
      "Store.close",
      "method",
-     98,
-     99,
+     101,
+     102,
      "def close(self)"
     ],
     [
      "Store.__enter__",
      "method",
-     101,
-     102,
+     104,
+     105,
      "def __enter__(self) -> 'Store'"
     ],
     [
      "Store.__exit__",
      "method",
-     104,
-     105,
+     107,
+     108,
      "def __exit__(self, *exc)"
     ],
     [
      "Store.file_sha",
      "method",
-     109,
-     111,
+     112,
+     114,
      "def file_sha(self, path: str) -> str | None"
     ],
     [
      "Store.delete_file",
      "method",
-     113,
-     126,
+     116,
+     129,
      "def delete_file(self, path: str, drop_incoming: bool=False)"
     ],
     [
      "Store.upsert_file",
      "method",
-     128,
-     132,
+     131,
+     135,
      "def upsert_file(self, path: str, sha: str, skeleton: str, skel_vec: np.ndarray | None)"
     ],
     [
      "Store.insert_chunks",
      "method",
-     134,
-     142,
+     137,
+     145,
      "def insert_chunks(self, chunks: Sequence['Chunk'], vecs) -> None"
     ],
     [
      "Store.insert_symbols",
      "method",
-     144,
-     151,
+     147,
+     154,
      "def insert_symbols(self, symbols: Sequence['Symbol']) -> None"
     ],
     [
      "Store.replace_edges",
      "method",
-     153,
      156,
+     159,
      "def replace_edges(self, src: str, edges: list[tuple[str, str]])"
     ],
     [
      "Store.all_paths",
      "method",
-     158,
-     159,
+     161,
+     162,
      "def all_paths(self) -> set[str]"
     ],
     [
      "Store.commit",
      "method",
-     161,
-     162,
+     164,
+     165,
      "def commit(self)"
     ],
     [
      "Store.load_matrix",
      "method",
-     166,
-     177,
+     169,
+     180,
      "def load_matrix(self) -> tuple[list[ChunkMeta], np.ndarray]"
     ],
     [
      "Store.load_file_matrix",
      "method",
-     179,
-     186,
+     182,
+     189,
      "def load_file_matrix(self) -> tuple[list[str], list[str], np.ndarray]"
     ],
     [
      "Store.all_edges",
      "method",
-     188,
      191,
+     194,
      "def all_edges(self) -> list[tuple[str, str, str]]"
     ],
     [
      "Store.file_chunks",
      "method",
-     193,
-     201,
+     196,
+     204,
      "def file_chunks(self, path: str) -> list[dict]"
     ],
     [
      "Store.neighbors",
      "method",
-     203,
-     209,
+     206,
+     212,
      "def neighbors(self, path: str) -> set[str]"
     ],
     [
      "Store.symbols_for",
      "method",
-     211,
-     216,
+     214,
+     219,
      "def symbols_for(self, path: str) -> list[dict]"
     ],
     [
      "Store.symbol_names",
      "method",
-     218,
-     227,
+     221,
+     230,
      "def symbol_names(self) -> dict[str, int]"
     ],
     [
      "Store.find_symbols",
      "method",
-     229,
-     238,
+     232,
+     241,
      "def find_symbols(self, name: str) -> list[dict]"
     ],
     [
      "Store.stats",
      "method",
-     240,
-     246,
+     243,
+     249,
      "def stats(self) -> dict"
     ],
     [
      "Store.set_meta",
      "method",
-     248,
-     249,
+     251,
+     252,
      "def set_meta(self, k: str, v)"
     ],
     [
      "Store.get_meta",
      "method",
-     251,
-     253,
+     254,
+     256,
      "def get_meta(self, k: str)"
     ],
     [
      "Store.insert_flow",
      "method",
-     257,
-     264,
+     260,
+     268,
      "def insert_flow(self, question: str, text: str, files: dict, vec: np.ndarray, qvec: np.ndarray | None=None) -> int"
     ],
     [
      "Store.delete_flow",
      "method",
-     266,
-     267,
+     270,
+     271,
      "def delete_flow(self, flow_id: int)"
     ],
     [
      "Store.stale_flows",
      "method",
-     269,
-     276,
+     273,
+     280,
      "def stale_flows(self) -> list[dict]"
     ],
     [
      "Store.prune_stale_flows",
      "method",
-     278,
-     285,
+     282,
+     289,
      "def prune_stale_flows(self) -> int"
     ],
     [
      "Store.load_flows",
      "method",
-     287,
-     301,
+     291,
+     305,
      "def load_flows(self) -> tuple[list[dict], np.ndarray, np.ndarray]"
     ]
    ]

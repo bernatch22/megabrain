@@ -310,6 +310,26 @@ planner errors. CLI `megabrain flows <repo> [--enable|--disable|--warm N|--clear
 · kill switch `MEGABRAIN_FLOW_CACHE=0`. Related: Knowledge Compression via
 Question Generation (arxiv 2506.13778).
 
+**Inspection & onboarding:** the cache is listable everywhere — CLI
+`megabrain flows`, MCP `megabrain_flows` (`action=list|get|delete|warm|
+refresh|enable|disable`; `get` hands an agent a cached walkthrough for free —
+no LLM, no retrieval), HTTP `GET /flows` (list) / `GET /flow?id=` (the stored
+walkthrough) / `POST /flows/delete`, and the studio's **Flows tab** (list +
+viewer, cited files openable in the navigator, stale marked). All of them go
+through the same `app.flows_list/flow_get/flow_delete` use-cases, so no
+surface can drift. **Staleness is measured against DISK** (`files_current`,
+shared with the serve path), not the index's shas — the index may lag disk by
+the 60 s TTL, and a flow whose sources are untouched stays serveable through
+that window. `Store.stale_flows()` keeps the index comparison, which is the
+right question for the *pruning* path. The Ask
+surfaces show the cache working: a verbatim serve is bannered
+"⚡ served from flow cache"; attached flows show as "known flows" chips (the
+`retrieval` stream event carries them). A repo can commit **starter queries**
+at `<root>/.megabrainqueries` (one per line, `#` comments; `GET /queries`):
+the studio renders them as one-click chips in Ask with an explicit **Warm
+all** button — the newcomer flow: open the repo, click through the starters,
+see the main workflows, and leave them cached for everyone.
+
 ---
 
 ## 4. `ask` — narration with verbatim code (`ask.py`)

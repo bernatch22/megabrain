@@ -169,6 +169,19 @@ def match_flows(flow_metas: list[dict], FL: np.ndarray, qv: np.ndarray,
     return out
 
 
+def files_current(root, files: dict) -> bool:
+    """True when every {relpath: sha} the flow cited is still byte-identical ON
+    DISK. This — not the index's shas — is what decides whether a cached
+    walkthrough may be served: the index can legitimately lag disk by up to the
+    60 s refresh TTL, and a flow whose sources are untouched stays valid
+    through that window (the next index re-syncs and keeps it). The one copy,
+    shared by the serve path and the listing."""
+    root = Path(root)
+    return all((root / f).is_file() and hashlib.sha256(
+               (root / f).read_text(encoding="utf-8", errors="replace").encode()
+               ).hexdigest() == sha for f, sha in files.items())
+
+
 def serve_verbatim(root, flows: list[dict]) -> dict | None:
     """If a matched flow's QUESTION is a near-exact match for the query
     (qscore >= FLOW_SERVE_SIM — question-only vectors, so prose length can't
@@ -179,10 +192,6 @@ def serve_verbatim(root, flows: list[dict]) -> dict | None:
     for top in flows:
         if top.get("qscore", 0.0) < FLOW_SERVE_SIM:
             continue
-        root = Path(root)
-        ok = all((root / f).is_file() and hashlib.sha256(
-                 (root / f).read_text(encoding="utf-8", errors="replace").encode()).hexdigest() == sha
-                 for f, sha in top["sha"].items())
-        if ok:
+        if files_current(root, top["sha"]):
             return top
     return None
