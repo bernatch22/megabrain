@@ -154,7 +154,7 @@ def derive_questions(root: Path, limit: int = 6) -> list[str]:
     NO LLM, so any surface can call it per request. One question per central
     file, phrased as the walkthrough `ask` is good at."""
     seen, out = set(), []
-    for relpath, label in central_files(Path(root), limit * 2):
+    for _relpath, label in central_files(Path(root), limit * 2):
         q = f"How does {label} work end to end?"
         if q.lower() in seen:
             continue
