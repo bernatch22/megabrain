@@ -69,18 +69,27 @@ megabrain studio              #  every repo you've indexed → open http://local
 megabrain studio ~/repo       #  …or boot straight into one
 ```
 
-- **Search** — every related file ranked in ~200 ms; click one for a **chunk heatmap**
-  where signal glows and noise dims, code syntax-highlighted.
-- **Prune** — the money shot: what the engine **read** vs what it **ignored**, side by side.
-  Flip on **LLM rerank** to watch a cheap model drop the vocabulary-only matches (tests,
-  eval scripts) and reorder — fail-open to the deterministic list.
-- **Graph** — the repo as a **force-directed knowledge graph**: nodes coloured by community,
-  the core abstractions haloed, structural edges solid and semantic ones dotted. Drag, zoom,
-  click a file for its neighbours + symbols + real chunks, or type `A -> B` to trace the path
-  between two concepts.
+Three tabs, each one a view into a different half of the engine:
+
+- **Search** — the money shot: **`SIGNAL · KEPT` and `NOISE · PRUNED` side by side**, so you
+  see exactly what the engine read *and* what it threw away. Chunks scanned, retrieval ms,
+  and a kept/pruned badge on top. Flip on **✨ LLM rerank** and the header tells you which
+  model ran, how many tangential chunks it dropped and what it cost — or says
+  *"rerank failed open — deterministic list shown"* when the model misbehaves.
 - **Ask** — watch a broad question **fan out into parallel sub-agents**, their tool calls
   and prose streaming into per-agent cards, then a synthesis with the **real code spliced
   in** as it types.
+- **Graph** — the repo as a **force-directed knowledge graph**, in four modes: an
+  **overview** of community bubbles (click one to open it), a **community** expanded, a
+  **search subgraph** (real retrieval drawn as a graph), and a **path** between two
+  concepts with **`▶ Run the connection`** — a step-through of the call→definition chain,
+  hop by hop.
+- **The code navigator** (opens over any view) — a read-only IDE over the index. Click any
+  file — a search chunk, an ask agent's file pill, a graph node, a path step — and the
+  **whole file** opens: real bytes, syntax-highlighted, scrolled to the exact line. **Every
+  identifier with a resolvable definition is a link** (receiver-aware and import-anchored,
+  so `Path(x).resolve()` links to nothing because it's stdlib, while `store.stats()` jumps
+  to store.py), plus a back stack and a symbols rail.
 - **Providers, live** — Claude SDK · OpenRouter · Ollama, auto-detected. **Switch the
   narrator without leaving the page**, pick the model, and **start `ollama serve` in one
   click** to go fully local.
