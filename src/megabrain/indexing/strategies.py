@@ -60,7 +60,8 @@ from .graph import (
 # indexer re-extracts edges for every file, embeddings untouched.
 #   1: python + ts/js + php
 #   2: ruby (require/autoload) + go (imports + same-package siblings)
-EDGE_SCHEMA = 2
+#   3: ts/js resolves TypeScript-ESM `./x.js` specifiers to x.ts
+EDGE_SCHEMA = 3
 
 
 @runtime_checkable

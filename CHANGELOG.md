@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.15.1 — modern TypeScript had no graph either
+
+Reported on the demo: ky drew nothing. Its 52 files produced **zero** edges,
+and the cause was general enough to hit most current TS codebases.
+
+- **`./x.js` now resolves to `x.ts`.** TypeScript ESM requires importing the
+  COMPILED specifier — `from './core/Ky.js'` when the file on disk is
+  `core/Ky.ts` — under `moduleResolution: node16/nodenext`. `ts_edges` only
+  ever appended extensions, so it looked for `Ky.js.ts`, `Ky.js.js`, … and
+  found nothing. Every relative import in such a repo was silently dropped.
+  The resolver now rewrites `.js→.ts/.tsx/.d.ts`, `.mjs→.mts`, `.cjs→.cts`
+  before the older candidates, so extensionless specifiers, directory
+  `index` files and genuine `.js` files keep resolving exactly as before.
+  ky: 0 → 125 edges, god nodes `source/index.ts` and `source/core/Ky.ts`.
+- **`ts_edges` had no tests at all** — which is precisely how this shipped
+  looking correct. It now has four, covering the ESM rewrite, the shapes
+  that must NOT regress, bare/unresolvable specifiers, and parent traversal.
+- `EDGE_SCHEMA` 3: existing indexes re-graph themselves on the next ordinary
+  `index`, no re-embedding (ky regraphed 52 files for $0). The mechanism
+  added in 0.15.0 paying for itself one release later.
+
 ## 0.15.0 — Ruby and Go join the graph
 
 Ruby and Go repos indexed fine but drew an EMPTY graph: their strategies had

@@ -27,6 +27,32 @@ def _norm_rel(path: PurePosixPath) -> str:
     return "/".join(parts)
 
 
+# TypeScript ESM writes the COMPILED specifier: `from './core/Ky.js'` denotes
+# core/Ky.ts ON DISK — required by moduleResolution node16/nodenext, so it is
+# the norm in modern TS, not an edge case. Without this rewrite the resolver
+# only ever tried `Ky.js.ts`, `Ky.js.js`, … and every such repo indexed to an
+# EMPTY graph (ky: 0 edges across 52 files).
+_TS_REWRITE = {".js": (".ts", ".tsx", ".d.ts", ".js", ".jsx"),
+               ".jsx": (".tsx", ".jsx"),
+               ".mjs": (".mts", ".mjs"),
+               ".cjs": (".cts", ".cjs")}
+_TS_EXTS = (".ts", ".tsx", ".d.ts", ".js", ".jsx", ".mjs", ".cjs")
+
+
+def _ts_candidates(stem: str) -> list[str]:
+    """Repo files an import specifier could denote, best match first: the
+    TS-for-JS rewrite, then extensionless, then a directory's index."""
+    out: list[str] = []
+    ext = PurePosixPath(stem).suffix
+    if ext in _TS_REWRITE:
+        root = stem[:-len(ext)]
+        out += [root + e for e in _TS_REWRITE[ext]]
+    out += [stem + e for e in _TS_EXTS]
+    out += [f"{stem}/index{e}" for e in (".ts", ".tsx", ".js", ".jsx")]
+    out.append(stem)                     # already a full path
+    return out
+
+
 def ts_edges(rel: str, source: str, all_files: set[str]) -> list[tuple[str, str]]:
     """Resolve relative TS/JS imports to repo files. Returns [(dst, 'import')]."""
     base = PurePosixPath(rel).parent
@@ -36,10 +62,7 @@ def ts_edges(rel: str, source: str, all_files: set[str]) -> list[tuple[str, str]
         if not spec or not spec.startswith("."):
             continue
         stem = _norm_rel(base / spec)
-        for cand in (f"{stem}.ts", f"{stem}.tsx", f"{stem}.js", f"{stem}.jsx",
-                     f"{stem}.mjs", f"{stem}.cjs",
-                     f"{stem}/index.ts", f"{stem}/index.tsx", f"{stem}/index.js",
-                     stem):
+        for cand in _ts_candidates(stem):
             if cand in all_files and cand != rel:
                 out.add((cand, "import"))
                 break

@@ -2981,19 +2981,19 @@
    "chunks": [
     [
      "module",
-     "_norm_rel, ts_edges, python_package_index, _recv_base",
+     "_norm_rel, _ts_candidates, ts_edges, python_package_index, _recv_base",
      null,
      1,
-     87,
-     "megabrain > megabrain/indexing/graph.py > [_norm_rel, ts_edges, python_package_index, _recv_base]",
-     "c2f4eb0e12fbc09b744c69cb007fb51658baf3f4"
+     110,
+     "megabrain > megabrain/indexing/graph.py > [_norm_rel, _ts_candidates, ts_edges, python_package_index, _recv_base]",
+     "898037c0f7a48c559d7966bcc1fdac2c23c774f7"
     ],
     [
      "module",
      "extract_edges, php_class_index",
      null,
-     88,
-     194,
+     111,
+     217,
      "megabrain > megabrain/indexing/graph.py > [extract_edges, php_class_index]",
      "3b4bed2886154fd82b52b24cf46ea2be8fd661ec"
     ],
@@ -3001,8 +3001,8 @@
      "module",
      "ruby_edges, go_package_index, _go_primary_pkg, _go_import_dir",
      null,
-     195,
-     305,
+     218,
+     328,
      "megabrain > megabrain/indexing/graph.py > [ruby_edges, go_package_index, _go_primary_pkg, _go_import_dir]",
      "b990b2f6f8cf607d3ecf5565c0e193de3ea81102"
     ],
@@ -3010,13 +3010,13 @@
      "module",
      "go_edges, php_edges",
      null,
-     306,
-     386,
+     329,
+     409,
      "megabrain > megabrain/indexing/graph.py > [go_edges, php_edges]",
      "4ebda33676e8c66f29452a1e21a645b05c86e353"
     ]
    ],
-   "skeleton_sha": "5754e824d514952a07709c83e72529ca8e8441e7",
+   "skeleton_sha": "c04ee03c4a22df4f0830d6b79a5bc57ca4823953",
    "symbols": [
     [
      "_TS_IMPORT",
@@ -3033,178 +3033,199 @@
      "def _norm_rel(path: PurePosixPath) -> str"
     ],
     [
+     "_TS_REWRITE",
+     "constant",
+     35,
+     38,
+     "_TS_REWRITE = {'.js': ('.ts', '.tsx', '.d.ts', '.js', '.jsx'), '.jsx': ('.tsx', '.jsx'), '.mjs': ('.mts', '.mjs'), '.cjs"
+    ],
+    [
+     "_TS_EXTS",
+     "constant",
+     39,
+     39,
+     "_TS_EXTS = ('.ts', '.tsx', '.d.ts', '.js', '.jsx', '.mjs', '.cjs')"
+    ],
+    [
+     "_ts_candidates",
+     "function",
+     42,
+     53,
+     "def _ts_candidates(stem: str) -> list[str]"
+    ],
+    [
      "ts_edges",
      "function",
-     30,
-     46,
+     56,
+     69,
      "def ts_edges(rel: str, source: str, all_files: set[str]) -> list[tuple[str, str]]"
     ],
     [
      "python_package_index",
      "function",
-     49,
-     76,
+     72,
+     99,
      "def python_package_index(file_sources: dict[str, str], pkg_prefixes: set[str])"
     ],
     [
      "_recv_base",
      "function",
-     79,
-     87,
+     102,
+     110,
      "def _recv_base(func: ast.Attribute) -> str | None"
     ],
     [
      "extract_edges",
      "function",
-     90,
-     152,
+     113,
+     175,
      "def extract_edges(rel: str, tree: ast.Module, mod2file: dict[str, str], unique_defs: dict[str, str], qualdefs: dict[str, str], pkg_prefixes: set[str]) -> list[tuple[str, str]]"
     ],
     [
      "_PHP_NS",
      "constant",
-     157,
-     157,
+     180,
+     180,
      "_PHP_NS = re.compile('^\\\\s*namespace\\\\s+([A-Za-z_][\\\\w\\\\\\\\]*)\\\\s*[;{]', re.M)"
     ],
     [
      "_PHP_DECL",
      "constant",
-     158,
-     160,
+     181,
+     183,
      "_PHP_DECL = re.compile('^\\\\s*(?:abstract\\\\s+|final\\\\s+|readonly\\\\s+)*(?:class|interface|trait|enum)\\\\s+([A-Za-z_]\\\\w*)',"
     ],
     [
      "_PHP_USE",
      "constant",
-     164,
-     165,
+     187,
+     188,
      "_PHP_USE = re.compile('^\\\\s*use\\\\s+(?!function\\\\b|const\\\\b)([A-Za-z_][\\\\w\\\\\\\\]*)(?:\\\\s+as\\\\s+\\\\w+)?\\\\s*;', re.M)"
     ],
     [
      "_PHP_USE_GROUP",
      "constant",
-     167,
-     168,
+     190,
+     191,
      "_PHP_USE_GROUP = re.compile('^\\\\s*use\\\\s+(?!function\\\\b|const\\\\b)([A-Za-z_][\\\\w\\\\\\\\]*)\\\\\\\\\\\\{([^}]+)\\\\}\\\\s*;', re.M)"
     ],
     [
      "php_class_index",
      "function",
-     171,
-     184,
+     194,
+     207,
      "def php_class_index(sources: dict[str, str]) -> dict[str, str]"
     ],
     [
      "_RB_REQUIRE",
      "constant",
-     189,
-     190,
+     212,
+     213,
      "_RB_REQUIRE = re.compile('^\\\\s*(require_relative|require)\\\\s*\\\\(?\\\\s*[\\'\"]([^\\'\"]+)[\\'\"]', re.M)"
     ],
     [
      "_RB_AUTOLOAD",
      "constant",
-     193,
-     194,
+     216,
+     217,
      "_RB_AUTOLOAD = re.compile('^\\\\s*autoload\\\\s*\\\\(?\\\\s*:\\\\w+\\\\s*,\\\\s*[\\'\"]([^\\'\"]+)[\\'\"]', re.M)"
     ],
     [
      "ruby_edges",
      "function",
-     197,
-     226,
+     220,
+     249,
      "def ruby_edges(rel: str, source: str, all_files: set[str]) -> list[tuple[str, str]]"
     ],
     [
      "_GO_PKG",
      "constant",
-     231,
-     231,
+     254,
+     254,
      "_GO_PKG = re.compile('^package\\\\s+(\\\\w+)', re.M)"
     ],
     [
      "_GO_TOP_DECL",
      "constant",
-     235,
-     239,
+     258,
+     262,
      "_GO_TOP_DECL = re.compile('^(?:func\\\\s+([A-Za-z_]\\\\w*)\\\\s*[([]|type\\\\s+([A-Za-z_]\\\\w*)|var\\\\s+([A-Za-z_]\\\\w*)|const\\\\s+("
     ],
     [
      "_GO_DECL_BLOCK",
      "constant",
-     240,
-     240,
+     263,
+     263,
      "_GO_DECL_BLOCK = re.compile('^(?:var|const|type)\\\\s*\\\\(\\\\n(.*?)^\\\\)', re.M | re.S)"
     ],
     [
      "_GO_BLOCK_NAME",
      "constant",
-     241,
-     241,
+     264,
+     264,
      "_GO_BLOCK_NAME = re.compile('^\\\\t+([A-Za-z_]\\\\w*)|^ +([A-Za-z_]\\\\w*)', re.M)"
     ],
     [
      "_GO_IMPORT_ONE",
      "constant",
-     242,
-     242,
+     265,
+     265,
      "_GO_IMPORT_ONE = re.compile('^import\\\\s+(?:(\\\\w+|\\\\.|_)\\\\s+)?\"([^\"]+)\"', re.M)"
     ],
     [
      "_GO_IMPORT_BLOCK",
      "constant",
-     243,
-     243,
+     266,
+     266,
      "_GO_IMPORT_BLOCK = re.compile('^import\\\\s*\\\\(\\\\n(.*?)^\\\\)', re.M | re.S)"
     ],
     [
      "_GO_IMPORT_LINE",
      "constant",
-     244,
-     244,
+     267,
+     267,
      "_GO_IMPORT_LINE = re.compile('^\\\\s*(?:(\\\\w+|\\\\.|_)\\\\s+)?\"([^\"]+)\"', re.M)"
     ],
     [
      "_GO_STRIP",
      "constant",
-     247,
-     249,
+     270,
+     272,
      "_GO_STRIP = re.compile('//[^\\\\n]*|/\\\\*.*?\\\\*/|\"(?:[^\"\\\\\\\\\\\\n]|\\\\\\\\.)*\"|`[^`]*`|\\\\\\'(?:[^\\\\\\'\\\\\\\\\\\\n]|\\\\\\\\.)*\\\\\\'', re.S)"
     ],
     [
      "go_package_index",
      "function",
-     252,
-     281,
+     275,
+     304,
      "def go_package_index(sources: dict[str, str]) -> dict"
     ],
     [
      "_go_primary_pkg",
      "function",
-     284,
-     287,
+     307,
+     310,
      "def _go_primary_pkg(ctx: dict, d: str) -> str | None"
     ],
     [
      "_go_import_dir",
      "function",
-     290,
-     305,
+     313,
+     328,
      "def _go_import_dir(ctx: dict, path: str) -> str | None"
     ],
     [
      "go_edges",
      "function",
-     308,
-     361,
+     331,
+     384,
      "def go_edges(rel: str, source: str, ctx: dict) -> list[tuple[str, str]]"
     ],
     [
      "php_edges",
      "function",
-     364,
-     386,
+     387,
+     409,
      "def php_edges(rel: str, source: str, fqcn2file: dict[str, str]) -> list[tuple[str, str]]"
     ]
    ]
@@ -3489,16 +3510,16 @@
      "ChunkStrategy, PythonStrategy, TsJsStrategy",
      null,
      1,
-     125,
+     126,
      "megabrain > megabrain/indexing/strategies.py > [ChunkStrategy, PythonStrategy, TsJsStrategy]",
-     "e17699ae750c28479d0927fcc2e2b599abbcec0e"
+     "1cf699bc379b059b2d472a10899b5f9b08118012"
     ],
     [
      "module",
      "TreeSitterStrategy, MarkdownStrategy, PhpStrategy, RubyStrategy, GoStrategy, _grammar_available, build_registry",
      null,
-     126,
-     241,
+     127,
+     242,
      "megabrain > megabrain/indexing/strategies.py > [TreeSitterStrategy, MarkdownStrategy, PhpStrategy, RubyStrategy, GoStrategy, _grammar_available, build_registry]",
      "e43ed2429822e626177f32cfefa53e952d677bd0"
     ],
@@ -3506,404 +3527,404 @@
      "module",
      "builtin_strategy_for, strategy_for, all_exts, _sha256, _read_trust, trust_file, is_trusted, instantiate_strategies, load_repo_strategies",
      null,
-     242,
-     354,
+     243,
+     355,
      "megabrain > megabrain/indexing/strategies.py > [builtin_strategy_for, strategy_for, all_exts, _sha256, _read_trust, trust_file, is_trusted, instantiate_strategies, load_repo_strategies]",
      "62146387258da03a49321cc6850275cc0eb328c2"
     ]
    ],
-   "skeleton_sha": "df1e3e5cb2ddbe3991cfcdc71be340be654bb21f",
+   "skeleton_sha": "423e6ab1debcc888a0bf8b4b149da0c135300c56",
    "symbols": [
     [
      "EDGE_SCHEMA",
      "constant",
-     63,
-     63,
-     "EDGE_SCHEMA = 2"
+     64,
+     64,
+     "EDGE_SCHEMA = 3"
     ],
     [
      "ChunkStrategy",
      "class",
-     66,
-     81,
+     67,
+     82,
      "class ChunkStrategy(Protocol)"
     ],
     [
      "ChunkStrategy.exts",
      "class_attr",
-     75,
-     75,
+     76,
+     76,
      "exts: tuple[str, ...]"
     ],
     [
      "ChunkStrategy.chunk_file",
      "method",
-     77,
-     77,
+     78,
+     78,
      "def chunk_file(self, relpath: str, source: str) -> FileResult"
     ],
     [
      "ChunkStrategy.build_edge_ctx",
      "method",
-     79,
-     79,
+     80,
+     80,
      "def build_edge_ctx(self, sources: dict[str, str], repo_name: str)"
     ],
     [
      "ChunkStrategy.extract_edges",
      "method",
-     81,
-     81,
+     82,
+     82,
      "def extract_edges(self, relpath: str, source: str, ctx)"
     ],
     [
      "PythonStrategy",
      "class",
-     84,
-     108,
+     85,
+     109,
      "class PythonStrategy"
     ],
     [
      "PythonStrategy.exts",
      "class_attr",
-     85,
-     85,
+     86,
+     86,
      "exts = ('.py',)"
     ],
     [
      "PythonStrategy.__init__",
      "method",
-     87,
      88,
+     89,
      "def __init__(self, repo: str='')"
     ],
     [
      "PythonStrategy.chunk_file",
      "method",
-     90,
      91,
+     92,
      "def chunk_file(self, relpath: str, source: str) -> FileResult"
     ],
     [
      "PythonStrategy.build_edge_ctx",
      "method",
-     93,
-     101,
+     94,
+     102,
      "def build_edge_ctx(self, sources: dict[str, str], repo_name: str)"
     ],
     [
      "PythonStrategy.extract_edges",
      "method",
-     103,
-     108,
+     104,
+     109,
      "def extract_edges(self, relpath, source, ctx)"
     ],
     [
      "TsJsStrategy",
      "class",
-     111,
-     125,
+     112,
+     126,
      "class TsJsStrategy"
     ],
     [
      "TsJsStrategy.exts",
      "class_attr",
-     113,
-     113,
+     114,
+     114,
      "exts = ('.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs')"
     ],
     [
      "TsJsStrategy.__init__",
      "method",
-     115,
      116,
+     117,
      "def __init__(self, repo: str='')"
     ],
     [
      "TsJsStrategy.chunk_file",
      "method",
-     118,
      119,
+     120,
      "def chunk_file(self, relpath: str, source: str) -> FileResult"
     ],
     [
      "TsJsStrategy.build_edge_ctx",
      "method",
-     121,
      122,
+     123,
      "def build_edge_ctx(self, sources: dict[str, str], repo_name: str)"
     ],
     [
      "TsJsStrategy.extract_edges",
      "method",
-     124,
      125,
+     126,
      "def extract_edges(self, relpath, source, ctx)"
     ],
     [
      "TreeSitterStrategy",
      "class",
-     128,
-     146,
+     129,
+     147,
      "class TreeSitterStrategy"
     ],
     [
      "TreeSitterStrategy.__init__",
      "method",
-     134,
-     137,
+     135,
+     138,
      "def __init__(self, spec: LangSpec, exts: tuple[str, ...], repo: str='')"
     ],
     [
      "TreeSitterStrategy.chunk_file",
      "method",
-     139,
      140,
+     141,
      "def chunk_file(self, relpath: str, source: str) -> FileResult"
     ],
     [
      "TreeSitterStrategy.build_edge_ctx",
      "method",
-     142,
      143,
+     144,
      "def build_edge_ctx(self, sources: dict[str, str], repo_name: str)"
     ],
     [
      "TreeSitterStrategy.extract_edges",
      "method",
-     145,
      146,
+     147,
      "def extract_edges(self, relpath, source, ctx)"
     ],
     [
      "MarkdownStrategy",
      "class",
-     149,
-     162,
+     150,
+     163,
      "class MarkdownStrategy"
     ],
     [
      "MarkdownStrategy.exts",
      "class_attr",
-     150,
-     150,
+     151,
+     151,
      "exts = ('.md', '.markdown', '.mdx')"
     ],
     [
      "MarkdownStrategy.__init__",
      "method",
-     152,
      153,
+     154,
      "def __init__(self, repo: str='')"
     ],
     [
      "MarkdownStrategy.chunk_file",
      "method",
-     155,
      156,
+     157,
      "def chunk_file(self, relpath: str, source: str) -> FileResult"
     ],
     [
      "MarkdownStrategy.build_edge_ctx",
      "method",
-     158,
      159,
+     160,
      "def build_edge_ctx(self, sources: dict[str, str], repo_name: str)"
     ],
     [
      "MarkdownStrategy.extract_edges",
      "method",
-     161,
      162,
+     163,
      "def extract_edges(self, relpath, source, ctx)"
     ],
     [
      "PhpStrategy",
      "class",
-     165,
-     181,
+     166,
+     182,
      "class PhpStrategy(TreeSitterStrategy)"
     ],
     [
      "PhpStrategy.__init__",
      "method",
-     172,
-     175,
+     173,
+     176,
      "def __init__(self, repo: str='')"
     ],
     [
      "PhpStrategy.build_edge_ctx",
      "method",
-     177,
      178,
+     179,
      "def build_edge_ctx(self, sources: dict[str, str], repo_name: str)"
     ],
     [
      "PhpStrategy.extract_edges",
      "method",
-     180,
      181,
+     182,
      "def extract_edges(self, relpath, source, ctx)"
     ],
     [
      "RubyStrategy",
      "class",
-     184,
-     196,
+     185,
+     197,
      "class RubyStrategy(TreeSitterStrategy)"
     ],
     [
      "RubyStrategy.__init__",
      "method",
-     189,
      190,
+     191,
      "def __init__(self, repo: str='')"
     ],
     [
      "RubyStrategy.build_edge_ctx",
      "method",
-     192,
      193,
+     194,
      "def build_edge_ctx(self, sources: dict[str, str], repo_name: str)"
     ],
     [
      "RubyStrategy.extract_edges",
      "method",
-     195,
      196,
+     197,
      "def extract_edges(self, relpath, source, ctx)"
     ],
     [
      "GoStrategy",
      "class",
-     199,
-     212,
+     200,
+     213,
      "class GoStrategy(TreeSitterStrategy)"
     ],
     [
      "GoStrategy.__init__",
      "method",
-     205,
      206,
+     207,
      "def __init__(self, repo: str='')"
     ],
     [
      "GoStrategy.build_edge_ctx",
      "method",
-     208,
      209,
+     210,
      "def build_edge_ctx(self, sources: dict[str, str], repo_name: str)"
     ],
     [
      "GoStrategy.extract_edges",
      "method",
-     211,
      212,
+     213,
      "def extract_edges(self, relpath, source, ctx)"
     ],
     [
      "_TREE_SITTER_LANGS",
      "constant",
-     216,
-     218,
+     217,
+     219,
      "_TREE_SITTER_LANGS = [(RUST_SPEC, ('.rs',), 'tree_sitter_rust')]"
     ],
     [
      "_grammar_available",
      "function",
-     221,
      222,
+     223,
      "def _grammar_available(module: str) -> bool"
     ],
     [
      "build_registry",
      "function",
-     225,
-     241,
+     226,
+     242,
      "def build_registry(repo: str='', extra: Sequence[ChunkStrategy]=()) -> list"
     ],
     [
      "builtin_strategy_for",
      "function",
-     244,
-     252,
+     245,
+     253,
      "def builtin_strategy_for(ext: str, repo: str='')"
     ],
     [
      "strategy_for",
      "function",
-     255,
-     264,
+     256,
+     265,
      "def strategy_for(registry: list, relpath: str)"
     ],
     [
      "all_exts",
      "function",
-     267,
-     269,
+     268,
+     270,
      "def all_exts(registry: list) -> tuple[str, ...]"
     ],
     [
      "STRATEGY_DIR",
      "constant",
-     282,
-     282,
+     283,
+     283,
      "STRATEGY_DIR = '.megabrain/strategies'"
     ],
     [
      "TRUST_STORE",
      "constant",
-     283,
-     283,
+     284,
+     284,
      "TRUST_STORE = Path.home() / '.megabrain' / 'trust.json'"
     ],
     [
      "log",
      "constant",
-     285,
-     285,
+     286,
+     286,
      "log = logging.getLogger(__name__)"
     ],
     [
      "_sha256",
      "function",
-     288,
      289,
+     290,
      "def _sha256(path: Path) -> str"
     ],
     [
      "_read_trust",
      "function",
-     292,
-     296,
+     293,
+     297,
      "def _read_trust() -> dict"
     ],
     [
      "trust_file",
      "function",
-     299,
-     304,
+     300,
+     305,
      "def trust_file(path: Path) -> None"
     ],
     [
      "is_trusted",
      "function",
-     307,
-     309,
+     308,
+     310,
      "def is_trusted(path: Path) -> bool"
     ],
     [
      "instantiate_strategies",
      "function",
-     312,
-     331,
+     313,
+     332,
      "def instantiate_strategies(code: str, repo: str, origin: str) -> list"
     ],
     [
      "load_repo_strategies",
      "function",
-     334,
-     354,
+     335,
+     355,
      "def load_repo_strategies(root: Path, repo: str='') -> list"
     ]
    ]
