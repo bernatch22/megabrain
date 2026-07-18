@@ -71,11 +71,20 @@ megabrain studio              #  every repo you've indexed → open http://local
 megabrain studio ~/repo       #  …or boot straight into one
 ```
 
-https://github.com/user-attachments/assets/bf5be4f8-872e-4809-a16b-710f712b39eb
-
 <p align="center">
-  <em>megabrain studio, live — every repo you've indexed sits in the rail; light or dark
-  follows your GitHub theme, and the studio's.</em>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/bernatch22/megabrain/master/assets/studio-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/bernatch22/megabrain/master/assets/studio-light.png">
+    <img alt="megabrain studio's Ask tab on sinatra: a question served instantly from the flow cache, and a live synthesis — retrieval in 25ms over 14 files, then the cited answer streamed with the real code spliced in." src="https://raw.githubusercontent.com/bernatch22/megabrain/master/assets/studio-light.png" width="900">
+  </picture>
+</p>
+<p align="center">
+  <em>The Ask tab on <code>sinatra</code>: a repeat question served from the flow cache with no LLM,
+  and a live synthesis with retrieval stats up top and the real code spliced into the answer.
+  Light or dark follows your GitHub theme, and the studio's.</em>
+</p>
+<p align="center">
+  <a href="https://bernardocastro.dev/megabrain/demo/"><strong>→ bernardocastro.dev/megabrain/demo</strong></a> — the live demo, read-only
 </p>
 
 Three tabs, each one a view into a different half of the engine:
