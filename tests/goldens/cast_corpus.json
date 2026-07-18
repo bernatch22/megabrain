@@ -3686,7 +3686,7 @@
      1,
      91,
      "megabrain > megabrain/providers/__init__.py > [_bad_request, chat_provider, ask_model]",
-     "d2d493819e74486a0f12276e7f719de1ee796af4"
+     "85367a5a80ec908f046c1949c2dca252de907035"
     ],
     [
      "module",
@@ -3713,7 +3713,7 @@
      333,
      438,
      "megabrain > megabrain/providers/__init__.py > [ClaudeProvider, _ollama_probe, _active_label, detect, select]",
-     "b525b952df736ed614ae1972645f2b90c0a7157d"
+     "8cb976052f621d182843ec7b5ea5554ada740f7a"
     ],
     [
      "module",

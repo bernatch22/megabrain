@@ -55,7 +55,7 @@ where = ["src"]
 include = ["megabrain*"]
 
 [tool.setuptools.package-data]
-megabrain = ["py.typed", "server/ui/*"]
+megabrain = ["py.typed", "server/ui/*", "server/ui/icons/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

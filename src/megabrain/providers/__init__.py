@@ -76,12 +76,12 @@ def chat_provider() -> str:
 def ask_model() -> str:
     """ask narrator model — per-provider default when MEGABRAIN_ASK_MODEL is
     unset: Claude alias 'haiku' on the claude provider, else
-    google/gemini-3-flash-preview on OpenRouter (~2× faster than qwen3-coder on
-    a walkthrough at comparable quality — measured; see docs/GUIDE.md). Set
+    google/gemini-3.1-flash-lite-preview on OpenRouter (fastest/cheapest tier
+    at comparable quality — measured; see docs/GUIDE.md). Set
     MEGABRAIN_ASK_MODEL=qwen/qwen3-coder for the cheapest/broadest-citation
     option, or any OpenRouter slug."""
     return os.environ.get("MEGABRAIN_ASK_MODEL") or \
-        ("haiku" if chat_provider() == "claude" else "google/gemini-3-flash-preview")
+        ("haiku" if chat_provider() == "claude" else "google/gemini-3.1-flash-lite-preview")
 
 
 # Optional OpenRouter attribution (leaderboard only — not required to function).
@@ -405,7 +405,7 @@ def detect() -> dict:
         "claude": {"available": _REGISTRY["claude"].available(),
                    "default_model": "haiku"},
         "openrouter": {"available": bool(find_key(required=False)),
-                       "default_model": "google/gemini-3-flash-preview"},
+                       "default_model": "google/gemini-3.1-flash-lite-preview"},
         "ollama": _ollama_probe(),
         "active": {"provider": resolve().name, "label": _active_label(),
                    "model": ask_model()},

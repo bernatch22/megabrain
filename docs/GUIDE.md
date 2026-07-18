@@ -29,8 +29,9 @@ export OPENROUTER_API_KEY=sk-or-...        # env, or an `export …` line in ~/.
 That's it. Defaults reproduce the validated stack:
 - embeddings: `perplexity/pplx-embed-v1-0.6b` (1024-d int8) — **the measured
   best for code recall**; a bakeoff beat pplx-4b, codestral, openai-3-large, bge-m3.
-- ask/narration: `google/gemini-3-flash-preview` — **measured ~2× faster** than
-  qwen3-coder on a real walkthrough at comparable quality.
+- ask/narration: `google/gemini-3.1-flash-lite-preview` — the fastest/cheapest
+  tier on OpenRouter, at comparable narration quality to the flash-preview
+  measurements below.
 
 Override either by env: `MEGABRAIN_EMBED_MODEL`, `MEGABRAIN_ASK_MODEL`.
 
@@ -38,12 +39,13 @@ Override either by env: `MEGABRAIN_EMBED_MODEL`, `MEGABRAIN_ASK_MODEL`.
 
 | model | one `ask` | price /M (in / out) | ≈ cost/ask | notes |
 |---|---|---|---|---|
-| `google/gemini-3-flash-preview` *(default)* | **~6-7 s** | $0.50 / $3.00 | ~$0.007 | **2× faster**; tighter citations (~3 files); preview slug — if it 404s, set qwen below |
-| `qwen/qwen3-coder` | ~14 s | **$0.22 / $1.80** | **~$0.0035** | cheapest; broader citations (6-7 files) |
+| `google/gemini-3.1-flash-lite-preview` *(default)* | — | — | — | lite tier of the row below; preview slug — if it 404s, set qwen below |
+| `google/gemini-3-flash-preview` | **~6-7 s** | $0.50 / $3.00 | ~$0.007 | **2× faster** than qwen; tighter citations (~3 files); preview slug — if it 404s, set qwen below |
+| `qwen/qwen3-coder` | ~14 s | **$0.22 / $1.80** | **~$0.0035** | cheapest of the non-lite options; broader citations (6-7 files) |
 
-Both hit the same gold file on the barge-in test (neither cites a file sitting
-at bundle rank #12 — a *retrieval* limit, not the model's). Default is **gemini
-for speed**; set `MEGABRAIN_ASK_MODEL=qwen/qwen3-coder` for lowest cost /
+The flash-preview and qwen rows both hit the same gold file on the barge-in
+test (neither cites a file sitting at bundle rank #12 — a *retrieval* limit,
+not the model's). Set `MEGABRAIN_ASK_MODEL=qwen/qwen3-coder` for lowest cost /
 broader citations. Either way it's fractions of a cent per call — and with the
 flow cache on, a **repeated question costs $0 and ~0 ms** (next up).
 
@@ -53,7 +55,7 @@ flow cache on, a **repeated question costs $0 and ~0 ms** (next up).
 |---|---|
 | **Claude to narrate** (subscription credits, zero keys) | `pip install 'megabrain[claude]'` + be logged into Claude Code → auto-detected. Or `ANTHROPIC_API_KEY=…` to bill the API. Embeddings still need OpenRouter/local (Anthropic has no embeddings API). |
 | **A specific model** | `MEGABRAIN_ASK_MODEL=anthropic/claude-haiku-4.5` (any OpenRouter slug) |
-| **Gemini 3 Flash for ask (fast)** | `MEGABRAIN_ASK_MODEL=google/gemini-3-flash-preview` — **measured ~2× faster**: a real walkthrough in ~6-7 s vs qwen3-coder's ~14 s, clean and correct (cites a bit more tersely — ~3 files vs 7). Great default when you want snappy `ask`. Caveat: it's a *preview* slug (may change); `google/gemini-2.5-flash` is the stable fallback but only marginally faster than qwen (~13 s) since `ask` is output-bound. |
+| **Gemini 3 Flash for ask (fast, non-default)** | `MEGABRAIN_ASK_MODEL=google/gemini-3-flash-preview` — **measured ~2× faster**: a real walkthrough in ~6-7 s vs qwen3-coder's ~14 s, clean and correct (cites a bit more tersely — ~3 files vs 7). Caveat: it's a *preview* slug (may change); `google/gemini-2.5-flash` is the stable fallback but only marginally faster than qwen (~13 s) since `ask` is output-bound. |
 | **Fully local, no keys** (Ollama/LM Studio/vLLM) | see §2b below — `MEGABRAIN_EMBED_BASE_URL` + `MEGABRAIN_EMBED_MODEL` (+ `MEGABRAIN_CHAT_BASE_URL` for a local narrator too). Localhost needs no key. |
 | **Perplexity direct** (not via OpenRouter) | `MEGABRAIN_EMBED_BASE_URL=https://api.perplexity.ai` + `PERPLEXITY_API_KEY=…` (auto-picked) |
 
