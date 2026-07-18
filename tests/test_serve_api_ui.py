@@ -10,6 +10,7 @@ import threading
 import urllib.parse
 import urllib.request
 from http.server import ThreadingHTTPServer
+from pathlib import Path
 
 import pytest
 
@@ -255,6 +256,38 @@ def test_repos_merges_global_registry(server, tmp_path):
     assert by_name[repo.name]["loaded"] is True
     assert by_name["coldrepo"]["loaded"] is False
     assert by_name["coldrepo"]["chunks"] == 42
+
+
+def test_repos_dedups_a_differently_spelled_root(tmp_path, monkeypatch):
+    """The two sides of the /repos merge spell the same root differently: a
+    warm session reports `str(root)` (native separators, as the session was
+    constructed) while the registry stores `resolve().as_posix()`. On Windows
+    that is `C:\\x\\y` vs `C:/x/y`, so the raw string compare never matched and
+    the boot repo was listed TWICE — the cold copy landing last, reporting
+    loaded:false. Reproduced on any OS with an unresolved session root."""
+    from megabrain.server import http as http_mod
+    from megabrain.storage import registry
+
+    real = tmp_path / "myrepo"
+    (real / ".megabrain").mkdir(parents=True)
+    (real / ".megabrain" / "db.sqlite").write_bytes(b"")
+    registry.register(real, {"files": 3, "chunks": 9, "embed_model": "m"})
+
+    class _StubSession:                      # the session holds it unresolved
+        root = tmp_path / "myrepo" / ".." / "myrepo"
+
+        def with_state(self, fn):
+            raise RuntimeError("not indexed")
+
+    class _StubReg:
+        def list(self):
+            return [_StubSession()]
+
+    monkeypatch.setattr(http_mod, "RepoSession", _StubSession, raising=False)
+    out = http_mod._all_repos(_StubReg())
+    mine = [r for r in out if Path(r["root"]).resolve() == real.resolve()]
+    assert len(mine) == 1, f"root listed {len(mine)}x: {mine}"
+    assert mine[0]["loaded"] is True
 
 
 def test_graph_map_route(server, monkeypatch):

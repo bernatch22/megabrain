@@ -5497,25 +5497,25 @@
      "_http_error, Registry",
      null,
      1,
-     107,
+     108,
      "megabrain > megabrain/server/http.py > [_http_error, Registry]",
-     "c0d8acea7977fa459d4da913d5a0cf6a7207b8d6"
+     "a6b62a0ae36dd0105473b27b6a3b81b09fbfd933"
     ],
     [
      "module",
-     "_all_repos, _repo_stats",
+     "_root_key, _all_repos, _repo_stats",
      null,
-     108,
-     141,
-     "megabrain > megabrain/server/http.py > [_all_repos, _repo_stats]",
-     "337298ee13a1ead8c072a6df6221907caff539ff"
+     109,
+     155,
+     "megabrain > megabrain/server/http.py > [_root_key, _all_repos, _repo_stats]",
+     "66b479ea233e888c967f10d5905246899e35667a"
     ],
     [
      "block",
      "_make_handler",
      "1/4",
-     142,
-     272,
+     156,
+     286,
      "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True)",
      "03888581d1d19ea132f39980f7c69081541775a1"
     ],
@@ -5523,8 +5523,8 @@
      "block",
      "_make_handler",
      "2/4",
-     273,
-     403,
+     287,
+     417,
      "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True)",
      "a65fd614a32f75d699f43172ed679e5f677cacc3"
     ],
@@ -5532,8 +5532,8 @@
      "block",
      "_make_handler",
      "3/4",
-     404,
-     495,
+     418,
+     509,
      "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True)",
      "fe5fff2ff4b1f0e50658226b42fd87ae7abb29dd"
     ],
@@ -5541,8 +5541,8 @@
      "block",
      "_make_handler",
      "4/4",
-     496,
-     497,
+     510,
+     511,
      "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True)",
      "5ebaec407bc18bc3fde033e8db1a20bf3e3ec3f8"
     ],
@@ -5550,8 +5550,8 @@
      "module",
      "_valid_model, _native_pick_folder, _scan_report, _merge_ignore",
      null,
-     498,
-     572,
+     512,
+     586,
      "megabrain > megabrain/server/http.py > [_valid_model, _native_pick_folder, _scan_report, _merge_ignore]",
      "1a60519fd169e3894bbb17ae8e132a99f7846295"
     ],
@@ -5559,131 +5559,138 @@
      "function",
      "serve",
      null,
-     573,
-     646,
+     587,
+     660,
      "megabrain > megabrain/server/http.py > def serve(root, port: int=2134, host: str='127.0.0.1', cors: str | None=None, enable_llm: bool=True, token: str | None=None, serve_ui: bool=True) -> None",
      "dbf80b262c8416184d62171bf0d91b9a06156857"
     ]
    ],
-   "skeleton_sha": "346e7cd6992a62ba01d1e86232e0c27e7f684959",
+   "skeleton_sha": "8fe96e566d19873766a1e9bde4f65c9173d80c3c",
    "symbols": [
     [
      "log",
      "constant",
-     55,
-     55,
+     56,
+     56,
      "log = logging.getLogger(__name__)"
     ],
     [
      "UI_DIR",
      "constant",
-     57,
-     57,
+     58,
+     58,
      "UI_DIR = Path(__file__).parent / 'ui'"
     ],
     [
      "_CTYPES",
      "constant",
-     58,
-     61,
+     59,
+     62,
      "_CTYPES = {'.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json"
     ],
     [
      "_http_error",
      "function",
-     64,
-     69,
+     65,
+     70,
      "def _http_error(msg: str, status: int) -> MegabrainError"
     ],
     [
      "Registry",
      "class",
-     72,
-     107,
+     73,
+     108,
      "class Registry"
     ],
     [
      "Registry.__init__",
      "method",
-     78,
-     84,
+     79,
+     85,
      "def __init__(self, boot: RepoSession | None)"
     ],
     [
      "Registry.get",
      "method",
-     86,
-     92,
+     87,
+     93,
      "def get(self, name: str | None) -> RepoSession"
     ],
     [
      "Registry.add",
      "method",
-     94,
-     103,
+     95,
+     104,
      "def add(self, root: Path) -> RepoSession"
     ],
     [
      "Registry.list",
      "method",
-     105,
-     107,
+     106,
+     108,
      "def list(self) -> list[RepoSession]"
+    ],
+    [
+     "_root_key",
+     "function",
+     111,
+     121,
+     "def _root_key(p) -> str"
     ],
     [
      "_all_repos",
      "function",
-     110,
-     128,
+     124,
+     142,
      "def _all_repos(reg: Registry) -> list[dict]"
     ],
     [
      "_repo_stats",
      "function",
-     131,
-     141,
+     145,
+     155,
      "def _repo_stats(s: RepoSession) -> dict"
     ],
     [
      "_make_handler",
      "function",
-     146,
-     497,
+     160,
+     511,
      "def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True)"
     ],
     [
      "_valid_model",
      "function",
-     500,
-     511,
+     514,
+     525,
      "def _valid_model(model) -> str | None"
     ],
     [
      "_native_pick_folder",
      "function",
-     514,
-     550,
+     528,
+     564,
      "def _native_pick_folder() -> dict"
     ],
     [
      "_scan_report",
      "function",
-     553,
-     559,
+     567,
+     573,
      "def _scan_report(path: str) -> dict"
     ],
     [
      "_merge_ignore",
      "function",
-     562,
-     572,
+     576,
+     586,
      "def _merge_ignore(root: Path, ignore: str) -> None"
     ],
     [
      "serve",
      "function",
-     575,
-     646,
+     589,
+     660,
      "def serve(root, port: int=2134, host: str='127.0.0.1', cors: str | None=None, enable_llm: bool=True, token: str | None=None, serve_ui: bool=True) -> None"
     ]
    ]

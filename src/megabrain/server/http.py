@@ -41,6 +41,7 @@ from __future__ import annotations
 import json
 import logging
 import mimetypes
+import os
 import threading
 import time
 import urllib.parse
@@ -107,17 +108,30 @@ class Registry:
             return list(self._by_name.values())
 
 
+def _root_key(p) -> str:
+    """Canonical identity for a repo root, for DEDUP ONLY (never displayed).
+    The two sides of the merge spell the same path differently — sessions
+    carry `str(root)` (native separators) while the registry stores
+    `resolve().as_posix()` — which on Windows means `C:\\x\\y` vs `C:/x/y`, so
+    a raw string compare listed the boot repo twice (once warm, once cold).
+    normcase also folds Windows' case-insensitivity; on POSIX it is a no-op."""
+    try:
+        return os.path.normcase(Path(p).resolve().as_posix())
+    except Exception:                     # unresolvable path: compare as given
+        return os.path.normcase(str(p))
+
+
 def _all_repos(reg: Registry) -> list[dict]:
     """/repos = the repos THIS server holds warm (loaded: true) + every other
     repo in the machine-global registry (~/.megabrain/registry.json,
     loaded: false). Selecting an unloaded one in the studio goes through the
     existing POST /repos/add — the server never eagerly loads N repos at boot."""
     loaded = [{**_repo_stats(s), "loaded": True} for s in reg.list()]
-    have = {r["root"] for r in loaded}
+    have = {_root_key(r["root"]) for r in loaded}
     try:
         from ..storage.registry import list_repos
         for e in list_repos():
-            if e["path"] not in have:
+            if _root_key(e["path"]) not in have:
                 loaded.append({"name": e["name"], "root": e["path"],
                                "files": e.get("files", 0),
                                "chunks": e.get("chunks", 0),
