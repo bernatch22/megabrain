@@ -25,45 +25,85 @@ log = logging.getLogger(__name__)
 
 
 _TEST_SEG = ("test", "tests", "spec", "specs", "__tests__", "example", "examples",
-             "benchmark", "benchmarks", "vendor", "node_modules")
+             "benchmark", "benchmarks", "vendor", "node_modules", "fixtures",
+             "testdata", "mocks", "__mocks__")
+# Directory conventions are only half of it: Go/Rust put tests in the SAME
+# package as `x_test.go`, JS as `x.test.ts` / `x.spec.ts`, python as
+# `test_x.py`. Filtering by directory alone let gin seed questions off
+# TestRenderJSON (real output before this).
+_TEST_FILE = ("_test.", ".test.", ".spec.", "_spec.", "_bench.", ".bench.",
+              ".pb.", "_pb2.", ".generated.", "_generated.")   # generated code too
 
 
 def _is_side_path(relpath: str) -> bool:
     """Tests/examples/vendored code describe the repo's edges, not its main
     workflows — never seed a starter question from them."""
-    return any(seg in _TEST_SEG for seg in relpath.lower().split("/")[:-1])
+    low = relpath.lower()
+    if any(seg in _TEST_SEG for seg in low.split("/")[:-1]):
+        return True
+    base = low.rsplit("/", 1)[-1]
+    return base.startswith("test_") or any(m in base for m in _TEST_FILE)
 
 
-_NAMEABLE = ("class", "function", "async_function", "interface", "struct", "module")
+# A docline is PROSE (a module docstring). Many languages have none, and then
+# the skeleton's first line is already a declaration — `const (`, `type appkey
+# struct`, `func TestX(t *testing.T)` — which produced questions like "How
+# does const ( work end to end?" until this guard existed.
+_DECL_KW = ("func", "const", "var", "type", "class", "def", "struct", "interface",
+            "import", "export", "package", "public", "private", "static", "async",
+            "let", "return", "from", "module", "fn", "impl", "pub", "use", "namespace")
 
 
-def _label(docline: str, symbols: list[tuple[str, str]], relpath: str) -> str:
-    """A short noun phrase naming what a file IS, for the question template.
+def _is_prose(line: str) -> bool:
+    if not line or any(c in line for c in "(){}=;<>[]"):
+        return False
+    first = line.split(" ", 1)[0].rstrip(":").lower()
+    if first in _DECL_KW:
+        return False
+    return " " in line.strip()          # a bare identifier is a name, not a summary
 
-    The module docline is the best source, but it's written as prose — take
-    only its head clause. The separators matter: a docline like
-    "SQLite storage: chunks, vectors, skeletons, symbols, edges, file hashes"
-    is a NAME followed by an inventory, so cutting at ':' yields the concept
-    ("SQLite storage") while keeping the whole line would blow any length cap
-    and silently fall through to a symbol name."""
+
+# Definition kinds that NAME a concept, best first: a type is what a file is
+# "about" more often than the first function is. Go emits structs/interfaces as
+# `type`, TS as `type`/`interface`/`class` — all three must be here or a
+# language falls through to its constants ("How does OUTLINE_KINDS work?").
+_NAMEABLE = ("class", "interface", "struct", "type", "module",
+             "function", "async_function", "method")
+
+
+def _label_candidates(docline: str, symbols: list[tuple[str, str, int]],
+                      relpath: str) -> list[str]:
+    """Names for what a file IS, best first — a LIST, because one repo can
+    give many files the same top name.
+
+    Sinatra is the case that forced this: every file's widest symbol is the
+    enclosing `Sinatra` module, so a single-label API collapsed the whole repo
+    to one question. Callers walk the candidates and take the first unused."""
+    out = []
     d = docline.strip().strip('"\'')
-    for cut in ("—", ":", " - ", ". "):
-        if cut in d:
-            d = d.split(cut, 1)[0]
-    d = d.strip().rstrip(".")
-    if 3 <= len(d) <= 80:
-        # The label sits mid-sentence ("How does X work…"), so a plain
-        # capitalized word reads better lowercased — but only if it IS plain:
-        # "OpenRouter"/"SQLite"/"JSON" carry internal caps on purpose.
-        head = d.split(" ", 1)[0]
-        return d[0].lower() + d[1:] if head[1:].islower() else d
-    # No usable docline: name the file by its primary DEFINITION. Constants are
-    # skipped — "How does OUTLINE_KINDS work end to end?" names a tuple, not a
-    # flow (real output before this filter).
-    for name, kind in symbols:
-        if kind in _NAMEABLE:
-            return name
-    return relpath.rsplit("/", 1)[-1].rsplit(".", 1)[0].replace("_", " ")
+    if _is_prose(d):
+        # A docline is often a full SENTENCE ("click is a simple Python module
+        # inspired by the stdlib optparse…"); the label goes mid-sentence, so
+        # keep only the subject — cutting at the copula turns that into "click".
+        for cut in ("—", ":", " - ", ". ", " is ", " are ", " was ", " provides "):
+            if cut in d:
+                d = d.split(cut, 1)[0]
+        d = d.strip().rstrip(".")
+        if 3 <= len(d) <= 80:
+            # The label sits mid-sentence ("How does X work…"), so a plain
+            # capitalized word reads better lowercased — but only if it IS
+            # plain: "OpenRouter"/"SQLite"/"JSON" carry internal caps on purpose.
+            head = d.split(" ", 1)[0]
+            out.append(d[0].lower() + d[1:] if head[1:].islower() else d)
+    # Definitions, DOMINANT first — the widest span, not the first by line.
+    # Files routinely open with a small private helper (`logerror`,
+    # `dict_to_sequence`); naming the file after it described its least
+    # interesting part.
+    named = sorted((s for s in symbols if s[1] in _NAMEABLE),
+                   key=lambda s: (-s[2], _NAMEABLE.index(s[1])))
+    out += [n for n, _k, _sp in named]
+    out.append(relpath.rsplit("/", 1)[-1].rsplit(".", 1)[0].replace("_", " "))
+    return [x for x in dict.fromkeys(out) if x]
 
 
 def central_files(root: Path, limit: int) -> list[tuple[str, str]]:
@@ -82,10 +122,10 @@ def central_files(root: Path, limit: int) -> list[tuple[str, str]]:
             deg[src] = deg.get(src, 0) + 1
             deg[dst] = deg.get(dst, 0) + 1
         rows = store.db.execute("SELECT path, skeleton FROM files").fetchall()
-        syms: dict[str, list[tuple[str, str]]] = {}
-        for f, n, k in store.db.execute(
-                "SELECT file, name, kind FROM symbols ORDER BY file, line"):
-            syms.setdefault(f, []).append((n, k))
+        syms: dict[str, list[tuple[str, str, int]]] = {}   # (name, kind, span)
+        for f, n, k, ln, end in store.db.execute(
+                "SELECT file, name, kind, line, end_line FROM symbols ORDER BY file, line"):
+            syms.setdefault(f, []).append((n, k, max(0, (end or ln) - ln)))
     docline = {}
     for path, skel in rows:
         docline[path] = next((ln.strip() for ln in (skel or "").splitlines()
@@ -94,7 +134,19 @@ def central_files(root: Path, limit: int) -> list[tuple[str, str]]:
     # degree is the stronger signal where it exists; symbol count keeps
     # graph-less languages ranked by substance rather than insertion order.
     ranked = sorted(cands, key=lambda f: (-(deg.get(f, 0) * 3 + len(syms.get(f, []))), f))
-    return [(f, _label(docline.get(f, ""), syms.get(f, []), f)) for f in ranked[:limit]]
+    out, used = [], set()
+    for f in ranked:
+        if len(out) >= limit:
+            break
+        # first candidate no earlier file claimed — otherwise a repo whose
+        # files all sit inside one module yields one label, N times
+        label = next((c for c in _label_candidates(docline.get(f, ""), syms.get(f, []), f)
+                      if c.lower() not in used), None)
+        if label is None:
+            continue
+        used.add(label.lower())
+        out.append((f, label))
+    return out
 
 
 def derive_questions(root: Path, limit: int = 6) -> list[str]:

@@ -688,24 +688,33 @@
    "chunks": [
     [
      "module",
-     "_is_side_path, _label, central_files, derive_questions",
+     "_is_side_path, _is_prose, _label_candidates",
      null,
      1,
-     113,
-     "megabrain > megabrain/ask/warmup.py > [_is_side_path, _label, central_files, derive_questions]",
-     "7f408edef42b67a557917ce0d8060e3624820fc2"
+     106,
+     "megabrain > megabrain/ask/warmup.py > [_is_side_path, _is_prose, _label_candidates]",
+     "d8f98327af4286ce39f139e7cf5f5456fd873284"
     ],
     [
      "module",
-     "authored_questions, _research_questions, warm_flows, refresh_stale",
+     "central_files, derive_questions, authored_questions, _research_questions",
      null,
-     114,
-     223,
-     "megabrain > megabrain/ask/warmup.py > [authored_questions, _research_questions, warm_flows, refresh_stale]",
-     "082280e2b99e430bd326184b1ce6f422c6a930be"
+     107,
+     210,
+     "megabrain > megabrain/ask/warmup.py > [central_files, derive_questions, authored_questions, _research_questions]",
+     "1c5906ed15641791c70b44365d670cee9ab35180"
+    ],
+    [
+     "module",
+     "warm_flows, refresh_stale",
+     null,
+     211,
+     275,
+     "megabrain > megabrain/ask/warmup.py > [warm_flows, refresh_stale]",
+     "de891423c39046bd9e084cc7107c3cb661565a1e"
     ]
    ],
-   "skeleton_sha": "5882f66b7114dd15495d7059ae5d1087b2ed9b6f",
+   "skeleton_sha": "f1144c9618f12e76bf0a0d978575dfc3acda7541",
    "symbols": [
     [
      "log",
@@ -718,70 +727,91 @@
      "_TEST_SEG",
      "constant",
      27,
-     28,
+     29,
      "_TEST_SEG = ('test', 'tests', 'spec', 'specs', '__tests__', 'example', 'examples', 'benchmark', 'benchmarks', 'vendor', "
+    ],
+    [
+     "_TEST_FILE",
+     "constant",
+     34,
+     35,
+     "_TEST_FILE = ('_test.', '.test.', '.spec.', '_spec.', '_bench.', '.bench.', '.pb.', '_pb2.', '.generated.', '_generated."
     ],
     [
      "_is_side_path",
      "function",
-     31,
-     34,
+     38,
+     45,
      "def _is_side_path(relpath: str) -> bool"
+    ],
+    [
+     "_DECL_KW",
+     "constant",
+     52,
+     54,
+     "_DECL_KW = ('func', 'const', 'var', 'type', 'class', 'def', 'struct', 'interface', 'import', 'export', 'package', 'publi"
+    ],
+    [
+     "_is_prose",
+     "function",
+     57,
+     63,
+     "def _is_prose(line: str) -> bool"
     ],
     [
      "_NAMEABLE",
      "constant",
-     37,
-     37,
-     "_NAMEABLE = ('class', 'function', 'async_function', 'interface', 'struct', 'module')"
+     70,
+     71,
+     "_NAMEABLE = ('class', 'interface', 'struct', 'type', 'module', 'function', 'async_function', 'method')"
     ],
     [
-     "_label",
+     "_label_candidates",
      "function",
-     40,
-     66,
-     "def _label(docline: str, symbols: list[tuple[str, str]], relpath: str) -> str"
+     74,
+     106,
+     "def _label_candidates(docline: str, symbols: list[tuple[str, str, int]], relpath: str) -> list[str]"
     ],
     [
      "central_files",
      "function",
-     69,
-     97,
+     109,
+     149,
      "def central_files(root: Path, limit: int) -> list[tuple[str, str]]"
     ],
     [
      "derive_questions",
      "function",
-     100,
-     113,
+     152,
+     165,
      "def derive_questions(root: Path, limit: int=6) -> list[str]"
     ],
     [
      "authored_questions",
      "function",
-     116,
-     126,
+     168,
+     178,
      "def authored_questions(root: Path) -> list[str]"
     ],
     [
      "_research_questions",
      "function",
-     129,
-     158,
+     181,
+     210,
      "def _research_questions(root: Path, limit: int) -> list[str]"
     ],
     [
      "warm_flows",
      "function",
-     161,
-     190,
+     213,
+     242,
      "def warm_flows(root: Path, limit: int=6, ask_fn=None, quiet: bool=False) -> dict"
     ],
     [
      "refresh_stale",
      "function",
-     193,
-     223,
+     245,
+     275,
      "def refresh_stale(root, ask_fn=None, quiet: bool=False) -> dict"
     ]
    ]

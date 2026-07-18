@@ -81,3 +81,57 @@ def test_limit_is_honored_and_questions_are_unique(tiny_repo):
     qs = derive_questions(tiny_repo, 2)
     assert len(qs) <= 2
     assert len(set(qs)) == len(qs)
+
+
+# ── the languages that broke it in production ──────────────────────────────
+# Python files carry a module docstring, so the label logic looked fine until
+# it hit Go and TypeScript — which have none, leaving the skeleton's first
+# line a raw declaration. Live output on the demo box before the fix:
+#   "How does const ( work end to end?"
+#   "How does var _ context.Context = (*Context)(nil) work end to end?"
+#   "How does func TestRenderJSON(t *testing.T) work end to end?"
+
+def test_a_declaration_is_never_mistaken_for_a_docline():
+    from megabrain.ask.warmup import _is_prose
+    for decl in ("const (", "var _ context.Context = (*Context)(nil)",
+                 "func TestMappingBaseTypes(t *testing.T)", "type appkey struct",
+                 "const maxErrorResponseBodySize = 10 * 1024 * 1024;",
+                 "type InitHook = (options", "export function foo()"):
+        assert not _is_prose(decl), decl
+    for prose in ("SQLite storage: chunks, vectors, skeletons",
+                  "Shared plumbing for the bakeoff scripts",
+                  "The classic Ruby DSL for quick web apps"):
+        assert _is_prose(prose), prose
+
+
+def test_docline_less_language_falls_back_to_a_named_concept(tmp_path, fake_embedder):
+    """Go: no module docstring, structs indexed as kind `type`. The label must
+    be the concept the file defines, never its first constant or signature."""
+    (tmp_path / "context.go").write_text(
+        'package gin\n\n'
+        'const AuthUserKey = "user"\n\n'
+        'type Context struct {\n\tWriter int\n}\n\n'
+        'func (c *Context) Next() {\n\tc.index++\n}\n\n'
+        'func (c *Context) JSON(code int) {\n\tc.render(code)\n}\n')
+    from megabrain.indexing.indexer import index_repo
+    index_repo(tmp_path)
+    label = dict(central_files(tmp_path, 5)).get("context.go") \
+        or central_files(tmp_path, 5)[0][1]
+    assert label == "Context", label
+    q = derive_questions(tmp_path, 1)[0]
+    assert q == "How does Context work end to end?", q
+
+
+def test_same_package_test_files_are_excluded(tmp_path, fake_embedder):
+    """Go/JS keep tests beside the code (`x_test.go`, `x.test.ts`), so a
+    directory-only filter misses them — gin seeded questions off TestRenderJSON."""
+    (tmp_path / "router.go").write_text(
+        'package gin\n\ntype Engine struct {\n\tt int\n}\n')
+    (tmp_path / "router_test.go").write_text(
+        "".join(f'func TestCase{i}(t *testing.T) {{\n\treturn\n}}\n\n' for i in range(30)))
+    (tmp_path / "helper.test.ts").write_text(
+        "".join(f'export function spec{i}() {{ return {i}; }}\n' for i in range(30)))
+    from megabrain.indexing.indexer import index_repo
+    index_repo(tmp_path)
+    picked = [f for f, _ in central_files(tmp_path, 5)]
+    assert picked == ["router.go"], picked

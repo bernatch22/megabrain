@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.13.1 — derived questions that read like questions
+
+Measured against the demo box's real repos, 0.13.0's derived tier produced
+garbage on every language WITHOUT a module docstring — the skeleton's first
+line is already a declaration there, and it was being used as prose:
+
+    How does const ( work end to end?                       (ky)
+    How does var _ context.Context = (*Context)(nil) …?     (gin)
+    How does func TestRenderJSON(t *testing.T) …?           (gin)
+
+- **A declaration is no longer mistaken for a docline.** Go/TS/Rust files
+  fall straight to naming the file by its dominant definition instead.
+- **Symbol kinds cover every language.** `type` (Go structs, TS aliases) and
+  `interface` were missing from the nameable set, so those languages fell
+  through to their constants.
+- **The DOMINANT definition names the file, not the first one.** Files open
+  with small private helpers (`logerror`, `dict_to_sequence`) — the widest
+  span is what the file is about (`Engine`, `Ky`, `Session`, `Context`).
+- **Same-package test and generated files are excluded.** Go/JS keep tests
+  beside the code (`x_test.go`, `x.test.ts`) and a directory-only filter
+  missed them; `.pb.go`/`_pb2.py` generated code is out too.
+- **Labels no longer collide.** Every sinatra file's widest symbol is the
+  enclosing `Sinatra` module, so dedupe collapsed the whole repo to ONE
+  question; each file now takes the best name no earlier file claimed.
+- A docline that is a sentence ("click is a simple Python module inspired
+  by…") is cut at the copula, so the label is the subject ("click").
+
 ## 0.13.0 — every repo gets starter questions
 
 - **`GET /queries` now answers for EVERY indexed repo**, in three tiers, so
