@@ -1412,28 +1412,44 @@
   }
 
   // minimal markdown → html (paragraphs, ## headings, fenced code, **bold**, `code`)
+  // Fences are scanned LINE BY LINE, CommonMark-style: a run of N backticks
+  // opens a block that only a line of N-or-more backticks closes. Splitting on
+  // /```/ and alternating by parity inverted prose and code for the rest of the
+  // answer as soon as one cited chunk carried its own fences (a markdown doc).
   function md(src) {
     if (!src) return "";
-    const parts = String(src).split(/```/);
-    let out = "";
-    for (let i = 0; i < parts.length; i++) {
-      if (i % 2 === 1) {                       // fenced code block
-        const nl = parts[i].indexOf("\n");
-        const lang = langAlias(nl >= 0 ? parts[i].slice(0, nl).trim() : "");
-        const code = (nl >= 0 ? parts[i].slice(nl + 1) : parts[i]).replace(/\n$/, "");
-        out += `<pre class="mono">${hl(code, lang)}</pre>`;
-      } else {
-        out += inlineMd(parts[i]);
-      }
+    const lines = String(src).split("\n");
+    let out = "", prose = [], i = 0;
+    const flush = () => { if (prose.length) { out += inlineMd(prose.join("\n")); prose = []; } };
+    while (i < lines.length) {
+      // an info string may not contain a backtick — that's what tells a fence
+      // apart from a line that merely starts with inline code
+      const open = lines[i].match(/^ {0,3}(`{3,})([^`]*)$/);
+      if (!open) { prose.push(lines[i++]); continue; }
+      flush();
+      const close = new RegExp("^ {0,3}`{" + open[1].length + ",}\\s*$");
+      const body = [];
+      for (i++; i < lines.length && !close.test(lines[i]); i++) body.push(lines[i]);
+      i++;                                     // consume the closing fence (or EOF)
+      out += `<pre class="mono">${paint(body.join("\n"), open[2].trim())}</pre>`;
     }
+    flush();
     return out;
   }
+  // Code gets the scanner, prose gets escaped as-is: running a code scanner over
+  // markdown turned an apostrophe ("the request's Accept header") into a string
+  // span that swallowed everything after it.
+  const NOT_CODE = new Set(["", "markdown", "md", "text", "txt", "plain"]);
+  const paint = (code, info) =>
+    NOT_CODE.has(info.toLowerCase()) ? esc(code) : hl(code, langAlias(info));
+
   function inlineMd(t) {
-    const blocks = t.split(/\n{2,}/);
-    return blocks.map((b) => {
+    return t.split(/\n{2,}/).map((b) => {
       b = b.trim(); if (!b) return "";
-      if (b.startsWith("## ")) return `<h2>${fmt(b.slice(3))}</h2>`;
-      if (b.startsWith("# ")) return `<h2>${fmt(b.slice(2))}</h2>`;
+      // An ATX heading ends at ITS OWN newline. Wrapping the whole blank-line
+      // block in the <h2> swallowed the paragraph the model wrote right under it.
+      const m = b.match(/^#{1,6}[ \t]+([^\n]*)\n?([\s\S]*)$/);
+      if (m) return `<h2>${fmt(m[1].trim())}</h2>` + inlineMd(m[2]);
       return `<p>${fmt(b)}</p>`;
     }).join("");
   }

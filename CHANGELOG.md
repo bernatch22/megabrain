@@ -1,5 +1,39 @@
 # Changelog
 
+## 0.17.2 — one cited markdown doc broke every answer after it
+
+Asked in `--docs` mode, the studio rendered the walkthrough inside out: the
+prose of a cited `README.md` came out as a code block, the Ruby inside it came
+out as paragraphs, and everything below stayed inverted to the end of the
+answer. Four defects in a row, three of them ours by construction.
+
+**The fence was fixed-width (`ask/narrator.py`).** `_code_block` always wrapped
+the citation in exactly three backticks. A cited markdown doc carries its OWN
+```lang fences, so the first inner one closed the block: the markdown leaving
+the splicer was already invalid — for the CLI, the flow cache and anyone
+reading a cached answer, not just the studio. The fence now sizes to its
+content (`max(3, longest_backtick_run + 1)`), which is CommonMark's own rule
+for nesting fenced code.
+
+**The studio's parser could not have recovered anyway.** `md()` split on
+`/```/` and alternated code/prose by parity, so every fence was a toggle and
+one stray run inverted the rest of the answer. It now scans line by line: a run
+of N backticks opens a block that only a line of N-or-more backticks closes.
+
+**Headings ate the paragraph under them.** `inlineMd` wrapped a whole
+blank-line-delimited block in `<h2>` when it started with `##`, so a heading
+followed by prose on the next line swallowed the prose — the reason answers
+showed a three-line `<h2>` and no body.
+
+**The syntax highlighter ran over prose.** Markdown chunks reached `hl()`,
+where the apostrophe in "the request's Accept header" opened a string span that
+swallowed everything after it. Code goes to the scanner; `markdown`/`text` is
+escaped as-is.
+
+Answers cached as flows before this release still hold the old fences. The new
+parser contains the damage to that one block instead of inverting the answer,
+but they render correctly only once re-cached.
+
 ## 0.17.1 — the "code AND docs" mode never returned any code
 
 **Removed: `ask --with-docs` / MCP `include_docs` / HTTP `include_docs`.** Not

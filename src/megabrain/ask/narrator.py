@@ -163,8 +163,13 @@ def _code_block(c: dict, lo: int | None, hi: int | None, seen: set,
     tight = [y for y in inside if (y["end_line"] - y["line"]) <= 3 * (e - s + 1)]
     label = ", ".join(dict.fromkeys(y["name"] for y in (tight or inside)[:2])) \
         or (c["name"] or c["kind"])
+    # CommonMark: an opening fence must be LONGER than any backtick run inside
+    # the content, or the first inner fence closes the block. A cited markdown
+    # doc carries its own ```lang fences, so a fixed ``` emitted broken
+    # markdown for every consumer (CLI, flow cache, the studio's renderer).
+    fence = "`" * max(3, max((len(m) for m in re.findall(r"`+", text)), default=0) + 1)
     return (f'\n**`{c["file"]}` L{s}-{e}** — {label}\n'
-            f'```{lang_of(c["file"])}\n{text.rstrip(chr(10))}\n```\n')
+            f'{fence}{lang_of(c["file"])}\n{text.rstrip(chr(10))}\n{fence}\n')
 
 
 # A trailing PREFIX of a possible citation ("[", "[[3", "[[3:L1-"): the splicer

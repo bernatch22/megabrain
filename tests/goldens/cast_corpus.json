@@ -517,16 +517,16 @@
      "_flow_ctx, _numbered, _build_body, _code_block",
      null,
      76,
-     174,
+     179,
      "megabrain > megabrain/ask/narrator.py > [_flow_ctx, _numbered, _build_body, _code_block]",
-     "2cd4016ceae0752524989f61afb35db978c06b91"
+     "f6472f1856f60a867f9aaeadc5d1e916cf58f9d4"
     ],
     [
      "module",
      "_Splicer, ask, cited_files, _splice",
      null,
-     175,
-     275,
+     180,
+     280,
      "megabrain > megabrain/ask/narrator.py > [_Splicer, ask, cited_files, _splice]",
      "a22c542f5596a8caecc8c2f27a786ce3574bbb87"
     ],
@@ -534,8 +534,8 @@
      "module",
      "render_ask, stream_ask",
      null,
-     276,
-     378,
+     281,
+     383,
      "megabrain > megabrain/ask/narrator.py > [render_ask, stream_ask]",
      "7a70975441b766c05c092b98183de9e60333fbb2"
     ]
@@ -602,91 +602,91 @@
      "_code_block",
      "function",
      130,
-     167,
+     172,
      "def _code_block(c: dict, lo: int | None, hi: int | None, seen: set, file_syms: dict[str, list[dict]]) -> str"
     ],
     [
      "_PARTIAL",
      "constant",
-     174,
-     174,
+     179,
+     179,
      "_PARTIAL = re.compile('\\\\[(?:\\\\[(?:\\\\d+(?::\\\\s*[Ll]?\\\\d*(?:-\\\\s*[Ll]?\\\\d*)?)?\\\\]?)?)?$')"
     ],
     [
      "_Splicer",
      "class",
-     177,
-     215,
+     182,
+     220,
      "class _Splicer"
     ],
     [
      "_Splicer.__init__",
      "method",
-     185,
-     189,
+     190,
+     194,
      "def __init__(self, cands: list[dict], file_syms: dict[str, list[dict]])"
     ],
     [
      "_Splicer._sub",
      "method",
-     191,
-     198,
+     196,
+     203,
      "def _sub(self, m)"
     ],
     [
      "_Splicer.feed",
      "method",
-     200,
-     207,
+     205,
+     212,
      "def feed(self, d: str) -> str"
     ],
     [
      "_Splicer.flush",
      "method",
-     209,
-     211,
+     214,
+     216,
      "def flush(self) -> str"
     ],
     [
      "_Splicer.files",
      "method",
-     213,
-     215,
+     218,
+     220,
      "def files(self) -> int"
     ],
     [
      "ask",
      "function",
-     218,
-     242,
+     223,
+     247,
      "def ask(root: Path, question: str, docs_only: bool=False, path_filter: str | None=None, state: SearchState | None=None, agents: bool | None=False, model: str | None=None) -> dict"
     ],
     [
      "cited_files",
      "function",
-     245,
-     255,
+     250,
+     260,
      "def cited_files(out: dict) -> list[str]"
     ],
     [
      "_splice",
      "function",
-     258,
-     275,
+     263,
+     280,
      "def _splice(out: dict) -> tuple[str, set, set]"
     ],
     [
      "render_ask",
      "function",
-     278,
-     301,
+     283,
+     306,
      "def render_ask(out: dict) -> str"
     ],
     [
      "stream_ask",
      "function",
-     304,
-     378,
+     309,
+     383,
      "def stream_ask(root: Path, question: str, out=None, show_map: bool=True, docs_only: bool=False, path_filter: str | None=None, agents: bool | None=None, model: str | None=None) -> None"
     ]
    ]
