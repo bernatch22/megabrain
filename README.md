@@ -41,19 +41,9 @@ cannot rewrite a line, so nothing is invented.
 </p>
 
 <p align="center">
-  <sub><code>megabrain studio</code> — the whole engine in your browser. Here on <b>sinatra</b>:
-  a repeat question served from cache with no LLM, and a live synthesis with the real code spliced in.</sub>
-</p>
-
-<br>
-
-<h3 align="center">
-  <a href="https://bernardocastro.dev/megabrain/demo/">Try it live →</a>
-</h3>
-
-<p align="center">
-  <sub>Seven open-source repos — click · requests · express · ky · gin · sinatra · megabrain.<br>
-  The real engine, read-only. No signup.</sub>
+  <sub><code>megabrain studio</code> — the whole engine in your browser</sub>
+  <br><br>
+  <a href="https://bernardocastro.dev/megabrain/demo/"><b>Try it live →</b></a>
 </p>
 
 <br>
