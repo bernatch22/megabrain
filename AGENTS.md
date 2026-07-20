@@ -5,6 +5,8 @@ question, explained with the real code spliced in. It replaces minutes of
 grep + Read + explore-agent crawling with one grounded answer.
 
 - **What it does / how to use it** → [README.md](README.md) · [docs/GUIDE.md](docs/GUIDE.md)
+- **Every flag, tool, route and env var** → [docs/REFERENCE.md](docs/REFERENCE.md)
+- **Task-oriented how-tos** → [docs/RECIPES.md](docs/RECIPES.md)
 - **How it works, and why each choice is locked** → [ARCHITECTURE.md](ARCHITECTURE.md)
 - **What changed and when** → [CHANGELOG.md](CHANGELOG.md)
 
