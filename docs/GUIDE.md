@@ -106,6 +106,18 @@ Nothing blends them: `ask --with-docs` used to claim it did, but left both filte
 off — so the prose won the ranking and the "code and docs" answer came back with no
 code. It was removed in 0.17.1.
 
+**Which one you want depends on which side of the API you're standing on.** `--docs` is
+for *consuming* something: you're building an app on a framework and need its documented
+usage now — what to call, in what order, with which options, the way its authors wrote it
+down. The default is for *working on* something: contributing to Rails, or any internal
+repo where the docs are thin, stale, or were never written and the source is the only
+truth. That second case is most of them, which is why code is the default and the docs are
+the flag.
+
+The distinction also tells you which one to distrust. Docs describe intent and go out of
+date silently; code is what actually runs. When an answer from `--docs` contradicts one
+from the default, the default is right and you have just found a stale doc.
+
 Pure retrieval: your question is embedded and matched by vector similarity, ~200 ms, free.
 `--prune` keeps only the **signal** chunks — every related file still appears (each
 contributes its best chunk); only the noisy chunks *inside* files are cut.
@@ -173,9 +185,10 @@ UI on top of the JSON API, `serve-api` runs the same API headless. Four tabs:
 
 **Docs only** sits on both the Ask and the Search bar. It confines retrieval to the
 indexed markdown *before* scoring, so the answer comes from the docs rather than from
-code that merely mentions them — the studio's face of `ask --docs` / `search --docs`.
-It's sticky, and flipping it re-runs Search (free) but never re-runs Ask on its own
-(that would spend an LLM call).
+code that merely mentions them — the studio's face of `ask --docs` / `search --docs`, and
+the same rule of thumb applies: reach for it when you're *consuming* a project, leave it
+off when you're *working on* one. It's sticky, and flipping it re-runs Search (free) but
+never re-runs Ask on its own (that would spend an LLM call).
 - **Flows** — [the ask cache](#5-it-remembers--the-flow-cache), listed newest-first, with
   the stored answer viewable and its cited files openable. `stale` marks flows whose
   sources changed on disk.
