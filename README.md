@@ -20,7 +20,7 @@
   <img src="https://img.shields.io/badge/MCP-ready-000000?style=flat-square" alt="MCP ready">
 </p>
 
----
+<br>
 
 Point megabrain at a repo and ask **"how does auth work"** in plain English. It finds all
 the related code in ~200 ms with **no LLM** — just math on embeddings, in **one SQLite
@@ -30,44 +30,95 @@ Want it *explained*? `ask` adds one LLM call that narrates a walkthrough with th
 code spliced in from disk**, line for line. The model only ever *points* at code — it
 cannot rewrite a line, so nothing is invented.
 
+<br>
+
 <p align="center">
   <img src="https://raw.githubusercontent.com/bernatch22/megabrain/master/assets/ask-agents.svg" alt="Three acts. One, megabrain_search: no-LLM retrieval ranks the chunks, then the LLM rerank strikes the vocabulary-only matches and reorders what survives. Two, megabrain_ask: a broad question fans out into three parallel sub-agents, one synthesis merges their cited answers with the verbatim code spliced in, and the workflow lands in the flow cache. Three, megabrain_graph: a path query between two files reports that they never call each other and names the file that bridges them." width="900">
 </p>
 
+<br>
+
+<p align="center">
+  <a href="https://bernardocastro.dev/megabrain/demo/">
+    <img src="https://img.shields.io/badge/▶%20%20TRY%20IT%20LIVE-bernardocastro.dev%2Fmegabrain%2Fdemo-493ada?style=for-the-badge" alt="Try the live demo">
+  </a>
+</p>
+
+<p align="center">
+  <sub>Seven popular open-source repos — <b>click · requests · express · ky · gin · sinatra · megabrain</b><br>
+  The real engine, running read-only. No signup.</sub>
+</p>
+
+<br>
+
+---
+
 ## Quickstart
 
-No API keys — narrate on your Claude Code plan, embed locally:
+One key runs everything — and the defaults are the measured-best combination, so there is
+nothing to configure:
 
 ```bash
-pip install 'megabrain[claude]'
+pip install megabrain
 
-ollama pull unclemusclez/jina-embeddings-v2-base-code   # local embeddings, one time
-export MEGABRAIN_EMBED_BASE_URL=http://localhost:11434/v1
-export MEGABRAIN_EMBED_MODEL=unclemusclez/jina-embeddings-v2-base-code
+export OPENROUTER_API_KEY=sk-or-...
 
-megabrain index ~/repo                                   # once — incremental after
+megabrain index ~/repo                            # once — incremental after
 megabrain ask   ~/repo "how does auth work end to end"
 ```
 
-Prefer one cloud key for everything? `export OPENROUTER_API_KEY=…` and skip the rest.
-All three setups — cloud, hybrid, fully local — in the
+That single key gets you both halves of the validated stack:
+
+- **`perplexity/pplx-embed-v1-0.6b`** for retrieval — the measured best for code recall.
+  It beat pplx-4b, codestral-embed, openai-3-large and bge-m3 in a head-to-head bakeoff
+  (R@1 **0.864**, bundle_full **0.955**).
+- **`google/gemini-3.1-flash-lite-preview`** for narration — the fastest and cheapest tier,
+  at the quality of models that cost several times more. A full walkthrough in seconds,
+  fractions of a cent.
+
+**This is the recommendation.** Everything else is a trade-off away from it: cheaper
+(`qwen/qwen3-coder`), on your Claude Code plan instead of a key, or fully local with zero
+cloud. All three, with their measured costs, are in the
 **[Guide](docs/GUIDE.md#1-install-and-your-first-answer)**.
+
+Other languages need one extra install: `pip install 'megabrain[languages]'` adds
+Ruby · Go · Rust · PHP. Python, JS/TS and Markdown work out of the box.
+
+---
 
 ## What you get
 
-|  |  |
-|---|---|
-| 🔎 **Retrieval that can't hallucinate** | No LLM in the search path: dense chunk vectors fused with a file-skeleton signal and the import/call graph. An optional [LLM rerank](docs/GUIDE.md#2-the-two-ways-to-ask) rides on top — fail-open, never inside the core. |
-| 💬 **`ask` — the repo, explained** | One call returns a senior-engineer walkthrough of the whole cross-file flow, code spliced verbatim. Broad questions [fan out into parallel sub-agents](docs/GUIDE.md#2-the-two-ways-to-ask). |
-| 🖥️ **A local studio** | `megabrain studio` — search, ask, the flow cache and a live knowledge graph in your browser, plus a read-only code navigator. [Tour →](docs/GUIDE.md#3-the-studio) |
-| 🕸️ **A knowledge graph, free** | The same index doubles as a map: communities, core files, and the real call-path between any two. numpy only, no networkx. [What it's for →](docs/GUIDE.md#4-map-the-repo-with-the-graph) |
-| ⚡ **It learns from itself** | Every `ask` caches its walkthrough. Ask again — even reworded — and it serves in **~0 ms with zero LLM** (measured 27.8 s → 0.19 s), sha-guarded so it can never describe changed code. [How →](docs/GUIDE.md#5-it-remembers--the-flow-cache) |
-| 🔌 **Everywhere you work** | A CLI, an **MCP server** for Claude Code / Codex / Cursor / Gemini CLI, a Python library, and the studio. |
+**Retrieval that cannot hallucinate.** The search path has no LLM at all — dense chunk
+vectors fused with a file-skeleton signal and the import/call graph. The narrator only
+ever *cites* spans and the engine splices the verbatim bytes, so no line is ever invented.
+An optional [LLM rerank](docs/GUIDE.md#2-the-two-ways-to-ask) rides on top to drop
+vocabulary-only matches — fail-open, never inside the core path.
 
-**[→ Try it live](https://bernardocastro.dev/megabrain/demo/)** — seven popular
-open-source repos, the real engine, read-only.
+**`ask` — the repo, explained.** One call returns a senior-engineer walkthrough of the
+whole cross-file flow, with the real code spliced in at each step. Broad questions
+[fan out into parallel sub-agents](docs/GUIDE.md#2-the-two-ways-to-ask), one per subsystem,
+and a synthesizer merges their cited answers.
 
-## For coding agents — one call instead of thirty turns
+**It learns from itself.** Every `ask` caches its walkthrough. Ask again — even reworded —
+and it serves in **~0 ms with zero LLM** (measured 27.8 s → 0.19 s), guarded by a
+byte-level sha recheck so it can never describe code that changed.
+[How it works →](docs/GUIDE.md#5-it-remembers--the-flow-cache)
+
+**A knowledge graph, for free.** The same index doubles as a navigable map: communities,
+the core "god node" files, and the real call-path between any two files — built from AST
+edges plus embedding similarity, numpy only, no networkx.
+[What it's actually good for →](docs/GUIDE.md#4-map-the-repo-with-the-graph)
+
+**A local studio.** `megabrain studio` opens the whole engine in your browser: search,
+ask, the flow cache and the graph on a live canvas, plus a read-only code navigator where
+every identifier is a go-to-definition link. [Take the tour →](docs/GUIDE.md#3-the-studio)
+
+**Everywhere you work.** A terminal CLI, an MCP server inside Claude Code / Codex / Cursor
+/ Gemini CLI, a Python library, and the studio.
+
+---
+
+## For coding agents
 
 This is what megabrain is *for*. Dropped into an unfamiliar repo, an agent burns 10–30
 tool turns — grep, open a file, follow an import, grep again — before it writes a line,
@@ -77,21 +128,25 @@ and the picture it assembles is still its own guess.
 megabrain install    # detects Claude Code · Codex · Cursor · Windsurf · Gemini CLI · Antigravity
 ```
 
-|  | by hand (grep + read chains) | one megabrain call |
+|  | by hand | one megabrain call |
 |---|---|---|
 | tool turns | 10–30 | **1** |
 | what lands in context | whole files, mostly irrelevant | **exactly the signal chunks** |
-| the cross-file story | reconstructed, unverified | **narrated with the real code spliced in** |
-| asking it again later | the full re-exploration | **~0 ms, from the flow cache** |
+| the cross-file story | reconstructed, unverified | **narrated, real code spliced in** |
+| asking it again later | the full re-exploration | **~0 ms, from the cache** |
 
-Six tools, deliberately lean — your agent already has Read and Grep for single files:
-**`megabrain_ask`** (the default) · `megabrain_search` · `megabrain_graph` ·
+Your agent gets six tools, deliberately lean — it already has Read and Grep for single
+files: **`megabrain_ask`** (the default) · `megabrain_search` · `megabrain_graph` ·
 `megabrain_index` · `megabrain_forge` · `megabrain_flows`.
-**[Parameters →](docs/REFERENCE.md#mcp-tools)** · **[Wiring recipes →](docs/RECIPES.md#give-your-coding-agent-the-whole-repo)**
 
-> Put this in your agent's rules: **for any question about how the code works, call
-> `megabrain_ask` FIRST, before grepping.** One call returns the whole flow with the real
-> code — that single instruction is the difference between 15 turns and 1.
+> **Put this in your agent's rules:** for any question about how the code works, call
+> `megabrain_ask` **first**, before grepping. One call returns the whole flow with the
+> real code — that single instruction is the difference between 15 turns and 1.
+
+[Every parameter →](docs/REFERENCE.md#mcp-tools) ·
+[Wiring recipes →](docs/RECIPES.md#give-your-coding-agent-the-whole-repo)
+
+---
 
 ## Commands
 
@@ -104,7 +159,9 @@ megabrain studio                              # the web UI + JSON API
 megabrain install                             # register the MCP server
 ```
 
-**[Every command and flag →](docs/REFERENCE.md#cli)**
+[Every command and flag →](docs/REFERENCE.md#cli)
+
+---
 
 ## Measured, not vibes
 
@@ -120,23 +177,24 @@ closest open-source peer — same repo, same 22 hand-labelled questions, both at
 | narrated answer | **yes** — real code spliced in | no (returns chunks) |
 
 The golden set is ours, on a corpus megabrain was tuned against — treat the absolute
-numbers as home-field and run it yourself. **[Full method, caveats and the embedding
-bakeoff →](ARCHITECTURE.md#8-evidence-where-the-numbers-live)**
+numbers as home-field and run it yourself.
+[Full method, caveats and the embedding bakeoff →](ARCHITECTURE.md#8-evidence-where-the-numbers-live)
+
+---
 
 ## Docs
 
-|  |  |
-|---|---|
-| **[Guide](docs/GUIDE.md)** | The tour, front to back: setup → search vs ask → the studio → the graph → the flow cache → MCP → new file types → tuning |
-| **[Recipes](docs/RECIPES.md)** | "I want to ___" — private repos, team knowledge bases, public demos, custom file types, cost and speed |
-| **[Reference](docs/REFERENCE.md)** | Every CLI flag, MCP tool, HTTP route, env var and config file |
-| **[Architecture](ARCHITECTURE.md)** | How it's built and **why** — the locked design rules and the experiments behind them |
-| **[Contributing](CONTRIBUTING.md)** | The best first PR is a new language |
-| **[Changelog](CHANGELOG.md)** | What changed, and why |
+- **[Guide](docs/GUIDE.md)** — the tour, front to back: setup → search vs ask → the studio
+  → the graph → the flow cache → MCP → new file types → tuning
+- **[Recipes](docs/RECIPES.md)** — "I want to ___": private repos, team knowledge bases,
+  public demos, custom file types, cost and speed
+- **[Reference](docs/REFERENCE.md)** — every CLI flag, MCP tool, HTTP route and env var
+- **[Architecture](ARCHITECTURE.md)** — how it's built and **why**: the locked design
+  rules and the experiments behind them
+- **[Contributing](CONTRIBUTING.md)** — the best first PR is a new language
+- **[Changelog](CHANGELOG.md)** — what changed, and why
 
-Languages: **Python · JS/TS · Markdown** built in · **Ruby · Go · Rust · PHP** with
-`pip install 'megabrain[languages]'` · anything else via
-[`megabrain forge`](docs/GUIDE.md#7-teach-it-your-file-types).
+<br>
 
 ---
 

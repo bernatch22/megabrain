@@ -23,38 +23,52 @@ pip install 'megabrain[languages]'    # + Ruby · Go · Rust · PHP (tree-sitter
 pip install 'megabrain[claude]'       # + narrate on Claude Code credits
 ```
 
-megabrain needs **embeddings** (always) and, for `ask`, a **chat model**. They're
-independent — mix cloud embeddings with a local narrator, or the reverse. Pick a row:
+megabrain needs **embeddings** (always) and, for `ask`, a **chat model**. They are
+independent knobs — you can mix cloud embeddings with a local narrator, or the reverse.
 
-| setup | how | cost |
-|---|---|---|
-| **One cloud key** *(simplest)* | `export OPENROUTER_API_KEY=sk-or-…` | ~$0.002/index · fractions of a cent per ask |
-| **Claude narrates, local embeds** *(no keys)* | `pip install 'megabrain[claude]'`, be logged into Claude Code, + the Ollama block below | $0 embed · on your plan |
-| **Fully local** | the Ollama block + `MEGABRAIN_CHAT_BASE_URL` — [recipe](RECIPES.md#run-fully-local--no-keys-no-cloud) | $0 |
+### The recommended setup
+
+**One OpenRouter key.** The defaults are the measured-best pair, so there is nothing to
+configure:
 
 ```bash
-# local embeddings — Apache 2.0, code-tuned, your code never leaves the machine
+export OPENROUTER_API_KEY=sk-or-...
+
+megabrain index ~/repo                          # once; incremental after
+megabrain ask   ~/repo "how does auth work"
+```
+
+| | model | why it's the default |
+|---|---|---|
+| **embeddings** | `perplexity/pplx-embed-v1-0.6b` | **the best measured for code recall.** A head-to-head bakeoff beat pplx-4b, codestral-embed, openai-3-large and bge-m3 — R@1 **0.864**, bundle_full **0.955**. Perplexity-direct and via-OpenRouter score identically, so the proxy costs nothing. |
+| **narration** | `google/gemini-3.1-flash-lite-preview` | **the fastest and cheapest tier** at the quality of models several times its price. `ask` is output-bound, so this is the knob that decides how long you wait. |
+
+That combination is the one to beat: best retrieval quality, fastest narration, ~$0.002 to
+index a repo and fractions of a cent per ask. Everything below is a deliberate trade-off
+away from it.
+
+### The alternatives
+
+| instead of… | do this | trade-off |
+|---|---|---|
+| paying per ask | `pip install 'megabrain[claude]'` + be logged into Claude Code | narration runs on your plan (`haiku` by default); embeddings still need a key or a local endpoint |
+| the cloud entirely | local embeddings + a local narrator — [full recipe](RECIPES.md#run-fully-local--no-keys-no-cloud) | $0 and nothing leaves your machine; local embedders rank the #1 slot lower (R@1 0.682 vs 0.864) though they tie on completeness |
+| the default price | `export MEGABRAIN_ASK_MODEL=qwen/qwen3-coder` | ~half the cost, ~2× slower, open weights |
+
+```bash
+# local embeddings — Apache 2.0, code-tuned, 172 MB, your code never leaves the machine
 ollama serve
 ollama pull unclemusclez/jina-embeddings-v2-base-code
 export MEGABRAIN_EMBED_BASE_URL=http://localhost:11434/v1
 export MEGABRAIN_EMBED_MODEL=unclemusclez/jina-embeddings-v2-base-code
 ```
 
-Then:
+The index is one SQLite file at `~/repo/.megabrain/db.sqlite`, and `ask`/`search`
+auto-refresh it when files change (60 s TTL) — there is no manual re-index step. Changing
+the embed model triggers a full re-embed on the next `index`, so vectors can never
+silently mismatch.
 
-```bash
-megabrain index ~/repo                          # once; incremental after
-megabrain ask   ~/repo "how does auth work"
-```
-
-That's it. The index is one SQLite file at `~/repo/.megabrain/db.sqlite`, and
-`ask`/`search` auto-refresh it when files change (60 s TTL) — no manual re-index step.
-
-> **Which embedding?** `perplexity/pplx-embed-v1-0.6b` (the cloud default) measured best
-> for code recall — R@1 0.864 · bundle_full 0.955. The local `jina-embeddings-v2-base-code`
-> ties bge-m3 on **bundle_full 0.909** — the number that decides whether `ask` has the
-> right code to splice — at 172 MB and $0. Full bakeoff:
-> [Architecture §8](../ARCHITECTURE.md#8-evidence-where-the-numbers-live).
+Full bakeoff numbers: [Architecture §8](../ARCHITECTURE.md#8-evidence-where-the-numbers-live).
 
 ---
 
