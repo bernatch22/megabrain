@@ -55,34 +55,52 @@ cannot rewrite a line, so nothing is invented.
 
 ## Quickstart
 
-One key runs everything — and the defaults are the measured-best combination, so there is
-nothing to configure:
+### Best quality — one key, nothing to configure
 
 ```bash
 pip install megabrain
-
 export OPENROUTER_API_KEY=sk-or-...
 
 megabrain index ~/repo                            # once — incremental after
 megabrain ask   ~/repo "how does auth work end to end"
 ```
 
-That single key gets you both halves of the validated stack:
+That single key gets you both halves of the validated stack, and they're already the
+defaults:
 
 - **`perplexity/pplx-embed-v1-0.6b`** for retrieval — the measured best for code recall.
   It beat pplx-4b, codestral-embed, openai-3-large and bge-m3 in a head-to-head bakeoff
   (R@1 **0.864**, bundle_full **0.955**).
 - **`google/gemini-3.1-flash-lite-preview`** for narration — the fastest and cheapest tier,
-  at the quality of models that cost several times more. A full walkthrough in seconds,
+  at the quality of models costing several times more. A full walkthrough in seconds, for
   fractions of a cent.
 
-**This is the recommendation.** Everything else is a trade-off away from it: cheaper
-(`qwen/qwen3-coder`), on your Claude Code plan instead of a key, or fully local with zero
-cloud. All three, with their measured costs, are in the
-**[Guide](docs/GUIDE.md#1-install-and-your-first-answer)**.
+### No keys — your Claude plan + local embeddings
+
+Narration runs on the Claude Code subscription you already pay for, embeddings run on your
+machine, and **your code never leaves it**:
+
+```bash
+pip install 'megabrain[claude]'                   # narrates on your Claude Code login
+
+ollama pull bge-m3                                # local embeddings, one time
+export MEGABRAIN_EMBED_BASE_URL=http://localhost:11434/v1
+export MEGABRAIN_EMBED_MODEL=bge-m3
+
+megabrain index ~/repo
+megabrain ask   ~/repo "how does auth work end to end"
+```
+
+The trade-off is measured, not hand-waved: `bge-m3` ties the cloud embedder on
+`bundle_full` — whether `ask` gets the right code at all — and ranks the #1 slot lower
+(R@1 0.773 vs 0.864). Going *fully* local, narrator included, needs two non-obvious knobs:
+**[the recipe](docs/RECIPES.md#run-fully-local--no-keys-no-cloud)**.
+
+---
 
 Other languages need one extra install: `pip install 'megabrain[languages]'` adds
 Ruby · Go · Rust · PHP. Python, JS/TS and Markdown work out of the box.
+Every setup, with its cost: **[Guide](docs/GUIDE.md#1-install-and-your-first-answer)**.
 
 ---
 
