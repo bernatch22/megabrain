@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.17.3 — indexing a docs-heavy repo died with `KeyError: 'data'`
+
+Adding FastAPI to a demo whose seven repos are all small files broke the index
+run on the first batch, with a traceback that named nothing useful:
+
+```
+File "megabrain/providers/embeddings.py", line 86, in _request
+  for r in sorted(d["data"], key=lambda r: r["index"]):
+KeyError: 'data'
+```
+
+**Requests are capped by TOTAL tokens, not by item count.** `pplx-embed`
+rejects a request over 120k tokens across the whole batch. The embedder
+batched by a fixed count (64), so 64 large markdown chunks asked for 252,064
+tokens and the request was refused before a single vector came back. Batching
+is now bounded by both the item count and a token budget
+(`MEGABRAIN_EMBED_MAX_TOKENS`, default 100k, estimated at a deliberately
+pessimistic 2.5 chars/token — the failing request measured 2.83). A text over
+budget on its own is still sent alone rather than skipped: failing loudly beats
+silently dropping content from an index.
+
+Repos of small files never came near the cap, which is why this survived seven
+repos and surfaced only when a docs-heavy one was added.
+
+**The provider's message was being thrown away.** OpenRouter reports upstream
+failures as HTTP 200 carrying an `{"error": {...}}` envelope, so `urlopen`
+never raises and `post_json` returned the error body as if it were a result.
+Every caller then indexed into a key that wasn't there. `post_json` now raises
+`ProviderError` with the provider's own message, and retries the envelope when
+the wrapped code is retryable — a 429 inside a 200 is still a 429. The
+diagnosis above took three round trips against production precisely because
+this message was discarded; it now appears in the traceback.
+
 ## 0.17.2 — one cited markdown doc broke every answer after it
 
 Asked in `--docs` mode, the studio rendered the walkthrough inside out: the

@@ -114,6 +114,36 @@ def test_post_json_gives_up_on_4xx(monkeypatch):
         providers.post_json("/x", {}, key="k", retries=3)
 
 
+def test_post_json_raises_on_200_error_envelope(monkeypatch):
+    """OpenRouter reports upstream failures as HTTP 200 + {"error": ...}, so
+    urlopen never raises. This one cost a production deploy: indexing died with
+    a bare `KeyError: 'data'` that was really the embedding model's token cap."""
+    body = {"error": {"message": "Input total size exceeds maximum number of "
+                                 "allowed tokens: got 252064, maximum is 120000",
+                      "code": 400}}
+    monkeypatch.setattr("urllib.request.urlopen",
+                        lambda req, timeout=0: _Resp(json.dumps(body).encode()))
+    with pytest.raises(RuntimeError, match="252064"):
+        providers.post_json("/embeddings", {}, key="k", retries=3)
+
+
+def test_post_json_retries_a_wrapped_retryable_code(monkeypatch):
+    """A 429 wrapped in a 200 envelope is still a 429."""
+    calls = []
+
+    def fake_urlopen(req, timeout=0):
+        calls.append(1)
+        if len(calls) == 1:
+            return _Resp(json.dumps({"error": {"message": "rate limited",
+                                               "code": 429}}).encode())
+        return _Resp(json.dumps({"ok": True}).encode())
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+    monkeypatch.setattr(providers.time, "sleep", lambda s: None)
+    assert providers.post_json("/x", {}, key="k") == {"ok": True}
+    assert len(calls) == 2
+
+
 def test_stream_chat_parses_sse(monkeypatch):
     events = [
         b'data: {"choices":[{"delta":{"content":"Hello"}}]}\n',

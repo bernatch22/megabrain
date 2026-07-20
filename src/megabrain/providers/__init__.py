@@ -191,7 +191,24 @@ def post_json(path: str, body: dict, key: str | None = None, retries: int = 5,
                                      headers=_headers(key, base))
         try:
             with urllib.request.urlopen(req, timeout=timeout) as res:
-                return json.loads(res.read())
+                d = json.loads(res.read())
+            # OpenRouter reports UPSTREAM failures as HTTP 200 carrying an
+            # {"error": {...}} envelope, so urlopen never raises. Callers then
+            # index into the payload key that isn't there and the provider's
+            # message is lost: indexing a repo with large chunks died with a
+            # bare `KeyError: 'data'` that was really "Input total size exceeds
+            # maximum number of allowed tokens: got 252064, maximum is 120000".
+            err = d.get("error") if isinstance(d, dict) else None
+            if err:
+                msg = err.get("message", err) if isinstance(err, dict) else err
+                code = err.get("code") if isinstance(err, dict) else None
+                code = code if isinstance(code, int) else None
+                if code in _RETRY_CODES and attempt < retries - 1:
+                    time.sleep(2 ** attempt)
+                    continue
+                raise ProviderError(f"openrouter {code or 200}: {str(msg)[:300]}",
+                                    status=code)
+            return d
         except urllib.error.HTTPError as e:
             if e.code in _RETRY_CODES and attempt < retries - 1:
                 time.sleep(2 ** attempt)

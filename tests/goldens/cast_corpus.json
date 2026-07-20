@@ -4057,28 +4057,37 @@
     ],
     [
      "module",
-     "_resolve, find_key, _is_local, _key_for, find_embed_key, find_chat_key, _headers, _chat_extras, post_json, chat_text",
+     "_resolve, find_key, _is_local, _key_for, find_embed_key, find_chat_key, _headers, _chat_extras",
      null,
      92,
-     210,
-     "megabrain > megabrain/providers/__init__.py > [_resolve, find_key, _is_local, _key_for, find_embed_key, find_chat_key, _headers, _chat_extras, post_json, chat_text]",
-     "bc73ef88b9f70ad7ebcbfa222d2e1badfeca5463"
+     177,
+     "megabrain > megabrain/providers/__init__.py > [_resolve, find_key, _is_local, _key_for, find_embed_key, find_chat_key, _headers, _chat_extras]",
+     "56592cbb0045d7adc18585e7a6f78fa413d0a86c"
     ],
     [
      "module",
-     "stream_chat, _or_stream_chat, OpenRouterProvider",
+     "post_json, chat_text, stream_chat",
      null,
-     211,
-     332,
-     "megabrain > megabrain/providers/__init__.py > [stream_chat, _or_stream_chat, OpenRouterProvider]",
-     "64ce1687a4f9833ca8b89e8cc0994f5c76980132"
+     178,
+     238,
+     "megabrain > megabrain/providers/__init__.py > [post_json, chat_text, stream_chat]",
+     "ef810b5d8f1f13f4b787a979b7bdb54e8d28cf48"
+    ],
+    [
+     "module",
+     "_or_stream_chat, OpenRouterProvider",
+     null,
+     239,
+     349,
+     "megabrain > megabrain/providers/__init__.py > [_or_stream_chat, OpenRouterProvider]",
+     "8697787ea1872ebcd595f62a1ffb9bc72f54cc2e"
     ],
     [
      "module",
      "ClaudeProvider, _ollama_probe, _active_label, detect, select",
      null,
-     333,
-     438,
+     350,
+     455,
      "megabrain > megabrain/providers/__init__.py > [ClaudeProvider, _ollama_probe, _active_label, detect, select]",
      "8cb976052f621d182843ec7b5ea5554ada740f7a"
     ],
@@ -4086,8 +4095,8 @@
      "module",
      "start_ollama, resolve",
      null,
-     439,
-     480,
+     456,
+     497,
      "megabrain > megabrain/providers/__init__.py > [start_ollama, resolve]",
      "4f53dec70f88f1f570ff85f414a10414cad1af3b"
     ]
@@ -4231,189 +4240,189 @@
      "post_json",
      "function",
      180,
-     201,
+     218,
      "def post_json(path: str, body: dict, key: str | None=None, retries: int=5, timeout: int=120, base_url: str | None=None) -> dict"
     ],
     [
      "chat_text",
      "function",
-     204,
-     210,
+     221,
+     227,
      "def chat_text(model: str, prompt: str, max_tokens: int, temperature: float=0.0, key: str | None=None, retries: int=5, timeout: int=45) -> str"
     ],
     [
      "stream_chat",
      "function",
-     213,
-     221,
+     230,
+     238,
      "def stream_chat(body: dict, key: str | None=None, retries: int=4, on_delta=None, timeout: int=90, with_tools: bool=False)"
     ],
     [
      "_or_stream_chat",
      "function",
-     224,
-     299,
+     241,
+     316,
      "def _or_stream_chat(body: dict, key: str | None=None, retries: int=4, on_delta=None, timeout: int=90, with_tools: bool=False)"
     ],
     [
      "OpenRouterProvider",
      "class",
-     309,
-     332,
+     326,
+     349,
      "class OpenRouterProvider"
     ],
     [
      "OpenRouterProvider.name",
      "class_attr",
-     313,
-     313,
+     330,
+     330,
      "name = 'openrouter'"
     ],
     [
      "OpenRouterProvider.agent_stream",
      "class_attr",
-     314,
-     314,
+     331,
+     331,
      "agent_stream = None"
     ],
     [
      "OpenRouterProvider.available",
      "method",
-     316,
-     317,
+     333,
+     334,
      "def available(self) -> bool"
     ],
     [
      "OpenRouterProvider.chat_text",
      "method",
-     319,
-     327,
+     336,
+     344,
      "def chat_text(self, model: str, prompt: str, max_tokens: int, temperature: float=0.0, key: str | None=None, retries: int=5, timeout: int=45) -> str"
     ],
     [
      "OpenRouterProvider.stream_chat",
      "method",
-     329,
-     332,
+     346,
+     349,
      "def stream_chat(self, body: dict, key: str | None=None, retries: int=4, on_delta=None, timeout: int=90, with_tools: bool=False)"
     ],
     [
      "ClaudeProvider",
      "class",
-     335,
-     362,
+     352,
+     379,
      "class ClaudeProvider"
     ],
     [
      "ClaudeProvider.name",
      "class_attr",
-     340,
-     340,
+     357,
+     357,
      "name = 'claude'"
     ],
     [
      "ClaudeProvider.available",
      "method",
-     342,
-     344,
+     359,
+     361,
      "def available(self) -> bool"
     ],
     [
      "ClaudeProvider.chat_text",
      "method",
-     346,
-     350,
+     363,
+     367,
      "def chat_text(self, model: str, prompt: str, max_tokens: int, temperature: float=0.0, key: str | None=None, retries: int=5, timeout: int=45) -> str"
     ],
     [
      "ClaudeProvider.stream_chat",
      "method",
-     352,
-     357,
+     369,
+     374,
      "def stream_chat(self, body: dict, key: str | None=None, retries: int=4, on_delta=None, timeout: int=90, with_tools: bool=False)"
     ],
     [
      "ClaudeProvider.agent_stream",
      "method",
-     359,
-     362,
+     376,
+     379,
      "def agent_stream(self)"
     ],
     [
      "_REGISTRY",
      "constant",
-     365,
-     366,
+     382,
+     383,
      "_REGISTRY: dict[str, object] = {'openrouter': OpenRouterProvider(), 'claude': ClaudeProvider()}"
     ],
     [
      "_PRIORITY",
      "constant",
-     367,
-     367,
+     384,
+     384,
      "_PRIORITY = ('claude', 'openrouter')"
     ],
     [
      "OLLAMA_HOST",
      "constant",
-     370,
-     370,
+     387,
+     387,
      "OLLAMA_HOST = os.environ.get('OLLAMA_HOST', 'http://localhost:11434').rstrip('/')"
     ],
     [
      "OLLAMA_OPENAI",
      "constant",
-     371,
-     371,
+     388,
+     388,
      "OLLAMA_OPENAI = OLLAMA_HOST + '/v1'"
     ],
     [
      "_select_lock",
      "constant",
-     372,
-     372,
+     389,
+     389,
      "_select_lock = __import__('threading').Lock()"
     ],
     [
      "_ollama_probe",
      "function",
-     375,
-     386,
+     392,
+     403,
      "def _ollama_probe(timeout: float=0.3) -> dict"
     ],
     [
      "_active_label",
      "function",
-     389,
-     396,
+     406,
+     413,
      "def _active_label() -> str"
     ],
     [
      "detect",
      "function",
-     399,
-     412,
+     416,
+     429,
      "def detect() -> dict"
     ],
     [
      "select",
      "function",
-     415,
-     438,
+     432,
+     455,
      "def select(provider: str, model: str | None=None) -> dict"
     ],
     [
      "start_ollama",
      "function",
-     441,
-     463,
+     458,
+     480,
      "def start_ollama(wait_s: float=6.0) -> dict"
     ],
     [
      "resolve",
      "function",
-     466,
-     480,
+     483,
+     497,
      "def resolve()"
     ]
    ]
@@ -4546,16 +4555,25 @@
   "megabrain/providers/embeddings.py": {
    "chunks": [
     [
-     "module",
-     "model_name, Embedder",
+     "function",
+     "model_name",
      null,
      1,
-     97,
-     "megabrain > megabrain/providers/embeddings.py > [model_name, Embedder]",
-     "84ee431463912eae518aa26d1b05a29be7e24439"
+     29,
+     "megabrain > megabrain/providers/embeddings.py > def model_name() -> str",
+     "435aa114f35e9f9d8c8ad963fc3fe307cde68e36"
+    ],
+    [
+     "class",
+     "Embedder",
+     null,
+     30,
+     125,
+     "megabrain > megabrain/providers/embeddings.py > class Embedder",
+     "3c578651618a16f0eb39fcd5178dcd5e799f192c"
     ]
    ],
-   "skeleton_sha": "19b13004583978af5e853420733b3e15c22a0396",
+   "skeleton_sha": "c5f3feb7ae22726388915d68dba07c84e262b1d7",
    "symbols": [
     [
      "model_name",
@@ -4568,35 +4586,49 @@
      "Embedder",
      "class",
      32,
-     97,
+     125,
      "class Embedder"
     ],
     [
      "Embedder.__init__",
      "method",
      33,
-     50,
+     57,
      "def __init__(self, api_key: str | None=None, model: str | None=None, dims: int | None=None, batch: int | None=None, cache_dir: Path | None=None)"
     ],
     [
      "Embedder._cpath",
      "method",
-     52,
-     54,
+     59,
+     61,
      "def _cpath(self, text: str) -> Path"
+    ],
+    [
+     "Embedder.CHARS_PER_TOKEN",
+     "class_attr",
+     66,
+     66,
+     "CHARS_PER_TOKEN = 2.5"
+    ],
+    [
+     "Embedder._batches",
+     "method",
+     68,
+     83,
+     "def _batches(self, idxs: list[int], texts: list[str], batch_size: int)"
     ],
     [
      "Embedder.embed",
      "method",
-     56,
-     75,
+     85,
+     103,
      "def embed(self, texts: list[str], batch_size: int | None=None) -> np.ndarray"
     ],
     [
      "Embedder._request",
      "method",
-     77,
-     97,
+     105,
+     125,
      "def _request(self, batch: list[str]) -> list[np.ndarray]"
     ]
    ]

@@ -43,6 +43,13 @@ class Embedder:
         # laptop) can choke on 64 large code chunks — drop to 4-8 there.
         self.batch = batch if batch is not None else \
             int(os.environ.get("MEGABRAIN_EMBED_BATCH", "64"))
+        # …but the request is ALSO capped by total tokens across the batch, and
+        # that cap is what a fixed item count cannot respect: pplx-embed rejects
+        # a request over 120k tokens ("Input total size exceeds maximum number
+        # of allowed tokens: got 252064, maximum is 120000"), which 64 large
+        # markdown chunks blow past on the first batch. Repos of small files
+        # never hit it, so it surfaced only when a docs-heavy repo was indexed.
+        self.max_tokens = int(os.environ.get("MEGABRAIN_EMBED_MAX_TOKENS", "100000"))
         self.cache = Path(cache_dir) if cache_dir is not None else \
             Path.home() / ".megabrain/cache" / self.model.replace("/", "_")
         self.cache.mkdir(parents=True, exist_ok=True)
@@ -52,6 +59,28 @@ class Embedder:
     def _cpath(self, text: str) -> Path:
         h = hashlib.sha1(f"{self.model}\x00{text}".encode()).hexdigest()
         return self.cache / f"{h}.npy"
+
+    # Deliberately pessimistic: the request that hit the cap measured 2.83
+    # chars/token, and denser scripts go lower still. Over-splitting costs one
+    # extra HTTP round trip; under-splitting fails the whole index.
+    CHARS_PER_TOKEN = 2.5
+
+    def _batches(self, idxs: list[int], texts: list[str], batch_size: int):
+        """Group indices into requests bounded by BOTH the item count and the
+        token budget. A single text over budget goes alone rather than being
+        dropped — the chunker bounds chunk size, so the provider still accepts
+        it, and failing loudly beats silently skipping content."""
+        cur: list[int] = []
+        cur_tok = 0.0
+        for i in idxs:
+            tok = len(texts[i]) / self.CHARS_PER_TOKEN
+            if cur and (len(cur) >= batch_size or cur_tok + tok > self.max_tokens):
+                yield cur
+                cur, cur_tok = [], 0.0
+            cur.append(i)
+            cur_tok += tok
+        if cur:
+            yield cur
 
     def embed(self, texts: list[str], batch_size: int | None = None) -> np.ndarray:
         batch_size = batch_size or self.batch
@@ -63,8 +92,7 @@ class Embedder:
                 out[i] = np.load(p)
             else:
                 missing.append(i)
-        for s in range(0, len(missing), batch_size):
-            idxs = missing[s:s + batch_size]
+        for idxs in self._batches(missing, texts, batch_size):
             vecs = self._request([texts[i] for i in idxs])
             for i, v in zip(idxs, vecs):
                 p = self._cpath(texts[i])
