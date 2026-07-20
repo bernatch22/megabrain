@@ -52,16 +52,8 @@ away from it.
 | instead of… | do this | trade-off |
 |---|---|---|
 | paying per ask | `pip install 'megabrain[claude]'` + be logged into Claude Code | narration runs on your plan (`haiku` by default); embeddings still need a key or a local endpoint |
-| the cloud entirely | local embeddings + a local narrator — [full recipe](RECIPES.md#run-fully-local--no-keys-no-cloud) | $0 and nothing leaves your machine; local embedders rank the #1 slot lower (R@1 0.682 vs 0.864) though they tie on completeness |
+| the cloud entirely | [run fully local](RECIPES.md#run-fully-local--no-keys-no-cloud) | $0, nothing leaves your machine; the best local embedder ties the cloud on completeness and ranks the #1 slot lower (R@1 0.773 vs 0.864) |
 | the default price | `export MEGABRAIN_ASK_MODEL=qwen/qwen3-coder` | ~half the cost, ~2× slower, open weights |
-
-```bash
-# local embeddings — Apache 2.0, code-tuned, 172 MB, your code never leaves the machine
-ollama serve
-ollama pull unclemusclez/jina-embeddings-v2-base-code
-export MEGABRAIN_EMBED_BASE_URL=http://localhost:11434/v1
-export MEGABRAIN_EMBED_MODEL=unclemusclez/jina-embeddings-v2-base-code
-```
 
 The index is one SQLite file at `~/repo/.megabrain/db.sqlite`, and `ask`/`search`
 auto-refresh it when files change (60 s TTL) — there is no manual re-index step. Changing

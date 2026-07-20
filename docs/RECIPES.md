@@ -63,10 +63,10 @@ look broken without them.
 ```bash
 ollama serve
 
-# 1. embeddings — Apache 2.0, code-tuned, 172 MB
-ollama pull unclemusclez/jina-embeddings-v2-base-code
+# 1. embeddings — pick one, see the table below
+ollama pull bge-m3
 export MEGABRAIN_EMBED_BASE_URL=http://localhost:11434/v1
-export MEGABRAIN_EMBED_MODEL=unclemusclez/jina-embeddings-v2-base-code
+export MEGABRAIN_EMBED_MODEL=bge-m3
 
 # 2. the narrator
 export MEGABRAIN_CHAT_BASE_URL=http://localhost:11434/v1
@@ -78,6 +78,26 @@ export OLLAMA_CONTEXT_LENGTH=40960
 megabrain index ~/repo --force        # --force re-embeds with the new model
 megabrain ask   ~/repo "how does X work"
 ```
+
+### Which local embedder
+
+Measured the same day, same corpus, same 22 golden queries, each force-reindexed — because
+the corpus drifts, and comparing a fresh local number against a stale table row hides the
+real gap:
+
+| model | R@1 | bundle_full | size | dims |
+|---|---|---|---|---|
+| `perplexity/pplx-embed-v1-0.6b` *(cloud control)* | **0.864** | **0.955** | — | 1024 |
+| **`bge-m3`** — the local pick | **0.773** | 0.909 | 1.2 GB | 1024 |
+| `jina-embeddings-v2-base-code` Q8 GGUF | 0.682 | 0.909 | **172 MB** | **768** |
+
+**Take `bge-m3`.** It ranks the #1 slot meaningfully better than the code-tuned jina
+(0.773 vs 0.682) and they tie on `bundle_full` — the number that decides whether `ask` has
+the right code to splice. Reach for jina only when footprint matters more than ranking:
+it's 7× smaller and its 768 dims make a 25% smaller index and faster search.
+
+Both are 8K-context models. The 512-token BERT embedders (e5, gte, bge-large) **cannot**
+be used — megabrain's chunks overflow their context and the request fails outright.
 
 **Knob 1 — `MEGABRAIN_CHAT_EXTRA`.** Hybrid-thinking models (`qwen3:*`) burn hundreds of
 hidden reasoning tokens per answer through Ollama's OpenAI endpoint, which **ignores** the
@@ -91,10 +111,12 @@ for the answer).
 
 **What to expect.** Local narrators cite fewer *secondary* files — the primary answer file
 and the splice guarantee hold. Measured on a 6-query sample: `qwen3-coder:30b` cite_recall
-0.417 · `qwen3:14b` 0.333 · cloud `qwen/qwen3-coder` control 0.667. On retrieval, local
-jina ties the cloud default on `bundle_full` (0.909) while ranking the #1 slot lower
-(R@1 0.682 vs 0.864) — it finds the right answer on a focused question; the cloud embedder
-pulls in more surrounding context on questions that span files.
+0.417 · `qwen3:14b` 0.333 · cloud `qwen/qwen3-coder` control 0.667.
+
+In practice a local stack finds the right answer on a focused question; the cloud embedder
+pulls in more of the surrounding context on questions that span a couple of files. Neither
+hallucinates — the splice guarantee holds regardless of which embedding retrieved the
+bundle.
 
 ---
 
