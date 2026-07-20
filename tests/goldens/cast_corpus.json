@@ -301,18 +301,18 @@
      "stream_events",
      "1/2",
      460,
-     565,
+     552,
      "megabrain > megabrain/ask/agents.py > def stream_events(root, question: str, on_event, *, agents: bool | None=None, show_map: bool=True, docs_only: bool=False, include_docs: bool=False, path_filter: str | None=None, state=None, model: str | None=None) -> dict",
-     "600c3471590ab930ed54e4dd8b3896f59053c512"
+     "cda51ec30028f82e23d34bf913c2cb77aa786012"
     ],
     [
      "block",
      "stream_events",
      "2/2",
-     566,
-     600,
+     553,
+     608,
      "megabrain > megabrain/ask/agents.py > def stream_events(root, question: str, on_event, *, agents: bool | None=None, show_map: bool=True, docs_only: bool=False, include_docs: bool=False, path_filter: str | None=None, state=None, model: str | None=None) -> dict",
-     "e0132ba6cc3268f0cbdadbdcd71dafcf99b911a8"
+     "370baa6f314bd6deb2d58efdd9b5ebf835d30cd0"
     ]
    ],
    "skeleton_sha": "2a2fd884706b77eb11b4a1aa382124579eb04f72",
@@ -489,7 +489,7 @@
      "stream_events",
      "function",
      464,
-     600,
+     608,
      "def stream_events(root, question: str, on_event, *, agents: bool | None=None, show_map: bool=True, docs_only: bool=False, include_docs: bool=False, path_filter: str | None=None, state=None, model: str | None=None) -> dict"
     ]
    ]

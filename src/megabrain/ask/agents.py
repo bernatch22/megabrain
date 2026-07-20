@@ -507,6 +507,14 @@ def stream_events(root, question: str, on_event, *, agents: bool | None = None,
         if served:
             emit({"type": "cached", "repo": res["repo"], "ms": retrieval_ms,
                   "question": served["question"], "text": served["text"]})
+            # `done` is the stream's terminator on EVERY path — a sink must not
+            # have to know which branch answered to know the answer ended. The
+            # studio papered over this one by fabricating a done client-side
+            # for `cached`; a CLI or third-party consumer just hung.
+            emit({"type": "done", "spans": served["text"].count("```") // 2,
+                  "files": len(served["files"]), "cached": True,
+                  "retrieval_ms": retrieval_ms, "llm_ms": 0,
+                  "dropped": [], "n_dropped": 0, "agents": None})
             return {**base, "text": served["text"], "llm_ms": 0,
                     "served_from_cache": True}
 

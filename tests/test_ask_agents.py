@@ -251,6 +251,28 @@ def test_stream_events_scoped_single_agent(monkeypatch):
     assert "def ask(): pass" in spliced
 
 
+def test_served_from_cache_still_ends_the_stream(monkeypatch):
+    """`done` terminates EVERY path, including the serve-from-cache shortcut.
+    A sink must not have to know which branch answered to know it ended."""
+    events = []
+    st = SimpleNamespace(store=SimpleNamespace(symbols_for=lambda f: []),
+                         fpaths=[], fskels=[])
+    res = {"repo": "demo", "query": "q", "ms": 1, "tier1": [], "tier2": [],
+           "flows": [{"question": "cached q", "text": "prose\n```py\nx=1\n```\n",
+                      "files": ["a.py"], "sha": {"a.py": "s"},
+                      "score": 0.9, "qscore": 0.95}]}
+    monkeypatch.setattr(ask_agents, "load_state", lambda *a, **k: st)
+    monkeypatch.setattr(ask_agents, "search_with_state", lambda *a, **k: res)
+    monkeypatch.setattr("megabrain.storage.flows.serve_verbatim",
+                        lambda root, flows: flows[0])
+
+    out = ask_agents.stream_events(".", "q", events.append)
+    types = [e["type"] for e in events]
+    assert types == ["cached", "done"], types
+    assert out["served_from_cache"] is True
+    assert events[-1]["cached"] is True and events[-1]["llm_ms"] == 0
+
+
 def test_uncited_answer_still_ends_the_stream(monkeypatch):
     """An answer that cites nothing falls open to the bundle — and must STILL
     emit `done`. Every sink treats that event as end-of-stream, so skipping it

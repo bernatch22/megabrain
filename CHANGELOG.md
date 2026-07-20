@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.15.3 — `done` really does terminate every path
+
+Verifying 0.15.2 against the live demo turned up the last hole of the same
+family: **the serve-from-cache path never emitted `done` either**. The stream
+carried one `cached` event and stopped. The studio hid it by fabricating the
+event client-side, so a cached answer looked fine there while a CLI or any
+third-party consumer waiting on the documented terminator simply hung.
+
+`done` now fires on every terminating branch — narrated, ungrounded fail-open
+and served-from-cache — carrying `cached: true` and the stored answer's span
+and file counts so the footer reports real numbers instead of zeros.
+
 ## 0.15.2 — a cached flow taught the narrator to fake its citations
 
 Reported from the demo: a question matching TWO cached flows answered with
