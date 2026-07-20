@@ -20,7 +20,7 @@ Endpoints:
     GET  /docsearch     ?q=&limit=&repo=  -> docs-site hits
     GET  /get           ?file=&symbol=&repo= -> {code}
     GET  /chunks        ?file=&q=&repo=   -> every chunk of one file (heatmap)
-    GET  /prune         ?q=&rerank=&repo= -> {chunks(signal), noise, kept, pruned, …}
+    GET  /prune         ?q=&rerank=&docs=&repo= -> {chunks(signal), noise, kept, pruned, …}
     GET  /graph         ?mode=&node=&source=&target=&repo= -> knowledge graph
     GET  /symbols       ?file=&repo=  -> one file's outline (no file: every name)
     GET  /symbol        ?name=&repo=  -> repo-wide definitions of a name
@@ -28,7 +28,7 @@ Endpoints:
     GET  /flow          ?id=&repo=    -> one cached flow in full (the viewer)
     GET  /queries       ?repo=        -> starter queries from .megabrainqueries
     POST /flows/delete  {id, repo?}   -> drop one cached flow
-    POST /search    {query, max?, repo?}      -> raw bundle {tier1, tier2, ms}
+    POST /search    {query, max?, docs?, repo?} -> raw bundle {tier1, tier2, ms}
     POST /ask       {question, model?, agents?, repo?, …} -> buffered answer
     POST /ask/stream {same}            -> SSE multi-agent live view
     POST /index     {force?, repo?}    -> index stats (blocking)
@@ -201,13 +201,21 @@ def _repo_stats(s: RepoSession) -> dict:
     """name/root/files/chunks for /repos and /health — tolerant of a repo that
     isn't indexed yet (freshly added, before its first /index). Which repo is
     'active' is the client's selection, tracked in the UI — not a server fact."""
+    from ..indexing.strategies import MarkdownStrategy
+    doc_exts = tuple(MarkdownStrategy.exts)
     base = {"name": s.root.name, "root": str(s.root)}
     try:
         return {**base, **s.with_state(lambda st: {
             "files": len(st.fpaths), "chunks": len(st.metas),
+            # how many INDEXED files are docs — the studio greys out its
+            # "Docs only" toggle at 0 instead of letting the docs lane fail
+            # open to code under a switch that claims it's filtering. A repo
+            # can have markdown on disk and none here (the demo checkouts
+            # .megabrainignore `*.md`), so only the index can answer this.
+            "docs": sum(1 for f in st.fpaths if f.lower().endswith(doc_exts)),
             "embed_model": st.store.get_meta("embed_model")})}
     except Exception:
-        return {**base, "files": 0, "chunks": 0, "embed_model": None}
+        return {**base, "files": 0, "chunks": 0, "docs": 0, "embed_model": None}
 
 
 # ── HTTP ──────────────────────────────────────────────────────────────────
@@ -456,9 +464,16 @@ def _make_handler(reg: Registry, cors: str | None, enable_llm: bool,
                     q = (qs.get("q") or qs.get("query") or [""])[0].strip()
                     if not q:
                         return self._err(400, "missing q")
+                    from .. import app
                     from ..retrieval.bundle import prune_search
+                    # docs=1 — the studio's "Docs only" toggle. Default is
+                    # code-only; app.content_filters is the one definition of
+                    # that policy (this route can't call app.prune — it holds a
+                    # warm state and would throw it away reloading from disk).
+                    docs = (qs.get("docs") or ["0"])[0] in ("1", "true")
+                    cf = app.content_filters(docs)
                     res = reg.get(repo_name).with_state(
-                        lambda st: prune_search(st, q, include_pruned=True))
+                        lambda st: prune_search(st, q, include_pruned=True, **cf))
                     if (qs.get("rerank") or ["0"])[0] in ("1", "true"):
                         from ..retrieval.rerank import llm_rerank
                         res = llm_rerank(res, q)
@@ -483,7 +498,10 @@ def _make_handler(reg: Registry, cors: str | None, enable_llm: bool,
                     q = (body.get("query") or body.get("task") or "").strip()
                     if not q:
                         return self._err(400, "missing query")
-                    res = reg.get(repo_name).with_state(lambda st: search_with_state(st, q))
+                    from .. import app
+                    cf = app.content_filters(bool(body.get("docs")))
+                    res = reg.get(repo_name).with_state(
+                        lambda st: search_with_state(st, q, **cf))
                     mx = int(body.get("max") or 0)
                     if mx:
                         res["tier1"] = res["tier1"][:mx]

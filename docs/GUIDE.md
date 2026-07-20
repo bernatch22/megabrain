@@ -88,7 +88,15 @@ same index. All three in one picture:
 megabrain search ~/repo "retry logic"            # the full bundle: CORE code + RELATED map
 megabrain search ~/repo "retry logic" --prune    # flat, ranked signal chunks — noise dropped
 megabrain search ~/repo "retry logic" --rerank   # + one cheap LLM pass (implies --prune)
+megabrain search ~/repo "how to deploy" --docs   # the indexed markdown instead of the code
 ```
+
+**`search` is code OR docs, never a blend** — like `ask`, it drops markdown from the
+ranking before scoring, and `--docs` flips the whole bundle to the docs. Blending them
+sounds harmless and isn't: with both in one index, a large README wins prose-shaped
+questions and buries the implementation it describes (on sinatra, `README.md` took the
+top slot from `lib/sinatra/base.rb` for *"how are routes defined and dispatched?"*).
+`ask --with-docs` is the one mode that deliberately mixes them.
 
 Pure retrieval: your question is embedded and matched by vector similarity, ~200 ms, free.
 `--prune` keeps only the **signal** chunks — every related file still appears (each
@@ -154,6 +162,12 @@ UI on top of the JSON API, `serve-api` runs the same API headless. Four tabs:
 - **Search** — `SIGNAL · KEPT` and `NOISE · PRUNED` **side by side**, so you see what the
   engine read *and* what it threw away. Toggle the LLM rerank and the header names the
   model, how many chunks it dropped, and what it cost.
+
+**Docs only** sits on both the Ask and the Search bar. It confines retrieval to the
+indexed markdown *before* scoring, so the answer comes from the docs rather than from
+code that merely mentions them — the studio's face of `ask --docs` / `search --docs`.
+It's sticky, and flipping it re-runs Search (free) but never re-runs Ask on its own
+(that would spend an LLM call).
 - **Flows** — [the ask cache](#5-it-remembers--the-flow-cache), listed newest-first, with
   the stored answer viewable and its cited files openable. `stale` marks flows whose
   sources changed on disk.

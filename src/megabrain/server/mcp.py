@@ -6,7 +6,7 @@ exposes what it alone can do):
   megabrain_ask(repo_path, question, scope_path?, docs?, include_docs?)
       -> explained answer, real code spliced (docs=true -> docs-only walkthrough;
          include_docs=true -> code + docs)
-  megabrain_search(repo_path, task, scope_path?, compact?, rerank?)
+  megabrain_search(repo_path, task, scope_path?, compact?, rerank?, docs?)
       -> flat relevance-ranked signal chunks with the real code, noise dropped
          (megabrain_query is a deprecated dispatch alias for it)
   megabrain_graph(repo_path, mode?, node?, source?, target?, scope_path?)
@@ -76,10 +76,12 @@ TOOLS = [
             "The same retrieval as megabrain_ask but with NO LLM (~200ms): a flat, "
             "relevance-ranked list of exactly the chunks worth reading "
             "([id] file:lines · score + CODE), with the noise dropped. EVERY related "
-            "file still appears (each contributes its best chunk) — only the noisy "
-            "chunks INSIDE files are cut, so nothing relevant is lost. One call hands "
-            "you the real code, no follow-up fetch needed. Use it when you want the "
-            "exact code to read rather than a narration — deterministic, no LLM."),
+            "file still appears, each with its best-matching chunk — so nothing "
+            "relevant is missed at the FILE level. Chunks are filtered though: a "
+            "file's other chunks are cut, so when you need one file in full, Read it "
+            "(the path and line numbers are right there). One call hands you the real "
+            "code, no follow-up fetch needed. Use it when you want the exact code to "
+            "read rather than a narration — deterministic, no LLM."),
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -91,6 +93,11 @@ TOOLS = [
                             "description": "default false (code bodies included). Set true for "
                                            "signatures only — drop the code bodies, keep the "
                                            "ranked spans (ids/files/lines/scores)."},
+                "docs": {"type": "boolean", "default": False,
+                         "description": "default false = search the CODE. true = search the "
+                                        "indexed DOCS (markdown) instead. It is one or the "
+                                        "other, never a blend: a large README otherwise "
+                                        "outranks the implementation it describes."},
                 "rerank": {"type": "boolean", "default": True,
                            "description": "default true: a cheap LLM pass drops vocabulary-only "
                                           "matches (tests/evals/tangential files) and reorders "
@@ -237,12 +244,20 @@ def call_tool(name: str, args: dict) -> str:
         # ALWAYS the pruned, flat signal list. The file-grouped bundle rendered
         # RELATED as a code-less map, which is a dead end over MCP (there is no
         # get/chunks tool to expand it) — and pruning keeps every bundle file
-        # anyway (each contributes its best chunk), so nothing relevant is lost.
+        # anyway, each with its best chunk.
+        #
+        # What pruning DOES cost is chunk-level completeness: a CORE file's
+        # other chunks are dropped by the keep-ratio cut. That is a deliberate
+        # trade — context is the agent's scarce resource — and it is only safe
+        # because the agent has Read for the full file, which is why the tool
+        # description SAYS so. Claiming "nothing is lost" (it used to) talks an
+        # agent out of the one fallback that makes the trade work.
         from ..retrieval.render import render_pruned
         root, pf = _scope(args)
         with_text = not bool(args.get("compact"))
         res = app.prune(root, args["task"], path_filter=pf, with_text=with_text,
-                        llm_rerank=bool(args.get("rerank", True)))
+                        llm_rerank=bool(args.get("rerank", True)),
+                        docs=bool(args.get("docs")))
         return render_pruned(res, with_text=with_text)
     if name == "megabrain_ask":
         from ..ask import render_ask

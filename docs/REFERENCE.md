@@ -46,6 +46,7 @@ files under it. `install` and `repos` take no path (they're machine-level).
 | | `--json` | machine-readable |
 | `search` | `--prune` | flat, relevance-ranked **signal** chunks; noise dropped |
 | | `--rerank` | + one LLM pass to drop vocabulary-only matches (implies `--prune`) |
+| | `--docs` | search the indexed **docs** (markdown) instead of the code (search is code **or** docs, never a blend) |
 | | `--full` | include RELATED code bodies (default renders RELATED as a map) |
 | | `--compact` | drop code bodies, keep spans and scores |
 | | `--json` | machine-readable |
@@ -92,7 +93,7 @@ auto-refreshes a stale index before answering.
 | tool | returns | parameters |
 |---|---|---|
 | **`megabrain_ask`** | A narrated walkthrough of the whole relevant flow with the real code spliced in verbatim. Broad questions fan out into parallel sub-agents. ~6–19 s (fan-out to ~40 s). | `question` *(req)* · `scope_path` · `docs` · `include_docs` · `agents` (`true`/`false`; omit = auto) |
-| **`megabrain_search`** | The same retrieval, no LLM in the core (~200 ms): a flat ranked list of the chunks worth reading, with code, noise dropped. | `task` *(req)* · `scope_path` · `compact` · `rerank` *(default `true`)* |
+| **`megabrain_search`** | The same retrieval, no LLM in the core (~200 ms): a flat ranked list of the chunks worth reading, with code, noise dropped. | `task` *(req)* · `scope_path` · `compact` · `docs` · `rerank` *(default `true`)* |
 | **`megabrain_graph`** | The repo as a knowledge graph. | `mode` (`map` default · `node` · `path`) · `node` · `source` + `target` · `scope_path` |
 | **`megabrain_index`** | Index/update a repo — or the registry of every indexed repo on this machine. | `repo_path` · `list` (`true` → the registry) |
 | **`megabrain_forge`** | Teach megabrain a file type it can't index yet. | `ext` · `list_only` · `dry_run` · `specialize` |
@@ -119,7 +120,7 @@ repo.
 | `GET /symbols?file=` | a file's outline — no `file` = the repo-wide name index |
 | `GET /symbol?name=` | repo-wide definitions of a bare name (go-to-definition) |
 | `GET /chunks?file=&q=` | every chunk of one file, scored + `selected` |
-| `GET /prune?q=&rerank=` | the flat signal list (`rerank=1` adds the LLM lane) |
+| `GET /prune?q=&rerank=&docs=` | the flat signal list (`rerank=1` adds the LLM lane; `docs=1` searches the docs only) |
 | `GET /graph?mode=&node=&source=&target=` | the knowledge graph |
 | `GET /flows` | the flow cache listed (id · question · files · created · stale) |
 | `GET /flow?id=` | one cached flow in full |
@@ -220,7 +221,7 @@ from megabrain.ask import ask, render_ask
 | `load_state(root)` → `SearchState` | load the matrices once, query many times |
 | `search_with_state(state, query, *, path_filter)` | the bundle, warm |
 | `search(root, query)` | one-shot bundle |
-| `prune_search(state, query, *, with_text, include_pruned)` | flat ranked signal chunks |
+| `prune_search(state, query, *, with_text, include_pruned, only_docs, exclude_docs)` | flat ranked signal chunks |
 | `prune_search_root(root, query, …)` | one-shot prune |
 | `render(res)` · `render_pruned(res)` | bundle → markdown |
 | `get_code(root, relpath, symbol=None)` | one file or symbol (path-traversal hardened) |

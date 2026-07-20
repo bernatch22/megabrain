@@ -485,10 +485,15 @@ def stream_events(root, question: str, on_event, *, agents: bool | None = None,
     # like the query + its translations can't crowd the code out of the bundle
     # (graphify's 'how it works' returned 12 docs, 0 code -> fail-open dump).
     # Fail-open: a docs-only repo (no code survived) re-runs with docs in.
+    # …and the mirror image for docs_only: retrieve over the DOCS alone, so a
+    # docs walkthrough isn't capped at however many markdown files happened to
+    # outrank the code. Post-filtering the mixed bundle (what _candidates does)
+    # is the last word, not the first — on a code-heavy repo it left the
+    # narrator one or two doc chunks to work with.
     code_only = not docs_only and not include_docs
     res = search_with_state(st, question, path_filter=path_filter,
-                            exclude_docs=code_only)
-    if code_only and not res["tier1"]:
+                            exclude_docs=code_only, only_docs=docs_only)
+    if (code_only or docs_only) and not res["tier1"]:
         res = search_with_state(st, question, path_filter=path_filter)
     retrieval_ms = int((time.time() - t0) * 1000)
     cands = _candidates(res, docs_only, include_docs)

@@ -75,6 +75,10 @@ def main(argv=None):
                    help="add the LLM rerank on top of --prune: drop vocabulary-only "
                         "matches (tests/evals) and reorder (~1-2s, fails open to the "
                         "deterministic list; model: $MEGABRAIN_RERANK_MODEL)")
+    p.add_argument("--docs", action="store_true",
+                   help="search the indexed DOCS (markdown) instead of the code. "
+                        "search is code OR docs, never a blend — a big README "
+                        "otherwise buries the implementation it describes")
     p.add_argument("--full", action="store_true",
                    help="include RELATED best-chunk code bodies (default renders "
                         "RELATED as a map: file, match span, symbols — ~60%% fewer tokens)")
@@ -297,18 +301,20 @@ def _dispatch(a, raw: list[Path], root: Path) -> None:
         scoped = [resolve_root(p) for p in raw]           # [(root, subpath), …]
         roots = [r for r, _ in scoped]
         pfs = [sp or None for _, sp in scoped]
+        docs = getattr(a, "docs", False)
         if getattr(a, "prune", False) or getattr(a, "rerank", False):
             res = app.prune(roots[0], a.task, path_filter=pfs[0],
                             with_text=not a.compact,
-                            llm_rerank=getattr(a, "rerank", False))
+                            llm_rerank=getattr(a, "rerank", False),
+                            docs=docs)
             print(_json.dumps(res, indent=1) if a.json
                   else render_pruned(res, with_text=not a.compact))
         elif len(roots) > 1:
-            res = app.query_multi(roots, a.task, path_filters=pfs)
+            res = app.query_multi(roots, a.task, path_filters=pfs, docs=docs)
             print(_json.dumps(res, indent=1) if a.json
                   else render(res, compact=a.compact, related_code=a.full))
         else:
-            res = app.query(roots[0], a.task, path_filter=pfs[0])
+            res = app.query(roots[0], a.task, path_filter=pfs[0], docs=docs)
             print(_json.dumps(res, indent=1) if a.json
                   else render(res, compact=a.compact, related_code=a.full))
     elif a.cmd == "ask":

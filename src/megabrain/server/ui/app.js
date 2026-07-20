@@ -53,7 +53,11 @@
     provider: ls.get("mb-provider", ""), model: ls.get("mb-model", ""),
     q: "",
     search: null, loading: false,
-    prune: null, pruneRerank: ls.get("mb-rerank", "0") === "1",
+    // `rerank`/`docsOnly` are read straight off st by the views and the toggles
+    // — the key names must match those, not a prettier alias (an earlier
+    // `pruneRerank` here meant the persisted rerank state never came back).
+    prune: null, rerank: ls.get("mb-rerank", "0") === "1",
+    docsOnly: ls.get("mb-docs", "0") === "1",   // search/ask the DOCS, not the code
     ask: null, askCtl: null,
     flows: null, flowsLoading: false, flowSel: null,   // flow-cache list + viewer
     queries: null,                       // .megabrainqueries starter chips
@@ -186,16 +190,49 @@
     </div>`;
   }
 
+  // Docs-only lane — the same control in Ask and Search, because it is the
+  // same server-side switch (retrieval is confined to the indexed markdown
+  // BEFORE scoring, so code can never take a slot). Shared so the two tabs
+  // can't drift in label or behavior.
+  //
+  // The engine's docs filter fails OPEN (better than answering nothing), which
+  // means on a repo whose INDEX has no markdown it quietly returns code. A
+  // toggle reading "on" over a screen of Ruby is a lying switch, so the count
+  // from /repos gates it: 0 indexed docs -> the control says why and does
+  // nothing. `docsOn()` is the single source of truth every caller reads, so a
+  // sticky "on" carried over from another repo can't leak into a request.
+  const repoDocs = () => {
+    const r = st.repos.find((x) => x.name === st.repo);
+    return r ? r.docs : undefined;         // undefined = unknown (cold repo)
+  };
+  const docsAvailable = () => repoDocs() !== 0;
+  const docsOn = () => st.docsOnly && docsAvailable();
+  const docsBtn = () => {
+    const off = !docsAvailable();
+    return `<button class="btn-ghost" data-act="docs-toggle" ${off ? "disabled" : ""}
+      title="${off ? "This repo has no indexed markdown — nothing to search. (Files can exist on disk and still be excluded by .megabrainignore.)"
+        : "Search the indexed DOCS only (markdown) instead of the code. Retrieval is confined before scoring, so the whole answer comes from the docs — not code that merely mentions them."}"
+      style="${off ? "opacity:.45;cursor:not-allowed"
+        : docsOn() ? "background:var(--accent-dim);border-color:var(--accent-bd);color:var(--accent)" : ""}">${ico.fileL}<span>${off ? "No docs indexed" : `Docs only ${docsOn() ? "on" : "off"}`}</span></button>`;
+  };
+
   function viewSearch() {
     const r = st.search;
     const rerankBtn = `<button class="btn-ghost" data-act="rerank-toggle" title="LLM pass: drop vocabulary-only matches (tests/evals), reorder — fails open to the deterministic list"
         style="${st.rerank ? "background:var(--accent-dim);border-color:var(--accent-bd);color:var(--accent)" : ""}">✨<span>LLM rerank ${st.rerank ? "on" : "off"}</span></button>`;
-    const right = rerankBtn + (st.loading ? `<div class="badge"><span class="spinner"></span></div>`
+    const right = docsBtn() + rerankBtn + (st.loading ? `<div class="badge"><span class="spinner"></span></div>`
       : r ? `<div class="badge"><b style="color:var(--accent)">${r.kept}</b><span>kept</span><span style="opacity:.5">·</span><span style="color:var(--muted)">${r.pruned} pruned</span></div>` : "");
     let body;
     if (r) {
       const rr = r.reranked;
-      body = `<div class="stats-row">
+      // asked for docs, got code: the engine's filter failed open because this
+      // index holds no markdown. Say it in the results too — the chip is gated
+      // on /repos, which can be stale if the repo was re-indexed since.
+      const docsFellOpen = r.only_docs && r.docs_indexed === false;
+      body = (docsFellOpen ? `<div class="info-bar" style="border-color:var(--bad-bd);background:var(--bad-bg,var(--panel2))">
+          <span style="font-size:12px">⚠ <b>Docs only had nothing to search</b> — this repo's index contains no markdown,
+          so the results below are CODE. Check the repo's <code class="mono">.megabrainignore</code>, then re-index.</span></div>` : "")
+        + `<div class="stats-row">
           <div><b>${r.scanned}</b> chunks scanned</div><div class="sdot"></div>
           <div><span style="color:var(--muted)">retrieval</span> <b class="mono">${r.ms}ms</b></div>
           ${rr ? `<div class="sdot"></div><div>✨ reranked by <b class="mono">${esc(shortModel(rr.model))}</b> · dropped <b>${rr.dropped}</b> tangential · +${(rr.ms / 1000).toFixed(1)}s</div>`
@@ -214,7 +251,7 @@
     } else {
       body = emptyState("The money-shot: what the engine READ vs what it IGNORED.", "Type a query and hit ⏎ to see signal vs noise, side by side.");
     }
-    return `<div class="view-wrap mb-fade" style="max-width:1280px">${queryBar("What did the engine read vs ignore?", right)}${body}</div>`;
+    return `<div class="view-wrap mb-fade" style="max-width:1280px">${queryBar(st.docsOnly ? "Search the docs — what did the engine read vs ignore?" : "What did the engine read vs ignore?", right)}${body}</div>`;
   }
 
   function signalCard(s) {
@@ -1155,7 +1192,7 @@
   // ── ask view (incremental) ───────────────────────────────────────────
   function viewAsk() {
     const running = !!st.askCtl;
-    const right = `<button class="btn-ghost" data-act="ask-run">${running ? '<span class="spinner"></span>' : ico.refresh}<span>${running ? "Running" : "Run"}</span></button>`;
+    const right = docsBtn() + `<button class="btn-ghost" data-act="ask-run">${running ? '<span class="spinner"></span>' : ico.refresh}<span>${running ? "Running" : "Run"}</span></button>`;
     const a = st.ask;
     let body = "";
     if (a) {
@@ -1481,7 +1518,7 @@
   async function runSearch() {
     if (!st.q.trim() || !st.repo) return;
     st.loading = true; renderView();
-    try { st.search = await api.prune(st.q.trim(), st.repo, st.rerank); }
+    try { st.search = await api.prune(st.q.trim(), st.repo, st.rerank, docsOn()); }
     catch (e) { toast(e.message); }
     st.loading = false; renderView();
   }
@@ -1493,6 +1530,7 @@
     st.ask = a; renderView();
     const body = { question: st.q.trim(), repo: st.repo, agents: "auto" };
     if (st.model) body.model = st.model;
+    if (docsOn()) body.docs = true;         // narrate from the docs, not the code
     const ctl = api.askStream(body, (ev) => onAskEvent(a, ev));
     st.askCtl = ctl;
     ctl.done.then(() => { st.askCtl = null; askRender(); paintAskChip(); })
@@ -2090,6 +2128,14 @@
       st.repo = t.dataset.name; clearRepoState(); render();
     }
     else if (act === "rerank-toggle") { st.rerank = !st.rerank; ls.set("mb-rerank", st.rerank ? "1" : "0"); if (st.q.trim()) runSearch(); else renderView(); }
+    else if (act === "docs-toggle") {
+      if (!docsAvailable()) return;        // nothing to filter — the chip says so
+      st.docsOnly = !st.docsOnly; ls.set("mb-docs", st.docsOnly ? "1" : "0");
+      // Search re-runs (retrieval is local and free); Ask only repaints — an
+      // automatic re-ask would spend an LLM call (and a rate-limit slot on a
+      // public box) on a toggle the user may still be setting up.
+      if (st.view === "search" && st.q.trim()) runSearch(); else renderView();
+    }
     else if (act === "gopen") { openGraphNode(t.dataset.file); }
     else if (act === "gclear") { st.graphNode = null; st.graphSel = null; paintPanel(); }
     else if (act === "gcom") {

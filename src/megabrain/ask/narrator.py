@@ -21,7 +21,8 @@ from ..retrieval.state import SearchState
 
 # ask is a CODE walkthrough: docs (markdown) are excluded from its candidates so a
 # code explanation isn't diluted with prose. docs_only flips it to a docs-only
-# walkthrough. Docs stay retrievable via `query` regardless.
+# walkthrough. `search` follows the same rule (app.content_filters) — code or
+# docs, never a blend.
 DOC_EXTS = MarkdownStrategy.exts
 
 # ~50K tokens of candidate code; fits every default CLOUD model. Local models
@@ -40,7 +41,7 @@ def _candidates(res: dict, docs_only: bool = False,
     """Retrieved chunks for the walkthrough: CORE chunks + RELATED best chunks,
     numbered. Three modes: default = code only (citing doc prose pollutes a code
     walkthrough), docs_only = docs-only walkthrough, include_docs = code AND
-    docs together. `query` surfaces both regardless of this setting."""
+    docs together — the only mode that blends them."""
     def keep(f: str) -> bool:
         is_doc = f.endswith(DOC_EXTS)
         if docs_only:

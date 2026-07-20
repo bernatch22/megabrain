@@ -255,6 +255,15 @@ signal/noise call the full bundle makes, just rendering the signal alone (with
 is the lean read-path answer for a coding agent that wants only the code worth
 reading, not a narration; a plain `search` still returns the full CORE+RELATED bundle.
 
+**Content policy — code OR docs, one place (`app.content_filters`).** Every search
+verb ranks code and drops markdown before scoring; `docs=true` flips the whole
+bundle to markdown. The retrieval primitives stay neutral (both filters default
+off) — `app.py` is the only thing that decides, so CLI, MCP, HTTP and the studio
+cannot drift apart. Blending is not neutral: once a repo indexes both, a large
+README wins prose-shaped questions and buries the code (measured on sinatra —
+`README.md` displaced `lib/sinatra/base.rb` from CORE for "how are routes defined
+and dispatched?"). `ask --with-docs` is the sole deliberate blend.
+
 **LLM rerank (`retrieval/rerank.py`, the `llm_rerank` lane, layered ON the prune).**
 The deterministic prune is recall-safe by design — every bundle file contributes its
 best chunk — so files that merely *share vocabulary* with the query (tests, eval
@@ -365,8 +374,12 @@ The LLM is a narrator that can only **point**, never paste:
 
 1. Retrieve (§3); flatten CORE chunks + RELATED best-chunks into a numbered
    candidate list. Three content modes: **code-only (default)**, `--docs`
-   (docs-only), `--with-docs` (code + docs). Candidates are capped at 200K chars —
-   one call always fits.
+   (docs-only), `--with-docs` (code + docs). The mode is applied at RETRIEVAL,
+   not just to the candidate list (`scoring.filter_doc_chunks`, fail-open both
+   ways): code-only keeps a doc titled like the query from crowding the code
+   out, and docs-only keeps the code from taking the slots — post-filtering a
+   mixed bundle capped a docs walkthrough at whatever markdown outranked the
+   code. Candidates are capped at 200K chars — one call always fits.
 2. **One streamed chat call**: the prompt forbids quoting code and requires
    double-bracket citations — `[[3]]` (whole chunk) or `[[3:705-731]]` (line range;
    an `L` prefix is tolerated because models mirror the prompt's `L1-172` headers).
@@ -452,12 +465,13 @@ single-agent ask → full bundle.
   registry of every indexed repo), `megabrain_forge`, `megabrain_flows`. A tool costs the
   caller context + a routing decision, so the MCP surface carries
   only what megabrain alone can do (single-file/symbol fetches are the host's
-  Read/Grep job; `ask`'s sub-agents fetch files internally). Auto-refreshes stale
-  indexes before answering.
+  Read/Grep job; `ask`'s sub-agents fetch files internally). `megabrain_search`
+  also takes `docs` (the docs-only lane, same switch as ask's). Auto-refreshes
+  stale indexes before answering.
 - **HTTP** (`frontends/http.py`, stdlib `http.server`, warm state, db-mtime auto-reload):
   `/search` `/docsearch` `/chunks` `/ask` `/ask/stream` (SSE: the ask v2 event
   stream — plan, per-agent deltas/tools, spliced synthesis) `/prune` (`?rerank=1` runs
-  the §3.3 LLM rerank over the signal chunks) `/graph` (`?mode=&node=&source=&target=` —
+  the §3.3 LLM rerank over the signal chunks; `?docs=1` the docs-only lane) `/graph` (`?mode=&node=&source=&target=` —
   the §6 knowledge graph) `/get` `/index` (`/index/stream` SSE per-file progress)
   `/repos` (this server's warm repos **merged with the machine-global registry** —
   registered-elsewhere repos come back `loaded: false` so the studio can load them on

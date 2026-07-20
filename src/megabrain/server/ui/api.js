@@ -95,9 +95,9 @@
     chunks: (file, q, repo) =>
       j("/chunks?file=" + encodeURIComponent(file) + "&q=" + encodeURIComponent(q) +
         (repo ? "&repo=" + encodeURIComponent(repo) : "")),
-    prune: (q, repo, rerank) =>
+    prune: (q, repo, rerank, docs) =>
       j("/prune?q=" + encodeURIComponent(q) + (repo ? "&repo=" + encodeURIComponent(repo) : "") +
-        (rerank ? "&rerank=1" : "")),
+        (rerank ? "&rerank=1" : "") + (docs ? "&docs=1" : "")),
     graph: (params, repo) => {
       const p = new URLSearchParams();
       for (const k of ["mode", "node", "source", "target"]) if (params[k]) p.set(k, params[k]);

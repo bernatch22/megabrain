@@ -73,14 +73,24 @@ def apply_path_filter(metas: list, M: np.ndarray, path_filter: str | None):
     return [metas[i] for i in idx], M[idx]
 
 
-def exclude_doc_chunks(metas: list, M: np.ndarray, doc_exts: tuple):
-    """Drop doc chunks (markdown) from the candidate set BEFORE scoring, so a
-    doc titled like the query (+ near-identical translations) can't crowd the
-    code out of the bundle — the code-only `ask` wants code to rank. Fail-open:
-    if nothing but docs exists, return unchanged (a docs-only repo still
-    answers)."""
+def filter_doc_chunks(metas: list, M: np.ndarray, doc_exts: tuple, keep: bool):
+    """Restrict the candidate set to ONE side of the code/docs line BEFORE
+    scoring, so the entire bundle (CORE, RELATED, graph neighbors) stays on it.
+
+    keep=False — drop the docs: a doc titled like the query (+ its
+    near-identical translations) can't crowd the code out of the bundle, which
+    is what the code-only `ask` wants.
+    keep=True — drop the CODE: the docs-only lane (`ask --docs`, `search
+    --docs`, the studio's "Docs only" toggle). The question is about the prose,
+    so code must not compete for the slots — post-filtering a mixed bundle
+    instead would cap the answer at however many doc files happened to outrank
+    the code.
+
+    Fail-open BOTH ways: when the wanted side is empty (docs asked of a repo
+    with no markdown, code asked of a docs-only repo) return the set unchanged
+    rather than answering nothing."""
     idx = [i for i, m in enumerate(metas)
-           if not m.file.lower().endswith(doc_exts)]
+           if m.file.lower().endswith(doc_exts) == bool(keep)]
     if not idx or len(idx) == len(metas):
         return metas, M
     return [metas[i] for i in idx], M[idx]
@@ -282,22 +292,26 @@ LANES: tuple[ScoreLane, ...] = (
 
 def score_chunks(st: SearchState, query: str,
                  path_filter: str | None = None,
-                 exclude_docs: bool = False) -> tuple[list, np.ndarray]:
+                 exclude_docs: bool = False,
+                 only_docs: bool = False) -> tuple[list, np.ndarray]:
     """Full per-chunk scoring (dense + file-fusion + test penalty + issue-mode /
     lexical boosts) WITHOUT ranking/tiering, run as the LANES pipeline over one
     QueryCtx. Returns (path-filtered metas, fused score array), index-aligned.
     Single source of truth for chunk scoring — shared by search_with_state()
-    and chunks_for_file(). `exclude_docs` drops markdown BEFORE scoring (the
-    code-only ask's retrieval), fail-open on a docs-only repo."""
+    and chunks_for_file(). The content lane is a tri-state: neither flag =
+    everything, `exclude_docs` = code only (the default ask's retrieval),
+    `only_docs` = markdown only (the docs-only lane). `only_docs` wins if both
+    are passed; both are fail-open (see filter_doc_chunks)."""
     if not st.metas:
         from ..errors import EmptyIndex
         raise EmptyIndex.at()
     # PATH-SCOPE: restrict candidates to files under the sub-path BEFORE scoring,
     # so CORE/RELATED/graph-neighbors all stay within it. No filter -> unchanged.
     metas, M = apply_path_filter(st.metas, st.M, path_filter)
-    if exclude_docs:
+    if exclude_docs or only_docs:
         from ..indexing.strategies import MarkdownStrategy
-        metas, M = exclude_doc_chunks(metas, M, tuple(MarkdownStrategy.exts))
+        metas, M = filter_doc_chunks(metas, M, tuple(MarkdownStrategy.exts),
+                                     keep=only_docs)
     qv = st.emb.embed([query])[0]
     st.qv = qv                     # re-used by the flow lane (no second embed)
     f2i = {f: i for i, f in enumerate(st.fpaths)}

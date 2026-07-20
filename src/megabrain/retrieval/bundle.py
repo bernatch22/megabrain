@@ -30,15 +30,18 @@ OUTLINE_KINDS = ("class", "function", "async_function", "method", "async_method"
 def search_with_state(st: SearchState, query: str,
                       path_filter: str | None = None,
                       scored: tuple[list, np.ndarray] | None = None,
-                      exclude_docs: bool = False) -> dict:
+                      exclude_docs: bool = False,
+                      only_docs: bool = False) -> dict:
     """Full retrieval: score every chunk, then rank + tier into CORE/RELATED.
     `scored` accepts a precomputed (metas, fused) from score_chunks so callers
     that also need the raw scores (chunks_for_file) score exactly once.
-    `exclude_docs` keeps markdown out of the ranking (code-only ask)."""
+    `exclude_docs` keeps markdown out of the ranking (code-only ask);
+    `only_docs` keeps everything BUT markdown out (the docs-only lane)."""
     t0 = time.time()
     store, p = st.store, st.params
     metas, fused = scored if scored is not None else \
-        score_chunks(st, query, path_filter, exclude_docs=exclude_docs)
+        score_chunks(st, query, path_filter, exclude_docs=exclude_docs,
+                     only_docs=only_docs)
     order = np.argsort(-fused)
     file_rank: list[str] = []
     file_chunks: dict[str, list[int]] = {}
@@ -121,12 +124,17 @@ def search_with_state(st: SearchState, query: str,
             "ms": int((time.time() - t0) * 1000)}
 
 
-def search(root: Path, query: str, path_filter: str | None = None) -> dict:
+def search(root: Path, query: str, path_filter: str | None = None,
+           only_docs: bool = False, exclude_docs: bool = False) -> dict:
     """One-shot retrieval (CLI/MCP entry). Builds state then queries — identical
     output to search_with_state(load_state(root), ...). `path_filter` (a POSIX
-    subpath relative to root) scopes retrieval to files under it (PATH-SCOPE)."""
+    subpath relative to root) scopes retrieval to files under it (PATH-SCOPE);
+    `only_docs` / `exclude_docs` scope it to one side of the code/docs line.
+    Both default off HERE (this is the neutral primitive) — the code-only
+    default is policy, and policy lives in app.py."""
     with load_state(Path(root)) as st:
-        return search_with_state(st, query, path_filter)
+        return search_with_state(st, query, path_filter, only_docs=only_docs,
+                                 exclude_docs=exclude_docs)
 
 
 def selection(res: dict) -> list[tuple[dict, float]]:
@@ -191,7 +199,8 @@ def chunks_for_file_root(root: Path, relpath: str, query: str,
 
 
 def prune_search(st: SearchState, query: str, path_filter: str | None = None,
-                 with_text: bool = True, include_pruned: bool = False) -> dict:
+                 with_text: bool = True, include_pruned: bool = False,
+                 only_docs: bool = False, exclude_docs: bool = False) -> dict:
     """NO-LLM noise pruning. Runs the full retrieval, then returns ONLY the
     SELECTED (signal) chunks as a FLAT list ordered by relevance — the exact
     chunk ids/spans an agent should read, with the rest (noise) dropped. Same
@@ -201,8 +210,12 @@ def prune_search(st: SearchState, query: str, path_filter: str | None = None,
     code, not a narration (a modern LLM needs no pre-filtered prose).
 
     `include_pruned` also returns the dropped chunks (the bundle files' non-signal
-    chunks, relevance-ordered) under "noise" — for a signal-vs-noise diff view."""
-    metas, fused = score_chunks(st, query, path_filter)
+    chunks, relevance-ordered) under "noise" — for a signal-vs-noise diff view.
+    `only_docs` runs the whole thing over the indexed markdown alone (the
+    docs-only lane), so signal AND noise are both docs; `exclude_docs` is the
+    mirror (code alone), which is what app.prune passes by default."""
+    metas, fused = score_chunks(st, query, path_filter, only_docs=only_docs,
+                                exclude_docs=exclude_docs)
     res = search_with_state(st, query, path_filter=path_filter, scored=(metas, fused))
 
     def rec(c: dict, score: float) -> dict:
@@ -231,28 +244,44 @@ def prune_search(st: SearchState, query: str, path_filter: str | None = None,
     out = {"query": query, "repo": st.repo, "chunks": kept,
            "kept": len(kept), "pruned": max(0, in_bundle - len(kept)),
            "scanned": in_bundle, "ms": res["ms"]}
+    if only_docs:
+        # Report whether the lane actually RAN. filter_doc_chunks fails open, so
+        # on a repo whose index holds no markdown (the demo checkouts
+        # .megabrainignore `*.md`) "docs only" quietly returns code — a filter
+        # that silently doesn't apply is worse than one that errors, so the
+        # caller gets told instead of having to infer it from the results.
+        from ..indexing.strategies import MarkdownStrategy
+        exts = tuple(MarkdownStrategy.exts)
+        out["only_docs"] = True
+        out["docs_indexed"] = any(m.file.lower().endswith(exts) for m in st.metas)
     if include_pruned:
         out["noise"] = noise
     return out
 
 
 def prune_search_root(root: Path, query: str, path_filter: str | None = None,
-                      with_text: bool = True, include_pruned: bool = False) -> dict:
+                      with_text: bool = True, include_pruned: bool = False,
+                      only_docs: bool = False, exclude_docs: bool = False) -> dict:
     """CLI/MCP one-shot entry for prune_search (builds state then queries)."""
     with load_state(Path(root)) as st:
-        return prune_search(st, query, path_filter, with_text, include_pruned)
+        return prune_search(st, query, path_filter, with_text, include_pruned,
+                            only_docs, exclude_docs)
 
 
 def search_multi(roots: list[Path], query: str,
-                 path_filters: list[str | None] | None = None) -> dict:
+                 path_filters: list[str | None] | None = None,
+                 only_docs: bool = False, exclude_docs: bool = False) -> dict:
     """Search several repos, merge by score (same embedder -> comparable).
     Files are prefixed repo-name/path. Tier1 capped at TIER1_MAX+2 across repos.
-    `path_filters` (one per root, or None) applies PATH-SCOPE per repo."""
+    `path_filters` (one per root, or None) applies PATH-SCOPE per repo;
+    `only_docs` applies the docs-only lane to every repo."""
     t0 = time.time()
     pfs = path_filters or [None] * len(roots)
     from concurrent.futures import ThreadPoolExecutor
     with ThreadPoolExecutor(max_workers=min(len(roots), 8)) as ex:
-        results = list(ex.map(lambda rp: search(rp[0], query, path_filter=rp[1]),
+        results = list(ex.map(lambda rp: search(rp[0], query, path_filter=rp[1],
+                                                only_docs=only_docs,
+                                                exclude_docs=exclude_docs),
                               zip(roots, pfs)))
     if len(results) == 1:
         return results[0]

@@ -37,12 +37,17 @@
   "name": "megabrain_ask"
  },
  {
-  "description": "The same retrieval as megabrain_ask but with NO LLM (~200ms): a flat, relevance-ranked list of exactly the chunks worth reading ([id] file:lines \u00b7 score + CODE), with the noise dropped. EVERY related file still appears (each contributes its best chunk) \u2014 only the noisy chunks INSIDE files are cut, so nothing relevant is lost. One call hands you the real code, no follow-up fetch needed. Use it when you want the exact code to read rather than a narration \u2014 deterministic, no LLM.",
+  "description": "The same retrieval as megabrain_ask but with NO LLM (~200ms): a flat, relevance-ranked list of exactly the chunks worth reading ([id] file:lines \u00b7 score + CODE), with the noise dropped. EVERY related file still appears, each with its best-matching chunk \u2014 so nothing relevant is missed at the FILE level. Chunks are filtered though: a file's other chunks are cut, so when you need one file in full, Read it (the path and line numbers are right there). One call hands you the real code, no follow-up fetch needed. Use it when you want the exact code to read rather than a narration \u2014 deterministic, no LLM.",
   "inputSchema": {
    "properties": {
     "compact": {
      "default": false,
      "description": "default false (code bodies included). Set true for signatures only \u2014 drop the code bodies, keep the ranked spans (ids/files/lines/scores).",
+     "type": "boolean"
+    },
+    "docs": {
+     "default": false,
+     "description": "default false = search the CODE. true = search the indexed DOCS (markdown) instead. It is one or the other, never a blend: a large README otherwise outranks the implementation it describes.",
      "type": "boolean"
     },
     "repo_path": {

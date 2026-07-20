@@ -57,35 +57,54 @@ def _maybe_reindex(root: Path, reindex: bool) -> None:
 
 # ── use-cases (one per verb; thin — the engine does the work) ───────────────
 
+# THE content policy, in one place. Search is CODE or DOCS — never a blend:
+# with both indexed, a big README wins on prose-shaped questions and buries the
+# implementation (sinatra's README took CORE from lib/sinatra/base.rb on "how
+# are routes defined and dispatched?" the moment docs entered its index). `ask`
+# has always resolved this by excluding docs before scoring; `search` now does
+# the same, and `docs=True` flips the whole bundle to markdown instead. The
+# retrieval primitives stay neutral — this is the only place that decides.
+# Public because serve-api can't route through the use-cases below: it holds a
+# WARM SearchState and calls the retrieval primitives directly, so it imports
+# the policy instead of restating it.
+def content_filters(docs: bool) -> dict:
+    return {"exclude_docs": not docs, "only_docs": bool(docs)}
+
+
 def query(root: Path, task: str, path_filter: str | None = None,
-          reindex: bool = True) -> dict:
-    """Single-repo retrieval bundle."""
+          reindex: bool = True, docs: bool = False) -> dict:
+    """Single-repo retrieval bundle over the CODE; `docs=True` searches the
+    indexed markdown instead. Both sides fail open, so a docs-only repo still
+    answers a code search (and vice versa)."""
     from .retrieval.bundle import search
     _maybe_reindex(root, reindex)
-    return search(root, task, path_filter=path_filter)
+    return search(root, task, path_filter=path_filter, **content_filters(docs))
 
 
 def query_multi(roots: list[Path], task: str,
                 path_filters: list[str | None] | None = None,
-                reindex: bool = True) -> dict:
+                reindex: bool = True, docs: bool = False) -> dict:
     """Cross-repo retrieval (CLI comma-separated paths)."""
     from .retrieval.bundle import search_multi
     if reindex:
         for r in dict.fromkeys(roots):
             _maybe_reindex(r, True)
-    return search_multi(roots, task, path_filters=path_filters)
+    return search_multi(roots, task, path_filters=path_filters, **content_filters(docs))
 
 
 def prune(root: Path, task: str, path_filter: str | None = None,
           with_text: bool = True, include_pruned: bool = False,
-          reindex: bool = True, llm_rerank: bool = False) -> dict:
-    """No-LLM noise pruning -> flat ranked signal chunks. `llm_rerank` adds the
+          reindex: bool = True, llm_rerank: bool = False,
+          docs: bool = False) -> dict:
+    """No-LLM noise pruning -> flat ranked signal chunks, over the CODE;
+    `docs=True` prunes the indexed markdown instead. `llm_rerank` adds the
     opt-in LLM lane on top (drop vocabulary-only matches, reorder); it fails
     open to the deterministic result, so the floor never drops."""
     from .retrieval.bundle import prune_search_root
     _maybe_reindex(root, reindex)
     res = prune_search_root(root, task, path_filter=path_filter,
-                            with_text=with_text, include_pruned=include_pruned)
+                            with_text=with_text, include_pruned=include_pruned,
+                            **content_filters(docs))
     if llm_rerank:
         from .retrieval.rerank import llm_rerank as _rerank
         res = _rerank(res, task)

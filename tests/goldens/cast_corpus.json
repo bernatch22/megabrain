@@ -70,33 +70,33 @@
    "chunks": [
     [
      "module",
-     "resolve_scope, rel_join, normalize_agents, _maybe_reindex, query, query_multi, prune, ask",
+     "resolve_scope, rel_join, normalize_agents, _maybe_reindex, content_filters, query, query_multi",
      null,
      1,
-     107,
-     "megabrain > megabrain/app.py > [resolve_scope, rel_join, normalize_agents, _maybe_reindex, query, query_multi, prune, ask]",
-     "9e5b73558418d28ee00e95c2a5c1ebd33fba09af"
+     92,
+     "megabrain > megabrain/app.py > [resolve_scope, rel_join, normalize_agents, _maybe_reindex, content_filters, query, query_multi]",
+     "4cce04127adc3831d930775a0bd6dde641954030"
     ],
     [
      "module",
-     "graph, get, chunks, index, scan, stats, flows_list, flow_get, flow_delete",
+     "prune, ask, graph, get, chunks, index, scan, stats",
      null,
-     108,
-     209,
-     "megabrain > megabrain/app.py > [graph, get, chunks, index, scan, stats, flows_list, flow_get, flow_delete]",
-     "9c92b856647f9b2e3b0956b27f624706730ec271"
+     93,
+     184,
+     "megabrain > megabrain/app.py > [prune, ask, graph, get, chunks, index, scan, stats]",
+     "73b2ca761b71ef6cc65fbedd61d3c83890bdf1cf"
     ],
     [
-     "function",
-     "example_queries",
+     "module",
+     "flows_list, flow_get, flow_delete, example_queries",
      null,
-     210,
-     238,
-     "megabrain > megabrain/app.py > def example_queries(root: Path, limit: int=6) -> dict",
-     "a0578f4a1ed278c7b4e96af8aae2fc1a99308f46"
+     185,
+     257,
+     "megabrain > megabrain/app.py > [flows_list, flow_get, flow_delete, example_queries]",
+     "f50fbc80367ca6663cc923184121a81b01d82502"
     ]
    ],
-   "skeleton_sha": "3b52038490f75fdb4c793586287c1a15d015b633",
+   "skeleton_sha": "311f5354e2727cd1d0378fb9a205280056fc6158",
    "symbols": [
     [
      "resolve_scope",
@@ -127,101 +127,108 @@
      "def _maybe_reindex(root: Path, reindex: bool) -> None"
     ],
     [
+     "content_filters",
+     "function",
+     70,
+     71,
+     "def content_filters(docs: bool) -> dict"
+    ],
+    [
      "query",
      "function",
-     60,
-     65,
-     "def query(root: Path, task: str, path_filter: str | None=None, reindex: bool=True) -> dict"
+     74,
+     81,
+     "def query(root: Path, task: str, path_filter: str | None=None, reindex: bool=True, docs: bool=False) -> dict"
     ],
     [
      "query_multi",
      "function",
-     68,
-     76,
-     "def query_multi(roots: list[Path], task: str, path_filters: list[str | None] | None=None, reindex: bool=True) -> dict"
+     84,
+     92,
+     "def query_multi(roots: list[Path], task: str, path_filters: list[str | None] | None=None, reindex: bool=True, docs: bool=False) -> dict"
     ],
     [
      "prune",
      "function",
-     79,
-     92,
-     "def prune(root: Path, task: str, path_filter: str | None=None, with_text: bool=True, include_pruned: bool=False, reindex: bool=True, llm_rerank: bool=False) -> dict"
+     95,
+     111,
+     "def prune(root: Path, task: str, path_filter: str | None=None, with_text: bool=True, include_pruned: bool=False, reindex: bool=True, llm_rerank: bool=False, docs: bool=False) -> dict"
     ],
     [
      "ask",
      "function",
-     95,
-     107,
+     114,
+     126,
      "def ask(root: Path, question: str, path_filter: str | None=None, docs_only: bool=False, include_docs: bool=False, agents: Any=None, reindex: bool=True, model: str | None=None) -> dict"
     ],
     [
      "graph",
      "function",
-     110,
-     121,
+     129,
+     140,
      "def graph(root: Path, mode: str='map', node: str | None=None, source: str | None=None, target: str | None=None, path_filter: str | None=None, reindex: bool=True, label: bool=True) -> dict"
     ],
     [
      "get",
      "function",
-     124,
-     129,
+     143,
+     148,
      "def get(root: Path, sub: str | None, file: str, symbol: str | None=None) -> str"
     ],
     [
      "chunks",
      "function",
-     132,
-     138,
+     151,
+     157,
      "def chunks(root: Path, sub: str | None, file: str, query_str: str, path_filter: str | None=None, reindex: bool=True) -> dict"
     ],
     [
      "index",
      "function",
-     141,
-     146,
+     160,
+     165,
      "def index(root: Path, force: bool=False, exclude=(), scan_filters: bool=False) -> dict"
     ],
     [
      "scan",
      "function",
-     149,
-     158,
+     168,
+     177,
      "def scan(root: Path) -> dict"
     ],
     [
      "stats",
      "function",
-     161,
-     165,
+     180,
+     184,
      "def stats(root: Path) -> dict"
     ],
     [
      "flows_list",
      "function",
-     168,
-     185,
+     187,
+     204,
      "def flows_list(root: Path) -> dict"
     ],
     [
      "flow_get",
      "function",
-     188,
-     201,
+     207,
+     220,
      "def flow_get(root: Path, flow_id: int) -> dict"
     ],
     [
      "flow_delete",
      "function",
-     204,
-     209,
+     223,
+     228,
      "def flow_delete(root: Path, flow_id: int) -> dict"
     ],
     [
      "example_queries",
      "function",
-     212,
-     238,
+     231,
+     257,
      "def example_queries(root: Path, limit: int=6) -> dict"
     ]
    ]
@@ -301,18 +308,18 @@
      "stream_events",
      "1/2",
      460,
-     552,
+     547,
      "megabrain > megabrain/ask/agents.py > def stream_events(root, question: str, on_event, *, agents: bool | None=None, show_map: bool=True, docs_only: bool=False, include_docs: bool=False, path_filter: str | None=None, state=None, model: str | None=None) -> dict",
-     "b7db9389b5e6d68f5353142c10ed5ead244efffe"
+     "04604e5e2e5f5d1ce4306f38a0cf7a48e7616825"
     ],
     [
      "block",
      "stream_events",
      "2/2",
-     553,
-     608,
+     548,
+     613,
      "megabrain > megabrain/ask/agents.py > def stream_events(root, question: str, on_event, *, agents: bool | None=None, show_map: bool=True, docs_only: bool=False, include_docs: bool=False, path_filter: str | None=None, state=None, model: str | None=None) -> dict",
-     "370baa6f314bd6deb2d58efdd9b5ebf835d30cd0"
+     "a340d424fa8523cdb0907bb241cdc19fed2bdc26"
     ]
    ],
    "skeleton_sha": "2a2fd884706b77eb11b4a1aa382124579eb04f72",
@@ -489,7 +496,7 @@
      "stream_events",
      "function",
      464,
-     608,
+     613,
      "def stream_events(root, question: str, on_event, *, agents: bool | None=None, show_map: bool=True, docs_only: bool=False, include_docs: bool=False, path_filter: str | None=None, state=None, model: str | None=None) -> dict"
     ]
    ]
@@ -501,16 +508,16 @@
      "_candidates",
      null,
      1,
-     72,
+     73,
      "megabrain > megabrain/ask/narrator.py > def _candidates(res: dict, docs_only: bool=False, include_docs: bool=False) -> list[dict]",
-     "aa338289dcab035128bb4990d2d60ca8337fdde3"
+     "b19e9ead3a19c043b1d3dd6daa24d7465c103490"
     ],
     [
      "module",
      "_flow_ctx, _numbered, _build_body, _code_block",
      null,
-     73,
-     171,
+     74,
+     172,
      "megabrain > megabrain/ask/narrator.py > [_flow_ctx, _numbered, _build_body, _code_block]",
      "2cd4016ceae0752524989f61afb35db978c06b91"
     ],
@@ -518,8 +525,8 @@
      "module",
      "_Splicer, ask, cited_files, _splice",
      null,
-     172,
-     272,
+     173,
+     273,
      "megabrain > megabrain/ask/narrator.py > [_Splicer, ask, cited_files, _splice]",
      "4c80b1eb018266d0b05c5112a9b98cae1f8bc76d"
     ],
@@ -527,8 +534,8 @@
      "module",
      "render_ask, stream_ask",
      null,
-     273,
-     375,
+     274,
+     376,
      "megabrain > megabrain/ask/narrator.py > [render_ask, stream_ask]",
      "33f0b3fa2af444b1e2b4d452fe0cb7b443b70237"
     ]
@@ -538,148 +545,148 @@
     [
      "DOC_EXTS",
      "constant",
-     25,
-     25,
+     26,
+     26,
      "DOC_EXTS = MarkdownStrategy.exts"
     ],
     [
      "MAX_CTX_CHARS",
      "constant",
-     30,
-     30,
+     31,
+     31,
      "MAX_CTX_CHARS = int(os.environ.get('MEGABRAIN_ASK_CTX_CHARS', '200000'))"
     ],
     [
      "_SEL",
      "constant",
-     35,
-     35,
+     36,
+     36,
      "_SEL = re.compile('\\\\[\\\\[(\\\\d+)(?::\\\\s*[Ll]?(\\\\d+)\\\\s*-\\\\s*[Ll]?(\\\\d+))?\\\\s*\\\\]\\\\]')"
     ],
     [
      "_candidates",
      "function",
-     38,
-     63,
+     39,
+     64,
      "def _candidates(res: dict, docs_only: bool=False, include_docs: bool=False) -> list[dict]"
     ],
     [
      "_RULES",
      "constant",
-     66,
-     72,
+     67,
+     73,
      "_RULES = '- NEVER paste or quote code. Cite it with DOUBLE brackets: [[3]] (whole chunk) or [[3:705-731]] (file lines 70"
     ],
     [
      "_flow_ctx",
      "function",
-     75,
-     87,
+     76,
+     88,
      "def _flow_ctx(res: dict) -> str"
     ],
     [
      "_numbered",
      "function",
-     90,
-     97,
+     91,
+     98,
      "def _numbered(c: dict) -> str"
     ],
     [
      "_build_body",
      "function",
-     100,
-     124,
+     101,
+     125,
      "def _build_body(question: str, cands: list[dict], flow_ctx: str='', model: str | None=None) -> dict"
     ],
     [
      "_code_block",
      "function",
-     127,
-     164,
+     128,
+     165,
      "def _code_block(c: dict, lo: int | None, hi: int | None, seen: set, file_syms: dict[str, list[dict]]) -> str"
     ],
     [
      "_PARTIAL",
      "constant",
-     171,
-     171,
+     172,
+     172,
      "_PARTIAL = re.compile('\\\\[(?:\\\\[(?:\\\\d+(?::\\\\s*[Ll]?\\\\d*(?:-\\\\s*[Ll]?\\\\d*)?)?\\\\]?)?)?$')"
     ],
     [
      "_Splicer",
      "class",
-     174,
-     212,
+     175,
+     213,
      "class _Splicer"
     ],
     [
      "_Splicer.__init__",
      "method",
-     182,
-     186,
+     183,
+     187,
      "def __init__(self, cands: list[dict], file_syms: dict[str, list[dict]])"
     ],
     [
      "_Splicer._sub",
      "method",
-     188,
-     195,
+     189,
+     196,
      "def _sub(self, m)"
     ],
     [
      "_Splicer.feed",
      "method",
-     197,
-     204,
+     198,
+     205,
      "def feed(self, d: str) -> str"
     ],
     [
      "_Splicer.flush",
      "method",
-     206,
-     208,
+     207,
+     209,
      "def flush(self) -> str"
     ],
     [
      "_Splicer.files",
      "method",
-     210,
-     212,
+     211,
+     213,
      "def files(self) -> int"
     ],
     [
      "ask",
      "function",
-     215,
-     239,
+     216,
+     240,
      "def ask(root: Path, question: str, docs_only: bool=False, path_filter: str | None=None, state: SearchState | None=None, include_docs: bool=False, agents: bool | None=False, model: str | None=None) -> dict"
     ],
     [
      "cited_files",
      "function",
-     242,
-     252,
+     243,
+     253,
      "def cited_files(out: dict) -> list[str]"
     ],
     [
      "_splice",
      "function",
-     255,
-     272,
+     256,
+     273,
      "def _splice(out: dict) -> tuple[str, set, set]"
     ],
     [
      "render_ask",
      "function",
-     275,
-     298,
+     276,
+     299,
      "def render_ask(out: dict) -> str"
     ],
     [
      "stream_ask",
      "function",
-     301,
-     375,
+     302,
+     376,
      "def stream_ask(root: Path, question: str, out=None, show_map: bool=True, docs_only: bool=False, path_filter: str | None=None, include_docs: bool=False, agents: bool | None=None, model: str | None=None) -> None"
     ]
    ]
@@ -4656,34 +4663,52 @@
   "megabrain/retrieval/bundle.py": {
    "chunks": [
     [
-     "function",
-     "search_with_state",
+     "module",
+     null,
      null,
      1,
-     121,
-     "megabrain > megabrain/retrieval/bundle.py > def search_with_state(st: SearchState, query: str, path_filter: str | None=None, scored: tuple[list, np.ndarray] | None=None, exclude_docs: bool=False) -> dict",
-     "f44d9849dc2e15bade4b66544b24fdb0491db361"
+     27,
+     "megabrain > megabrain/retrieval/bundle.py (module level)",
+     "36c8a5f40fdc5b2670252e69fd5e82862855cd81"
     ],
     [
      "module",
-     "search, selection, chunks_for_file, chunks_for_file_root",
+     "search_with_state, search",
      null,
-     122,
-     190,
-     "megabrain > megabrain/retrieval/bundle.py > [search, selection, chunks_for_file, chunks_for_file_root]",
-     "8691e70e810e95338a980542c7dc1b92d9669e2e"
+     28,
+     137,
+     "megabrain > megabrain/retrieval/bundle.py > [search_with_state, search]",
+     "f6e21e7e43ee8500862dc581393be5d8e0bd544e"
     ],
     [
      "module",
-     "prune_search, prune_search_root, search_multi",
+     "selection, chunks_for_file, chunks_for_file_root",
      null,
-     191,
-     277,
-     "megabrain > megabrain/retrieval/bundle.py > [prune_search, prune_search_root, search_multi]",
-     "3f33f32322847a98113b5ce8e3733ba2a6bd61b2"
+     138,
+     198,
+     "megabrain > megabrain/retrieval/bundle.py > [selection, chunks_for_file, chunks_for_file_root]",
+     "bf4ba9e2287bf6850e33394496877909aa88f1dc"
+    ],
+    [
+     "module",
+     "prune_search, prune_search_root",
+     null,
+     199,
+     268,
+     "megabrain > megabrain/retrieval/bundle.py > [prune_search, prune_search_root]",
+     "a8b578a7389993a140eb119d426e54e6181f380a"
+    ],
+    [
+     "function",
+     "search_multi",
+     null,
+     269,
+     306,
+     "megabrain > megabrain/retrieval/bundle.py > def search_multi(roots: list[Path], query: str, path_filters: list[str | None] | None=None, only_docs: bool=False, exclude_docs: bool=False) -> dict",
+     "b6b879fc0e9ace8e6ebaede5308cdb4bf13b6c94"
     ]
    ],
-   "skeleton_sha": "ff28a1ef1f4b878e347f7ba24518e4e8f4340910",
+   "skeleton_sha": "fb72d58d1ad7d27f1916c9fb34bb67032f75f4c3",
    "symbols": [
     [
      "OUTLINE_KINDS",
@@ -4696,57 +4721,57 @@
      "search_with_state",
      "function",
      30,
-     121,
-     "def search_with_state(st: SearchState, query: str, path_filter: str | None=None, scored: tuple[list, np.ndarray] | None=None, exclude_docs: bool=False) -> dict"
+     124,
+     "def search_with_state(st: SearchState, query: str, path_filter: str | None=None, scored: tuple[list, np.ndarray] | None=None, exclude_docs: bool=False, only_docs: bool=False) -> dict"
     ],
     [
      "search",
      "function",
-     124,
-     129,
-     "def search(root: Path, query: str, path_filter: str | None=None) -> dict"
+     127,
+     137,
+     "def search(root: Path, query: str, path_filter: str | None=None, only_docs: bool=False, exclude_docs: bool=False) -> dict"
     ],
     [
      "selection",
      "function",
-     132,
-     150,
+     140,
+     158,
      "def selection(res: dict) -> list[tuple[dict, float]]"
     ],
     [
      "chunks_for_file",
      "function",
-     153,
-     183,
+     161,
+     191,
      "def chunks_for_file(st: SearchState, relpath: str, query: str, path_filter: str | None=None) -> dict"
     ],
     [
      "chunks_for_file_root",
      "function",
-     186,
-     190,
+     194,
+     198,
      "def chunks_for_file_root(root: Path, relpath: str, query: str, path_filter: str | None=None) -> dict"
     ],
     [
      "prune_search",
      "function",
-     193,
-     236,
-     "def prune_search(st: SearchState, query: str, path_filter: str | None=None, with_text: bool=True, include_pruned: bool=False) -> dict"
+     201,
+     259,
+     "def prune_search(st: SearchState, query: str, path_filter: str | None=None, with_text: bool=True, include_pruned: bool=False, only_docs: bool=False, exclude_docs: bool=False) -> dict"
     ],
     [
      "prune_search_root",
      "function",
-     239,
-     243,
-     "def prune_search_root(root: Path, query: str, path_filter: str | None=None, with_text: bool=True, include_pruned: bool=False) -> dict"
+     262,
+     268,
+     "def prune_search_root(root: Path, query: str, path_filter: str | None=None, with_text: bool=True, include_pruned: bool=False, only_docs: bool=False, exclude_docs: bool=False) -> dict"
     ],
     [
      "search_multi",
      "function",
-     246,
-     277,
-     "def search_multi(roots: list[Path], query: str, path_filters: list[str | None] | None=None) -> dict"
+     271,
+     306,
+     "def search_multi(roots: list[Path], query: str, path_filters: list[str | None] | None=None, only_docs: bool=False, exclude_docs: bool=False) -> dict"
     ]
    ]
   },
@@ -5225,19 +5250,19 @@
    "chunks": [
     [
      "module",
-     "_is_test_path, under_path, apply_path_filter, exclude_doc_chunks, ident_tokens",
+     "_is_test_path, under_path, apply_path_filter, filter_doc_chunks, ident_tokens",
      null,
      1,
-     97,
-     "megabrain > megabrain/retrieval/scoring.py > [_is_test_path, under_path, apply_path_filter, exclude_doc_chunks, ident_tokens]",
-     "f8f2dadc885744a64e9c8466190530d78dfe9184"
+     107,
+     "megabrain > megabrain/retrieval/scoring.py > [_is_test_path, under_path, apply_path_filter, filter_doc_chunks, ident_tokens]",
+     "2d6ff4fe93ae119b6f7097446f61323f6a212bd0"
     ],
     [
      "module",
      "QueryCtx, ScoreLane, DenseFileFusionLane, TestPenaltyLane",
      null,
-     98,
-     163,
+     108,
+     173,
      "megabrain > megabrain/retrieval/scoring.py > [QueryCtx, ScoreLane, DenseFileFusionLane, TestPenaltyLane]",
      "87cc40bb70ab5b6aef27de014ba8c2f57ed5cca9"
     ],
@@ -5245,8 +5270,8 @@
      "module",
      "IssueLane, LexicalBoostLane",
      null,
-     164,
-     280,
+     174,
+     290,
      "megabrain > megabrain/retrieval/scoring.py > [IssueLane, LexicalBoostLane]",
      "66c569112d2c82f9400fc19dc7122bf47de7d6b9"
     ],
@@ -5254,13 +5279,13 @@
      "function",
      "score_chunks",
      null,
-     281,
-     314,
-     "megabrain > megabrain/retrieval/scoring.py > def score_chunks(st: SearchState, query: str, path_filter: str | None=None, exclude_docs: bool=False) -> tuple[list, np.ndarray]",
-     "5e686ee483a136c81032f4ec9683e4f4175e4600"
+     291,
+     328,
+     "megabrain > megabrain/retrieval/scoring.py > def score_chunks(st: SearchState, query: str, path_filter: str | None=None, exclude_docs: bool=False, only_docs: bool=False) -> tuple[list, np.ndarray]",
+     "99adb3b17497ca9004caa46ac40ae69b87f6e679"
     ]
    ],
-   "skeleton_sha": "485f60c44696074b074acb254cf56fa5b34bcaad",
+   "skeleton_sha": "81da606b85ff6d759148c34e43fb6dfbe446359a",
    "symbols": [
     [
      "TEST_DIR_SEGS",
@@ -5291,277 +5316,277 @@
      "def apply_path_filter(metas: list, M: np.ndarray, path_filter: str | None)"
     ],
     [
-     "exclude_doc_chunks",
+     "filter_doc_chunks",
      "function",
      76,
-     86,
-     "def exclude_doc_chunks(metas: list, M: np.ndarray, doc_exts: tuple)"
+     96,
+     "def filter_doc_chunks(metas: list, M: np.ndarray, doc_exts: tuple, keep: bool)"
     ],
     [
      "ident_tokens",
      "function",
-     89,
-     97,
+     99,
+     107,
      "def ident_tokens(text: str) -> set[str]"
     ],
     [
      "QueryCtx",
      "class",
-     100,
-     125,
+     110,
+     135,
      "class QueryCtx"
     ],
     [
      "QueryCtx.st",
      "class_attr",
-     106,
-     106,
+     116,
+     116,
      "st: SearchState"
     ],
     [
      "QueryCtx.query",
      "class_attr",
-     107,
-     107,
+     117,
+     117,
      "query: str"
     ],
     [
      "QueryCtx.path_filter",
      "class_attr",
-     108,
-     108,
+     118,
+     118,
      "path_filter: str | None"
     ],
     [
      "QueryCtx.p",
      "class_attr",
-     109,
-     109,
+     119,
+     119,
      "p: RetrievalParams"
     ],
     [
      "QueryCtx.metas",
      "class_attr",
-     110,
-     110,
+     120,
+     120,
      "metas: list"
     ],
     [
      "QueryCtx.M",
      "class_attr",
-     111,
-     111,
+     121,
+     121,
      "M: np.ndarray"
     ],
     [
      "QueryCtx.fpaths",
      "class_attr",
-     112,
-     112,
+     122,
+     122,
      "fpaths: list"
     ],
     [
      "QueryCtx.F",
      "class_attr",
-     113,
-     113,
+     123,
+     123,
      "F: np.ndarray"
     ],
     [
      "QueryCtx.qv",
      "class_attr",
-     114,
-     114,
+     124,
+     124,
      "qv: np.ndarray"
     ],
     [
      "QueryCtx.cfi",
      "class_attr",
-     115,
-     115,
+     125,
+     125,
      "cfi: np.ndarray"
     ],
     [
      "QueryCtx.is_test",
      "class_attr",
-     116,
-     116,
+     126,
+     126,
      "is_test: np.ndarray"
     ],
     [
      "QueryCtx.qtok",
      "class_attr",
-     117,
-     117,
+     127,
+     127,
      "qtok: set"
     ],
     [
      "QueryCtx.store",
      "method",
-     119,
-     121,
+     129,
+     131,
      "def store(self)"
     ],
     [
      "QueryCtx.emb",
      "method",
-     123,
-     125,
+     133,
+     135,
      "def emb(self)"
     ],
     [
      "ScoreLane",
      "class",
-     128,
-     137,
+     138,
+     147,
      "class ScoreLane(Protocol)"
     ],
     [
      "ScoreLane.name",
      "class_attr",
-     133,
-     133,
+     143,
+     143,
      "name: str"
     ],
     [
      "ScoreLane.applies",
      "method",
-     135,
-     135,
+     145,
+     145,
      "def applies(self, ctx: QueryCtx) -> bool"
     ],
     [
      "ScoreLane.apply",
      "method",
-     137,
-     137,
+     147,
+     147,
      "def apply(self, ctx: QueryCtx, fused: np.ndarray | None) -> np.ndarray"
     ],
     [
      "DenseFileFusionLane",
      "class",
-     140,
-     151,
+     150,
+     161,
      "class DenseFileFusionLane"
     ],
     [
      "DenseFileFusionLane.name",
      "class_attr",
-     143,
-     143,
+     153,
+     153,
      "name = 'dense+file'"
     ],
     [
      "DenseFileFusionLane.applies",
      "method",
-     145,
-     146,
+     155,
+     156,
      "def applies(self, ctx: QueryCtx) -> bool"
     ],
     [
      "DenseFileFusionLane.apply",
      "method",
-     148,
-     151,
+     158,
+     161,
      "def apply(self, ctx: QueryCtx, fused: np.ndarray | None) -> np.ndarray"
     ],
     [
      "TestPenaltyLane",
      "class",
-     154,
-     163,
+     164,
+     173,
      "class TestPenaltyLane"
     ],
     [
      "TestPenaltyLane.name",
      "class_attr",
-     157,
-     157,
+     167,
+     167,
      "name = 'test-penalty'"
     ],
     [
      "TestPenaltyLane.applies",
      "method",
-     159,
-     160,
+     169,
+     170,
      "def applies(self, ctx: QueryCtx) -> bool"
     ],
     [
      "TestPenaltyLane.apply",
      "method",
-     162,
-     163,
+     172,
+     173,
      "def apply(self, ctx: QueryCtx, fused: np.ndarray) -> np.ndarray"
     ],
     [
      "IssueLane",
      "class",
-     166,
-     250,
+     176,
+     260,
      "class IssueLane"
     ],
     [
      "IssueLane.name",
      "class_attr",
-     171,
-     171,
+     181,
+     181,
      "name = 'issue'"
     ],
     [
      "IssueLane.applies",
      "method",
-     173,
-     174,
+     183,
+     184,
      "def applies(self, ctx: QueryCtx) -> bool"
     ],
     [
      "IssueLane.apply",
      "method",
-     176,
-     250,
+     186,
+     260,
      "def apply(self, ctx: QueryCtx, fused: np.ndarray) -> np.ndarray"
     ],
     [
      "LexicalBoostLane",
      "class",
-     253,
-     274,
+     263,
+     284,
      "class LexicalBoostLane"
     ],
     [
      "LexicalBoostLane.name",
      "class_attr",
-     260,
-     260,
+     270,
+     270,
      "name = 'lexical'"
     ],
     [
      "LexicalBoostLane.applies",
      "method",
-     262,
-     263,
+     272,
+     273,
      "def applies(self, ctx: QueryCtx) -> bool"
     ],
     [
      "LexicalBoostLane.apply",
      "method",
-     265,
-     274,
+     275,
+     284,
      "def apply(self, ctx: QueryCtx, fused: np.ndarray) -> np.ndarray"
     ],
     [
      "LANES",
      "constant",
-     279,
-     280,
+     289,
+     290,
      "LANES: tuple[ScoreLane, ...] = (DenseFileFusionLane(), TestPenaltyLane(), IssueLane(), LexicalBoostLane())"
     ],
     [
      "score_chunks",
      "function",
-     283,
-     314,
-     "def score_chunks(st: SearchState, query: str, path_filter: str | None=None, exclude_docs: bool=False) -> tuple[list, np.ndarray]"
+     293,
+     328,
+     "def score_chunks(st: SearchState, query: str, path_filter: str | None=None, exclude_docs: bool=False, only_docs: bool=False) -> tuple[list, np.ndarray]"
     ]
    ]
   },
@@ -5759,16 +5784,16 @@
      "main",
      "1/3",
      26,
-     120,
+     124,
      "megabrain > megabrain/server/cli.py > def main(argv=None)",
-     "3b158918261fb0cb763334bd41113af2ce3769ba"
+     "b40f4c99d25f91933a2c503cc543fa13ab6239ee"
     ],
     [
      "block",
      "main",
      "2/3",
-     121,
-     207,
+     125,
+     211,
      "megabrain > megabrain/server/cli.py > def main(argv=None)",
      "02c33479add2cb71ad7ecd2f5c7a69502740bfe3"
     ],
@@ -5776,8 +5801,8 @@
      "block",
      "main",
      "3/3",
-     208,
-     228,
+     212,
+     232,
      "megabrain > megabrain/server/cli.py > def main(argv=None)",
      "131ba10e2119297474aa09fe23064d19173aa98d"
     ],
@@ -5785,8 +5810,8 @@
      "module",
      "_scan, _render_scan",
      null,
-     229,
-     262,
+     233,
+     266,
      "megabrain > megabrain/server/cli.py > [_scan, _render_scan]",
      "6c4d106b3f64799ed33c25ecfbc89235a70f8628"
     ],
@@ -5794,26 +5819,26 @@
      "block",
      "_dispatch",
      "1/2",
-     263,
-     385,
+     267,
+     389,
      "megabrain > megabrain/server/cli.py > def _dispatch(a, raw: list[Path], root: Path) -> None",
-     "881e9c73a2dc128f520fcf7eccbc4da21168d3bb"
+     "a2d194777e1dc9d36c5a2fc1a2e950d3f3c9f19d"
     ],
     [
      "block",
      "_dispatch",
      "2/2",
-     386,
-     454,
+     390,
+     460,
      "megabrain > megabrain/server/cli.py > def _dispatch(a, raw: list[Path], root: Path) -> None",
-     "814a35ac7a3249c94c7883d3cde8902324a7e80f"
+     "2795de22828b1fa5769a8ff259e38e7d97b279cd"
     ],
     [
      "module",
      null,
      null,
-     455,
-     458,
+     461,
+     464,
      "megabrain > megabrain/server/cli.py (module level)",
      "494c28ef72c62a5924f4316a400d4193725ae15a"
     ]
@@ -5824,28 +5849,28 @@
      "main",
      "function",
      28,
-     228,
+     232,
      "def main(argv=None)"
     ],
     [
      "_scan",
      "function",
-     231,
-     233,
+     235,
+     237,
      "def _scan(root: Path) -> dict"
     ],
     [
      "_render_scan",
      "function",
-     236,
-     262,
+     240,
+     266,
      "def _render_scan(rep: dict) -> str"
     ],
     [
      "_dispatch",
      "function",
-     265,
-     454,
+     269,
+     460,
      "def _dispatch(a, raw: list[Path], root: Path) -> None"
     ]
    ]
@@ -5859,23 +5884,23 @@
      1,
      99,
      "megabrain > megabrain/server/http.py > def _http_error(msg: str, status: int) -> MegabrainError",
-     "216144de828c252233d27c5495300e2d5485f7be"
+     "8262050c0812fc0a365757ad97cac3beef67a909"
     ],
     [
      "module",
      "RateLimiter, Registry, _root_key, _all_repos, _repo_stats",
      null,
      100,
-     210,
+     218,
      "megabrain > megabrain/server/http.py > [RateLimiter, Registry, _root_key, _all_repos, _repo_stats]",
-     "6731ad46127e262b7509f70d1009140c4e36131b"
+     "43e0d5b5a249d6b05ea5633ff0b4cf31103a9a6b"
     ],
     [
      "block",
      "_make_handler",
      "1/6",
-     211,
      219,
+     227,
      "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True, readonly: bool=False, rate_limit: int | None=None, trust_proxy: bool=False)",
      "1ae6375ab420ab220bb6da6e034e7ab1904bf286"
     ],
@@ -5883,8 +5908,8 @@
      "block",
      "_make_handler",
      "2/6",
-     220,
-     352,
+     228,
+     360,
      "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True, readonly: bool=False, rate_limit: int | None=None, trust_proxy: bool=False)",
      "4dd4024fa1a44130b25a92cc3786f191e0bb5718"
     ],
@@ -5892,35 +5917,35 @@
      "block",
      "_make_handler",
      "3/6",
-     353,
-     482,
+     361,
+     485,
      "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True, readonly: bool=False, rate_limit: int | None=None, trust_proxy: bool=False)",
-     "aebfa28b28651224bf0a1a212401cc62f0e8f204"
+     "5a440d8ac0437ef498298b90e45f5c1ae8b4395a"
     ],
     [
      "block",
      "_make_handler",
      "4/6",
-     483,
-     611,
+     486,
+     616,
      "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True, readonly: bool=False, rate_limit: int | None=None, trust_proxy: bool=False)",
-     "9683d19822673fc446e02f0c848e6cc05447b7ba"
+     "c5bda3c0d0a497a5304dac45c53547b97351374a"
     ],
     [
      "block",
      "_make_handler",
      "5/6",
-     612,
-     621,
+     617,
+     639,
      "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True, readonly: bool=False, rate_limit: int | None=None, trust_proxy: bool=False)",
-     "73e1ed22b34834cccce8134122938563482750a5"
+     "5fdb00d7beb9602d4d63000bd20adefabd203899"
     ],
     [
      "block",
      "_make_handler",
      "6/6",
-     622,
-     623,
+     640,
+     641,
      "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True, readonly: bool=False, rate_limit: int | None=None, trust_proxy: bool=False)",
      "5ebaec407bc18bc3fde033e8db1a20bf3e3ec3f8"
     ],
@@ -5928,8 +5953,8 @@
      "module",
      "_valid_model, _native_pick_folder, _scan_report, _merge_ignore",
      null,
-     624,
-     698,
+     642,
+     716,
      "megabrain > megabrain/server/http.py > [_valid_model, _native_pick_folder, _scan_report, _merge_ignore]",
      "1a60519fd169e3894bbb17ae8e132a99f7846295"
     ],
@@ -5937,8 +5962,8 @@
      "function",
      "serve",
      null,
-     699,
-     778,
+     717,
+     796,
      "megabrain > megabrain/server/http.py > def serve(root, port: int=2134, host: str='127.0.0.1', cors: str | None=None, enable_llm: bool=True, token: str | None=None, serve_ui: bool=True, readonly: bool=False, rate_limit: int | None=None, trust_proxy: bool=False) -> None",
      "845519f4272837babd8c0b6307c51170e06e77ae"
     ]
@@ -6054,49 +6079,49 @@
      "_repo_stats",
      "function",
      200,
-     210,
+     218,
      "def _repo_stats(s: RepoSession) -> dict"
     ],
     [
      "_make_handler",
      "function",
-     215,
-     623,
+     223,
+     641,
      "def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True, readonly: bool=False, rate_limit: int | None=None, trust_proxy: bool=False)"
     ],
     [
      "_valid_model",
      "function",
-     626,
-     637,
+     644,
+     655,
      "def _valid_model(model) -> str | None"
     ],
     [
      "_native_pick_folder",
      "function",
-     640,
-     676,
+     658,
+     694,
      "def _native_pick_folder() -> dict"
     ],
     [
      "_scan_report",
      "function",
-     679,
-     685,
+     697,
+     703,
      "def _scan_report(path: str) -> dict"
     ],
     [
      "_merge_ignore",
      "function",
-     688,
-     698,
+     706,
+     716,
      "def _merge_ignore(root: Path, ignore: str) -> None"
     ],
     [
      "serve",
      "function",
-     701,
-     778,
+     719,
+     796,
      "def serve(root, port: int=2134, host: str='127.0.0.1', cors: str | None=None, enable_llm: bool=True, token: str | None=None, serve_ui: bool=True, readonly: bool=False, rate_limit: int | None=None, trust_proxy: bool=False) -> None"
     ]
    ]
@@ -6205,50 +6230,68 @@
      1,
      37,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "fd3b3dc78dafd0d2abb976f34efb3c3d7faa2669"
+     "fe746e06fccfc249a8c56e7e8f93456425442bba"
     ],
     [
      "block",
      null,
-     "1/2",
+     "1/3",
      38,
-     124,
+     126,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "21bb3cfa7b842ac9ea475f4326521abb11d47f3a"
+     "d99032672eb48c8256cacd142565416d9b877295"
     ],
     [
      "block",
      null,
-     "2/2",
-     125,
+     "2/3",
+     127,
      219,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "05f9f1dd06078ee3f801bc37ff5678fbe60e0b90"
+     "06940e905280ff0abfb51dbf14f2332291b8df5b"
+    ],
+    [
+     "block",
+     null,
+     "3/3",
+     220,
+     226,
+     "megabrain > megabrain/server/mcp.py (module level)",
+     "e2f001fe5a3b56b14d7c044dafa6bd49f10e0778"
     ],
     [
      "function",
      "_scope",
      null,
-     220,
-     229,
+     227,
+     236,
      "megabrain > megabrain/server/mcp.py > def _scope(args: dict) -> tuple[Path, str | None]",
      "1d10e662f4d499a37f52ced42ddfed4a6e7cd428"
     ],
     [
-     "function",
+     "block",
      "call_tool",
-     null,
-     230,
-     330,
+     "1/2",
+     237,
+     310,
      "megabrain > megabrain/server/mcp.py > def call_tool(name: str, args: dict) -> str",
-     "95a3737a18a13ccd79bf109768e22c83a5a08ced"
+     "96349829cd803f23126583c6fec8bb1ade271ad9"
+    ],
+    [
+     "block",
+     "call_tool",
+     "2/2",
+     311,
+     345,
+     "megabrain > megabrain/server/mcp.py > def call_tool(name: str, args: dict) -> str",
+     "d4fdfdbe6b77a39a179b93d0390c48688fda920d"
     ],
     [
      "function",
      "main",
      null,
-     331,
-     372,
+     346,
+     387,
      "megabrain > megabrain/server/mcp.py > def main()",
      "494cf17f80c3e1afe9632a2577e0beb051e44aa6"
     ]
@@ -6266,28 +6309,28 @@
      "TOOLS",
      "constant",
      39,
-     219,
+     226,
      "TOOLS = [{'name': 'megabrain_ask', 'description': 'THE primary tool for any how/where/why question about an indexed repo"
     ],
     [
      "_scope",
      "function",
-     222,
      229,
+     236,
      "def _scope(args: dict) -> tuple[Path, str | None]"
     ],
     [
      "call_tool",
      "function",
-     232,
-     330,
+     239,
+     345,
      "def call_tool(name: str, args: dict) -> str"
     ],
     [
      "main",
      "function",
-     333,
-     368,
+     348,
+     383,
      "def main()"
     ]
    ]

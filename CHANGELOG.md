@@ -1,5 +1,65 @@
 # Changelog
 
+## 0.17.0 — search is code OR docs, and the studio can search the docs
+
+Two halves of one idea: make the docs a first-class thing to search, and stop
+them from quietly competing with the code when you didn't ask for them.
+
+### search is code OR docs, never a blend
+
+**Breaking (search only):** `search` / `search --prune` / `megabrain_search` /
+`GET /prune` / `POST /search` now rank the **code** and drop markdown before
+scoring, the way `ask` always has. `--docs` / `docs: true` flips the whole bundle
+to the markdown. Previously a plain `search` blended both.
+
+Why it isn't a neutral default: the moment a repo indexes both, a large README
+wins prose-shaped questions and buries the implementation it describes. Measured
+on sinatra the day its docs were indexed — `README.md` took CORE (and 5 of the
+top 6 pruned chunks) from `lib/sinatra/base.rb` for *"how are routes defined and
+dispatched?"*. `ask` was already immune; `search` wasn't.
+
+The policy now lives in exactly one function, `app.content_filters()`, which every
+surface calls — the retrieval primitives stay neutral (`exclude_docs` /
+`only_docs` both default off), so CLI, MCP, HTTP and the studio can't drift.
+`ask --with-docs` remains the one mode that deliberately mixes them.
+
+Golden gate held across the change: R@1 **0.86**, bundle_full **1.00**, byte-for-byte
+the same numbers under both defaults (no gold file in the set is markdown, so the
+filter can't drop one).
+
+### the docs became searchable
+
+`ask --docs` existed but only filtered the CANDIDATE list: retrieval still ranked
+code and docs together, so a docs walkthrough on a code-heavy repo was capped at
+however many markdown files happened to outrank the code — sometimes one or two.
+And `search` had no docs mode at all.
+
+- **The docs/code split now happens at RETRIEVAL**, before scoring
+  (`scoring.filter_doc_chunks`, the generalization of the old
+  `exclude_doc_chunks`). The whole bundle — CORE, RELATED, graph neighbors —
+  stays on one side of the line. Fail-open both ways: docs asked of a repo with
+  no markdown, or code asked of a docs-only repo, returns the unfiltered set
+  rather than nothing.
+- **New `--docs` on `search`** (bundle, `--prune` and multi-repo alike),
+  **`docs` on `megabrain_search`** over MCP, **`?docs=1` on `GET /prune`** and
+  **`docs` on `POST /search`**.
+- **Studio: a "Docs only" toggle on both the Ask and the Search bar** — the same
+  switch, one shared control so the tabs can't drift. Sticky across reloads.
+  Flipping it re-runs Search (retrieval is local and free) but only repaints Ask,
+  since an automatic re-ask would spend an LLM call and a rate-limit slot.
+- **The docs lane can no longer lie about having run.** The filter fails open by
+  design (a repo with no markdown gets code, not an empty answer) — which meant
+  a toggle reading "Docs only on" over a screen of Ruby. Now `/repos` reports
+  each repo's indexed-doc count, the studio disables the control at 0 with the
+  reason ("No docs indexed"), `docsOn()` gates every request so a sticky "on"
+  can't leak in from another repo, and `GET /prune?docs=1` returns
+  `only_docs`/`docs_indexed` so the results carry a warning even if that count
+  went stale. Found on the demo's sinatra checkout: 12 `.md` on disk, 0 indexed
+  — its `.megabrainignore` excludes `*.md`.
+- **Fixed: the studio's LLM-rerank toggle never restored its persisted state** —
+  it was stored under `st.pruneRerank` and read as `st.rerank`, so it silently
+  started off on every load.
+
 ## 0.16.0 — a cached answer must COVER the question, not just resemble it
 
 Reported on the demo's sinatra repo. Both halves of this were cached
