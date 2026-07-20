@@ -66,7 +66,21 @@ Full bakeoff numbers: [Architecture §8](../ARCHITECTURE.md#8-evidence-where-the
 
 ## 2. The two ways to ask
 
-Everything else in megabrain is built on these two verbs.
+Everything else in megabrain is built on these two verbs — plus the graph, which reads the
+same index. All three in one picture:
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/bernatch22/megabrain/master/assets/ask-agents.svg" alt="Three acts. One, search: no-LLM retrieval ranks the chunks, then the LLM rerank strikes the vocabulary-only matches and reorders what survives — app.py's prune function climbs from fourth to second, past two higher-scoring chunks, leaving the score column deliberately out of order. Two, ask: a broad question fans out into three parallel sub-agents, one synthesis merges their cited answers with the verbatim code spliced in, and the finished workflow lands in the flow cache. Three, graph: a path query between two files reports that they never call each other, names the file that bridges them, and labels every hop with the function that carries it." width="900">
+</p>
+
+<p align="center">
+  <sub><b>search</b> ranks the signal, then the rerank drops the vocabulary-only look-alikes
+  <b>and reorders what survives</b> — <code>app.py · prune</code> climbs past two
+  higher-scoring chunks because it's the function that actually does the dropping.
+  <b>ask</b> fans a broad question into parallel sub-agents and splices verbatim code into
+  the synthesis. <b>graph</b> reports that two files never call each other and names the
+  one that bridges them.</sub>
+</p>
 
 ### `search` — the code, no LLM
 
@@ -128,13 +142,7 @@ megabrain studio ~/repo        # …or boot straight into one
 megabrain serve-api ~/repo     # the same JSON API, headless (no UI)
 ```
 
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/bernatch22/megabrain/master/assets/studio-dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/bernatch22/megabrain/master/assets/studio-light.png">
-    <img alt="The studio's Ask tab on sinatra: a question served instantly from the flow cache, and a live synthesis — retrieval in 25 ms over 14 files, then the cited answer streamed with the real code spliced in." src="https://raw.githubusercontent.com/bernatch22/megabrain/master/assets/studio-light.png" width="900">
-  </picture>
-</p>
+*(Screenshot on the [README](../README.md) — this section is the tour behind it.)*
 
 Vanilla JS, no build step, no CDN, mobile-friendly. One stdlib server: `studio` mounts the
 UI on top of the JSON API, `serve-api` runs the same API headless. Four tabs:

@@ -33,20 +33,27 @@ cannot rewrite a line, so nothing is invented.
 <br>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/bernatch22/megabrain/master/assets/ask-agents.svg" alt="Three acts. One, megabrain_search: no-LLM retrieval ranks the chunks, then the LLM rerank strikes the vocabulary-only matches and reorders what survives. Two, megabrain_ask: a broad question fans out into three parallel sub-agents, one synthesis merges their cited answers with the verbatim code spliced in, and the workflow lands in the flow cache. Three, megabrain_graph: a path query between two files reports that they never call each other and names the file that bridges them." width="900">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/bernatch22/megabrain/master/assets/studio-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/bernatch22/megabrain/master/assets/studio-light.png">
+    <img alt="megabrain studio's Ask tab on sinatra: one question served instantly from the flow cache, and below it a live synthesis — retrieval in 25 ms across 14 files, then the cited answer streaming with the real code spliced in." src="https://raw.githubusercontent.com/bernatch22/megabrain/master/assets/studio-light.png" width="900">
+  </picture>
+</p>
+
+<p align="center">
+  <sub><code>megabrain studio</code> — the whole engine in your browser. Here on <b>sinatra</b>:
+  a repeat question served from cache with no LLM, and a live synthesis with the real code spliced in.</sub>
 </p>
 
 <br>
 
-<p align="center">
-  <a href="https://bernardocastro.dev/megabrain/demo/">
-    <img src="https://img.shields.io/badge/▶%20%20TRY%20IT%20LIVE-bernardocastro.dev%2Fmegabrain%2Fdemo-493ada?style=for-the-badge" alt="Try the live demo">
-  </a>
-</p>
+<h3 align="center">
+  <a href="https://bernardocastro.dev/megabrain/demo/">Try it live →</a>
+</h3>
 
 <p align="center">
-  <sub>Seven popular open-source repos — <b>click · requests · express · ky · gin · sinatra · megabrain</b><br>
-  The real engine, running read-only. No signup.</sub>
+  <sub>Seven open-source repos — click · requests · express · ky · gin · sinatra · megabrain.<br>
+  The real engine, read-only. No signup.</sub>
 </p>
 
 <br>
