@@ -29,6 +29,35 @@ FLOW_TEXT = (
     "**`turn.py` L1-3**\n```python\n" + TURN + "```\n")
 
 
+def test_a_compound_question_is_not_served_half_an_answer():
+    """The reported case, verbatim from the demo's sinatra repo: asking two
+    things at once, where one half is a cached question almost word for word.
+
+    Cosine is symmetric, so the compound scores ~1.0 against the half it
+    contains and the serve lane handed back the filters walkthrough alone —
+    silently dropping the routing question. Coverage is the asymmetric check
+    that catches it: the query carries content words ("route", "defined") the
+    cached question never had, so the cache does not cover it."""
+    from megabrain.storage.flows import covers
+    asked = ("How do before and after filters run around a handler, "
+             "and how is a route defined?")
+    assert not covers(asked, "How do before and after filters run around a handler?")
+    assert not covers(asked, "How is a route defined and then dispatched to its block?")
+
+
+def test_coverage_still_serves_a_genuine_re_ask():
+    """The guard must not cost the feature its point: a re-ask, a light
+    rewording, and a query NARROWER than the cached question all still serve."""
+    from megabrain.storage.flows import covers
+    cached = "How do before and after filters run around a handler?"
+    assert covers(cached, cached)
+    assert covers("How do before and after filters wrap a handler?", cached)
+    assert covers("How do filters run?", cached)          # cache answers more
+    # scaffolding words never decide it — same topic, different phrasing
+    assert covers("Where are before and after filters run around a handler",
+                  "How do before and after filters run around a handler?")
+
+
 def test_strip_code_removes_rendered_citation_chrome():
     """A stored flow is the RENDERED answer, so it carries ask's citation
     chrome: "**`f.py` L1-3** — sym" headers and "*(see `f:L1-3` above)*"

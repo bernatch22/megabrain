@@ -503,7 +503,7 @@ def stream_events(root, question: str, on_event, *, agents: bool | None = None,
     # same behavior from the single retrieval above.
     if not docs_only and not include_docs:
         from ..storage.flows import serve_verbatim
-        served = serve_verbatim(root, res.get("flows") or [])
+        served = serve_verbatim(root, res.get("flows") or [], question)
         if served:
             emit({"type": "cached", "repo": res["repo"], "ms": retrieval_ms,
                   "question": served["question"], "text": served["text"]})

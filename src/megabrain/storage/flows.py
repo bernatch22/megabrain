@@ -59,6 +59,8 @@ log = logging.getLogger(__name__)
 
 FLOW_MIN_SIM = 0.62      # normalized (cos+1)/2 floor to ATTACH a flow as context
 FLOW_SERVE_SIM = 0.88    # near-exact match → SERVE the cached answer, skip the LLM
+FLOW_SERVE_COVERAGE = 0.8   # …and the cached question must contain this share of
+                            # the query's content words (see `covers`)
 FLOW_TOP_K = 2           # at most this many flows per query
 FLOW_DEDUP_SIM = 0.92    # raw-vector cosine above this = same flow, replace
 FLOW_TEXT_CAP = 14000    # chars of the rendered answer (prose+code) stored per flow
@@ -79,6 +81,23 @@ _CHUNK_HEAD = re.compile(r"\*\*`[^`\n]+`\s*L\d+(?:-\d+)?\*\*[^\n]*")
 _BACKREF = re.compile(r"\*\(see\s+`[^`\n]+`\s*above\)\*")
 _BLANKS = re.compile(r"\n{3,}")
 _META = "flow_cache"
+
+
+# Question scaffolding carries no topic: "how does X work" and "where is X
+# handled" ask the same thing about X. Only the CONTENT words decide whether a
+# cached answer covers a query, so these are dropped before comparing.
+_STOP = frozenset("""a an and are as at be been but by can do does doing done for
+from get gets had has have how i if in into is it its of on or our so than that
+the their then there these they this to under up upon use used uses was we what
+when where which while who why will with within work works would you your""".split())
+_WORD = re.compile(r"[a-z0-9_]+")
+
+
+def _content_tokens(text: str) -> set[str]:
+    """Lowercased content words — the topic of a question, minus its grammar.
+    Single characters go too: they are almost always article/variable noise."""
+    return {w for w in _WORD.findall((text or "").lower())
+            if len(w) > 1 and w not in _STOP}
 
 
 def strip_code(text: str) -> str:
@@ -197,15 +216,38 @@ def files_current(root, files: dict) -> bool:
                ).hexdigest() == sha for f, sha in files.items())
 
 
-def serve_verbatim(root, flows: list[dict]) -> dict | None:
+def covers(question: str, cached_question: str) -> bool:
+    """Does `cached_question` ask for everything `question` asks for?
+
+    Cosine alone cannot answer this, because it is SYMMETRIC while the
+    relationship is not: a compound question that CONTAINS a cached one scores
+    ~1.0 against it and gets served an answer to half of what was asked.
+    Reported on the demo — "How do before and after filters run around a
+    handler, and how is a route defined?" was served the cached filters
+    walkthrough alone, silently dropping the routing half.
+
+    So the serve lane also needs this asymmetric check: nearly every content
+    word of the QUERY must already appear in the cached question. New content
+    words mean the caller is asking for more than the cache holds, and the
+    right move is to attach the flow as context and narrate fresh."""
+    q, c = _content_tokens(question), _content_tokens(cached_question)
+    if not q:
+        return True
+    return len(q & c) / len(q) >= FLOW_SERVE_COVERAGE
+
+
+def serve_verbatim(root, flows: list[dict], question: str = "") -> dict | None:
     """If a matched flow's QUESTION is a near-exact match for the query
     (qscore >= FLOW_SERVE_SIM — question-only vectors, so prose length can't
-    dilute it) AND every cited file is still byte-identical to when it was
-    cached, return it so `ask` answers WITHOUT an LLM: instant, zero cost, and
-    never stale (the sha recheck guards the 60s window before an index would
-    prune it). Else None, and ask narrates fresh (re-caching the result)."""
+    dilute it), it COVERS what was asked (see covers), AND every cited file is
+    still byte-identical to when it was cached, return it so `ask` answers
+    WITHOUT an LLM: instant, zero cost, and never stale (the sha recheck guards
+    the 60s window before an index would prune it). Else None, and ask narrates
+    fresh (re-caching the result)."""
     for top in flows:
         if top.get("qscore", 0.0) < FLOW_SERVE_SIM:
+            continue
+        if question and not covers(question, top["question"]):
             continue
         if files_current(root, top["sha"]):
             return top

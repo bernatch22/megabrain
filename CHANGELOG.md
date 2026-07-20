@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.16.0 — a cached answer must COVER the question, not just resemble it
+
+Reported on the demo's sinatra repo. Both halves of this were cached
+separately:
+
+> How do before and after filters run around a handler, **and how is a route
+> defined?**
+
+and it was served the filters walkthrough alone, in 13 ms with no LLM —
+silently dropping the routing half. The compound question CONTAINS a cached
+one almost word for word, so it scored ~1.0 against it and sailed past
+`FLOW_SERVE_SIM`.
+
+The flaw is that cosine is **symmetric** while "may I reuse this answer?" is
+not. Serving now also requires an asymmetric check (`flows.covers`, no LLM):
+nearly every content word of the QUERY must already appear in the cached
+question. New content words — here "route" and "defined" — mean the caller
+asked for more than the cache holds, so the flow attaches as context and the
+narrator answers the whole question fresh.
+
+A genuine re-ask, a light rewording, and a query NARROWER than the cached one
+all still serve instantly; question scaffolding ("how does…", "where is…")
+never decides it.
+
 ## 0.15.3 — `done` really does terminate every path
 
 Verifying 0.15.2 against the live demo turned up the last hole of the same

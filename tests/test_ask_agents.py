@@ -264,7 +264,7 @@ def test_served_from_cache_still_ends_the_stream(monkeypatch):
     monkeypatch.setattr(ask_agents, "load_state", lambda *a, **k: st)
     monkeypatch.setattr(ask_agents, "search_with_state", lambda *a, **k: res)
     monkeypatch.setattr("megabrain.storage.flows.serve_verbatim",
-                        lambda root, flows: flows[0])
+                        lambda root, flows, question="": flows[0])
 
     out = ask_agents.stream_events(".", "q", events.append)
     types = [e["type"] for e in events]

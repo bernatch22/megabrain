@@ -303,7 +303,7 @@
      460,
      552,
      "megabrain > megabrain/ask/agents.py > def stream_events(root, question: str, on_event, *, agents: bool | None=None, show_map: bool=True, docs_only: bool=False, include_docs: bool=False, path_filter: str | None=None, state=None, model: str | None=None) -> dict",
-     "cda51ec30028f82e23d34bf913c2cb77aa786012"
+     "b7db9389b5e6d68f5353142c10ed5ead244efffe"
     ],
     [
      "block",
@@ -6354,34 +6354,34 @@
   "megabrain/storage/flows.py": {
    "chunks": [
     [
-     "function",
-     "strip_code",
+     "module",
+     null,
      null,
      1,
-     90,
-     "megabrain > megabrain/storage/flows.py > def strip_code(text: str) -> str",
-     "25198d7b49014bd4878ce2b59b467daeed8effbb"
+     93,
+     "megabrain > megabrain/storage/flows.py (module level)",
+     "a44257610bd0a84a5d2d570391805da375bc1fe6"
     ],
     [
      "module",
-     "enabled, set_enabled, cache_flow, match_flows, files_current",
+     "_content_tokens, strip_code, enabled, set_enabled, cache_flow, match_flows",
      null,
-     91,
-     197,
-     "megabrain > megabrain/storage/flows.py > [enabled, set_enabled, cache_flow, match_flows, files_current]",
-     "86a296cd3c17537cd34fc25530e69191f086760d"
+     94,
+     203,
+     "megabrain > megabrain/storage/flows.py > [_content_tokens, strip_code, enabled, set_enabled, cache_flow, match_flows]",
+     "841e10b48cfd18e3ee6a9c969b8fdf8e4df87f6b"
     ],
     [
-     "function",
-     "serve_verbatim",
+     "module",
+     "files_current, covers, serve_verbatim",
      null,
-     198,
-     212,
-     "megabrain > megabrain/storage/flows.py > def serve_verbatim(root, flows: list[dict]) -> dict | None",
-     "ede3d0eb7783a65b27b6b4c81090b8780250e988"
+     204,
+     254,
+     "megabrain > megabrain/storage/flows.py > [files_current, covers, serve_verbatim]",
+     "005d350ac6abde9bd3d063bf701ea709a012a737"
     ]
    ],
-   "skeleton_sha": "e6f3eef05d4fac67b7e5ef8f6cf0b4b3c46e2627",
+   "skeleton_sha": "0d1afec187caa80abad322c307c29153426ef527",
    "symbols": [
     [
      "log",
@@ -6405,123 +6405,158 @@
      "FLOW_SERVE_SIM = 0.88"
     ],
     [
-     "FLOW_TOP_K",
+     "FLOW_SERVE_COVERAGE",
      "constant",
      62,
      62,
+     "FLOW_SERVE_COVERAGE = 0.8"
+    ],
+    [
+     "FLOW_TOP_K",
+     "constant",
+     64,
+     64,
      "FLOW_TOP_K = 2"
     ],
     [
      "FLOW_DEDUP_SIM",
      "constant",
-     63,
-     63,
+     65,
+     65,
      "FLOW_DEDUP_SIM = 0.92"
     ],
     [
      "FLOW_TEXT_CAP",
      "constant",
-     64,
-     64,
+     66,
+     66,
      "FLOW_TEXT_CAP = 14000"
     ],
     [
      "FLOW_FILE_ADDS",
      "constant",
-     65,
-     65,
+     67,
+     67,
      "FLOW_FILE_ADDS = 3"
     ],
     [
      "_CITE",
      "constant",
-     67,
-     67,
+     69,
+     69,
      "_CITE = re.compile('\\\\[\\\\[[^\\\\]]*\\\\]\\\\]')"
     ],
     [
      "_CODE",
      "constant",
-     68,
-     68,
+     70,
+     70,
      "_CODE = re.compile('```.*?```', re.S)"
     ],
     [
      "_CHUNK_HEAD",
      "constant",
-     78,
-     78,
+     80,
+     80,
      "_CHUNK_HEAD = re.compile('\\\\*\\\\*`[^`\\\\n]+`\\\\s*L\\\\d+(?:-\\\\d+)?\\\\*\\\\*[^\\\\n]*')"
     ],
     [
      "_BACKREF",
      "constant",
-     79,
-     79,
+     81,
+     81,
      "_BACKREF = re.compile('\\\\*\\\\(see\\\\s+`[^`\\\\n]+`\\\\s*above\\\\)\\\\*')"
     ],
     [
      "_BLANKS",
      "constant",
-     80,
-     80,
+     82,
+     82,
      "_BLANKS = re.compile('\\\\n{3,}')"
     ],
     [
      "_META",
      "constant",
-     81,
-     81,
+     83,
+     83,
      "_META = 'flow_cache'"
+    ],
+    [
+     "_STOP",
+     "constant",
+     89,
+     92,
+     "_STOP = frozenset('a an and are as at be been but by can do does doing done for\\nfrom get gets had has have how i if in "
+    ],
+    [
+     "_WORD",
+     "constant",
+     93,
+     93,
+     "_WORD = re.compile('[a-z0-9_]+')"
+    ],
+    [
+     "_content_tokens",
+     "function",
+     96,
+     100,
+     "def _content_tokens(text: str) -> set[str]"
     ],
     [
      "strip_code",
      "function",
-     84,
-     90,
+     103,
+     109,
      "def strip_code(text: str) -> str"
     ],
     [
      "enabled",
      "function",
-     93,
-     110,
+     112,
+     129,
      "def enabled(root=None) -> bool"
     ],
     [
      "set_enabled",
      "function",
-     113,
-     116,
+     132,
+     135,
      "def set_enabled(root, on: bool) -> None"
     ],
     [
      "cache_flow",
      "function",
-     119,
-     161,
+     138,
+     180,
      "def cache_flow(root: Path, question: str, answer: str, cited_files: list[str], emb=None) -> int | None"
     ],
     [
      "match_flows",
      "function",
-     164,
-     184,
+     183,
+     203,
      "def match_flows(flow_metas: list[dict], FL: np.ndarray, qv: np.ndarray, FLQ: np.ndarray | None=None) -> list[dict]"
     ],
     [
      "files_current",
      "function",
-     187,
-     197,
+     206,
+     216,
      "def files_current(root, files: dict) -> bool"
+    ],
+    [
+     "covers",
+     "function",
+     219,
+     236,
+     "def covers(question: str, cached_question: str) -> bool"
     ],
     [
      "serve_verbatim",
      "function",
-     200,
-     212,
-     "def serve_verbatim(root, flows: list[dict]) -> dict | None"
+     239,
+     254,
+     "def serve_verbatim(root, flows: list[dict], question: str='') -> dict | None"
     ]
    ]
   },
