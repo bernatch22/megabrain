@@ -1320,14 +1320,24 @@
     if (ag) ag.innerHTML = a.agents.map(agentCard).join("");
     const sy = $("#ask-synth");
     if (sy) {
+      let h = "";
       if (a.synthText || a.synthActive) {
-        sy.innerHTML = `<div class="section-head" style="margin-top:0"><div class="signal-label mono">
+        h = `<div class="section-head" style="margin-top:0"><div class="signal-label mono">
             <div class="dotlive" style="animation:mb-pulse 1.6s infinite"></div>${a.cached ? "⚡ FROM CACHE" : "SYNTHESIS"}${a.done ? "" : " · STREAMING"}</div>
             <div class="section-rule"></div><div class="mono" style="font-size:10.5px;color:var(--muted)">${a.cached ? "flow cache · no LLM" : esc(shortModel(a.model || activeModel()))}</div></div>
           <div class="synth">${md(a.synthText)}${a.done ? "" : '<span class="caret"></span>'}</div>`;
-      } else if (a.bundle) {
-        sy.innerHTML = `<div class="synth">${a.bundleNote ? `<p style="color:var(--muted)">${esc(a.bundleNote)} — full bundle:</p>` : ""}<pre class="mono">${esc(a.bundle)}</pre></div>`;
-      } else sy.innerHTML = "";
+      }
+      // The fail-open bundle must show even when prose streamed. It used to be
+      // an `else`, so an answer that cited nothing rendered as bare prose and
+      // the fallback the engine had already computed stayed invisible — the
+      // reader had no way to tell the walkthrough was ungrounded.
+      if (a.bundle) {
+        h += `<div class="info-bar" style="border-color:var(--bad-bd);background:var(--bad-bg,var(--panel2))">
+            <span style="font-size:12px">⚠ <b>${esc(a.bundleNote || "no code cited")}</b> — the model never cited a chunk,
+            so nothing could be spliced. The full retrieval bundle is below.</span></div>
+          <div class="synth"><pre class="mono">${esc(a.bundle)}</pre></div>`;
+      }
+      sy.innerHTML = h;
     }
     const ft = $("#ask-foot");
     if (ft && a.done) {

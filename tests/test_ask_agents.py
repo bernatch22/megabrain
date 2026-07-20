@@ -249,3 +249,40 @@ def test_stream_events_scoped_single_agent(monkeypatch):
     assert out["text"] == "Here.\n[[0]]\n" and out["agents"] is None
     spliced = "".join(e["text"] for e in events if e["type"] == "synthesis_delta")
     assert "def ask(): pass" in spliced
+
+
+def test_uncited_answer_still_ends_the_stream(monkeypatch):
+    """An answer that cites nothing falls open to the bundle — and must STILL
+    emit `done`. Every sink treats that event as end-of-stream, so skipping it
+    left the studio on "SYNTHESIS · STREAMING" forever, with no footer and no
+    hint that the walkthrough was ungrounded."""
+    events = []
+    st = SimpleNamespace(store=SimpleNamespace(symbols_for=lambda f: []),
+                         fpaths=[], fskels=[])
+    res = {"repo": "demo", "query": "q", "ms": 1, "tier2": [],
+           "tier1": [{"file": "megabrain/ask.py", "score": 1.0, "symbols": [],
+                      "neighbors": [],
+                      "chunks": [{"id": 1, "name": "ask", "kind": "function",
+                                  "part": None, "breadcrumb": None, "score": 1.0,
+                                  "start_line": 1, "end_line": 10,
+                                  "text": "def ask(): pass\n"}]}]}
+    monkeypatch.setattr(ask_agents, "load_state", lambda *a, **k: st)
+    monkeypatch.setattr(ask_agents, "search_with_state", lambda *a, **k: res)
+    monkeypatch.setattr(ask_agents.providers, "find_chat_key",
+                        lambda required=False: "k")
+    monkeypatch.setattr(ask_agents.providers, "ask_model", lambda: "m")
+
+    def uncited(body, key=None, on_delta=None, **kw):
+        # the exact failure: a header imitated from a cached flow, no [[k]]
+        t = "**`megabrain/ask.py` L1-10** — ask\n"
+        if on_delta:
+            on_delta(t)
+        return t, ""
+    monkeypatch.setattr(ask_agents.providers, "stream_chat", uncited)
+
+    ask_agents.stream_events(".", "how does ask work", events.append)
+    types = [e["type"] for e in events]
+    assert "bundle" in types, "ungrounded prose must fall open to the bundle"
+    assert types[-1] == "done", types
+    done = events[-1]
+    assert done["grounded"] is False and done["spans"] == 0

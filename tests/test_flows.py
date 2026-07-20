@@ -29,6 +29,43 @@ FLOW_TEXT = (
     "**`turn.py` L1-3**\n```python\n" + TURN + "```\n")
 
 
+def test_strip_code_removes_rendered_citation_chrome():
+    """A stored flow is the RENDERED answer, so it carries ask's citation
+    chrome: "**`f.py` L1-3** — sym" headers and "*(see `f:L1-3` above)*"
+    back-references. Feeding those back as narrator context taught the model to
+    IMITATE the format — it emitted headers instead of [[k]] citations, so the
+    splicer replaced nothing and the answer listed files, lines and symbols
+    while showing NO code (reported live on a question matching two flows)."""
+    rendered = (
+        "Prose about the flow.\n\n"
+        "**`vad.py` L1-3** — detect_voice\n```python\n" + VAD + "```\n\n"
+        "More prose.\n\n"
+        "**`turn.py` L1-3**\n```python\n" + TURN + "```\n\n"
+        "*(see `vad.py:L1-3` above)*\n")
+    out = flows_mod.strip_code(rendered)
+    assert "Prose about the flow." in out and "More prose." in out
+    assert "```" not in out
+    assert "L1-3" not in out, out          # no header survived
+    assert "vad.py" not in out and "turn.py" not in out
+    assert "see" not in out                # no back-reference either
+    assert "\n\n\n" not in out             # stripping left no blank-line craters
+
+
+def test_flow_context_shows_the_narrator_no_citation_format(repo):
+    """End to end: whatever reaches the prompt as KNOWN FLOW must contain no
+    example of the rendered citation format, or the model copies it."""
+    import re
+
+    from megabrain.ask.narrator import _flow_ctx
+    _cache(repo)
+    st = load_state(repo)
+    res = search_with_state(st, "how is the bot interrupted mid sentence")
+    assert res.get("flows"), "expected the cached flow to attach"
+    ctx = _flow_ctx(res)
+    assert "barge" in ctx.lower(), "the prose itself must survive"
+    assert not re.search(r"\*\*`[^`]+`\s*L\d+", ctx), ctx
+
+
 @pytest.fixture
 def repo(tmp_path, fake_embedder):
     (tmp_path / "vad.py").write_text(VAD)

@@ -567,6 +567,14 @@ def stream_events(root, question: str, on_event, *, agents: bool | None = None,
     if not splicer.cited:              # fail-open: ungrounded prose -> the bundle
         note = "no code cited" if text else "explanation unavailable"
         emit({"type": "bundle", "note": note, "text": render(res)})
+        # `done` ENDS the stream for every sink, so it must fire on this path
+        # too — without it a UI that keys "finished" off the event streams
+        # forever (the studio sat on "SYNTHESIS · STREAMING", no footer, on
+        # every ungrounded answer). `grounded` lets a sink say WHY the
+        # walkthrough carries no code instead of showing bare prose.
+        emit({"type": "done", "spans": 0, "files": 0, "grounded": False,
+              "retrieval_ms": retrieval_ms, "llm_ms": llm_ms,
+              "dropped": [], "n_dropped": 0, "agents": trace})
         return {**base, "text": text, "llm_ms": llm_ms, "truncated": truncated}
     if truncated:
         emit({"type": "length"})

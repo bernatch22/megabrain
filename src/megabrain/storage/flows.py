@@ -66,13 +66,28 @@ FLOW_FILE_ADDS = 3       # max missing flow-source files appended to RELATED
 
 _CITE = re.compile(r"\[\[[^\]]*\]\]")
 _CODE = re.compile(r"```.*?```", re.S)      # fenced code blocks
+# A stored flow is the RENDERED answer, so it also carries the citation CHROME
+# that ask._code_block emits around each block: a header
+# "**`src/x/y.py` L58-83** — symbol" and, for a repeated span, a
+# "*(see `f:L1-2` above)*" back-reference. Both must go before the text is fed
+# back to a narrator: shown that format as context, the model IMITATES it —
+# emitting headers instead of [[k]] citations, so the splicer replaces nothing
+# and the answer names files, lines and symbols while displaying NO code.
+# (Reported live: a question matching two cached flows rendered eight such
+# headers and not one line of code.)
+_CHUNK_HEAD = re.compile(r"\*\*`[^`\n]+`\s*L\d+(?:-\d+)?\*\*[^\n]*")
+_BACKREF = re.compile(r"\*\(see\s+`[^`\n]+`\s*above\)\*")
+_BLANKS = re.compile(r"\n{3,}")
 _META = "flow_cache"
 
 
 def strip_code(text: str) -> str:
-    """Prose without fenced code — for embedding + narrator context (the stored
-    answer keeps the code for verbatim serving)."""
-    return _CODE.sub("", _CITE.sub("", text)).strip()
+    """The PROSE of a stored walkthrough — no fenced code, no citations, and no
+    rendered citation headers. Used for the flow embedding and as narrator
+    context; the stored answer keeps all of it for verbatim serving."""
+    out = _CODE.sub("", _CITE.sub("", text))
+    out = _BACKREF.sub("", _CHUNK_HEAD.sub("", out))
+    return _BLANKS.sub("\n\n", out).strip()
 
 
 def enabled(root=None) -> bool:

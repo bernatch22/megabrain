@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.15.2 — a cached flow taught the narrator to fake its citations
+
+Reported from the demo: a question matching TWO cached flows answered with
+eight citation headers — file, line range, symbol — and **not one line of
+code**, then streamed forever with no footer. Three bugs stacked into that:
+
+- **The flow context leaked ask's citation chrome.** A stored flow is the
+  RENDERED answer, so it carries the headers `_code_block` writes around each
+  block (`` **`src/x.py` L58-83** — sym ``) plus `*(see … above)*`
+  back-references. `strip_code` removed fenced code and `[[k]]` citations but
+  not those, so the narrator was handed a worked example of the OUTPUT format
+  and imitated it — emitting headers instead of `[[k]]`. The splicer then had
+  nothing to replace, and the answer *looked* grounded while showing nothing.
+  This is the anti-hallucination guarantee inverted: real file names and line
+  numbers, no code behind them. `strip_code` now removes both shapes.
+- **The fail-open path never emitted `done`.** An answer that cites nothing
+  falls open to the full bundle, but that branch returned without the event
+  every sink treats as end-of-stream — so the studio sat on
+  "SYNTHESIS · STREAMING" indefinitely, no footer, on every ungrounded
+  answer. It now emits `done` with `grounded: false`.
+- **The studio hid the fallback.** The bundle was rendered only as an `else`
+  to the synthesis, so whenever prose had streamed the fail-open bundle the
+  engine had already computed stayed invisible and the reader had no way to
+  tell the walkthrough was ungrounded. Both now render, with the reason.
+
 ## 0.15.1 — modern TypeScript had no graph either
 
 Reported on the demo: ky drew nothing. Its 52 files produced **zero** edges,

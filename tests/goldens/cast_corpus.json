@@ -310,9 +310,9 @@
      "stream_events",
      "2/2",
      566,
-     592,
+     600,
      "megabrain > megabrain/ask/agents.py > def stream_events(root, question: str, on_event, *, agents: bool | None=None, show_map: bool=True, docs_only: bool=False, include_docs: bool=False, path_filter: str | None=None, state=None, model: str | None=None) -> dict",
-     "b146a49fd7276630a27c0497c4f0662b675056e9"
+     "e0132ba6cc3268f0cbdadbdcd71dafcf99b911a8"
     ]
    ],
    "skeleton_sha": "2a2fd884706b77eb11b4a1aa382124579eb04f72",
@@ -489,7 +489,7 @@
      "stream_events",
      "function",
      464,
-     592,
+     600,
      "def stream_events(root, question: str, on_event, *, agents: bool | None=None, show_map: bool=True, docs_only: bool=False, include_docs: bool=False, path_filter: str | None=None, state=None, model: str | None=None) -> dict"
     ]
    ]
@@ -6354,25 +6354,34 @@
   "megabrain/storage/flows.py": {
    "chunks": [
     [
-     "module",
-     "strip_code, enabled, set_enabled",
+     "function",
+     "strip_code",
      null,
      1,
-     101,
-     "megabrain > megabrain/storage/flows.py > [strip_code, enabled, set_enabled]",
-     "63b04d7b36055bfb46c6aa8c7625cc95f9f3a192"
+     90,
+     "megabrain > megabrain/storage/flows.py > def strip_code(text: str) -> str",
+     "25198d7b49014bd4878ce2b59b467daeed8effbb"
     ],
     [
      "module",
-     "cache_flow, match_flows, files_current, serve_verbatim",
+     "enabled, set_enabled, cache_flow, match_flows, files_current",
      null,
-     102,
+     91,
      197,
-     "megabrain > megabrain/storage/flows.py > [cache_flow, match_flows, files_current, serve_verbatim]",
-     "7998b26dfbbde9684df6ac50fae7167705287e27"
+     "megabrain > megabrain/storage/flows.py > [enabled, set_enabled, cache_flow, match_flows, files_current]",
+     "86a296cd3c17537cd34fc25530e69191f086760d"
+    ],
+    [
+     "function",
+     "serve_verbatim",
+     null,
+     198,
+     212,
+     "megabrain > megabrain/storage/flows.py > def serve_verbatim(root, flows: list[dict]) -> dict | None",
+     "ede3d0eb7783a65b27b6b4c81090b8780250e988"
     ]
    ],
-   "skeleton_sha": "3b78f7a5d5195742c1d5078baeb56e58625ad931",
+   "skeleton_sha": "e6f3eef05d4fac67b7e5ef8f6cf0b4b3c46e2627",
    "symbols": [
     [
      "log",
@@ -6438,59 +6447,80 @@
      "_CODE = re.compile('```.*?```', re.S)"
     ],
     [
+     "_CHUNK_HEAD",
+     "constant",
+     78,
+     78,
+     "_CHUNK_HEAD = re.compile('\\\\*\\\\*`[^`\\\\n]+`\\\\s*L\\\\d+(?:-\\\\d+)?\\\\*\\\\*[^\\\\n]*')"
+    ],
+    [
+     "_BACKREF",
+     "constant",
+     79,
+     79,
+     "_BACKREF = re.compile('\\\\*\\\\(see\\\\s+`[^`\\\\n]+`\\\\s*above\\\\)\\\\*')"
+    ],
+    [
+     "_BLANKS",
+     "constant",
+     80,
+     80,
+     "_BLANKS = re.compile('\\\\n{3,}')"
+    ],
+    [
      "_META",
      "constant",
-     69,
-     69,
+     81,
+     81,
      "_META = 'flow_cache'"
     ],
     [
      "strip_code",
      "function",
-     72,
-     75,
+     84,
+     90,
      "def strip_code(text: str) -> str"
     ],
     [
      "enabled",
      "function",
-     78,
-     95,
+     93,
+     110,
      "def enabled(root=None) -> bool"
     ],
     [
      "set_enabled",
      "function",
-     98,
-     101,
+     113,
+     116,
      "def set_enabled(root, on: bool) -> None"
     ],
     [
      "cache_flow",
      "function",
-     104,
-     146,
+     119,
+     161,
      "def cache_flow(root: Path, question: str, answer: str, cited_files: list[str], emb=None) -> int | None"
     ],
     [
      "match_flows",
      "function",
-     149,
-     169,
+     164,
+     184,
      "def match_flows(flow_metas: list[dict], FL: np.ndarray, qv: np.ndarray, FLQ: np.ndarray | None=None) -> list[dict]"
     ],
     [
      "files_current",
      "function",
-     172,
-     182,
+     187,
+     197,
      "def files_current(root, files: dict) -> bool"
     ],
     [
      "serve_verbatim",
      "function",
-     185,
-     197,
+     200,
+     212,
      "def serve_verbatim(root, flows: list[dict]) -> dict | None"
     ]
    ]
