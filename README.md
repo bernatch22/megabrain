@@ -93,8 +93,38 @@ megabrain ask   ~/repo "how does auth work end to end"
 
 The trade-off is measured, not hand-waved: `bge-m3` ties the cloud embedder on
 `bundle_full` — whether `ask` gets the right code at all — and ranks the #1 slot lower
-(R@1 0.773 vs 0.864). Going *fully* local, narrator included, needs two non-obvious knobs:
-**[the recipe](docs/RECIPES.md#run-fully-local--no-keys-no-cloud)**.
+(R@1 0.773 vs 0.864).
+
+### Fully local — Ollama for both halves, zero cloud
+
+Air-gapped, $0, open weights end to end:
+
+```bash
+pip install 'megabrain[languages]'
+ollama pull bge-m3 && ollama pull qwen3-coder:30b
+
+export MEGABRAIN_EMBED_BASE_URL=http://localhost:11434/v1
+export MEGABRAIN_EMBED_MODEL=bge-m3
+export MEGABRAIN_CHAT_BASE_URL=http://localhost:11434/v1
+export MEGABRAIN_ASK_MODEL=qwen3-coder:30b
+
+export MEGABRAIN_ASK_CTX_CHARS=105000     # ← required: see below
+export OLLAMA_CONTEXT_LENGTH=40960
+
+megabrain index ~/repo --force            # --force re-embeds with the new model
+megabrain ask   ~/repo "how does auth work end to end"
+```
+
+**`MEGABRAIN_ASK_CTX_CHARS` is not optional here.** `ask`'s candidate budget is sized for
+cloud windows (200K chars ≈ 50K tokens); a 40K-token local model gets its prompt
+**silently truncated** by the runtime, and the answers quietly get worse with no error.
+Cap it below the model's window.
+
+Measured on an RTX 3090: `qwen3-coder:30b` cites the primary answer file correctly but
+fewer *secondary* files than the cloud (cite_recall 0.417 vs 0.667) — the splice guarantee
+holds either way, so nothing it shows you is invented. Smaller machines should drop to a
+smaller tag. Hybrid-thinking models (`qwen3:*`, not `qwen3-coder:*`) need one more knob —
+**[full recipe](docs/RECIPES.md#run-fully-local--no-keys-no-cloud)**.
 
 ---
 
