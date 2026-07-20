@@ -80,6 +80,8 @@ machine, and **your code never leaves it**:
 ```bash
 pip install 'megabrain[claude]'                   # narrates on your Claude Code login
 
+unset ANTHROPIC_API_KEY                           # ← or it bills the API, not your plan
+
 ollama pull bge-m3                                # local embeddings, one time
 export MEGABRAIN_EMBED_BASE_URL=http://localhost:11434/v1
 export MEGABRAIN_EMBED_MODEL=bge-m3
@@ -87,6 +89,13 @@ export MEGABRAIN_EMBED_MODEL=bge-m3
 megabrain index ~/repo
 megabrain ask   ~/repo "how does auth work end to end"
 ```
+
+**That `unset` is the line people miss.** megabrain narrates through the Claude Agent SDK,
+which drives the Claude Code CLI — and the CLI takes an API key over your login. With
+`ANTHROPIC_API_KEY` exported, every `ask` quietly bills the Anthropic API per token while
+the subscription you already pay for sits unused. Nothing warns you; the answers are
+identical. `unset` covers the current shell only, so if the key comes from your `~/.zshrc`
+or `~/.bashrc`, drop it there too — or keep it and pick per-shell which one pays.
 
 `bge-m3` is the local embedder to use. It matches the cloud one on the measure that
 decides whether `ask` gets the right code at all, and trails it on ranking the single best

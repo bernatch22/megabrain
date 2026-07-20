@@ -26,6 +26,12 @@ pip install 'megabrain[claude]'       # + narrate on Claude Code credits
 megabrain needs **embeddings** (always) and, for `ask`, a **chat model**. They are
 independent knobs — you can mix cloud embeddings with a local narrator, or the reverse.
 
+> **Using the `claude` extra to narrate on your plan? `unset ANTHROPIC_API_KEY` first.**
+> The Agent SDK drives the Claude Code CLI, and the CLI takes an API key over your login:
+> with that variable exported, every `ask` bills the Anthropic API per token instead of the
+> subscription — silently, with identical answers. `unset` lasts for the current shell, so
+> remove it from your shell rc if that's where it comes from.
+
 ### The recommended setup
 
 **One OpenRouter key.** The defaults are the measured-best pair, so there is nothing to
@@ -51,7 +57,7 @@ away from it.
 
 | instead of… | do this | trade-off |
 |---|---|---|
-| paying per ask | `pip install 'megabrain[claude]'` + be logged into Claude Code | narration runs on your plan (`haiku` by default); embeddings still need a key or a local endpoint |
+| paying per ask | `pip install 'megabrain[claude]'`, be logged into Claude Code, and `unset ANTHROPIC_API_KEY` | narration runs on your plan (`haiku` by default); embeddings still need a key or a local endpoint |
 | the cloud entirely | [run fully local](RECIPES.md#run-fully-local--no-keys-no-cloud) | $0, nothing leaves your machine; the best local embedder ties the cloud on completeness and ranks the #1 slot lower (R@1 0.773 vs 0.864) |
 | the default price | `export MEGABRAIN_ASK_MODEL=qwen/qwen3-coder` | ~half the cost, ~2× slower, open weights |
 
