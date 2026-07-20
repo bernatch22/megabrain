@@ -433,7 +433,7 @@ search a partial index. Run it yourself before believing either of us.
 | **query** | **no LLM** — your question is embedded and matched by vector similarity. Returns every related file in ~200 ms; nothing is dropped. An optional **LLM rerank** (`--rerank`; on by default over MCP) then prunes vocabulary-only matches — fail-open to the deterministic list. |
 | **ask** | one LLM call narrates the answer and cites code as `[[k]]`; the engine replaces each citation with the verbatim block from disk. The model can only *point* at code, never rewrite it — so nothing is hallucinated. Broad questions fan out into parallel sub-agents, then a parent synthesizes. |
 | **forge** | for a file type the engine doesn't index yet (`.toml`, `.astro`, a private DSL), an LLM writes a chunking strategy — accepted only after it partitions *every* matching file exactly. One-time, at your command, off the query path. |
-| **flows** *(on by default)* | every `ask` caches its cross-file walkthrough; the next related question retrieves the whole workflow at once, and a near-exact repeat is **served with no LLM** (~0 ms), sha-guarded against changed code. `megabrain flows --disable` / `MEGABRAIN_FLOW_CACHE=0` to turn off. |
+| **flows** *(on by default)* | every `ask` caches its cross-file walkthrough; the next related question retrieves the whole workflow at once, and a near-exact repeat is **served with no LLM** (~0 ms) — guarded twice: a sha recheck refuses an answer whose code changed, and a coverage check refuses one that only *resembles* your question (ask two things at once and it narrates both, instead of serving half). `megabrain flows --disable` / `MEGABRAIN_FLOW_CACHE=0` to turn off. |
 
 Languages: **Python · JS/TS · Markdown** built in; **Ruby · Go · Rust · PHP** with
 `pip install 'megabrain[languages]'`; **anything else** via `megabrain forge` (below).
@@ -508,6 +508,7 @@ entirely**:
 |---|---|---|
 | first time | 27.8 s | pays once, caches |
 | repeated (even reworded) | **0.19 s** | **none — served from cache** |
+| that question **plus another one** | full narrate | the cache doesn't *cover* it — attaches as context, answers both halves |
 | after the cited file changed | 21.9 s | sha recheck refuses the stale answer, narrates fresh, re-caches |
 
 *(measured on this repo — the exact run is reproducible with any question)*
@@ -525,11 +526,23 @@ export MEGABRAIN_FLOW_CACHE=0                # kill switch: off everywhere, beat
   and falls back to a fresh narrate on any mismatch. The next `index` prunes
   stale flows automatically, and `flows --refresh` re-asks their original
   questions to *update* them instead.
+- **It can never answer half your question.** Resembling a cached question
+  isn't enough — the cached one has to **cover** it. Cosine is symmetric, but
+  "may I reuse this answer?" isn't: a compound question that *contains* a
+  cached one scores ~1.0 against it. Ask *"how do before and after filters run
+  around a handler, **and how is a route defined?**"* with both halves cached
+  separately and the naive answer is the filters walkthrough alone, with the
+  routing half silently dropped. So serving also requires that nearly every
+  content word of your question already appear in the cached one — new words
+  mean you asked for more than the cache holds, and it narrates fresh instead.
+  Re-asks, rewordings and *narrower* questions still serve instantly.
 - **Rules intact:** the LLM + the one embed happen at *ask* time (write path);
   the read path is pure cosine. Flows only *add* their source files to the
   bundle when missing (never displace real files → completeness only rises), and
   the narrator gets the cached flow as non-citable context — it still splices
-  real code from disk regardless.
+  real code from disk regardless. That context is prose only: the stored
+  answer's code blocks **and its citation headers** are stripped, or a model
+  shown its own output format copies it and cites nothing.
 
 Validated on sdk-server: `--warm-flows 5` discovered and cached the system's
 main workflows; a paraphrase ("how does the bot stop talking when the user cuts

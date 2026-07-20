@@ -288,14 +288,41 @@ now cached in the index and the next related question retrieves the whole flow
 at once — validated: a barge-in flow cached from one question was retrieved by a
 fully re-worded paraphrase. The hard rules stay intact by construction:
 
-- **Write path (ask time)** — prose (citations stripped) + question embedded in
-  ONE call, stored in the `flows` table with `{cited file: sha}`. Near-dupes
-  (cos > 0.92) replace the old row. Fail-open: a cache error never breaks ask.
-- **Read path (query time, rule 1 intact)** — cosine of the ALREADY-computed
-  query vector against the flow matrix; matches ≥ 0.62, top 2. Flows ATTACH
-  ("KNOWN FLOW" bundle section + non-citable context for the narrator); they
-  never rank or displace files (rule-3 analog) — their source files append to
-  RELATED only when missing, pure additions, so bundle_full can only rise.
+- **Write path (ask time)** — the RENDERED walkthrough (prose + the real code
+  blocks) goes into the `flows` table with `{cited file: sha}`, and **two**
+  vectors are embedded in ONE call: question + prose (the ATTACH lane) and
+  question-only (the SERVE lane — so prose length can never dilute an identical
+  question). "Prose" means `strip_code`, which removes fenced code, `[[k]]`
+  citations **and the rendered citation headers** (`` **`src/x.py` L58-83** — sym ``).
+  That last one is not cosmetic: the stored answer is what a later narrator
+  reads as context, and a model shown a worked example of its own OUTPUT format
+  imitates it — emitting headers instead of `[[k]]`, so the splicer replaces
+  nothing and the answer names real files and line numbers with **no code
+  behind them** (observed live: eight such headers, zero code). Near-duplicate
+  *questions* (cos > 0.92) replace the old row. Fail-open: a cache error never
+  breaks ask.
+- **Read path (query time, rule 1 intact)** — pure cosine of the
+  ALREADY-computed query vector against the flow matrix, in two lanes:
+  - **SERVE** (`qscore` ≥ 0.88 on the question-only vector) → the cached answer
+    is returned **verbatim, no LLM, ~0 ms** — but only after two guards. The
+    shas of every cited file must still match DISK, *and* the cached question
+    must **cover** the query (`flows.covers`): nearly every content word of the
+    query has to already appear in it. That second guard exists because cosine
+    is **symmetric** while "may I reuse this answer?" is not — a compound
+    question that CONTAINS a cached one scores ~1.0 against it, so
+    *"How do before and after filters run around a handler, **and how is a route
+    defined?**"* was served the cached filters walkthrough alone, silently
+    dropping the routing half (reported live on sinatra, where both halves were
+    cached separately). New content words mean the caller asked for more than
+    the cache holds, so the flow falls through to ATTACH and the narrator
+    answers the whole question. Question scaffolding ("how does…", "where
+    is…") is stopworded out, so it never decides coverage; a re-ask, a light
+    rewording, and a query *narrower* than the cached one all still serve.
+  - **ATTACH** (0.62 ≤ score < serve, top 2) → the flow becomes a "KNOWN FLOW"
+    bundle section + non-citable context for the narrator, which narrates fresh
+    and re-caches. Flows never rank or displace files (rule-3 analog) — their
+    source files append to RELATED only when missing, pure additions, so
+    bundle_full can only rise.
 - **Invalidation (index time)** — `index_repo` prunes any flow whose cited
   files changed sha, so a stale walkthrough cannot outlive the code it
   describes. And `ask` splices real code from disk regardless: a stale flow
