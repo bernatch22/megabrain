@@ -115,15 +115,29 @@ megabrain index ~/repo --force            # --force re-embeds with the new model
 megabrain ask   ~/repo "how does auth work end to end"
 ```
 
-**`MEGABRAIN_ASK_CTX_CHARS` is not optional here.** `ask`'s candidate budget is sized for
-cloud windows (200K chars ≈ 50K tokens); a 40K-token local model gets its prompt
-**silently truncated** by the runtime, and the answers quietly get worse with no error.
-Cap it below the model's window.
+**Use a real coder model — the small ones are not a cheaper trade-off, they're just
+worse.** We measured the local field on the same bundles:
 
-Measured on an RTX 3090: `qwen3-coder:30b` cites the primary answer file correctly but
-fewer *secondary* files than the cloud (cite_recall 0.417 vs 0.667) — the splice guarantee
-holds either way, so nothing it shows you is invented. Smaller machines should drop to a
-smaller tag. Hybrid-thinking models (`qwen3:*`, not `qwen3-coder:*`) need one more knob —
+| local narrator | cite_recall | latency |
+|---|---|---|
+| **`qwen3-coder:30b`** (MoE, ~3B active) | **0.583** | **15 s** |
+| `qwen3:8b` / `qwen3:14b` / `gemma-3-12b` (dense) | 0.33–0.42 | ~41 s |
+| the same 30B **without** code specialization | 0.333 | 12 s |
+
+The lightweight dense models lose on **both** axes — they cite fewer files *and* run ~2.7×
+slower, because they think harder per token with no MoE speedup. And code specialization is
+not cosmetic: the general-purpose sibling of the very same 30B scores **half** the citation
+recall on code. Take `qwen3-coder`, latest version, or don't go local.
+
+**`MEGABRAIN_ASK_CTX_CHARS` is not optional here.** `ask`'s candidate budget is sized for
+cloud windows (200K chars ≈ 50K tokens); a 40K-token local model gets its prompt **silently
+truncated** by the runtime — no error, just quietly worse answers. Cap it below the model's
+window.
+
+What you give up versus the cloud is *secondary*-citation completeness, not correctness:
+the primary answer file is essentially always cited, and the splice guarantee holds
+regardless, so nothing you're shown is invented. Hybrid-thinking models (`qwen3:*`, not
+`qwen3-coder:*`) need one more knob —
 **[full recipe](docs/RECIPES.md#run-fully-local--no-keys-no-cloud)**.
 
 ---

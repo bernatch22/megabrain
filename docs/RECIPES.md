@@ -109,14 +109,35 @@ Non-thinking models (`qwen3-coder:*`) don't need it.
 by the runtime. Cap the budget below the model's window (~3 chars/token, leave ~3K tokens
 for the answer).
 
-**What to expect.** Local narrators cite fewer *secondary* files — the primary answer file
-and the splice guarantee hold. Measured on a 6-query sample: `qwen3-coder:30b` cite_recall
-0.417 · `qwen3:14b` 0.333 · cloud `qwen/qwen3-coder` control 0.667.
+### Which local narrator
 
-In practice a local stack finds the right answer on a focused question; the cloud embedder
-pulls in more of the surrounding context on questions that span a couple of files. Neither
-hallucinates — the splice guarantee holds regardless of which embedding retrieved the
-bundle.
+Same retrieval bundle, different chat model, over the golden queries. `cite_recall` = the
+share of a query's expected files the model actually cited; VRAM is a realistic 4-bit quant.
+
+| model | cite_recall | latency | ~VRAM (Q4) |
+|---|---|---|---|
+| **`qwen3-coder:30b`** *(MoE, ~3B active)* ⭐ | **0.583** | **15 s** | ~18–20 GB |
+| `qwen3:30b` — the same size, **not** code-specialized | 0.333 | 12 s | ~18–20 GB |
+| `qwen3:8b` | 0.417 | 41 s | ~5–6 GB |
+| `qwen3:14b` | 0.333 | 41 s | ~9–10 GB |
+| `gemma-3-12b` | 0.333 | 42 s | ~8–9 GB |
+| — *cloud baselines, for scale* — | | | |
+| `qwen/qwen3-coder` (480B MoE) | 0.750 | 21 s | ✗ |
+| `anthropic/claude-haiku-4.5` | 0.833 | 19 s | ✗ |
+
+**Take `qwen3-coder`, the current version.** Two findings worth internalizing before you
+pick something smaller to save VRAM:
+
+- **The lightweight dense models lose on both axes.** They cite fewer files *and* run ~2.7×
+  slower (~41 s vs 15 s) — they think harder per token with no MoE speedup. Being frugal
+  buys you a worse *and* slower narrator, not a trade.
+- **Code specialization is not cosmetic.** The general-purpose sibling of the very same 30B
+  MoE scores **half** the citation recall on a code corpus (0.333 vs 0.583).
+
+**What you give up versus the cloud** is *secondary*-citation completeness, not
+correctness. The citation/splice mechanism is model-agnostic — every model tested spliced
+real code on most queries — so a weaker narrator cites fewer surrounding files but never
+invents one, and the primary answer file is essentially always in the bundle either way.
 
 ---
 
