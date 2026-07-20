@@ -36,17 +36,19 @@ MAX_CTX_CHARS = int(os.environ.get("MEGABRAIN_ASK_CTX_CHARS", "200000"))
 _SEL = re.compile(r"\[\[(\d+)(?::\s*[Ll]?(\d+)\s*-\s*[Ll]?(\d+))?\s*\]\]")
 
 
-def _candidates(res: dict, docs_only: bool = False,
-                include_docs: bool = False) -> list[dict]:
+def _candidates(res: dict, docs_only: bool = False) -> list[dict]:
     """Retrieved chunks for the walkthrough: CORE chunks + RELATED best chunks,
-    numbered. Three modes: default = code only (citing doc prose pollutes a code
-    walkthrough), docs_only = docs-only walkthrough, include_docs = code AND
-    docs together — the only mode that blends them."""
+    numbered. Two modes, matching retrieval: default = code only (citing doc
+    prose pollutes a code walkthrough), docs_only = docs-only walkthrough.
+
+    There used to be a third, `include_docs` ("code AND docs"), and it did not
+    deliver what it named: with neither filter on, retrieval ranks both
+    together and the prose wins. On sinatra, `--with-docs "how are routes
+    defined and dispatched"` returned CORE = [README.md] — the code never made
+    the bundle at all. A real both-sides answer needs two lanes merged, not one
+    blended ranking, so the flag was removed rather than left lying."""
     def keep(f: str) -> bool:
-        is_doc = f.endswith(DOC_EXTS)
-        if docs_only:
-            return is_doc
-        return True if include_docs else not is_doc
+        return f.endswith(DOC_EXTS) == docs_only
     out = []
     for t in res["tier1"]:
         if not keep(t["file"]):
@@ -215,7 +217,7 @@ class _Splicer:
 
 def ask(root: Path, question: str,
         docs_only: bool = False, path_filter: str | None = None,
-        state: SearchState | None = None, include_docs: bool = False,
+        state: SearchState | None = None,
         agents: bool | None = False, model: str | None = None) -> dict:
     """One-shot ask: a buffered COLLECTOR over ask_agents.stream_events — the
     single pipeline every surface shares (retrieve -> serve-from-cache ->
@@ -227,7 +229,7 @@ def ask(root: Path, question: str,
     the single-agent call, then to the bundle."""
     from .agents import stream_events
     out = stream_events(Path(root), question, lambda ev: None, agents=agents,
-                        docs_only=docs_only, include_docs=include_docs,
+                        docs_only=docs_only,
                         path_filter=path_filter, state=state, model=model)
     # buffered parity with the old single-agent path: a length-stopped answer
     # is trimmed to the last complete sentence + a truncation note. (Streaming
@@ -301,7 +303,7 @@ def render_ask(out: dict) -> str:
 
 def stream_ask(root: Path, question: str, out=None,
                show_map: bool = True, docs_only: bool = False,
-               path_filter: str | None = None, include_docs: bool = False,
+               path_filter: str | None = None,
                agents: bool | None = None, model: str | None = None) -> None:
     """Live-streaming `ask` for the terminal — a sink over
     ask_agents.stream_events: prose appears token by token, each
@@ -373,4 +375,4 @@ def stream_ask(root: Path, question: str, out=None,
 
     stream_events(Path(root), question, sink, agents=agents,
                   show_map=show_map, docs_only=docs_only,
-                  include_docs=include_docs, path_filter=path_filter, model=model)
+                  path_filter=path_filter, model=model)

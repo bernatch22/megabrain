@@ -3,9 +3,8 @@
 Tools (deliberately few — every tool costs the calling agent context and a
 decision; the host already has Read/Grep for single files, so megabrain only
 exposes what it alone can do):
-  megabrain_ask(repo_path, question, scope_path?, docs?, include_docs?)
-      -> explained answer, real code spliced (docs=true -> docs-only walkthrough;
-         include_docs=true -> code + docs)
+  megabrain_ask(repo_path, question, scope_path?, docs?)
+      -> explained answer, real code spliced (docs=true -> docs-only walkthrough)
   megabrain_search(repo_path, task, scope_path?, compact?, rerank?, docs?)
       -> flat relevance-ranked signal chunks with the real code, noise dropped
          (megabrain_query is a deprecated dispatch alias for it)
@@ -61,8 +60,6 @@ TOOLS = [
                                "description": "optional repo-relative folder (e.g. src/dispatch) to scope the walkthrough to files under it; omit for the whole repo"},
                 "docs": {"type": "boolean",
                          "description": "explain documentation (markdown) only, instead of code (default false)"},
-                "include_docs": {"type": "boolean",
-                                 "description": "explain code AND docs together (default false = code only)"},
                 "agents": {"type": "boolean",
                            "description": "true = force the multi-agent fan-out, false = never fan out; "
                                           "omit for AUTO (fan out only when the question is broad)"},
@@ -267,7 +264,6 @@ def call_tool(name: str, args: dict) -> str:
         # lands as a one-line footer.
         out = app.ask(root, args["question"], path_filter=pf,
                       docs_only=bool(args.get("docs")),
-                      include_docs=bool(args.get("include_docs")),
                       agents=args.get("agents"))
         text = render_ask(out)
         if out.get("agents"):

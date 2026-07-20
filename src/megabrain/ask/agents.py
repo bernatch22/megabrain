@@ -463,7 +463,7 @@ def run_agents(root, question: str, *, res: dict, cands: list[dict], st,
 
 def stream_events(root, question: str, on_event, *, agents: bool | None = None,
                   show_map: bool = True,
-                  docs_only: bool = False, include_docs: bool = False,
+                  docs_only: bool = False,
                   path_filter: str | None = None, state=None,
                   model: str | None = None) -> dict:
     """Run the whole ask flow (retrieval -> classify -> fan-out or single
@@ -490,13 +490,12 @@ def stream_events(root, question: str, on_event, *, agents: bool | None = None,
     # outrank the code. Post-filtering the mixed bundle (what _candidates does)
     # is the last word, not the first — on a code-heavy repo it left the
     # narrator one or two doc chunks to work with.
-    code_only = not docs_only and not include_docs
     res = search_with_state(st, question, path_filter=path_filter,
-                            exclude_docs=code_only, only_docs=docs_only)
-    if (code_only or docs_only) and not res["tier1"]:
+                            exclude_docs=not docs_only, only_docs=docs_only)
+    if not res["tier1"]:
         res = search_with_state(st, question, path_filter=path_filter)
     retrieval_ms = int((time.time() - t0) * 1000)
-    cands = _candidates(res, docs_only, include_docs)
+    cands = _candidates(res, docs_only)
     key = providers.find_chat_key(required=False)
     base = {"result": res, "cands": cands, "query": question, "repo": res["repo"],
             "retrieval_ms": retrieval_ms, "agents": None, "file_syms": {}}
@@ -506,7 +505,7 @@ def stream_events(root, question: str, on_event, *, agents: bool | None = None,
     # returned verbatim — no LLM, instant, zero cost. Lives HERE, in the one
     # pipeline, so every surface (CLI stream, SSE, MCP, library ask()) gets the
     # same behavior from the single retrieval above.
-    if not docs_only and not include_docs:
+    if not docs_only:
         from ..storage.flows import serve_verbatim
         served = serve_verbatim(root, res.get("flows") or [], question)
         if served:

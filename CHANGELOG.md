@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.17.1 — the "code AND docs" mode never returned any code
+
+**Removed: `ask --with-docs` / MCP `include_docs` / HTTP `include_docs`.** Not
+deprecated — gone. A CLI script passing `--with-docs` now fails on the argument;
+an MCP or HTTP caller passing `include_docs` has it ignored and gets the
+code-only walkthrough.
+
+It did not do what it named. The flag worked by leaving BOTH content filters
+off, which is exactly the configuration 0.17.0 removed everywhere else: with
+code and prose in one ranking, the prose wins. Asked on sinatra, the "code and
+docs" mode returned a bundle whose CORE was `[README.md]` — the implementation
+never made it in at all:
+
+```
+ask (default, code-only)     CORE: ['lib/sinatra/base.rb']
+ask --docs                   CORE: ['README.md']
+ask --with-docs (the blend)  CORE: ['README.md']      ← no code
+```
+
+Answering from both sides needs two lanes merged (top-N code + top-N docs), not
+one blended ranking where they compete for the same slots. That is a different
+feature, not a flag, so the broken one is out rather than left lying. The two
+surviving modes now **partition** the bundle — every candidate belongs to
+exactly one, asserted in `tests/test_ask_modes.py`.
+
 ## 0.17.0 — search is code OR docs, and the studio can search the docs
 
 Two halves of one idea: make the docs a first-class thing to search, and stop
@@ -21,7 +46,8 @@ dispatched?"*. `ask` was already immune; `search` wasn't.
 The policy now lives in exactly one function, `app.content_filters()`, which every
 surface calls — the retrieval primitives stay neutral (`exclude_docs` /
 `only_docs` both default off), so CLI, MCP, HTTP and the studio can't drift.
-`ask --with-docs` remains the one mode that deliberately mixes them.
+`ask --with-docs` remained as the one deliberate blend — and was removed in
+0.17.1 once measured, because it returned no code.
 
 Golden gate held across the change: R@1 **0.86**, bundle_full **1.00**, byte-for-byte
 the same numbers under both defaults (no gold file in the set is markdown, so the

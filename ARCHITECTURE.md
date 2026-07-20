@@ -262,7 +262,9 @@ off) — `app.py` is the only thing that decides, so CLI, MCP, HTTP and the stud
 cannot drift apart. Blending is not neutral: once a repo indexes both, a large
 README wins prose-shaped questions and buries the code (measured on sinatra —
 `README.md` displaced `lib/sinatra/base.rb` from CORE for "how are routes defined
-and dispatched?"). `ask --with-docs` is the sole deliberate blend.
+and dispatched?"). There is no blend mode anywhere: `ask --with-docs` claimed to
+be one and wasn't — it left both filters off, so the same crowding applied and
+the prose simply won (CORE = `[README.md]`, no code). Removed in 0.17.1.
 
 **LLM rerank (`retrieval/rerank.py`, the `llm_rerank` lane, layered ON the prune).**
 The deterministic prune is recall-safe by design — every bundle file contributes its
@@ -373,8 +375,8 @@ see the main workflows, and leave them cached for everyone.
 The LLM is a narrator that can only **point**, never paste:
 
 1. Retrieve (§3); flatten CORE chunks + RELATED best-chunks into a numbered
-   candidate list. Three content modes: **code-only (default)**, `--docs`
-   (docs-only), `--with-docs` (code + docs). The mode is applied at RETRIEVAL,
+   candidate list. Two content modes: **code-only (default)** and `--docs`
+   (docs-only) — they partition the bundle, no overlap and no blend. The mode is applied at RETRIEVAL,
    not just to the candidate list (`scoring.filter_doc_chunks`, fail-open both
    ways): code-only keeps a doc titled like the query from crowding the code
    out, and docs-only keeps the code from taking the slots — post-filtering a
@@ -451,7 +453,7 @@ single-agent ask → full bundle.
 ## 5. Serving surfaces
 
 - **MCP** (`mcp_server.py`, stdio, no deps): `megabrain_ask` (primary; `docs`,
-  `include_docs`, `scope_path`, `agents` — omit for auto fan-out on broad
+  `scope_path`, `agents` — omit for auto fan-out on broad
   questions; MCP is request/response, so the fan-out runs buffered and the trace
   lands as a footer), `megabrain_search` (`scope_path`, `compact` — ALWAYS the flat
   signal-only chunk list with code; the file-grouped bundle is deliberately

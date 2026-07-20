@@ -517,7 +517,6 @@ def _make_handler(reg: Registry, cors: str | None, enable_llm: bool,
                     from ..ask import ask
                     out = ask(reg.get(repo_name).root, q,
                               docs_only=bool(body.get("docs")),
-                              include_docs=bool(body.get("include_docs")),
                               agents=None if ag in (None, "auto") else bool(ag),
                               model=model)
                     for k in ("result", "cands", "file_syms"):
@@ -537,7 +536,6 @@ def _make_handler(reg: Registry, cors: str | None, enable_llm: bool,
                         stream_events(reg.get(repo_name).root, q, sse,
                                       agents=None if ag in (None, "auto") else bool(ag),
                                       docs_only=bool(body.get("docs")),
-                                      include_docs=bool(body.get("include_docs")),
                                       model=model)
                     except (BrokenPipeError, ConnectionResetError):
                         pass              # client went away mid-stream

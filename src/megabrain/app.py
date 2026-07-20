@@ -112,7 +112,7 @@ def prune(root: Path, task: str, path_filter: str | None = None,
 
 
 def ask(root: Path, question: str, path_filter: str | None = None,
-        docs_only: bool = False, include_docs: bool = False,
+        docs_only: bool = False,
         agents: Any = None, reindex: bool = True,
         model: str | None = None) -> dict:
     """Buffered ask (MCP / POST /ask). `agents` accepts the raw transport value;
@@ -121,7 +121,7 @@ def ask(root: Path, question: str, path_filter: str | None = None,
     (render with ask.render_ask)."""
     from .ask import ask as _ask
     _maybe_reindex(root, reindex)
-    return _ask(root, question, docs_only=docs_only, include_docs=include_docs,
+    return _ask(root, question, docs_only=docs_only,
                 path_filter=path_filter, agents=normalize_agents(agents),
                 model=model)
 

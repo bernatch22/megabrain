@@ -90,8 +90,6 @@ def main(argv=None):
     p.add_argument("--no-map", action="store_true")
     p.add_argument("--docs", action="store_true",
                    help="explain docs (markdown) only, instead of code")
-    p.add_argument("--with-docs", action="store_true",
-                   help="explain code AND docs together (default is code only)")
     p.add_argument("--agents", action="store_true",
                    help="force the multi-agent fan-out (plan → parallel sub-agents → synthesis); "
                         "default is AUTO — broad questions fan out, scoped ones stay single-agent")
@@ -327,7 +325,6 @@ def _dispatch(a, raw: list[Path], root: Path) -> None:
         app._maybe_reindex(r0, True)       # answers match disk (60s TTL, fail-open)
         stream_ask(r0, a.question, show_map=not a.no_map,
                    docs_only=a.docs, path_filter=sp or None,
-                   include_docs=a.with_docs,
                    agents=True if a.agents else (False if a.no_agents else None))
     elif a.cmd == "graph":
         import json as _json

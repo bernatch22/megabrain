@@ -96,7 +96,9 @@ ranking before scoring, and `--docs` flips the whole bundle to the docs. Blendin
 sounds harmless and isn't: with both in one index, a large README wins prose-shaped
 questions and buries the implementation it describes (on sinatra, `README.md` took the
 top slot from `lib/sinatra/base.rb` for *"how are routes defined and dispatched?"*).
-`ask --with-docs` is the one mode that deliberately mixes them.
+Nothing blends them: `ask --with-docs` used to claim it did, but left both filters
+off — so the prose won the ranking and the "code and docs" answer came back with no
+code. It was removed in 0.17.1.
 
 Pure retrieval: your question is embedded and matched by vector similarity, ~200 ms, free.
 `--prune` keeps only the **signal** chunks — every related file still appears (each

@@ -51,7 +51,6 @@ files under it. `install` and `repos` take no path (they're machine-level).
 | | `--compact` | drop code bodies, keep spans and scores |
 | | `--json` | machine-readable |
 | `ask` | `--docs` | explain markdown instead of code |
-| | `--with-docs` | explain code **and** docs |
 | | `--agents` / `--no-agents` | force / forbid the multi-agent fan-out (default: auto) |
 | | `--no-map` | omit the "not cited" footer |
 | `graph` | `--node FILE_OR_CONCEPT` | one node in depth — concepts resolve by embedding |
@@ -92,7 +91,7 @@ auto-refreshes a stale index before answering.
 
 | tool | returns | parameters |
 |---|---|---|
-| **`megabrain_ask`** | A narrated walkthrough of the whole relevant flow with the real code spliced in verbatim. Broad questions fan out into parallel sub-agents. ~6–19 s (fan-out to ~40 s). | `question` *(req)* · `scope_path` · `docs` · `include_docs` · `agents` (`true`/`false`; omit = auto) |
+| **`megabrain_ask`** | A narrated walkthrough of the whole relevant flow with the real code spliced in verbatim. Broad questions fan out into parallel sub-agents. ~6–19 s (fan-out to ~40 s). | `question` *(req)* · `scope_path` · `docs` · `agents` (`true`/`false`; omit = auto) |
 | **`megabrain_search`** | The same retrieval, no LLM in the core (~200 ms): a flat ranked list of the chunks worth reading, with code, noise dropped. | `task` *(req)* · `scope_path` · `compact` · `docs` · `rerank` *(default `true`)* |
 | **`megabrain_graph`** | The repo as a knowledge graph. | `mode` (`map` default · `node` · `path`) · `node` · `source` + `target` · `scope_path` |
 | **`megabrain_index`** | Index/update a repo — or the registry of every indexed repo on this machine. | `repo_path` · `list` (`true` → the registry) |

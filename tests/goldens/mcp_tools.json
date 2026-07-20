@@ -11,10 +11,6 @@
      "description": "explain documentation (markdown) only, instead of code (default false)",
      "type": "boolean"
     },
-    "include_docs": {
-     "description": "explain code AND docs together (default false = code only)",
-     "type": "boolean"
-    },
     "question": {
      "description": "how/where/why question, natural language",
      "type": "string"
