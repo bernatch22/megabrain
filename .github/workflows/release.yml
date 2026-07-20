@@ -4,12 +4,47 @@ name: Release
 # trusted publisher is configured on pypi.org for bernatch22/megabrain with the
 # `pypi` environment; validated green on run 29481569135. Pushing a version tag
 # publishes automatically; skip-existing makes re-runs idempotent.
+#
+# The publish job is GATED: it needs the full CI suite (lint + the OS/runtime
+# matrix) to pass on the tagged commit, and the tag to agree with the packaged
+# version. Before that, `release.yml` only built and published — a tag push
+# doesn't trigger `ci.yml`'s branch filter, so three releases (0.13.0, 0.13.1,
+# 0.14.0) went out with ruff failing and nothing said a word.
+#
+# Structure follows the PyPA guide: build and publish are separate jobs handing
+# artifacts between them, publish does NOTHING but publish, and `id-token:
+# write` is scoped to that job alone. The gates live in `ci.yml` and are called
+# from here — trusted publishing cannot run from inside a reusable workflow, so
+# the reusable part is the tests and the publish stays in this top-level file.
 on:
   push:
     tags: ["v*"]
   workflow_dispatch:
 
 jobs:
+  # The tag is the release contract. A tag that disagrees with __version__
+  # publishes an artifact whose name lies about its contents — cheap to check,
+  # impossible to undo (PyPI versions are permanent).
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: tag matches __version__
+        run: |
+          pkg=$(sed -n 's/^__version__ = "\(.*\)"$/\1/p' src/megabrain/__init__.py)
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            tag="${GITHUB_REF_NAME#v}"
+            echo "tag=$tag  package=$pkg"
+            [ "$tag" = "$pkg" ] || {
+              echo "::error::tag v$tag disagrees with __version__ $pkg"; exit 1; }
+          else
+            echo "ref $GITHUB_REF_NAME is not a tag — version guard not applicable"
+          fi
+
+  # lint + the full OS x python matrix, on THIS commit
+  gates:
+    uses: ./.github/workflows/ci.yml
+
   build:
     runs-on: ubuntu-latest
     steps:
@@ -24,7 +59,11 @@ jobs:
           path: dist/
 
   publish:
-    needs: build
+    needs: [guard, gates, build]
+    # Tag-only publishing (PyPA's recommendation): a workflow_dispatch on a
+    # branch runs every gate but cannot push a release. To rehearse the publish
+    # step itself, dispatch from a throwaway TAG.
+    if: github.ref_type == 'tag'
     runs-on: ubuntu-latest
     environment: pypi
     permissions:

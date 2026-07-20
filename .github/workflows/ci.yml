@@ -4,6 +4,12 @@ on:
   push:
     branches: [master]
   pull_request:
+  # Callable so `release.yml` runs these EXACT gates against the tagged commit
+  # before publishing — one definition, two entry points. A tag push does not
+  # trigger the `push: branches` above (a tag is not a branch), so without this
+  # the release path had no lint/test gate at all: 0.13.0, 0.13.1 and 0.14.0
+  # all shipped with ruff failing on master.
+  workflow_call:
 
 jobs:
   lint:
