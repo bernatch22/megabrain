@@ -60,7 +60,7 @@ TOOLS = [
                 "repo_path": {"type": "string", "description": "path to the indexed repo root (a sub-path also works — the root is auto-detected from .megabrain)"},
                 "question": {"type": "string", "description": "how/where/why question, natural language"},
                 "scope_path": {"type": "string",
-                               "description": "optional repo-relative folder (e.g. src/dispatch) to scope the walkthrough to files under it; omit for the whole repo"},
+                               "description": "optional repo-relative folder to scope the walkthrough to files under it; omit for the whole repo. Scoping EXCLUDES everything outside the folder from retrieval entirely — scope to the package/subsystem root (e.g. activejob, src/dispatch), never to its lib/ or src/ subfolder, or you cut away the package's tests, which are often the spec of the behavior you are asking about"},
                 "docs": {"type": "boolean",
                          "description": "explain documentation (markdown) only, instead of code (default false)"},
                 "agents": {"type": "boolean",
@@ -91,7 +91,7 @@ TOOLS = [
                 "repo_path": {"type": "string", "description": "path to the indexed repo root (a sub-path also works — the root is auto-detected from .megabrain)"},
                 "task": {"type": "string", "description": "feature/question, natural language"},
                 "scope_path": {"type": "string",
-                               "description": "optional repo-relative folder (e.g. src/dispatch) to scope the bundle to files under it; omit for the whole repo"},
+                               "description": "optional repo-relative folder to scope the bundle to files under it; omit for the whole repo. Scoping EXCLUDES everything outside the folder from retrieval entirely — scope to the package/subsystem root (e.g. activejob, src/dispatch), never to its lib/ or src/ subfolder, or you cut away the package's tests, which are often the spec of the behavior you are searching for (the 'tests pinning this behavior' section can only show tests the scope let in)"},
                 "compact": {"type": "boolean", "default": False,
                             "description": "default false (code bodies included). Set true for "
                                            "signatures only — drop the code bodies, keep the "

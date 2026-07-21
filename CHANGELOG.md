@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.18.5 — `scope_path` now says what it costs
+
+An agent scoped a search to `activejob/lib/active_job` — the natural way to
+"search the implementation" — and the 0.18.4 tests section came back empty.
+Correctly so: scoping excludes everything outside the folder from retrieval
+BEFORE scoring, `activejob/test/` included, so there was no test left to
+surface. The tool never said that; the parameter read like a harmless focus
+knob.
+
+The first attempt at a fix was engine machinery (a name-convention companion-
+tests lane with monorepo disambiguation) and it was rightly rejected as a
+hack: the input was wrong because the tool description withheld the one fact
+the caller needed. Reverted before release.
+
+What shipped instead is the fact, where the LLM reads it: `scope_path` on
+`megabrain_search` and `megabrain_ask` now states that scoping EXCLUDES
+everything outside the folder — tests included, which are often the spec of
+the behavior — and says to scope to the package root (`activejob`), never to
+its `lib/`/`src/` subfolder. Verified over MCP stdio: scoped to `activejob`,
+the same query returns the signal files plus
+`enqueue_after_transaction_commit_test.rb` in the tests section.
+
 ## 0.18.4 — a dropped test is not noise: it is often the spec
 
 Field case, same rails#57197 session: the rerank pruned

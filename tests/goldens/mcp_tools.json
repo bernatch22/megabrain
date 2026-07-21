@@ -20,7 +20,7 @@
      "type": "string"
     },
     "scope_path": {
-     "description": "optional repo-relative folder (e.g. src/dispatch) to scope the walkthrough to files under it; omit for the whole repo",
+     "description": "optional repo-relative folder to scope the walkthrough to files under it; omit for the whole repo. Scoping EXCLUDES everything outside the folder from retrieval entirely \u2014 scope to the package/subsystem root (e.g. activejob, src/dispatch), never to its lib/ or src/ subfolder, or you cut away the package's tests, which are often the spec of the behavior you are asking about",
      "type": "string"
     }
    },
@@ -56,7 +56,7 @@
      "type": "boolean"
     },
     "scope_path": {
-     "description": "optional repo-relative folder (e.g. src/dispatch) to scope the bundle to files under it; omit for the whole repo",
+     "description": "optional repo-relative folder to scope the bundle to files under it; omit for the whole repo. Scoping EXCLUDES everything outside the folder from retrieval entirely \u2014 scope to the package/subsystem root (e.g. activejob, src/dispatch), never to its lib/ or src/ subfolder, or you cut away the package's tests, which are often the spec of the behavior you are searching for (the 'tests pinning this behavior' section can only show tests the scope let in)",
      "type": "string"
     },
     "task": {
