@@ -1,5 +1,62 @@
 # Changelog
 
+## 0.18.0 — cold-indexing a large repo drops from ~20 minutes to under one
+
+Indexing rails-sized repos took ~20 minutes, and the time was pure HTTP
+latency, not embedding work: the indexer embedded **per file**, so a file's
+handful of chunks went out as one under-filled request and its skeleton as a
+second request of ONE text — ~2× requests per changed file, all sequential.
+A real A/B on the same 55-file corpus (fresh cache, live endpoint): **110
+requests / 28.5 s before, 4 requests / 0.9 s after — 31× faster**, byte-same
+inputs (identical text list, token count, and cost on both sides).
+
+Two independent changes multiply:
+
+- **Global batching.** `_index_into` now runs in three phases: chunk every
+  changed file (pure CPU), embed **all** texts — chunks and skeletons — in one
+  `embed()` call whose batches actually fill, then write per file. Same single
+  transaction as always, with a stronger property for free: an embed failure
+  now aborts *before* any row of the pass is written, so a provider outage can
+  never leave a half-indexed store.
+- **Concurrent requests.** `Embedder.embed()` fans missing batches over
+  `MEGABRAIN_EMBED_CONCURRENCY` parallel workers (default 8). A local endpoint
+  (Ollama/LM Studio) defaults to 1 — one GPU serializes anyway and parallel
+  load can choke it. Rows always land by input index, usage accounting is
+  lock-protected, cache tmp-files carry the thread id so two concurrent
+  `embed()` calls racing on the same text can't collide, and any failed batch
+  aborts the whole call — a partial result would silently index a repo with
+  holes.
+
+Nothing about *what* is embedded changed: same texts, same vectors, same
+store schema, sha-skip incremental untouched, query path untouched. The
+studio's index SSE additionally gets `{"type": "embed", done, total}` progress
+events so the long embed phase is no longer a silent gap after the file ticks.
+
+### studio picked a repo that looked random, and the banner undersold itself
+
+Running `megabrain studio` one directory inside an indexed repo booted a
+*different* repo — reported as `repo=bernardocastro.dev` from a cwd that had
+nothing to do with it. Two causes, both fixed:
+
+- **The cwd check didn't walk up.** It tested `<cwd>/.megabrain` verbatim, so
+  one directory down the repo went undetected and studio fell through to "the
+  newest registry entry" — which then *looked* like it had picked the ancestor,
+  when landing there was coincidence. It now resolves through `resolve_root()`,
+  the same nearest-indexed-ancestor rule `ask`/`query`/`get`/`chunks` already
+  use. An indexed cwd still outranks the registry.
+- **The banner named one repo while serving ten.** `repo=X chunks=N` read as
+  "X is the only repo loaded", and `N` counts only X — the registry preload had
+  already loaded every repo into the rail. It now reads
+  `repos=10 (registry) default=X chunks=N`, saying both how many are served and
+  which one answers a request that omits `?repo=`. The branch that would have
+  reported the count was unreachable: it required `boot is None`, which only
+  happens when the registry is empty, in which case the `n == 0` branch fires
+  first.
+
+Note the default repo is sticky by design: it is the newest-indexed registry
+entry, and the boot repo gets auto-refreshed on the first ask (60s TTL), which
+bumps its `last_index`. Pass a path explicitly to pin a different one.
+
 ## 0.17.3 — indexing a docs-heavy repo died with `KeyError: 'data'`
 
 Adding FastAPI to a demo whose seven repos are all small files broke the index
