@@ -73,15 +73,20 @@ def chat_provider() -> str:
     return resolve().name
 
 
+# The fast/cheap OpenAI-compat default — ask narration on OpenRouter, and the
+# rerank's fast lane regardless of chat provider (a mechanical filter never
+# justifies a claude-CLI spawn; measured 0.7s here vs ~18s there).
+FAST_CHAT_MODEL = "google/gemini-3.1-flash-lite-preview"
+
+
 def ask_model() -> str:
     """ask narrator model — per-provider default when MEGABRAIN_ASK_MODEL is
-    unset: Claude alias 'haiku' on the claude provider, else
-    google/gemini-3.1-flash-lite-preview on OpenRouter (fastest/cheapest tier
-    at comparable quality — measured; see docs/GUIDE.md). Set
-    MEGABRAIN_ASK_MODEL=qwen/qwen3-coder for the cheapest/broadest-citation
-    option, or any OpenRouter slug."""
+    unset: Claude alias 'haiku' on the claude provider, else FAST_CHAT_MODEL
+    on OpenRouter (fastest/cheapest tier at comparable quality — measured; see
+    docs/GUIDE.md). Set MEGABRAIN_ASK_MODEL=qwen/qwen3-coder for the
+    cheapest/broadest-citation option, or any OpenRouter slug."""
     return os.environ.get("MEGABRAIN_ASK_MODEL") or \
-        ("haiku" if chat_provider() == "claude" else "google/gemini-3.1-flash-lite-preview")
+        ("haiku" if chat_provider() == "claude" else FAST_CHAT_MODEL)
 
 
 # Optional OpenRouter attribution (leaderboard only — not required to function).

@@ -4060,16 +4060,16 @@
      "_bad_request, chat_provider, ask_model",
      null,
      1,
-     91,
+     96,
      "megabrain > megabrain/providers/__init__.py > [_bad_request, chat_provider, ask_model]",
-     "85367a5a80ec908f046c1949c2dca252de907035"
+     "84cea5665134bc692d0ef80b3266c07565af3a8a"
     ],
     [
      "module",
      "_resolve, find_key, _is_local, _key_for, find_embed_key, find_chat_key, _headers, _chat_extras",
      null,
-     92,
-     177,
+     97,
+     182,
      "megabrain > megabrain/providers/__init__.py > [_resolve, find_key, _is_local, _key_for, find_embed_key, find_chat_key, _headers, _chat_extras]",
      "56592cbb0045d7adc18585e7a6f78fa413d0a86c"
     ],
@@ -4077,8 +4077,8 @@
      "module",
      "post_json, chat_text, stream_chat",
      null,
-     178,
-     238,
+     183,
+     243,
      "megabrain > megabrain/providers/__init__.py > [post_json, chat_text, stream_chat]",
      "ef810b5d8f1f13f4b787a979b7bdb54e8d28cf48"
     ],
@@ -4086,8 +4086,8 @@
      "module",
      "_or_stream_chat, OpenRouterProvider",
      null,
-     239,
-     349,
+     244,
+     354,
      "megabrain > megabrain/providers/__init__.py > [_or_stream_chat, OpenRouterProvider]",
      "8697787ea1872ebcd595f62a1ffb9bc72f54cc2e"
     ],
@@ -4095,8 +4095,8 @@
      "module",
      "ClaudeProvider, _ollama_probe, _active_label, detect, select",
      null,
-     350,
-     455,
+     355,
+     460,
      "megabrain > megabrain/providers/__init__.py > [ClaudeProvider, _ollama_probe, _active_label, detect, select]",
      "8cb976052f621d182843ec7b5ea5554ada740f7a"
     ],
@@ -4104,13 +4104,13 @@
      "module",
      "start_ollama, resolve",
      null,
-     456,
-     497,
+     461,
+     502,
      "megabrain > megabrain/providers/__init__.py > [start_ollama, resolve]",
      "4f53dec70f88f1f570ff85f414a10414cad1af3b"
     ]
    ],
-   "skeleton_sha": "8c1b5afd07372a3f490970907f836bf8199b34d0",
+   "skeleton_sha": "36b41af9e89858f34544c2d6655635d89b37fc37",
    "symbols": [
     [
      "_bad_request",
@@ -4148,290 +4148,297 @@
      "def chat_provider() -> str"
     ],
     [
+     "FAST_CHAT_MODEL",
+     "constant",
+     79,
+     79,
+     "FAST_CHAT_MODEL = 'google/gemini-3.1-flash-lite-preview'"
+    ],
+    [
      "ask_model",
      "function",
-     76,
-     84,
+     82,
+     89,
      "def ask_model() -> str"
     ],
     [
      "_REFERER",
      "constant",
-     88,
-     88,
+     93,
+     93,
      "_REFERER = os.environ.get('OPENROUTER_HTTP_REFERER', 'https://github.com/bernatch22/megabrain')"
     ],
     [
      "_TITLE",
      "constant",
-     89,
-     89,
+     94,
+     94,
      "_TITLE = os.environ.get('OPENROUTER_APP_TITLE', 'megabrain')"
     ],
     [
      "_RETRY_CODES",
      "constant",
-     91,
-     91,
+     96,
+     96,
      "_RETRY_CODES = (429, 500, 502, 503, 529)"
     ],
     [
      "_resolve",
      "function",
-     94,
-     107,
+     99,
+     112,
      "def _resolve(name: str, required: bool=True) -> str | None"
     ],
     [
      "find_key",
      "function",
-     110,
-     111,
+     115,
+     116,
      "def find_key(required: bool=True) -> str | None"
     ],
     [
      "EMBED_BASE_URL",
      "constant",
-     117,
-     117,
+     122,
+     122,
      "EMBED_BASE_URL = os.environ.get('MEGABRAIN_EMBED_BASE_URL', BASE_URL).rstrip('/')"
     ],
     [
      "CHAT_BASE_URL",
      "constant",
-     118,
-     118,
+     123,
+     123,
      "CHAT_BASE_URL = os.environ.get('MEGABRAIN_CHAT_BASE_URL', BASE_URL).rstrip('/')"
     ],
     [
      "_is_local",
      "function",
-     121,
-     124,
+     126,
+     129,
      "def _is_local(url: str) -> bool"
     ],
     [
      "_key_for",
      "function",
-     127,
-     134,
+     132,
+     139,
      "def _key_for(base_url: str, explicit: str | None, required: bool) -> str | None"
     ],
     [
      "find_embed_key",
      "function",
-     137,
-     140,
+     142,
+     145,
      "def find_embed_key(required: bool=True) -> str | None"
     ],
     [
      "find_chat_key",
      "function",
-     143,
-     149,
+     148,
+     154,
      "def find_chat_key(required: bool=True) -> str | None"
     ],
     [
      "_headers",
      "function",
-     152,
      157,
+     162,
      "def _headers(key: str, base_url: str=BASE_URL) -> dict"
     ],
     [
      "_chat_extras",
      "function",
-     160,
-     177,
+     165,
+     182,
      "def _chat_extras() -> dict"
     ],
     [
      "post_json",
      "function",
-     180,
-     218,
+     185,
+     223,
      "def post_json(path: str, body: dict, key: str | None=None, retries: int=5, timeout: int=120, base_url: str | None=None) -> dict"
     ],
     [
      "chat_text",
      "function",
-     221,
-     227,
+     226,
+     232,
      "def chat_text(model: str, prompt: str, max_tokens: int, temperature: float=0.0, key: str | None=None, retries: int=5, timeout: int=45) -> str"
     ],
     [
      "stream_chat",
      "function",
-     230,
-     238,
+     235,
+     243,
      "def stream_chat(body: dict, key: str | None=None, retries: int=4, on_delta=None, timeout: int=90, with_tools: bool=False)"
     ],
     [
      "_or_stream_chat",
      "function",
-     241,
-     316,
+     246,
+     321,
      "def _or_stream_chat(body: dict, key: str | None=None, retries: int=4, on_delta=None, timeout: int=90, with_tools: bool=False)"
     ],
     [
      "OpenRouterProvider",
      "class",
-     326,
-     349,
+     331,
+     354,
      "class OpenRouterProvider"
     ],
     [
      "OpenRouterProvider.name",
      "class_attr",
-     330,
-     330,
+     335,
+     335,
      "name = 'openrouter'"
     ],
     [
      "OpenRouterProvider.agent_stream",
      "class_attr",
-     331,
-     331,
+     336,
+     336,
      "agent_stream = None"
     ],
     [
      "OpenRouterProvider.available",
      "method",
-     333,
-     334,
+     338,
+     339,
      "def available(self) -> bool"
     ],
     [
      "OpenRouterProvider.chat_text",
      "method",
-     336,
-     344,
+     341,
+     349,
      "def chat_text(self, model: str, prompt: str, max_tokens: int, temperature: float=0.0, key: str | None=None, retries: int=5, timeout: int=45) -> str"
     ],
     [
      "OpenRouterProvider.stream_chat",
      "method",
-     346,
-     349,
+     351,
+     354,
      "def stream_chat(self, body: dict, key: str | None=None, retries: int=4, on_delta=None, timeout: int=90, with_tools: bool=False)"
     ],
     [
      "ClaudeProvider",
      "class",
-     352,
-     379,
+     357,
+     384,
      "class ClaudeProvider"
     ],
     [
      "ClaudeProvider.name",
      "class_attr",
-     357,
-     357,
+     362,
+     362,
      "name = 'claude'"
     ],
     [
      "ClaudeProvider.available",
      "method",
-     359,
-     361,
+     364,
+     366,
      "def available(self) -> bool"
     ],
     [
      "ClaudeProvider.chat_text",
      "method",
-     363,
-     367,
+     368,
+     372,
      "def chat_text(self, model: str, prompt: str, max_tokens: int, temperature: float=0.0, key: str | None=None, retries: int=5, timeout: int=45) -> str"
     ],
     [
      "ClaudeProvider.stream_chat",
      "method",
-     369,
      374,
+     379,
      "def stream_chat(self, body: dict, key: str | None=None, retries: int=4, on_delta=None, timeout: int=90, with_tools: bool=False)"
     ],
     [
      "ClaudeProvider.agent_stream",
      "method",
-     376,
-     379,
+     381,
+     384,
      "def agent_stream(self)"
     ],
     [
      "_REGISTRY",
      "constant",
-     382,
-     383,
+     387,
+     388,
      "_REGISTRY: dict[str, object] = {'openrouter': OpenRouterProvider(), 'claude': ClaudeProvider()}"
     ],
     [
      "_PRIORITY",
      "constant",
-     384,
-     384,
+     389,
+     389,
      "_PRIORITY = ('claude', 'openrouter')"
     ],
     [
      "OLLAMA_HOST",
      "constant",
-     387,
-     387,
+     392,
+     392,
      "OLLAMA_HOST = os.environ.get('OLLAMA_HOST', 'http://localhost:11434').rstrip('/')"
     ],
     [
      "OLLAMA_OPENAI",
      "constant",
-     388,
-     388,
+     393,
+     393,
      "OLLAMA_OPENAI = OLLAMA_HOST + '/v1'"
     ],
     [
      "_select_lock",
      "constant",
-     389,
-     389,
+     394,
+     394,
      "_select_lock = __import__('threading').Lock()"
     ],
     [
      "_ollama_probe",
      "function",
-     392,
-     403,
+     397,
+     408,
      "def _ollama_probe(timeout: float=0.3) -> dict"
     ],
     [
      "_active_label",
      "function",
-     406,
-     413,
+     411,
+     418,
      "def _active_label() -> str"
     ],
     [
      "detect",
      "function",
-     416,
-     429,
+     421,
+     434,
      "def detect() -> dict"
     ],
     [
      "select",
      "function",
-     432,
-     455,
+     437,
+     460,
      "def select(provider: str, model: str | None=None) -> dict"
     ],
     [
      "start_ollama",
      "function",
-     458,
-     480,
+     463,
+     485,
      "def start_ollama(wait_s: float=6.0) -> dict"
     ],
     [
      "resolve",
      "function",
-     483,
-     497,
+     488,
+     502,
      "def resolve()"
     ]
    ]
@@ -5235,12 +5242,21 @@
    "chunks": [
     [
      "module",
-     "rerank_model, _hint, llm_rerank",
+     "rerank_model, _hint",
      null,
      1,
-     101,
-     "megabrain > megabrain/retrieval/rerank.py > [rerank_model, _hint, llm_rerank]",
-     "93139e186fc6411b2b5bc33438a7f76bba36de8b"
+     58,
+     "megabrain > megabrain/retrieval/rerank.py > [rerank_model, _hint]",
+     "98cf65818ee73371e2856751bedf1612b89fc165"
+    ],
+    [
+     "function",
+     "llm_rerank",
+     null,
+     59,
+     124,
+     "megabrain > megabrain/retrieval/rerank.py > def llm_rerank(res: dict, question: str, model: str | None=None) -> dict",
+     "92b6f549452f987186838885b310ad3d083b4fc3"
     ]
    ],
    "skeleton_sha": "c49a6a5b44bb7819ffa7c0c509a2111f82cfac6e",
@@ -5291,7 +5307,7 @@
      "llm_rerank",
      "function",
      61,
-     101,
+     124,
      "def llm_rerank(res: dict, question: str, model: str | None=None) -> dict"
     ]
    ]

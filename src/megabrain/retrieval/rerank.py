@@ -70,16 +70,39 @@ def llm_rerank(res: dict, question: str, model: str | None = None) -> dict:
         res["reranked"] = False
         return res
     t0 = time.time()
+    from .. import providers
     m = model or rerank_model()
+    # Rerank is a mechanical id filter, so it takes the FASTEST lane available,
+    # not the narration provider: on the claude provider each chat_text spawns
+    # the Claude CLI — measured ~18s per rerank from the MCP server vs ~0.7s on
+    # the OpenAI-compat lane, for identical selections (both kept the bug file,
+    # both dropped the noise, 3/3 queries). An explicit model pin (arg or
+    # MEGABRAIN_RERANK_MODEL) is respected and keeps the provider routing; and
+    # with no OpenRouter key or local endpoint there is no fast lane, so the
+    # claude provider remains the (slow but working) fallback.
+    chat = providers.chat_text
+    if (model is None and not os.environ.get("MEGABRAIN_RERANK_MODEL")
+            and providers.chat_provider() == "claude"
+            and (providers._is_local(providers.CHAT_BASE_URL)
+                 or providers.find_key(required=False))):
+        from functools import partial
+
+        # key resolved HERE for the fast lane: find_chat_key() would return the
+        # "claude" sentinel (the resolved provider is still claude) and the
+        # request would go out with no real credential — bit on first test
+        # (openrouter 401 "Missing Authentication header").
+        key = providers._key_for(providers.CHAT_BASE_URL,
+                                 os.environ.get("MEGABRAIN_CHAT_API_KEY"),
+                                 required=False)
+        chat = partial(providers._REGISTRY["openrouter"].chat_text, key=key)
+        m = providers.FAST_CHAT_MODEL
     listing = "\n".join(
         f'[{c["id"]}] {c["file"]}:L{c["start_line"]}-{c["end_line"]} · '
         f'{c.get("name") or "?"} ({c.get("kind") or "?"}) · {_hint(c)}'
         for c in chunks)
     try:
-        from .. import providers
-        reply = providers.chat_text(m, _PROMPT.format(question=question,
-                                                      listing=listing),
-                                    RERANK_MAX_TOKENS, timeout=RERANK_TIMEOUT)
+        reply = chat(m, _PROMPT.format(question=question, listing=listing),
+                     RERANK_MAX_TOKENS, timeout=RERANK_TIMEOUT)
         arr = re.search(r"\[[\d,\s]*\]", reply)
         ids = [int(x) for x in json.loads(arr.group(0))] if arr else []
         by_id = {c["id"]: c for c in chunks}

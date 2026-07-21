@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.18.3 — the rerank takes the fast lane: 18s → 0.8s for Claude Code users
+
+A field report rated `megabrain_search` 5/10 on a real bug hunt. Reproducing it
+(13 configurations: three query phrasings × scoped/unscoped × two rerank
+models, against a pristine rails checkout) split the complaints into
+confirmed and not:
+
+- **Confirmed: the rerank took ~18 seconds** from an MCP server on the claude
+  provider — every `chat_text` there spawns the Claude CLI, for what is a
+  mechanical 300-token id filter. The same filter on the OpenAI-compat lane
+  takes ~0.7s with identical selections (both kept the bug file, both dropped
+  the noise, 3/3 queries). `llm_rerank` now takes the fastest lane available:
+  on the claude provider with an OpenRouter key (or a local endpoint) it
+  routes the filter through that lane with `FAST_CHAT_MODEL`; an explicit
+  `MEGABRAIN_RERANK_MODEL` pin keeps provider routing, and with no fast lane
+  the claude provider remains the slow-but-working fallback. Measured after
+  the fix, provider=claude: 814ms, and the selection was exactly the three
+  files the fix touched — the bug file first.
+  Two traps found on the way, both now pinned by tests: the fast lane must
+  resolve its own key (`find_chat_key()` returns the "claude" sentinel and the
+  request goes out uncredentialed — openrouter 401), and in environments where
+  the claude spawn fails the old path failed OPEN silently, so users got the
+  deterministic list believing the LLM had cleaned it.
+- **Not reproduced: the claimed complete miss of the bug file.** In all 13
+  configurations `exceptions.rb` was present at every stage — ranked #2 by the
+  same haiku rerank the reporter used. Without the verbatim query it stays
+  unexplained; the honest note is in the dev skill, not a speculative fix.
+- **Real but not a bug: subscriber files are vocabulary magnets.** They
+  instrument the exact events (`enqueue_retry`) that bug queries name, so the
+  deterministic prune keeps them — that is what the LLM rerank lane is FOR,
+  and after this fix it actually runs for Claude Code users and drops them.
+
 ## 0.18.2 — `ask` pointed at a command that doesn't exist
 
 Every `ask` answer ended with `— full bundle: megabrain query`. There is no

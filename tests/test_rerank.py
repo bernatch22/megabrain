@@ -97,3 +97,59 @@ def test_prompt_is_compact_no_bodies(chat):
 def test_rerank_model_env_override(monkeypatch):
     monkeypatch.setenv("MEGABRAIN_RERANK_MODEL", "tiny/model")
     assert rr.rerank_model() == "tiny/model"
+
+
+# ---------------------------------------------------- the fast lane (claude)
+
+@pytest.fixture
+def claude_provider(monkeypatch):
+    """Simulate a Claude Code user: chat provider = claude, OpenRouter key on
+    the machine. Records calls to BOTH lanes so a test can assert which ran."""
+    import megabrain.providers as providers
+    monkeypatch.setenv("MEGABRAIN_CHAT_PROVIDER", "claude")
+    monkeypatch.setattr(providers, "find_key", lambda required=True: "or-key")
+    lanes = {"provider": [], "openrouter": []}
+
+    def provider_chat(model, prompt, max_tokens, **kw):
+        lanes["provider"].append(model)
+        return "[1]"
+
+    def or_chat(model, prompt, max_tokens, **kw):
+        lanes["openrouter"].append(model)
+        return "[1]"
+    monkeypatch.setattr(providers, "chat_text", provider_chat)
+    monkeypatch.setattr(providers._REGISTRY["openrouter"], "chat_text", or_chat)
+    return lanes
+
+
+def test_claude_provider_reranks_on_the_fast_lane(claude_provider):
+    """A rerank is a mechanical id filter: on the claude provider each
+    chat_text spawns the Claude CLI (~18s measured from the MCP server, vs
+    ~0.7s on the OpenAI-compat lane, identical selections) — so with an
+    OpenRouter key available the rerank must take the fast lane."""
+    import megabrain.providers as providers
+    res = rr.llm_rerank(_res(), "q")
+    assert res["reranked"] and res["reranked"]["model"] == providers.FAST_CHAT_MODEL
+    assert claude_provider["openrouter"] == [providers.FAST_CHAT_MODEL]
+    assert claude_provider["provider"] == []
+
+
+def test_an_explicit_pin_keeps_provider_routing(claude_provider, monkeypatch):
+    monkeypatch.setenv("MEGABRAIN_RERANK_MODEL", "haiku")
+    res = rr.llm_rerank(_res(), "q")
+    assert res["reranked"]["model"] == "haiku"
+    assert claude_provider["provider"] == ["haiku"]
+    assert claude_provider["openrouter"] == []
+
+
+def test_no_key_and_no_local_endpoint_stays_on_the_provider(claude_provider,
+                                                            monkeypatch):
+    """Without a fast lane (no OpenRouter key, remote CHAT_BASE_URL) the claude
+    provider remains the slow-but-working fallback — never a hard dependency."""
+    import megabrain.providers as providers
+    monkeypatch.setattr(providers, "find_key", lambda required=True: None)
+    monkeypatch.setattr(providers, "CHAT_BASE_URL", "https://openrouter.ai/api/v1")
+    res = rr.llm_rerank(_res(), "q")
+    assert res["reranked"] is not False
+    assert len(claude_provider["provider"]) == 1
+    assert claude_provider["openrouter"] == []
