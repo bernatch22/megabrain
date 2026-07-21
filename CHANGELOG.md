@@ -25,7 +25,11 @@ Two independent changes multiply:
   lock-protected, cache tmp-files carry the thread id so two concurrent
   `embed()` calls racing on the same text can't collide, and any failed batch
   aborts the whole call — a partial result would silently index a repo with
-  holes.
+  holes. A *cache* write is the one thing allowed to fail: POSIX `rename()`
+  onto an existing path always wins, but Windows refuses it while another
+  thread holds the destination open — reachable now that one `embed()` call
+  can contain the same text twice. Same text means the same entry, so a
+  refused write drops its temp file and moves on instead of killing the index.
 
 Nothing about *what* is embedded changed: same texts, same vectors, same
 store schema, sha-skip incremental untouched, query path untouched. The
