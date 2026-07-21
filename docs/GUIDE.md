@@ -140,7 +140,16 @@ megabrain ask ~/repo "how does X work" --no-agents             # never fan out
 
 One LLM call narrates the answer and cites code as `[[k]]`; **the engine replaces each
 citation with the verbatim block from disk**. The model can only *point* — which is why
-`ask` cannot hallucinate a line of code.
+`ask` cannot hallucinate a line of code. The **prose around the code is still narration**:
+when it matters (root-cause hunts), check its claims against the spliced code, which is
+the ground truth.
+
+**Asking about a bug? Name the state to track, not just the symptom.** Measured on a real
+Rails bug (a value wiped by an `ensure` racing a deferred block): every narrator model,
+weak or strong, invented a wrong mechanism for *"why is the retry enqueued immediately?"* —
+while *"where along that path could `scheduled_at` be lost?"* got the correct trace. The
+symptom tells the model what to explain; the named state tells it what to follow. Follow
+the symptom with the variable, and you get the trace instead of a theory.
 
 On a **broad** question `ask` becomes its own multi-agent system. A no-LLM classifier reads
 the *shape* of the retrieved bundle — several core files? candidates spread across

@@ -1,5 +1,47 @@
 # Changelog
 
+## 0.18.1 — the narration must never contradict the code it cites
+
+A coding agent using `megabrain_ask` on a real Rails bug (rails/rails#57197)
+reported the failure that matters most for trust: retrieval was perfect — the
+two colliding functions, side by side, in one call — but the prose *narration*
+described the code's intent as its behavior ("the job instance holds its
+scheduled_at until the transaction completes"). The code it cited showed the
+opposite. An agent that trusted the summary instead of reading the spans would
+have concluded there was no bug.
+
+What a 12-cell experiment (3 prompt variants × 2 question shapes × 2 narrator
+models, flow cache cleared per run) established:
+
+- **No prompt variant fixes a weak narrator** on closure-over-mutated-state
+  bugs: haiku and flash-lite verdicts stayed wrong under every variant, each
+  run inventing a different plausible mechanism. A "never claim code
+  ensures/preserves X" rule scored worst of all — it flipped one correct
+  verdict — and was reverted.
+- **Question shape dominates.** Symptom-framed questions ("why is the retry
+  enqueued immediately?") misled every model, weak or strong; naming the state
+  to track ("where along that path could `scheduled_at` be lost?") got the
+  correct trace from the good ones (sonnet cleanly, qwen3-coder nearly).
+
+What shipped, honestly scoped:
+
+- Two grounding rules in the narrator prompt (all three surfaces — single
+  agent, sub-agents, synthesis — share `_RULES`): trace ACTUAL runtime
+  behavior in execution order, never presenting a name/docstring/intent as
+  behavior; and when the query reports a bug, treat the report as fact and
+  walk the order until the trace explains it — or say the cause isn't in the
+  retrieved code. Principled spec of intended behavior; measured effect on
+  weak narrators is neutral, not curative.
+- The `megabrain_ask` MCP description no longer oversells: the spliced CODE is
+  verbatim and unhallucinatable, and it now says the surrounding prose is LLM
+  narration whose claims should be verified against that code — the exact
+  discipline that saved the reporting agent.
+- GUIDE.md documents the measured question-shape rule: follow the symptom with
+  the variable, and you get the trace instead of a theory.
+- The A/B methodology traps (the flow cache silently serving the control run,
+  regex-grading of prose) are locked into the dev skill so the next tuning
+  round doesn't rediscover them.
+
 ## 0.18.0 — cold-indexing a large repo drops from ~20 minutes to under one
 
 Indexing rails-sized repos took ~20 minutes, and the time was pure HTTP

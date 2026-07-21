@@ -508,36 +508,45 @@
      "_candidates",
      null,
      1,
-     75,
+     66,
      "megabrain > megabrain/ask/narrator.py > def _candidates(res: dict, docs_only: bool=False) -> list[dict]",
-     "755962a437ce0feb1f0c3fbde90b4d59742fd04a"
+     "a9ef5b24cdc483f1893c44cc2488f3efdba5c926"
     ],
     [
      "module",
-     "_flow_ctx, _numbered, _build_body, _code_block",
+     "_flow_ctx, _numbered, _build_body",
      null,
-     76,
-     179,
-     "megabrain > megabrain/ask/narrator.py > [_flow_ctx, _numbered, _build_body, _code_block]",
-     "f6472f1856f60a867f9aaeadc5d1e916cf58f9d4"
+     67,
+     129,
+     "megabrain > megabrain/ask/narrator.py > [_flow_ctx, _numbered, _build_body]",
+     "769db4940e217189702139f546ec2054f4ef1ad7"
     ],
     [
      "module",
-     "_Splicer, ask, cited_files, _splice",
+     "_code_block, _Splicer",
      null,
-     180,
-     280,
-     "megabrain > megabrain/ask/narrator.py > [_Splicer, ask, cited_files, _splice]",
-     "a22c542f5596a8caecc8c2f27a786ce3574bbb87"
+     130,
+     222,
+     "megabrain > megabrain/ask/narrator.py > [_code_block, _Splicer]",
+     "b87bf0adad2938d5ab900d571a9fb16081261360"
     ],
     [
      "module",
-     "render_ask, stream_ask",
+     "ask, cited_files, _splice, render_ask",
      null,
-     281,
-     383,
-     "megabrain > megabrain/ask/narrator.py > [render_ask, stream_ask]",
-     "7a70975441b766c05c092b98183de9e60333fbb2"
+     223,
+     308,
+     "megabrain > megabrain/ask/narrator.py > [ask, cited_files, _splice, render_ask]",
+     "f45b7259505c880a0457fbf7f9e5eaf93d824228"
+    ],
+    [
+     "function",
+     "stream_ask",
+     null,
+     309,
+     385,
+     "megabrain > megabrain/ask/narrator.py > def stream_ask(root: Path, question: str, out=None, show_map: bool=True, docs_only: bool=False, path_filter: str | None=None, agents: bool | None=None, model: str | None=None) -> None",
+     "1f3922e5d18cc5452078407c820dcd05fcdad45f"
     ]
    ],
    "skeleton_sha": "4387cbe77a10ddc3a5b56c8064e0b08856188b78",
@@ -574,119 +583,119 @@
      "_RULES",
      "constant",
      69,
-     75,
+     77,
      "_RULES = '- NEVER paste or quote code. Cite it with DOUBLE brackets: [[3]] (whole chunk) or [[3:705-731]] (file lines 70"
     ],
     [
      "_flow_ctx",
      "function",
-     78,
-     90,
+     80,
+     92,
      "def _flow_ctx(res: dict) -> str"
     ],
     [
      "_numbered",
      "function",
-     93,
-     100,
+     95,
+     102,
      "def _numbered(c: dict) -> str"
     ],
     [
      "_build_body",
      "function",
-     103,
-     127,
+     105,
+     129,
      "def _build_body(question: str, cands: list[dict], flow_ctx: str='', model: str | None=None) -> dict"
     ],
     [
      "_code_block",
      "function",
-     130,
-     172,
+     132,
+     174,
      "def _code_block(c: dict, lo: int | None, hi: int | None, seen: set, file_syms: dict[str, list[dict]]) -> str"
     ],
     [
      "_PARTIAL",
      "constant",
-     179,
-     179,
+     181,
+     181,
      "_PARTIAL = re.compile('\\\\[(?:\\\\[(?:\\\\d+(?::\\\\s*[Ll]?\\\\d*(?:-\\\\s*[Ll]?\\\\d*)?)?\\\\]?)?)?$')"
     ],
     [
      "_Splicer",
      "class",
-     182,
-     220,
+     184,
+     222,
      "class _Splicer"
     ],
     [
      "_Splicer.__init__",
      "method",
-     190,
-     194,
+     192,
+     196,
      "def __init__(self, cands: list[dict], file_syms: dict[str, list[dict]])"
     ],
     [
      "_Splicer._sub",
      "method",
-     196,
-     203,
+     198,
+     205,
      "def _sub(self, m)"
     ],
     [
      "_Splicer.feed",
      "method",
-     205,
-     212,
+     207,
+     214,
      "def feed(self, d: str) -> str"
     ],
     [
      "_Splicer.flush",
      "method",
-     214,
      216,
+     218,
      "def flush(self) -> str"
     ],
     [
      "_Splicer.files",
      "method",
-     218,
      220,
+     222,
      "def files(self) -> int"
     ],
     [
      "ask",
      "function",
-     223,
-     247,
+     225,
+     249,
      "def ask(root: Path, question: str, docs_only: bool=False, path_filter: str | None=None, state: SearchState | None=None, agents: bool | None=False, model: str | None=None) -> dict"
     ],
     [
      "cited_files",
      "function",
-     250,
-     260,
+     252,
+     262,
      "def cited_files(out: dict) -> list[str]"
     ],
     [
      "_splice",
      "function",
-     263,
-     280,
+     265,
+     282,
      "def _splice(out: dict) -> tuple[str, set, set]"
     ],
     [
      "render_ask",
      "function",
-     283,
-     306,
+     285,
+     308,
      "def render_ask(out: dict) -> str"
     ],
     [
      "stream_ask",
      "function",
-     309,
-     383,
+     311,
+     385,
      "def stream_ask(root: Path, question: str, out=None, show_map: bool=True, docs_only: bool=False, path_filter: str | None=None, agents: bool | None=None, model: str | None=None) -> None"
     ]
    ]
@@ -6280,32 +6289,32 @@
      37,
      125,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "f51b373547fc5c51830798dae89771173401e4be"
+     "f7674de1c6649ba42e36537ffd1a7d47065bb556"
     ],
     [
      "block",
      null,
      "2/3",
      126,
-     217,
+     216,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "2c45e4c01f61b37d35010c6fb96e05fad7921045"
+     "59ee48ac259665b9fcd65139bb50d0cfc9e925de"
     ],
     [
      "block",
      null,
      "3/3",
-     218,
-     223,
+     217,
+     226,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "180b61da816b25b9b27e98c2ea65426819188964"
+     "065b08610c3faa99f716cf31f82a3c256c150846"
     ],
     [
      "function",
      "_scope",
      null,
-     224,
-     233,
+     227,
+     236,
      "megabrain > megabrain/server/mcp.py > def _scope(args: dict) -> tuple[Path, str | None]",
      "1d10e662f4d499a37f52ced42ddfed4a6e7cd428"
     ],
@@ -6313,8 +6322,8 @@
      "block",
      "call_tool",
      "1/2",
-     234,
-     306,
+     237,
+     309,
      "megabrain > megabrain/server/mcp.py > def call_tool(name: str, args: dict) -> str",
      "f0069e77841f6561718e51e1aecce929bded256c"
     ],
@@ -6322,8 +6331,8 @@
      "block",
      "call_tool",
      "2/2",
-     307,
-     341,
+     310,
+     344,
      "megabrain > megabrain/server/mcp.py > def call_tool(name: str, args: dict) -> str",
      "d4fdfdbe6b77a39a179b93d0390c48688fda920d"
     ],
@@ -6331,8 +6340,8 @@
      "function",
      "main",
      null,
-     342,
-     383,
+     345,
+     386,
      "megabrain > megabrain/server/mcp.py > def main()",
      "494cf17f80c3e1afe9632a2577e0beb051e44aa6"
     ]
@@ -6350,28 +6359,28 @@
      "TOOLS",
      "constant",
      38,
-     223,
+     226,
      "TOOLS = [{'name': 'megabrain_ask', 'description': 'THE primary tool for any how/where/why question about an indexed repo"
     ],
     [
      "_scope",
      "function",
-     226,
-     233,
+     229,
+     236,
      "def _scope(args: dict) -> tuple[Path, str | None]"
     ],
     [
      "call_tool",
      "function",
-     236,
-     341,
+     239,
+     344,
      "def call_tool(name: str, args: dict) -> str"
     ],
     [
      "main",
      "function",
-     344,
-     379,
+     347,
+     382,
      "def main()"
     ]
    ]
