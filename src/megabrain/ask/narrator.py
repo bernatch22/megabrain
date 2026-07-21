@@ -304,7 +304,7 @@ def render_ask(out: dict) -> str:
         items = ", ".join(f'{c["file"].rsplit("/", 1)[-1]}:{c["start_line"]}'
                           for c in dropped[:12])
         L.append(f'\n— not cited ({len(dropped)}): {items}')
-        L.append('— full bundle: `megabrain query` · any file: `megabrain get <file>`')
+        L.append('— full bundle: `megabrain search` · any file: `megabrain get <file>`')
     return "\n".join(L)
 
 
@@ -377,7 +377,7 @@ def stream_ask(root: Path, question: str, out=None,
                   f'{ev["retrieval_ms"]}ms retrieval + {ev["llm_ms"]}ms explain\n')
             if ev["dropped"]:
                 write(f'— not cited ({ev["n_dropped"]}): {", ".join(ev["dropped"])}\n')
-                write('— full bundle: `megabrain query` · any file: '
+                write('— full bundle: `megabrain search` · any file: '
                       '`megabrain get <file>`\n')
 
     stream_events(Path(root), question, sink, agents=agents,

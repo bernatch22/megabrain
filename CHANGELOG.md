@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.18.2 — `ask` pointed at a command that doesn't exist
+
+Every `ask` answer ended with `— full bundle: megabrain query`. There is no
+`query` subcommand — it's `index/scan/search/ask/get/graph/chunks/studio/…`.
+The verb was renamed at some point and the footer never followed, so the one
+line telling you how to see everything `ask` left out has been sending people
+to a usage error. It now points at `megabrain search`, which is what actually
+prints the bundle. (Found by an agent that tried to follow the hint.)
+
+Documented alongside it, from the same session's measurements:
+
+- **For a reproducible bug, `search --prune --rerank` beats `ask`.** On
+  rails/rails#57197 the rerank cut 33 chunks to the exact 3 files the fix
+  touched in ~760ms and one cheap LLM call, against ~9.5s and a fan-out for
+  `ask`. Both find the right code; only `ask` wraps it in prose, and prose is
+  the surface that can be wrong. When two spans collide, putting them side by
+  side *is* the explanation.
+- **The CLI and MCP defaults differ, on purpose.** `megabrain_search` over MCP
+  is always pruned and reranks by default, so an agent gets the good behavior
+  for free; on the CLI both stay opt-in flags, because plain `megabrain search`
+  is the zero-LLM, zero-cost path the docs promise and defaulting rerank on
+  would silently bill every search. GUIDE.md now says so instead of leaving
+  the divergence to be discovered.
+
 ## 0.18.1 — the narration must never contradict the code it cites
 
 A coding agent using `megabrain_ask` on a real Rails bug (rails/rails#57197)

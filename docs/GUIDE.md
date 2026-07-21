@@ -163,8 +163,22 @@ citations. Every stage fails open to the single-agent path.
 | your question | use | why |
 |---|---|---|
 | "**how/why** does X work" — a flow, cross-file behavior | **`ask`** | you want the connected story; retrieval gives you the pieces, ask assembles them |
+| "**this is broken, find the cause**" — a bug you can already reproduce | **`search --prune --rerank`** | you need the colliding spans on one screen, not a theory about them; see below |
 | "give me the **code worth reading**" — you'll reason over it yourself | **`search --prune`** | flat, ranked, *with the code*, **zero LLM cost** |
 | "**where** is Y" — locate a symbol or handler | **`search`** | free and instant |
+
+**Debugging a reproducible bug? Reach for `search --prune --rerank`, not `ask`.** Measured
+on rails/rails#57197: rerank cut 33 chunks to the exact 3 files the fix touched, in ~760ms
+and one cheap LLM call — versus ~9.5s and a fan-out for `ask`. Both found the right code;
+only `ask` wrapped it in prose, and prose is the one surface that can be wrong. When two
+spans collide, putting them side by side *is* the explanation. Save `ask` for when the
+answer genuinely needs synthesis across subsystems.
+
+⚠️ **The two surfaces differ on defaults.** Over MCP, `megabrain_search` is always pruned
+and reranks by default — an agent gets the good behavior for free. On the CLI both are
+opt-in flags, deliberately: plain `megabrain search` is the zero-LLM, zero-cost, instant
+path this guide promises, and turning rerank on by default would silently bill every
+search. Type the flags when you want the LLM pass.
 
 Never chain `search` + your own summarization to imitate `ask`: ask's splice guarantees the
 code shown is verbatim, a summary doesn't.

@@ -537,7 +537,7 @@
      223,
      308,
      "megabrain > megabrain/ask/narrator.py > [ask, cited_files, _splice, render_ask]",
-     "f45b7259505c880a0457fbf7f9e5eaf93d824228"
+     "df28eacafe1cdcdee38d7bbc63c10c1328463747"
     ],
     [
      "function",
@@ -546,7 +546,7 @@
      309,
      385,
      "megabrain > megabrain/ask/narrator.py > def stream_ask(root: Path, question: str, out=None, show_map: bool=True, docs_only: bool=False, path_filter: str | None=None, agents: bool | None=None, model: str | None=None) -> None",
-     "1f3922e5d18cc5452078407c820dcd05fcdad45f"
+     "fafeb35b15a42d4c1a78f4fb5e82e4150eaa2cae"
     ]
    ],
    "skeleton_sha": "4387cbe77a10ddc3a5b56c8064e0b08856188b78",
