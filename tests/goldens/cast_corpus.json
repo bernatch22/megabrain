@@ -6004,9 +6004,9 @@
      "serve",
      null,
      715,
-     794,
+     810,
      "megabrain > megabrain/server/http.py > def serve(root, port: int=2134, host: str='127.0.0.1', cors: str | None=None, enable_llm: bool=True, token: str | None=None, serve_ui: bool=True, readonly: bool=False, rate_limit: int | None=None, trust_proxy: bool=False) -> None",
-     "845519f4272837babd8c0b6307c51170e06e77ae"
+     "839b74a932abbf76515bd6728f8390089d327f4a"
     ]
    ],
    "skeleton_sha": "183afc39da6605b52496e1be0f964c6e5446c179",
@@ -6162,7 +6162,7 @@
      "serve",
      "function",
      717,
-     794,
+     810,
      "def serve(root, port: int=2134, host: str='127.0.0.1', cors: str | None=None, enable_llm: bool=True, token: str | None=None, serve_ui: bool=True, readonly: bool=False, rate_limit: int | None=None, trust_proxy: bool=False) -> None"
     ]
    ]

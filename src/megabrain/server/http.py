@@ -730,7 +730,17 @@ def serve(root, port: int = 2134, host: str = "127.0.0.1",
         providers.select("openrouter")
 
     root = Path(root)
-    root_indexed = (root / ".megabrain" / "db.sqlite").exists()
+    # The cwd's repo is its nearest INDEXED ANCESTOR, not the cwd verbatim —
+    # `megabrain studio` from a subdir of an indexed repo must serve that repo,
+    # exactly as ask/query/get/chunks already resolve it. Checking the cwd
+    # alone silently failed one directory down and fell through to "newest
+    # registry entry", so studio looked like it picked a repo at random.
+    from ..storage.store import resolve_root
+    try:
+        root, _sub = resolve_root(root)
+        root_indexed = True
+    except MegabrainError:
+        root_indexed = False
     registry_repos = []
     if serve_ui:                         # studio: the whole machine's registry
         try:
@@ -778,9 +788,15 @@ def serve(root, port: int = 2134, host: str = "127.0.0.1",
     ui = "on" if (serve_ui and (UI_DIR / "index.html").is_file()) else "off"
     verb = "studio" if serve_ui else "serve-api"
     n = len(reg.list())
-    where = f"repo={boot.root.name} chunks={chunks}" if boot is not None \
-        else f"repos={n} (none loaded — add one from the UI)" if n == 0 \
-        else f"repos={n} (registry)"
+    # Say BOTH how many repos are served and which one answers a request that
+    # omits ?repo=. Naming the boot repo alone read as "this is the only repo
+    # loaded" while the rail listed ten, and `chunks` counts only that repo.
+    if boot is None:
+        where = f"repos={n} (none loaded — add one from the UI)"
+    elif n > 1:
+        where = f"repos={n} (registry) default={boot.root.name} chunks={chunks}"
+    else:
+        where = f"repo={boot.root.name} chunks={chunks}"
     hard = (" mode=read-only" if readonly else "") + \
         (f" rate={rate_limit}asks/h" if rate_limit else "")
     print(f"megabrain {verb} → http://{host}:{port}  {where} "
