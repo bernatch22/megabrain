@@ -5201,9 +5201,9 @@
      "render_pruned",
      null,
      100,
-     130,
+     136,
      "megabrain > megabrain/retrieval/render.py > def render_pruned(res: dict, with_text: bool=True) -> str",
-     "0b7605aad558692d0d9c73a4cd4a953f67e33ef1"
+     "a789283e95f8efa131114c90a0a62eeaf5171d47"
     ]
    ],
    "skeleton_sha": "5ef2f88845a1af21aa996aee34aac88912d66479",
@@ -5233,7 +5233,7 @@
      "render_pruned",
      "function",
      102,
-     130,
+     136,
      "def render_pruned(res: dict, with_text: bool=True) -> str"
     ]
    ]
@@ -5954,19 +5954,28 @@
     ],
     [
      "module",
-     "RateLimiter, Registry, _root_key, _all_repos, _repo_stats",
+     "RateLimiter, Registry, _root_key, _all_repos",
      null,
      100,
-     218,
-     "megabrain > megabrain/server/http.py > [RateLimiter, Registry, _root_key, _all_repos, _repo_stats]",
-     "43e0d5b5a249d6b05ea5633ff0b4cf31103a9a6b"
+     208,
+     "megabrain > megabrain/server/http.py > [RateLimiter, Registry, _root_key, _all_repos]",
+     "8db2b96208d2b95a84465967a1581e732b9172cf"
+    ],
+    [
+     "function",
+     "_repo_stats",
+     null,
+     209,
+     229,
+     "megabrain > megabrain/server/http.py > def _repo_stats(s: RepoSession) -> dict",
+     "a984d43463ea6d4fc14575b6a7d8c65095fc52c7"
     ],
     [
      "block",
      "_make_handler",
      "1/6",
-     219,
-     227,
+     230,
+     238,
      "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True, readonly: bool=False, rate_limit: int | None=None, trust_proxy: bool=False)",
      "1ae6375ab420ab220bb6da6e034e7ab1904bf286"
     ],
@@ -5974,8 +5983,8 @@
      "block",
      "_make_handler",
      "2/6",
-     228,
-     360,
+     239,
+     371,
      "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True, readonly: bool=False, rate_limit: int | None=None, trust_proxy: bool=False)",
      "4dd4024fa1a44130b25a92cc3786f191e0bb5718"
     ],
@@ -5983,8 +5992,8 @@
      "block",
      "_make_handler",
      "3/6",
-     361,
-     485,
+     372,
+     496,
      "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True, readonly: bool=False, rate_limit: int | None=None, trust_proxy: bool=False)",
      "5a440d8ac0437ef498298b90e45f5c1ae8b4395a"
     ],
@@ -5992,26 +6001,26 @@
      "block",
      "_make_handler",
      "4/6",
-     486,
-     617,
+     497,
+     628,
      "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True, readonly: bool=False, rate_limit: int | None=None, trust_proxy: bool=False)",
-     "97ae30f99be28b6db9a75dd35476a83ea904f26b"
+     "83662edd15f1d8863825218a337d0748b10cc223"
     ],
     [
      "block",
      "_make_handler",
      "5/6",
-     618,
-     637,
+     629,
+     656,
      "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True, readonly: bool=False, rate_limit: int | None=None, trust_proxy: bool=False)",
-     "5b6da14283df4e5521a24a75a22ae242305d0ab9"
+     "91b695a130449f2a36e1c9b4883ed5b6812d3423"
     ],
     [
      "block",
      "_make_handler",
      "6/6",
-     638,
-     639,
+     657,
+     658,
      "megabrain > megabrain/server/http.py > def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True, readonly: bool=False, rate_limit: int | None=None, trust_proxy: bool=False)",
      "5ebaec407bc18bc3fde033e8db1a20bf3e3ec3f8"
     ],
@@ -6019,8 +6028,8 @@
      "module",
      "_valid_model, _native_pick_folder, _scan_report, _merge_ignore",
      null,
-     640,
-     714,
+     659,
+     733,
      "megabrain > megabrain/server/http.py > [_valid_model, _native_pick_folder, _scan_report, _merge_ignore]",
      "1a60519fd169e3894bbb17ae8e132a99f7846295"
     ],
@@ -6028,13 +6037,13 @@
      "function",
      "serve",
      null,
-     715,
-     810,
+     734,
+     829,
      "megabrain > megabrain/server/http.py > def serve(root, port: int=2134, host: str='127.0.0.1', cors: str | None=None, enable_llm: bool=True, token: str | None=None, serve_ui: bool=True, readonly: bool=False, rate_limit: int | None=None, trust_proxy: bool=False) -> None",
      "839b74a932abbf76515bd6728f8390089d327f4a"
     ]
    ],
-   "skeleton_sha": "183afc39da6605b52496e1be0f964c6e5446c179",
+   "skeleton_sha": "15d9bcb1fc7ed929a38fe67d39014a4556da0364",
    "symbols": [
     [
      "log",
@@ -6075,7 +6084,7 @@
      "RateLimiter",
      "class",
      102,
-     125,
+     136,
      "class RateLimiter"
     ],
     [
@@ -6093,101 +6102,108 @@
      "def check(self, ip: str) -> int | None"
     ],
     [
+     "RateLimiter.refund",
+     "method",
+     127,
+     136,
+     "def refund(self, ip: str) -> None"
+    ],
+    [
      "Registry",
      "class",
-     128,
-     163,
+     139,
+     174,
      "class Registry"
     ],
     [
      "Registry.__init__",
      "method",
-     134,
-     140,
+     145,
+     151,
      "def __init__(self, boot: RepoSession | None)"
     ],
     [
      "Registry.get",
      "method",
-     142,
-     148,
+     153,
+     159,
      "def get(self, name: str | None) -> RepoSession"
     ],
     [
      "Registry.add",
      "method",
-     150,
-     159,
+     161,
+     170,
      "def add(self, root: Path) -> RepoSession"
     ],
     [
      "Registry.list",
      "method",
-     161,
-     163,
+     172,
+     174,
      "def list(self) -> list[RepoSession]"
     ],
     [
      "_root_key",
      "function",
-     166,
-     176,
+     177,
+     187,
      "def _root_key(p) -> str"
     ],
     [
      "_all_repos",
      "function",
-     179,
-     197,
+     190,
+     208,
      "def _all_repos(reg: Registry) -> list[dict]"
     ],
     [
      "_repo_stats",
      "function",
-     200,
-     218,
+     211,
+     229,
      "def _repo_stats(s: RepoSession) -> dict"
     ],
     [
      "_make_handler",
      "function",
-     223,
-     639,
+     234,
+     658,
      "def _make_handler(reg: Registry, cors: str | None, enable_llm: bool, token: str | None=None, serve_ui: bool=True, readonly: bool=False, rate_limit: int | None=None, trust_proxy: bool=False)"
     ],
     [
      "_valid_model",
      "function",
-     642,
-     653,
+     661,
+     672,
      "def _valid_model(model) -> str | None"
     ],
     [
      "_native_pick_folder",
      "function",
-     656,
-     692,
+     675,
+     711,
      "def _native_pick_folder() -> dict"
     ],
     [
      "_scan_report",
      "function",
-     695,
-     701,
+     714,
+     720,
      "def _scan_report(path: str) -> dict"
     ],
     [
      "_merge_ignore",
      "function",
-     704,
-     714,
+     723,
+     733,
      "def _merge_ignore(root: Path, ignore: str) -> None"
     ],
     [
      "serve",
      "function",
-     717,
-     810,
+     736,
+     829,
      "def serve(root, port: int=2134, host: str='127.0.0.1', cors: str | None=None, enable_llm: bool=True, token: str | None=None, serve_ui: bool=True, readonly: bool=False, rate_limit: int | None=None, trust_proxy: bool=False) -> None"
     ]
    ]

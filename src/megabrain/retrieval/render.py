@@ -107,8 +107,14 @@ def render_pruned(res: dict, with_text: bool = True) -> str:
     rr = res.get("reranked")
     tail = (f' · reranked by `{rr["model"]}` (+{rr["ms"]}ms, '
             f'dropped {rr["dropped"]} tangential)' if rr else "")
+    # The spec tests are announced HERE, not only listed at the bottom: after a
+    # few hundred lines of code bodies, a two-line compact tail is invisible —
+    # the feature's own author looked at an output that contained it and asked
+    # where the tests were. The header is the one line everyone reads.
+    n_tests = len(res.get("tests") or [])
+    spec = f' · ⚠ {n_tests} spec test(s) at the BOTTOM' if n_tests else ""
     L.append(f'repo `{res["repo"]}` · {res["kept"]} signal chunks '
-             f'({res["pruned"]} pruned as noise) · {res["ms"]}ms{tail}\n')
+             f'({res["pruned"]} pruned as noise){spec} · {res["ms"]}ms{tail}\n')
     for rank, c in enumerate(res["chunks"], 1):
         label = c["name"] or c["kind"]
         L.append(f'### {rank}. [{c["id"]}] {c["file"]} '

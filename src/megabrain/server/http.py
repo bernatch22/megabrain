@@ -124,6 +124,17 @@ class RateLimiter:
                               if v and v[-1] > now - self.window}
             return None
 
+    def refund(self, ip: str) -> None:
+        """Give back the slot `check` took. The limit exists to meter LLM
+        spend, and a flow-cache hit costs none — but whether a request hits the
+        cache is only known after retrieval runs, so the slot is taken up front
+        and returned here. Without this, re-asking a popular question burns a
+        visitor's quota on answers that cost nothing to serve."""
+        with self._lock:
+            hits = self._hits.get(ip)
+            if hits:
+                hits.pop()
+
 
 class Registry:
     """The set of served repos, keyed by name. The boot repo is the default
@@ -519,6 +530,8 @@ def _make_handler(reg: Registry, cors: str | None, enable_llm: bool,
                               docs_only=bool(body.get("docs")),
                               agents=None if ag in (None, "auto") else bool(ag),
                               model=model)
+                    if limiter and out.get("served_from_cache"):
+                        limiter.refund(self._client_ip())   # no LLM call, no slot
                     for k in ("result", "cands", "file_syms"):
                         out.pop(k, None)
                     return self._send(200, out)
@@ -532,8 +545,14 @@ def _make_handler(reg: Registry, cors: str | None, enable_llm: bool,
                     model = _valid_model(body.get("model"))
                     from ..ask.agents import stream_events
                     sse = self._sse_open()
+
+                    def metered_sse(ev: dict):
+                        # a cache hit spends no LLM call, so hand the slot back
+                        if limiter and ev.get("type") == "cached":
+                            limiter.refund(self._client_ip())
+                        sse(ev)
                     try:
-                        stream_events(reg.get(repo_name).root, q, sse,
+                        stream_events(reg.get(repo_name).root, q, metered_sse,
                                       agents=None if ag in (None, "auto") else bool(ag),
                                       docs_only=bool(body.get("docs")),
                                       model=model)

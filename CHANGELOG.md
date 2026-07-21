@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.18.6 — a cached answer costs no LLM call, so it costs no rate-limit slot
+
+Two fixes for a public demo, both from watching one get used.
+
+**The rate limiter charged for cache hits.** `--rate-limit N` exists to bound
+LLM spend, but the flow cache serves a matching question with zero LLM calls —
+and a visitor re-asking a popular question was still burning quota on answers
+that cost nothing to serve. Whether a request will hit the cache is only known
+after retrieval runs, so the slot is still taken up front and now handed back:
+`RateLimiter.refund(ip)` on `served_from_cache` (buffered `/ask`) and on the
+`cached` SSE event (`/ask/stream`). A visitor who only asks cached questions
+can now go forever.
+
+**The spec tests were invisible.** 0.18.4 appended dropped test files as a
+compact "tests pinning this behavior" section, and after a few hundred lines of
+code bodies nobody reads two lines at the bottom — the person who asked for the
+feature looked at an output containing it and asked where the tests were. The
+header now announces them (`⚠ 2 spec test(s) at the BOTTOM`), which is the one
+line every reader does see.
+
 ## 0.18.5 — the MCP server finally introduces itself, and `scope_path` says what it costs
 
 **The server shipped no `instructions` at all.** `initialize` returned protocol,
