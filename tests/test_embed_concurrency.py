@@ -99,6 +99,44 @@ def test_cache_writes_survive_concurrency(embedder, monkeypatch):
         assert embedder._cpath(t).exists()
 
 
+def test_a_refused_cache_write_does_not_fail_the_embed(embedder, monkeypatch):
+    """Windows refuses os.replace while another thread holds the destination
+    open (two threads racing the SAME cache entry — duplicate texts in one run).
+    A lost cache write must never fail an index, and the vectors still return.
+    Simulated here so the guard is covered on every platform, not only in CI's
+    Windows job — where it surfaced as `PermissionError(13, Access is denied)`.
+    """
+    monkeypatch.setattr(providers, "post_json", _api())
+
+    def refuse(self, target):
+        raise PermissionError(13, "Access is denied")
+    monkeypatch.setattr(E.Path, "replace", refuse)
+    out = embedder.embed(["alpha", "beta12"], batch_size=1)
+    assert out.shape == (2, 2)
+    expect = np.array(_vec_for("alpha"), dtype=np.float32)
+    assert np.allclose(out[0], expect / np.linalg.norm(expect))
+
+
+def test_a_refused_cache_write_leaves_no_temp_files(embedder, monkeypatch):
+    monkeypatch.setattr(providers, "post_json", _api())
+
+    def refuse(self, target):
+        raise PermissionError(13, "Access is denied")
+    monkeypatch.setattr(E.Path, "replace", refuse)
+    embedder.embed(["alpha", "beta12"], batch_size=1)
+    assert list(embedder.cache.glob("*.tmp.npy")) == [], "temp files left behind"
+
+
+def test_duplicate_texts_in_one_call_share_a_cache_entry(embedder, monkeypatch):
+    """The same text twice in one embed() maps to ONE cache path — the race the
+    Windows failure exposed. Both rows must still come back correct."""
+    monkeypatch.setattr(providers, "post_json", _api())
+    out = embedder.embed(["same one"] * 4, batch_size=1)
+    assert out.shape == (4, 2)
+    assert all(np.allclose(out[0], row) for row in out)
+    assert embedder._cpath("same one").exists()
+
+
 def test_on_batch_reports_monotonic_progress(embedder, monkeypatch):
     monkeypatch.setattr(providers, "post_json", _api(delay=0.002))
     seen = []

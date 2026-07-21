@@ -74,7 +74,9 @@ def test_an_indexed_cwd_still_wins_over_the_registry(tiny_repo, stub_server,
     indexed more recently and therefore heads the newest-first list."""
     from megabrain.storage.registry import list_repos
     other = _second_repo(tmp_path_factory)
-    assert list_repos()[0]["path"] == str(other), "fixture: other must be newest"
+    # compare Paths, not strings: the registry stores roots as_posix(), so on
+    # Windows str(other) spells the same root with backslashes
+    assert Path(list_repos()[0]["path"]) == other, "fixture: other must be newest"
     http_mod.serve(tiny_repo, port=0, serve_ui=True)
     assert f"default={tiny_repo.name}" in _banner(capsys)
 

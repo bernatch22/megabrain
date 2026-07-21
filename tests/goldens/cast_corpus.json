@@ -4565,21 +4565,21 @@
     ],
     [
      "method",
-     "Embedder.__init__, Embedder._cpath, Embedder._batches, Embedder.embed",
+     "Embedder.__init__, Embedder._cpath, Embedder._batches",
      null,
      37,
-     151,
-     "megabrain > megabrain/providers/embeddings.py > class Embedder > [Embedder.__init__, Embedder._cpath, Embedder._batches, Embedder.embed]",
-     "40043de8d3cc299ed92146ec683c1e9c26b1f19e"
+     98,
+     "megabrain > megabrain/providers/embeddings.py > class Embedder > [Embedder.__init__, Embedder._cpath, Embedder._batches]",
+     "278f2059ca90c5bce8c423c2f034459837cc76d7"
     ],
     [
      "method",
-     "Embedder._request",
+     "Embedder.embed, Embedder._request",
      null,
-     152,
-     175,
-     "megabrain > megabrain/providers/embeddings.py > class Embedder > def _request(self, batch: list[str]) -> list[np.ndarray]",
-     "5c140bc6edd3e57fef194ca2124eaa8dcebc0a1a"
+     99,
+     183,
+     "megabrain > megabrain/providers/embeddings.py > class Embedder > [Embedder.embed, Embedder._request]",
+     "7c63440fbfbd12360f2a8539f5cf124a4bc6905a"
     ]
    ],
    "skeleton_sha": "0055c8ffb3a217d46fc83a67672a7ce100cfe5c8",
@@ -4595,7 +4595,7 @@
      "Embedder",
      "class",
      39,
-     175,
+     183,
      "class Embedder"
     ],
     [
@@ -4630,14 +4630,14 @@
      "Embedder.embed",
      "method",
      100,
-     151,
+     159,
      "def embed(self, texts: list[str], batch_size: int | None=None, on_batch=None) -> np.ndarray"
     ],
     [
      "Embedder._request",
      "method",
-     153,
-     175,
+     161,
+     183,
      "def _request(self, batch: list[str]) -> list[np.ndarray]"
     ]
    ]

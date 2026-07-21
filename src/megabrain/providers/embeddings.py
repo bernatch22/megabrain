@@ -117,15 +117,23 @@ class Embedder:
 
         def _store(idxs: list[int], vecs: list[np.ndarray]) -> None:
             for i, v in zip(idxs, vecs):
+                out[i] = v          # the vector IS the result; caching is best-effort
                 p = self._cpath(texts[i])
                 # pid+thread in the tmp name: two threads embedding the same
-                # text (two concurrent embed() calls in one server process)
-                # must not collide mid-write. replace() stays atomic.
+                # text (duplicate texts in one run, or two concurrent embed()
+                # calls in a server process) must not collide mid-write.
                 tmp = p.with_name(
                     f"{p.stem}.{os.getpid()}.{threading.get_ident()}.tmp.npy")
                 np.save(tmp, v)
-                tmp.replace(p)   # atomic: concurrent readers never see a partial file
-                out[i] = v
+                try:
+                    tmp.replace(p)   # atomic: a reader never sees a partial file
+                except OSError:
+                    # POSIX rename always wins; Windows refuses it while another
+                    # thread holds the destination open, which is exactly the
+                    # same-cache-entry race above. Same text means the same
+                    # entry, so the other writer's file is as good as ours —
+                    # losing a cache write must never fail an index.
+                    tmp.unlink(missing_ok=True)
 
         done = 0
         if self.workers > 1 and len(batches) > 1:
