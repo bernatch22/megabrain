@@ -24,4 +24,6 @@ def test_auto_falls_back_to_openrouter_without_sdk(monkeypatch):
     monkeypatch.delenv("MEGABRAIN_CHAT_PROVIDER", raising=False)
     monkeypatch.setattr(importlib.util, "find_spec", lambda name: None)
     assert providers.chat_provider() == "openrouter"
-    assert providers.ask_model() == "google/gemini-3.1-flash-lite-preview"
+    # the constant, not a literal — the slug tracks the market, the routing is
+    # what this test exists to pin (see test_claude_provider for the mirror).
+    assert providers.ask_model() == providers.FAST_CHAT_MODEL != "haiku"

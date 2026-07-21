@@ -76,7 +76,7 @@ def chat_provider() -> str:
 # The fast/cheap OpenAI-compat default — ask narration on OpenRouter, and the
 # rerank's fast lane regardless of chat provider (a mechanical filter never
 # justifies a claude-CLI spawn; measured 0.7s here vs ~18s there).
-FAST_CHAT_MODEL = "google/gemini-3.1-flash-lite-preview"
+FAST_CHAT_MODEL = "google/gemini-3.1-flash-lite"
 
 
 def ask_model() -> str:
@@ -427,7 +427,7 @@ def detect() -> dict:
         "claude": {"available": _REGISTRY["claude"].available(),
                    "default_model": "haiku"},
         "openrouter": {"available": bool(find_key(required=False)),
-                       "default_model": "google/gemini-3.1-flash-lite-preview"},
+                       "default_model": "google/gemini-3.1-flash-lite"},
         "ollama": _ollama_probe(),
         "active": {"provider": resolve().name, "label": _active_label(),
                    "model": ask_model()},

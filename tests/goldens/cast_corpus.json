@@ -4062,7 +4062,7 @@
      1,
      96,
      "megabrain > megabrain/providers/__init__.py > [_bad_request, chat_provider, ask_model]",
-     "84cea5665134bc692d0ef80b3266c07565af3a8a"
+     "a52e30a3c8b131c667c3bfcd2efa56105d2d8f49"
     ],
     [
      "module",
@@ -4098,7 +4098,7 @@
      355,
      460,
      "megabrain > megabrain/providers/__init__.py > [ClaudeProvider, _ollama_probe, _active_label, detect, select]",
-     "8cb976052f621d182843ec7b5ea5554ada740f7a"
+     "0f432da904286442ebaa33cdcd0558b5d0d2067d"
     ],
     [
      "module",
@@ -4110,7 +4110,7 @@
      "4f53dec70f88f1f570ff85f414a10414cad1af3b"
     ]
    ],
-   "skeleton_sha": "36b41af9e89858f34544c2d6655635d89b37fc37",
+   "skeleton_sha": "d9843494db66eeedfd9741af874981b9480b1197",
    "symbols": [
     [
      "_bad_request",
@@ -4152,7 +4152,7 @@
      "constant",
      79,
      79,
-     "FAST_CHAT_MODEL = 'google/gemini-3.1-flash-lite-preview'"
+     "FAST_CHAT_MODEL = 'google/gemini-3.1-flash-lite'"
     ],
     [
      "ask_model",

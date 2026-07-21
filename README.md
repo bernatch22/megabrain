@@ -68,7 +68,7 @@ defaults:
 - **`perplexity/pplx-embed-v1-0.6b`** for retrieval — the measured best for code recall.
   It beat pplx-4b, codestral-embed, openai-3-large and bge-m3 in a head-to-head bakeoff
   (R@1 **0.864**, bundle_full **0.955**).
-- **`google/gemini-3.1-flash-lite-preview`** for narration — the fastest and cheapest tier,
+- **`google/gemini-3.1-flash-lite`** for narration — the fastest and cheapest tier,
   at the quality of models costing several times more. A full walkthrough in seconds, for
   fractions of a cent.
 

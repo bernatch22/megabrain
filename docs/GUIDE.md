@@ -47,7 +47,7 @@ megabrain ask   ~/repo "how does auth work"
 | | model | why it's the default |
 |---|---|---|
 | **embeddings** | `perplexity/pplx-embed-v1-0.6b` | **the best measured for code recall.** A head-to-head bakeoff beat pplx-4b, codestral-embed, openai-3-large and bge-m3 — R@1 **0.864**, bundle_full **0.955**. Perplexity-direct and via-OpenRouter score identically, so the proxy costs nothing. |
-| **narration** | `google/gemini-3.1-flash-lite-preview` | **the fastest and cheapest tier** at the quality of models several times its price. `ask` is output-bound, so this is the knob that decides how long you wait. |
+| **narration** | `google/gemini-3.1-flash-lite` | **the fastest and cheapest tier** at the quality of models several times its price. `ask` is output-bound, so this is the knob that decides how long you wait. |
 
 That combination is the one to beat: best retrieval quality, fastest narration, ~$0.002 to
 index a repo and fractions of a cent per ask. Everything below is a deliberate trade-off
@@ -436,9 +436,19 @@ export MEGABRAIN_RERANK_MODEL=…                  # defaults to the ask model
 
 | ask model | one ask | ≈ cost | notes |
 |---|---|---|---|
-| `google/gemini-3.1-flash-lite-preview` *(default)* | fastest | ~$0.007 | preview slug — pin qwen if it 404s |
+| `google/gemini-3.1-flash-lite` *(default)* | fastest | ~$0.007 | stable slug (was `-preview` until 0.18.7) |
+| `google/gemini-3.5-flash-lite` | fastest | ~$0.011 | **newer is not better here** — measured below |
 | `qwen/qwen3-coder` | ~14 s | **~$0.0035** | cheapest, broader citations, open weights |
 | `haiku` / `sonnet` / `opus` | ~7 s | on your plan | with `megabrain[claude]` — Claude aliases only, never an OpenRouter slug |
+
+**Why the default is still 3.1 after 3.5 shipped.** The same model does two jobs here:
+it narrates `ask`, and it is the rerank's fast lane. On the rerank — the job where
+completeness is the whole point — 3.1 returned all three files a real fix touched in
+**3 of 3** runs; 3.5 returned two of three in **2 of 3**. Narration quality was a tie
+(both get a hard state-race bug wrong; that's a model-tier limit, not a version one),
+3.5 is marginally faster, and it costs **67% more per output token**. Losing recall to
+pay more is not a trade, so the default stayed. Re-measure when a new tier lands rather
+than assuming the higher number wins.
 
 → **[Cut the cost, or make it faster](RECIPES.md#make-ask-cheaper-or-faster)** ·
 **[Run fully local](RECIPES.md#run-fully-local--no-keys-no-cloud)**

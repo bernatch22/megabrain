@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.18.7 — off the preview slug; 3.5-flash-lite measured and declined
+
+`google/gemini-3.1-flash-lite` is now the OpenRouter default, replacing
+`…-flash-lite-preview`. The stable slug exists, preview slugs get retired, and
+a bakeoff found the two behave identically (rerank: 3/3 correct files in 3 runs
+each, same latency). Nothing to do — an explicit `MEGABRAIN_ASK_MODEL` /
+`MEGABRAIN_RERANK_MODEL` still wins.
+
+**`gemini-3.5-flash-lite` was tested for the default and rejected.** The model
+does two jobs here — it narrates `ask` and it is the rerank's fast lane — so it
+was measured at both against the hardest case in the repo's history
+(rails/rails#57197, a state-race bug):
+
+| | rerank: core files found | narration | output price |
+|---|---|---|---|
+| 3.1-flash-lite | **3/3, 3/3, 3/3** | wrong verdict | $1.50/M |
+| 3.5-flash-lite | 2/3, **3/3**, 2/3 | wrong verdict | $2.50/M |
+
+3.5 dropped one of the three files a real fix touched in two of three runs.
+Completeness beats ordering is the engine's second locked rule, so losing recall
+to pay 67% more per output token is not a trade. Narration was a tie at *bad* —
+both models assert the deferred enqueue sees the right value when it demonstrably
+does not, which is a model-tier limit rather than a version one (see 0.18.1).
+3.5 is marginally faster and more concise; that buys nothing here.
+
+The two provider tests that hardcoded the slug now assert against
+`providers.FAST_CHAT_MODEL`, so the next model bump changes one constant instead
+of failing tests that were pinning the routing, not the string.
+
 ## 0.18.6 — a cached answer costs no LLM call, so it costs no rate-limit slot
 
 Two fixes for a public demo, both from watching one get used.

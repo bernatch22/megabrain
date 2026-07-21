@@ -2036,7 +2036,7 @@
         chips: ["haiku", "sonnet", "opus"] },
       { key: "openrouter", name: "OpenRouter", initial: "O", info: p.openrouter,
         up: p.openrouter.available, reason: p.openrouter.available ? "OPENROUTER_API_KEY set · 300+ models" : "no OPENROUTER_API_KEY",
-        chips: ["google/gemini-3.1-flash-lite-preview", "qwen/qwen3-coder", "google/gemini-3-flash-preview"] },
+        chips: ["google/gemini-3.1-flash-lite", "qwen/qwen3-coder", "google/gemini-3-flash-preview"] },
       { key: "ollama", name: "Ollama", initial: "o", info: p.ollama,
         up: p.ollama.up, reason: p.ollama.up ? `${(p.ollama.models || []).length} local model(s) · fully offline` :
           p.ollama.installed ? "installed · server is down on :11434" : "no server on :11434 · not installed",

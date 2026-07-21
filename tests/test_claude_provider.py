@@ -94,7 +94,10 @@ def test_key_sentinel_and_model_defaults(monkeypatch):
     assert providers.ask_model() == "claude-sonnet-4-5"
     monkeypatch.setenv("MEGABRAIN_CHAT_PROVIDER", "openrouter")
     monkeypatch.delenv("MEGABRAIN_ASK_MODEL", raising=False)
-    assert providers.ask_model() == "google/gemini-3.1-flash-lite-preview"
+    # asserted against the constant, not a literal: the default model changes
+    # with the market (3.1-flash-lite-preview -> 3.1-flash-lite in 0.18.7), and
+    # what this pins is the ROUTING — off the claude provider, never 'haiku'.
+    assert providers.ask_model() == providers.FAST_CHAT_MODEL != "haiku"
 
 
 def test_missing_sdk_error_is_actionable(monkeypatch):
