@@ -79,9 +79,12 @@ TOOLS = [
             "file still appears, each with its best-matching chunk — so nothing "
             "relevant is missed at the FILE level. Chunks are filtered though: a "
             "file's other chunks are cut, so when you need one file in full, Read it "
-            "(the path and line numbers are right there). One call hands you the real "
-            "code, no follow-up fetch needed. Use it when you want the exact code to "
-            "read rather than a narration — deterministic, no LLM."),
+            "(the path and line numbers are right there). Test files the rerank "
+            "keeps out of the signal list are appended as a compact 'tests pinning "
+            "this behavior' section — they are the spec of the mechanism; read them "
+            "before changing it. One call hands you the real code, no follow-up "
+            "fetch needed. Use it when you want the exact code to read rather than "
+            "a narration — deterministic, no LLM."),
         "inputSchema": {
             "type": "object",
             "properties": {

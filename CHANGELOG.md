@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.18.4 — a dropped test is not noise: it is often the spec
+
+Field case, same rails#57197 session: the rerank pruned
+`enqueue_after_transaction_commit_test.rb` — and that file was the decisive
+one. It pins instance identity (`successfully_enqueued?` must flip on the SAME
+object after commit; `around_enqueue` runs on it), which is exactly what ruled
+out the issue author's proposed dup-based fix. The agent recovered it with a
+separate grep; megabrain never showed it.
+
+Dropping tests from the signal list is deliberate and stays: tests crowd
+implementation by shared vocabulary (the `TestPenaltyLane` exists because a
+test sometimes out-scores the core file it tests). What changes is what
+"dropped" means — structure, not deletion, the same stance as the CORE/RELATED
+map:
+
+- `llm_rerank` now splits dropped chunks: test files land in `res["tests"]`,
+  everything else in `noise`.
+- `render_pruned` (CLI + MCP `megabrain_search`) appends a compact
+  "— tests pinning this behavior (read before changing it)" section: id, file,
+  lines, symbols — no bodies, so it costs a few lines, not a screen.
+- A test the model deliberately KEEPS stays in the signal list; the section is
+  only for the ones it removed.
+
+On the field query, the tail's first entry is now that exact test file,
+listing `FakeActiveRecord` and the identity-pinning job classes. The signal
+list above it is unchanged: the three implementation files the fix touched,
+bug file first.
+
 ## 0.18.3 — the rerank takes the fast lane: 18s → 0.8s for Claude Code users
 
 A field report rated `megabrain_search` 5/10 on a real bug hunt. Reproducing it

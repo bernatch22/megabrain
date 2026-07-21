@@ -5201,9 +5201,9 @@
      "render_pruned",
      null,
      100,
-     121,
+     130,
      "megabrain > megabrain/retrieval/render.py > def render_pruned(res: dict, with_text: bool=True) -> str",
-     "cbcd0424a02c31d64682c1fb922755882dd9c768"
+     "0b7605aad558692d0d9c73a4cd4a953f67e33ef1"
     ]
    ],
    "skeleton_sha": "5ef2f88845a1af21aa996aee34aac88912d66479",
@@ -5233,7 +5233,7 @@
      "render_pruned",
      "function",
      102,
-     121,
+     130,
      "def render_pruned(res: dict, with_text: bool=True) -> str"
     ]
    ]
@@ -5254,9 +5254,9 @@
      "llm_rerank",
      null,
      59,
-     124,
+     136,
      "megabrain > megabrain/retrieval/rerank.py > def llm_rerank(res: dict, question: str, model: str | None=None) -> dict",
-     "92b6f549452f987186838885b310ad3d083b4fc3"
+     "ab38a99137bb1e19fb392125fba8691f21ce320c"
     ]
    ],
    "skeleton_sha": "c49a6a5b44bb7819ffa7c0c509a2111f82cfac6e",
@@ -5307,7 +5307,7 @@
      "llm_rerank",
      "function",
      61,
-     124,
+     136,
      "def llm_rerank(res: dict, question: str, model: str | None=None) -> dict"
     ]
    ]
@@ -6303,34 +6303,34 @@
      null,
      "1/3",
      37,
-     125,
+     124,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "f7674de1c6649ba42e36537ffd1a7d47065bb556"
+     "4d9d8a5cc641ac2dba568a467fc201f5e7e39084"
     ],
     [
      "block",
      null,
      "2/3",
-     126,
+     125,
      216,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "59ee48ac259665b9fcd65139bb50d0cfc9e925de"
+     "545e5eee1dc0f8bc8d3c22ba8cc1d90527c8f81a"
     ],
     [
      "block",
      null,
      "3/3",
      217,
-     226,
+     229,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "065b08610c3faa99f716cf31f82a3c256c150846"
+     "5b3a39e886b68af4605927c4a9d9c82871318002"
     ],
     [
      "function",
      "_scope",
      null,
-     227,
-     236,
+     230,
+     239,
      "megabrain > megabrain/server/mcp.py > def _scope(args: dict) -> tuple[Path, str | None]",
      "1d10e662f4d499a37f52ced42ddfed4a6e7cd428"
     ],
@@ -6338,8 +6338,8 @@
      "block",
      "call_tool",
      "1/2",
-     237,
-     309,
+     240,
+     312,
      "megabrain > megabrain/server/mcp.py > def call_tool(name: str, args: dict) -> str",
      "f0069e77841f6561718e51e1aecce929bded256c"
     ],
@@ -6347,8 +6347,8 @@
      "block",
      "call_tool",
      "2/2",
-     310,
-     344,
+     313,
+     347,
      "megabrain > megabrain/server/mcp.py > def call_tool(name: str, args: dict) -> str",
      "d4fdfdbe6b77a39a179b93d0390c48688fda920d"
     ],
@@ -6356,8 +6356,8 @@
      "function",
      "main",
      null,
-     345,
-     386,
+     348,
+     389,
      "megabrain > megabrain/server/mcp.py > def main()",
      "494cf17f80c3e1afe9632a2577e0beb051e44aa6"
     ]
@@ -6375,28 +6375,28 @@
      "TOOLS",
      "constant",
      38,
-     226,
+     229,
      "TOOLS = [{'name': 'megabrain_ask', 'description': 'THE primary tool for any how/where/why question about an indexed repo"
     ],
     [
      "_scope",
      "function",
-     229,
-     236,
+     232,
+     239,
      "def _scope(args: dict) -> tuple[Path, str | None]"
     ],
     [
      "call_tool",
      "function",
-     239,
-     344,
+     242,
+     347,
      "def call_tool(name: str, args: dict) -> str"
     ],
     [
      "main",
      "function",
-     347,
-     382,
+     350,
+     385,
      "def main()"
     ]
    ]

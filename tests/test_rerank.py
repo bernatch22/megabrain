@@ -153,3 +153,44 @@ def test_no_key_and_no_local_endpoint_stays_on_the_provider(claude_provider,
     assert res["reranked"] is not False
     assert len(claude_provider["provider"]) == 1
     assert claude_provider["openrouter"] == []
+
+
+# ------------------------------------------------- dropped tests are the spec
+
+def _res_with_test(n=3):
+    res = _res(n)
+    res["chunks"].append({"id": 99, "file": "tests/test_f1.py", "start_line": 1,
+                          "end_line": 40, "kind": "function",
+                          "name": "test_fn1_behavior", "score": 0.95,
+                          "text": "def test_fn1_behavior(): ..."})
+    res["kept"] += 1
+    return res
+
+
+def test_dropped_test_files_surface_as_tests_not_noise(chat):
+    """rails#57197 field case: the subsystem's test file WAS the spec (it
+    pinned the instance-identity constraint that ruled out the issue author's
+    fix), and the rerank dropped it invisibly. Dropped test chunks now land in
+    res['tests'] — out of the signal list, never out of sight."""
+    chat["reply"] = "[1, 2]"
+    res = rr.llm_rerank(_res_with_test(), "how does fn1 work", model="m")
+    assert [c["id"] for c in res["chunks"]] == [1, 2]
+    assert [c["id"] for c in res["tests"]] == [99]
+    assert all(c["id"] != 99 for c in res["noise"]), "test chunk lumped into noise"
+    assert res["pruned"] == 1                       # the non-test drop only
+
+
+def test_a_test_the_model_keeps_stays_in_the_signal_list(chat):
+    chat["reply"] = "[99, 1]"
+    res = rr.llm_rerank(_res_with_test(), "what pins fn1's contract", model="m")
+    assert [c["id"] for c in res["chunks"]] == [99, 1]
+    assert res["tests"] == []
+
+
+def test_render_shows_the_tests_tail(chat):
+    from megabrain.retrieval.render import render_pruned
+    chat["reply"] = "[1]"
+    res = rr.llm_rerank(_res_with_test(), "q", model="m")
+    out = render_pruned(res, with_text=False)
+    assert "tests pinning this behavior" in out
+    assert "[99] tests/test_f1.py L1-40 · test_fn1_behavior" in out

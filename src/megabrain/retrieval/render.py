@@ -118,4 +118,13 @@ def render_pruned(res: dict, with_text: bool = True) -> str:
             L.append(c["text"].rstrip("\n"))
             L.append("```")
         L.append("")
+    # Tests the rerank kept OUT of the signal list. Compact (no bodies): they
+    # crowd implementation by shared vocabulary, but they are the SPEC of the
+    # behavior — changing the mechanism above means reading them.
+    if res.get("tests"):
+        L.append("— tests pinning this behavior (read before changing it):")
+        for c in res["tests"]:
+            L.append(f'  [{c["id"]}] {c["file"]} L{c["start_line"]}-{c["end_line"]}'
+                     + (f' · {c["name"]}' if c.get("name") else ""))
+        L.append("")
     return "\n".join(L)

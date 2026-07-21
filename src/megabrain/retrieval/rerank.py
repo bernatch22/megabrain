@@ -110,11 +110,23 @@ def llm_rerank(res: dict, question: str, model: str | None = None) -> dict:
         if not kept:                      # model returned nothing usable
             raise ValueError(f"no valid ids in reply: {reply[:120]!r}")
         dropped = [c for c in chunks if c["id"] not in set(ids)]
+        # A dropped TEST file is not noise — it is often the SPEC. Field case
+        # (rails#57197): the subsystem's test file pinned instance identity
+        # (`successfully_enqueued?` must flip on the same object), which is
+        # what ruled out the issue author's dup-based fix — and the rerank had
+        # dropped it invisibly. Tests stay out of the signal list (they crowd
+        # implementation by shared vocabulary — the reason the prompt drops
+        # them) but surface in their own labeled section: structure, not
+        # deletion, same stance as the CORE/RELATED map.
+        from .scoring import _is_test_path
+        tests = [c for c in dropped if _is_test_path(c["file"])]
+        noise = [c for c in dropped if not _is_test_path(c["file"])]
         res["chunks"] = kept
+        res["tests"] = tests
         res["kept"] = len(kept)
-        res["pruned"] = res.get("pruned", 0) + len(dropped)
+        res["pruned"] = res.get("pruned", 0) + len(noise)
         if "noise" in res:
-            res["noise"] = dropped + res["noise"]
+            res["noise"] = noise + res["noise"]
         res["reranked"] = {"model": m, "kept": len(kept),
                            "dropped": len(dropped),
                            "ms": int((time.time() - t0) * 1000)}
