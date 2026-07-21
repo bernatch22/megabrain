@@ -94,3 +94,42 @@ def test_scope_errors_without_index(tmp_path):
 def test_unknown_tool_raises():
     with pytest.raises(ValueError, match="unknown tool"):
         call_tool("megabrain_nope", {})
+
+
+def test_instructions_name_every_tool_and_stay_cheap():
+    """With tool search on (Claude Code's default) the tool SCHEMAS stay
+    deferred and only names are visible until the agent searches for them — so
+    the server instructions are the one megabrain text an agent always sees.
+    They must name every tool and stay short: they cost context in every
+    session that loads this server."""
+    from megabrain.server.mcp import INSTRUCTIONS
+    for t in TOOLS:
+        assert t["name"] in INSTRUCTIONS, f"{t['name']} unmentioned in instructions"
+    assert len(INSTRUCTIONS) < 2500
+
+
+def test_instructions_carry_the_two_field_lessons():
+    """Both were real failures: an agent scoped to <pkg>/lib/ and lost the
+    tests that were the spec of the behavior, and another trusted narration
+    that contradicted the code it cited."""
+    from megabrain.server.mcp import INSTRUCTIONS
+    assert "scope_path EXCLUDES" in INSTRUCTIONS
+    assert "verify its claims against that code" in INSTRUCTIONS
+
+
+def test_initialize_ships_the_instructions_over_the_wire():
+    """The constant is worthless if the handshake drops it — drive the real
+    stdio server and read the field a client would read."""
+    import json
+    import subprocess
+    import sys as _sys
+
+    from megabrain.server.mcp import INSTRUCTIONS
+    req = json.dumps({"jsonrpc": "2.0", "id": 1, "method": "initialize",
+                      "params": {"protocolVersion": "2024-11-05", "capabilities": {},
+                                 "clientInfo": {"name": "t", "version": "1"}}})
+    out = subprocess.run([_sys.executable, "-m", "megabrain.mcp_server"],
+                         input=req + "\n", capture_output=True, text=True, timeout=60)
+    res = json.loads(out.stdout.splitlines()[0])["result"]
+    assert res["instructions"] == INSTRUCTIONS
+    assert res["serverInfo"]["name"] == "megabrain"

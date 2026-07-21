@@ -35,6 +35,32 @@ from ..errors import MegabrainError
 
 PROTOCOL = "2024-11-05"
 
+# Server-level instructions, returned by `initialize` and injected into the
+# calling agent's context ONCE. This is the only megabrain text an agent is
+# guaranteed to see: with tool search enabled (Claude Code's default) the tool
+# SCHEMAS stay deferred and only names are visible until the agent searches for
+# them — so what belongs here is the mental model and the routing between
+# tools, not a restatement of each tool's own description.
+#
+# Every line below is a lesson from a real session, not documentation for its
+# own sake; keep it that way, and keep it short — it costs context in every
+# session that loads this server.
+INSTRUCTIONS = """megabrain answers questions about a repo's CODE from a pre-built index, so you don't have to crawl files to understand it. Retrieval runs NO LLM: it ranks real chunks and returns verbatim code with true line numbers.
+
+Reach for it FIRST on any how/where/why question about an indexed repo — one call usually replaces several rounds of Grep + Read. Skip it when you already know the exact literal string you want; a grep is faster for that.
+
+Which tool:
+- megabrain_search — you want the exact code to read: ranked chunks with the real code, noise dropped, plus a cheap LLM rerank. The default for a reproducible bug — when two spans collide, seeing them side by side IS the explanation.
+- megabrain_ask — you want the flow narrated across subsystems with code spliced in at each step (broad questions fan out into sub-agents). The spliced CODE is verbatim and cannot be hallucinated; the PROSE around it is model narration, so verify its claims against that code before acting on them.
+- megabrain_graph — the repo as a map: communities, core abstractions, how two areas connect. Start an unfamiliar codebase here.
+- megabrain_index — register/refresh a repo (ask/search already auto-refresh a stale index).
+- megabrain_flows — walkthroughs cached from previous asks.
+- megabrain_forge — add a chunker for a file type megabrain doesn't cover yet.
+
+Two things that decide answer quality:
+- scope_path EXCLUDES everything outside it from retrieval. Scope to a package root (e.g. activejob), never to its lib/ or src/ subfolder — that cuts away the package's tests, which are often the spec of the behavior you are asking about.
+- On a bug, name the STATE to track, not just the symptom: "where along this path could scheduled_at be lost?" returns a trace; "why does the retry fire immediately?" invites a theory."""
+
 TOOLS = [
     {
         "name": "megabrain_ask",
@@ -361,7 +387,8 @@ def main():
         if method == "initialize":
             result = {"protocolVersion": PROTOCOL,
                       "capabilities": {"tools": {}},
-                      "serverInfo": {"name": "megabrain", "version": __version__}}
+                      "serverInfo": {"name": "megabrain", "version": __version__},
+                      "instructions": INSTRUCTIONS}
         elif method == "tools/list":
             result = {"tools": TOOLS}
         elif method == "tools/call":

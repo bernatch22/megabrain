@@ -1,6 +1,26 @@
 # Changelog
 
-## 0.18.5 — `scope_path` now says what it costs
+## 0.18.5 — the MCP server finally introduces itself, and `scope_path` says what it costs
+
+**The server shipped no `instructions` at all.** `initialize` returned protocol,
+capabilities and serverInfo — nothing telling the calling agent what megabrain
+is or when to reach for it. That matters more than it sounds: with tool search
+enabled (Claude Code's default) the tool SCHEMAS stay deferred and the agent
+sees only tool NAMES until it searches for them, so the server instructions are
+the one megabrain text an agent is guaranteed to read.
+
+There is one now (~450 tokens, once per session): what megabrain is (a
+pre-built index, retrieval with no LLM, verbatim code), when to skip it (you
+already know the literal string — grep is faster), and the routing between the
+six tools — `search` for the exact code to read and the default for a
+reproducible bug, `ask` for a narrated cross-subsystem flow, `graph` to open an
+unfamiliar repo, plus `index`/`flows`/`forge`. It ends with the two lessons
+that decide answer quality, both from real sessions: `scope_path` excludes, and
+on a bug you name the state to track rather than the symptom. Tests pin that
+every tool is mentioned, that both lessons survive edits, and that the
+handshake actually ships the field.
+
+
 
 An agent scoped a search to `activejob/lib/active_job` — the natural way to
 "search the implementation" — and the 0.18.4 tests section came back empty.
