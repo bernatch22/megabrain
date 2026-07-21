@@ -198,6 +198,12 @@ def _index_into(store: Store, emb: Embedder, root: Path, name: str, *,
         if on_progress is not None:
             on_progress({"file": rel, "i": i, "n": n, "changed": was_changed})
 
+    # PHASE 1 — chunk every changed file (pure CPU, no network). Embedding
+    # per file made 2+ HTTP round trips per changed file (a file's few chunks
+    # never filled a batch, and its skeleton went out as a request of ONE
+    # text), so a cold index was ~2×files sequential requests — ~20 min on a
+    # rails-sized repo. Chunk first, embed everything at once below.
+    pending: list[tuple[str, str, object]] = []   # (rel, sha, FileResult)
     for i, p in enumerate(paths, 1):
         rel = rels[p]
         src = sources[rel]
@@ -212,22 +218,46 @@ def _index_into(store: Store, emb: Embedder, root: Path, name: str, *,
                 stale_graph.append(rel)
             _tick(i, rel, False)
             continue
-        store.delete_file(rel)
         r = strat.chunk_file(rel, src)
         if validate_partition(r):
             stats["violations"] += 1
-        texts = [embed_text(c) for c in r.chunks]
-        vecs = emb.embed(texts) if texts else None
-        store.insert_chunks(r.chunks, vecs)
-        store.insert_symbols(r.symbols)
-        skel_vec = emb.embed([r.skeleton])[0] if r.skeleton else None
-        store.upsert_file(rel, sha, r.skeleton, skel_vec)
-        edges = strat.extract_edges(rel, src, edge_ctx[strat])
-        if edges is not None:
-            store.replace_edges(rel, edges)
-        stats["chunks"] += len(r.chunks)
+        pending.append((rel, sha, r))
         changed += 1
         _tick(i, rel, True)
+
+    # PHASE 2 — ONE embed over every text of every changed file (chunks and
+    # skeletons in a single list, sliced back per file below), so batches
+    # actually fill and the Embedder can fan them out concurrently.
+    texts: list[str] = []
+    spans: list[tuple[int, int, int]] = []        # (start, n_chunks, skel_idx|-1)
+    for _rel, _sha, r in pending:
+        start = len(texts)
+        texts.extend(embed_text(c) for c in r.chunks)
+        skel_idx = -1
+        if r.skeleton:
+            skel_idx = len(texts)
+            texts.append(r.skeleton)
+        spans.append((start, len(r.chunks), skel_idx))
+
+    def _embed_tick(done: int, total: int) -> None:
+        if on_progress is not None:
+            on_progress({"type": "embed", "done": done, "total": total})
+    vecs = emb.embed(texts, on_batch=_embed_tick) if texts else None
+
+    # PHASE 3 — store writes, per file. Same single transaction as always
+    # (commit only at the very end), with a stronger property for free: an
+    # embed failure now aborts BEFORE any row of this pass is written.
+    for (rel, sha, r), (start, n, skel_idx) in zip(pending, spans):
+        store.delete_file(rel)
+        store.insert_chunks(r.chunks, vecs[start:start + n] if n else None)
+        store.insert_symbols(r.symbols)
+        skel_vec = vecs[skel_idx] if skel_idx >= 0 else None
+        store.upsert_file(rel, sha, r.skeleton, skel_vec)
+        strat = strategy_for(registry, rel)
+        edges = strat.extract_edges(rel, sources[rel], edge_ctx[strat])
+        if edges is not None:
+            store.replace_edges(rel, edges)
+        stats["chunks"] += n
 
     # edge-schema catch-up: the sha-unchanged files this engine would otherwise
     # never re-read. Runs once per schema bump, then the meta below stops it.

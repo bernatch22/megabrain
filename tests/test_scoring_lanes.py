@@ -34,7 +34,7 @@ class _Emb:
         self.cost = 0.0
         self.tokens = 0
 
-    def embed(self, texts, batch_size=None):
+    def embed(self, texts, batch_size=None, on_batch=None):
         out = np.zeros((len(texts), DIMS), dtype=np.float32)
         for i, t in enumerate(texts):
             for tok in re.findall(r"[A-Za-z_]+", t.lower()):

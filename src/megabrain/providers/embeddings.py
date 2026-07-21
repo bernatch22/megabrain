@@ -6,6 +6,11 @@ MEGABRAIN_EMBED_MODEL (int8-base64 OR float arrays are both decoded). Disk
 cache under ~/.megabrain/cache keyed by sha1(model + text), so re-indexing a
 near-identical checkout only re-embeds changed content.
 
+Missing batches go out over MEGABRAIN_EMBED_CONCURRENCY parallel requests
+(default 8; a local endpoint — Ollama/LM Studio — defaults to 1: one GPU
+serializes anyway and parallel load can choke it). Results always land by
+input index, so concurrency never reorders rows.
+
 Config is resolved at CONSTRUCTION time (per Embedder instance), not import
 time: setting MEGABRAIN_EMBED_MODEL after import works, tests inject without
 monkeypatching module globals, and two Embedders with different models can
@@ -17,6 +22,8 @@ from __future__ import annotations
 import base64
 import hashlib
 import os
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 import numpy as np
@@ -50,11 +57,19 @@ class Embedder:
         # markdown chunks blow past on the first batch. Repos of small files
         # never hit it, so it surfaced only when a docs-heavy repo was indexed.
         self.max_tokens = int(os.environ.get("MEGABRAIN_EMBED_MAX_TOKENS", "100000"))
+        # Concurrent /embeddings requests in flight. Batches are independent,
+        # so a cold index is latency-bound — N workers divide the wall time by
+        # ~N. Local servers (Ollama/LM Studio) serialize on one GPU and can
+        # choke under parallel load, so a local endpoint defaults to serial.
+        self.workers = int(os.environ.get(
+            "MEGABRAIN_EMBED_CONCURRENCY",
+            "1" if providers._is_local(providers.EMBED_BASE_URL) else "8"))
         self.cache = Path(cache_dir) if cache_dir is not None else \
             Path.home() / ".megabrain/cache" / self.model.replace("/", "_")
         self.cache.mkdir(parents=True, exist_ok=True)
         self.cost = 0.0
         self.tokens = 0
+        self._usage_lock = threading.Lock()
 
     def _cpath(self, text: str) -> Path:
         h = hashlib.sha1(f"{self.model}\x00{text}".encode()).hexdigest()
@@ -82,7 +97,13 @@ class Embedder:
         if cur:
             yield cur
 
-    def embed(self, texts: list[str], batch_size: int | None = None) -> np.ndarray:
+    def embed(self, texts: list[str], batch_size: int | None = None,
+              on_batch=None) -> np.ndarray:
+        """Embed `texts` (cache-first), dispatching the missing batches over
+        `self.workers` concurrent requests. Row order always matches `texts`
+        (each vector lands in its slot by index, never by arrival). Any batch
+        failure aborts the whole call — a partial result would silently index
+        a repo with holes. `on_batch(done, total)` reports request progress."""
         batch_size = batch_size or self.batch
         out: list[np.ndarray | None] = [None] * len(texts)
         missing = []
@@ -92,14 +113,41 @@ class Embedder:
                 out[i] = np.load(p)
             else:
                 missing.append(i)
-        for idxs in self._batches(missing, texts, batch_size):
-            vecs = self._request([texts[i] for i in idxs])
+        batches = list(self._batches(missing, texts, batch_size))
+
+        def _store(idxs: list[int], vecs: list[np.ndarray]) -> None:
             for i, v in zip(idxs, vecs):
                 p = self._cpath(texts[i])
-                tmp = p.with_name(f"{p.stem}.{os.getpid()}.tmp.npy")
+                # pid+thread in the tmp name: two threads embedding the same
+                # text (two concurrent embed() calls in one server process)
+                # must not collide mid-write. replace() stays atomic.
+                tmp = p.with_name(
+                    f"{p.stem}.{os.getpid()}.{threading.get_ident()}.tmp.npy")
                 np.save(tmp, v)
                 tmp.replace(p)   # atomic: concurrent readers never see a partial file
                 out[i] = v
+
+        done = 0
+        if self.workers > 1 and len(batches) > 1:
+            with ThreadPoolExecutor(max_workers=min(self.workers, len(batches))) as ex:
+                futs = {ex.submit(self._request, [texts[i] for i in idxs]): idxs
+                        for idxs in batches}
+                try:
+                    for f in as_completed(futs):
+                        _store(futs[f], f.result())
+                        done += 1
+                        if on_batch is not None:
+                            on_batch(done, len(batches))
+                except BaseException:
+                    for f in futs:   # fail fast; queued batches never start
+                        f.cancel()
+                    raise
+        else:
+            for idxs in batches:
+                _store(idxs, self._request([texts[i] for i in idxs]))
+                done += 1
+                if on_batch is not None:
+                    on_batch(done, len(batches))
         return np.stack(out) if out else np.zeros((0, self.dims or 1024))  # type: ignore[arg-type]
 
     def _request(self, batch: list[str]) -> list[np.ndarray]:
@@ -107,9 +155,11 @@ class Embedder:
                                 self.key, retries=5, timeout=120,
                                 base_url=providers.EMBED_BASE_URL)
         u = d.get("usage", {})
-        self.tokens += u.get("total_tokens", 0)
         cost = u.get("cost")
-        self.cost += cost.get("total_cost", 0.0) if isinstance(cost, dict) else (cost or 0.0)
+        with self._usage_lock:   # _request runs from N worker threads
+            self.tokens += u.get("total_tokens", 0)
+            self.cost += cost.get("total_cost", 0.0) if isinstance(cost, dict) \
+                else (cost or 0.0)
         vecs = []
         for r in sorted(d["data"], key=lambda r: r["index"]):
             e = r["embedding"]

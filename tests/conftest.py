@@ -57,7 +57,8 @@ class FakeEmbedder:
         self.cost = 0.0
         self.tokens = 0
 
-    def embed(self, texts: list[str], batch_size: int = 64) -> np.ndarray:
+    def embed(self, texts: list[str], batch_size: int = 64,
+              on_batch=None) -> np.ndarray:
         out = np.zeros((len(texts), DIMS), dtype=np.float32)
         for i, t in enumerate(texts):
             for tok in re.findall(r"[A-Za-z_]+", t.lower()):
@@ -66,6 +67,8 @@ class FakeEmbedder:
             if n > 0:
                 out[i] /= n
         self.tokens += sum(len(t.split()) for t in texts)
+        if on_batch is not None and texts:
+            on_batch(1, 1)
         return out
 
 

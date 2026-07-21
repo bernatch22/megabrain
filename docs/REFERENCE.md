@@ -158,6 +158,7 @@ answered to know the answer ended.
 | `MEGABRAIN_EMBED_API_KEY` | — | key for a non-OpenRouter embed endpoint |
 | `MEGABRAIN_EMBED_DIMS` | inferred | assert the expected dimensionality |
 | `MEGABRAIN_EMBED_BATCH` | — | shrink request size for local servers |
+| `MEGABRAIN_EMBED_CONCURRENCY` | `8` · `1` on a local endpoint | parallel embed requests during `index` |
 | `MEGABRAIN_ASK_MODEL` | `google/gemini-3.1-flash-lite-preview` · `haiku` on Claude | the narration model |
 | `MEGABRAIN_RERANK_MODEL` | the ask model | model for `search --rerank` / MCP rerank |
 | `MEGABRAIN_FORGE_MODEL` | the ask model | model that writes forged chunkers |

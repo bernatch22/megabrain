@@ -3415,18 +3415,18 @@
      "_index_into",
      "1/2",
      156,
-     259,
+     260,
      "megabrain > megabrain/indexing/indexer.py > def _index_into(store: Store, emb: Embedder, root: Path, name: str, *, force, exclude, strategies, prune_flows, t0, scan_filters=False, on_progress=None) -> dict",
-     "7bb74da666864783bd3c973f73e745f962fcf438"
+     "291f5f46344e64fa7a699b310fa27fef78dddc9b"
     ],
     [
      "block",
      "_index_into",
      "2/2",
-     260,
-     266,
+     261,
+     296,
      "megabrain > megabrain/indexing/indexer.py > def _index_into(store: Store, emb: Embedder, root: Path, name: str, *, force, exclude, strategies, prune_flows, t0, scan_filters=False, on_progress=None) -> dict",
-     "1e3012fadfcfc48d62aa9029f94a38e7b29f636c"
+     "02fe1c7d30cb9533d6ff73e30bda9601cd8f2403"
     ]
    ],
    "skeleton_sha": "7ae8a342b52176099e2b1bf0e1b5364e75de5e2a",
@@ -3505,7 +3505,7 @@
      "_index_into",
      "function",
      158,
-     266,
+     296,
      "def _index_into(store: Store, emb: Embedder, root: Path, name: str, *, force, exclude, strategies, prune_flows, t0, scan_filters=False, on_progress=None) -> dict"
     ]
    ]
@@ -4559,76 +4559,85 @@
      "model_name",
      null,
      1,
-     29,
+     36,
      "megabrain > megabrain/providers/embeddings.py > def model_name() -> str",
-     "435aa114f35e9f9d8c8ad963fc3fe307cde68e36"
+     "5d5a974e94f02c2bf486be275df0bbed2491d2a8"
     ],
     [
-     "class",
-     "Embedder",
+     "method",
+     "Embedder.__init__, Embedder._cpath, Embedder._batches, Embedder.embed",
      null,
-     30,
-     125,
-     "megabrain > megabrain/providers/embeddings.py > class Embedder",
-     "3c578651618a16f0eb39fcd5178dcd5e799f192c"
+     37,
+     151,
+     "megabrain > megabrain/providers/embeddings.py > class Embedder > [Embedder.__init__, Embedder._cpath, Embedder._batches, Embedder.embed]",
+     "40043de8d3cc299ed92146ec683c1e9c26b1f19e"
+    ],
+    [
+     "method",
+     "Embedder._request",
+     null,
+     152,
+     175,
+     "megabrain > megabrain/providers/embeddings.py > class Embedder > def _request(self, batch: list[str]) -> list[np.ndarray]",
+     "5c140bc6edd3e57fef194ca2124eaa8dcebc0a1a"
     ]
    ],
-   "skeleton_sha": "c5f3feb7ae22726388915d68dba07c84e262b1d7",
+   "skeleton_sha": "0055c8ffb3a217d46fc83a67672a7ce100cfe5c8",
    "symbols": [
     [
      "model_name",
      "function",
-     27,
-     29,
+     34,
+     36,
      "def model_name() -> str"
     ],
     [
      "Embedder",
      "class",
-     32,
-     125,
+     39,
+     175,
      "class Embedder"
     ],
     [
      "Embedder.__init__",
      "method",
-     33,
-     57,
+     40,
+     72,
      "def __init__(self, api_key: str | None=None, model: str | None=None, dims: int | None=None, batch: int | None=None, cache_dir: Path | None=None)"
     ],
     [
      "Embedder._cpath",
      "method",
-     59,
-     61,
+     74,
+     76,
      "def _cpath(self, text: str) -> Path"
     ],
     [
      "Embedder.CHARS_PER_TOKEN",
      "class_attr",
-     66,
-     66,
+     81,
+     81,
      "CHARS_PER_TOKEN = 2.5"
     ],
     [
      "Embedder._batches",
      "method",
-     68,
      83,
+     98,
      "def _batches(self, idxs: list[int], texts: list[str], batch_size: int)"
     ],
     [
      "Embedder.embed",
      "method",
-     85,
-     103,
-     "def embed(self, texts: list[str], batch_size: int | None=None) -> np.ndarray"
+     100,
+     151,
+     "def embed(self, texts: list[str], batch_size: int | None=None, on_batch=None) -> np.ndarray"
     ],
     [
      "Embedder._request",
      "method",
-     105,
-     125,
+     153,
+     175,
      "def _request(self, batch: list[str]) -> list[np.ndarray]"
     ]
    ]
