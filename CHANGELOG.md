@@ -1,6 +1,34 @@
 # Changelog
 
-## 0.18.8 — the rerank judge finally sees the code
+## 1.0.0 — megabrain grep: literal search that understands what it found
+
+**New tool: `megabrain grep`** (CLI + `megabrain_grep` over MCP). grep gives
+you lines; this gives you roles. Every match is resolved against the index
+the engine already built and grouped into:
+
+- **DEFINES** — the symbol's definition site
+- **READS** — real code using it, ranked by graph centrality (the site more
+  of the repo depends on outranks the leaf), each with its `← reached from`
+  list: the files whose import/call edges land on it — the dependents grep
+  cannot see
+- **CONFIG/DATA · TESTS · DOCS** — structured, never dropped
+
+One call answers "where is this defined, who reads it, who depends on the
+reader" — the three greps you were about to run, already joined. And an
+ABSENT caller is a finding: on nx#35656, the daemon not appearing in the
+flag-reading file's reached-from list IS the bug. Zero LLM, no vectors
+loaded — one pass over the indexed chunk text, ~50 ms on a 5,600-file repo.
+Known limit, said out loud: it searches the indexed corpus, so a `.json`
+preset the index skips won't match; section overflow is counted, never
+silent.
+
+This closes the standing routing rule "skip megabrain when you know the
+exact string" — now the literal lane is also index-aware. The MCP
+instructions route accordingly.
+
+Below, the two unpublished sections this release folds in.
+
+## 0.18.8 (unreleased) — the rerank judge finally sees the code
 
 The rerank model used to judge each candidate by a one-line card: id, file,
 symbols, and the chunk's FIRST non-empty line — for a whole-file chunk, its
@@ -40,7 +68,7 @@ merge that silently drops a batch's worth of candidates.
 Verified end-to-end on the production path: 18/18 targets kept, median rank
 1.0, median 1.3 s per rerank.
 
-## 0.18.7 — off the preview slug; 3.5-flash-lite measured and declined
+## 0.18.7 (unreleased) — off the preview slug; 3.5-flash-lite measured and declined
 
 `google/gemini-3.1-flash-lite` is now the OpenRouter default, replacing
 `…-flash-lite-preview`. The stable slug exists, preview slugs get retired, and

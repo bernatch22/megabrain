@@ -79,24 +79,24 @@
     ],
     [
      "module",
-     "prune, ask, graph, get, chunks, index, scan, stats",
+     "prune, ask, graph, grep, get, chunks, index, scan, stats",
      null,
      93,
-     184,
-     "megabrain > megabrain/app.py > [prune, ask, graph, get, chunks, index, scan, stats]",
-     "1a8bfb557554c6873bd0215b8ab7554e91c77d53"
+     197,
+     "megabrain > megabrain/app.py > [prune, ask, graph, grep, get, chunks, index, scan, stats]",
+     "8ac18d68918874951e116744c6c60807c2af7db0"
     ],
     [
      "module",
      "flows_list, flow_get, flow_delete, example_queries",
      null,
-     185,
-     257,
+     198,
+     270,
      "megabrain > megabrain/app.py > [flows_list, flow_get, flow_delete, example_queries]",
      "f50fbc80367ca6663cc923184121a81b01d82502"
     ]
    ],
-   "skeleton_sha": "46027543a7c1c57e998d46d14aecde1848277cc8",
+   "skeleton_sha": "5bcb2713130785d5da322a28cf6da1f6ee1cbf24",
    "symbols": [
     [
      "resolve_scope",
@@ -169,66 +169,73 @@
      "def graph(root: Path, mode: str='map', node: str | None=None, source: str | None=None, target: str | None=None, path_filter: str | None=None, reindex: bool=True, label: bool=True) -> dict"
     ],
     [
-     "get",
+     "grep",
      "function",
      143,
-     148,
+     153,
+     "def grep(root: Path, pattern: str, regex: bool=False, ignore_case: bool=False, path_filter: str | None=None, reindex: bool=True) -> dict"
+    ],
+    [
+     "get",
+     "function",
+     156,
+     161,
      "def get(root: Path, sub: str | None, file: str, symbol: str | None=None) -> str"
     ],
     [
      "chunks",
      "function",
-     151,
-     157,
+     164,
+     170,
      "def chunks(root: Path, sub: str | None, file: str, query_str: str, path_filter: str | None=None, reindex: bool=True) -> dict"
     ],
     [
      "index",
      "function",
-     160,
-     165,
+     173,
+     178,
      "def index(root: Path, force: bool=False, exclude=(), scan_filters: bool=False) -> dict"
     ],
     [
      "scan",
      "function",
-     168,
-     177,
+     181,
+     190,
      "def scan(root: Path) -> dict"
     ],
     [
      "stats",
      "function",
-     180,
-     184,
+     193,
+     197,
      "def stats(root: Path) -> dict"
     ],
     [
      "flows_list",
      "function",
-     187,
-     204,
+     200,
+     217,
      "def flows_list(root: Path) -> dict"
     ],
     [
      "flow_get",
      "function",
-     207,
      220,
+     233,
      "def flow_get(root: Path, flow_id: int) -> dict"
     ],
     [
      "flow_delete",
      "function",
-     223,
-     228,
+     236,
+     241,
      "def flow_delete(root: Path, flow_id: int) -> dict"
     ],
     [
      "example_queries",
      "function",
-     231,
-     257,
+     244,
+     270,
      "def example_queries(root: Path, limit: int=6) -> dict"
     ]
    ]
@@ -4950,6 +4957,101 @@
     ]
    ]
   },
+  "megabrain/retrieval/grepx.py": {
+   "chunks": [
+    [
+     "module",
+     "_compile, _enclosing, _classify, grep_repo",
+     null,
+     1,
+     130,
+     "megabrain > megabrain/retrieval/grepx.py > [_compile, _enclosing, _classify, grep_repo]",
+     "e9e5fe54ab56c72755b61b35f5f8d1f4f14244df"
+    ],
+    [
+     "module",
+     "_fmt, render_grep",
+     null,
+     131,
+     161,
+     "megabrain > megabrain/retrieval/grepx.py > [_fmt, render_grep]",
+     "12c42484ddb97e00f87b9e38dd2fad76122c1241"
+    ]
+   ],
+   "skeleton_sha": "59ee826fb614bb0d12d085c016702e2547a69632",
+   "symbols": [
+    [
+     "MAX_PER_SECTION",
+     "constant",
+     32,
+     32,
+     "MAX_PER_SECTION = 40"
+    ],
+    [
+     "MAX_REACHED_FROM",
+     "constant",
+     33,
+     33,
+     "MAX_REACHED_FROM = 4"
+    ],
+    [
+     "_DOC_EXT",
+     "constant",
+     35,
+     35,
+     "_DOC_EXT = {'.md', '.rst', '.txt'}"
+    ],
+    [
+     "_DATA_EXT",
+     "constant",
+     36,
+     36,
+     "_DATA_EXT = {'.json', '.yaml', '.yml', '.toml', '.xml'}"
+    ],
+    [
+     "_compile",
+     "function",
+     39,
+     41,
+     "def _compile(pattern: str, regex: bool, ignore_case: bool) -> re.Pattern"
+    ],
+    [
+     "_enclosing",
+     "function",
+     44,
+     53,
+     "def _enclosing(symbols: list[dict], line: int) -> dict | None"
+    ],
+    [
+     "_classify",
+     "function",
+     56,
+     68,
+     "def _classify(file: str, line: int, sym: dict | None, pattern: str, regex: bool) -> str"
+    ],
+    [
+     "grep_repo",
+     "function",
+     71,
+     130,
+     "def grep_repo(root: Path, pattern: str, regex: bool=False, ignore_case: bool=False, path_filter: str | None=None) -> dict"
+    ],
+    [
+     "_fmt",
+     "function",
+     133,
+     139,
+     "def _fmt(m: dict, arrow: bool=False) -> str"
+    ],
+    [
+     "render_grep",
+     "function",
+     142,
+     161,
+     "def render_grep(res: dict) -> str"
+    ]
+   ]
+  },
   "megabrain/retrieval/issue.py": {
    "chunks": [
     [
@@ -5894,34 +5996,34 @@
      "main",
      "1/3",
      26,
-     122,
+     126,
      "megabrain > megabrain/server/cli.py > def main(argv=None)",
-     "f37c7e282cdf7e0084666e7edd304cc621e4fba5"
+     "d205c2a22b6b61867402758836e47e646b475eac"
     ],
     [
      "block",
      "main",
      "2/3",
-     123,
-     209,
+     127,
+     215,
      "megabrain > megabrain/server/cli.py > def main(argv=None)",
-     "02c33479add2cb71ad7ecd2f5c7a69502740bfe3"
+     "7a3e74edea1a9b7e6657cc4202d56dc58f54e801"
     ],
     [
      "block",
      "main",
      "3/3",
-     210,
-     230,
+     216,
+     243,
      "megabrain > megabrain/server/cli.py > def main(argv=None)",
-     "131ba10e2119297474aa09fe23064d19173aa98d"
+     "df2b7cbe32eef9551e2c5dd78b0ea23bb42133a7"
     ],
     [
      "module",
      "_scan, _render_scan",
      null,
-     231,
-     264,
+     244,
+     277,
      "megabrain > megabrain/server/cli.py > [_scan, _render_scan]",
      "6c4d106b3f64799ed33c25ecfbc89235a70f8628"
     ],
@@ -5929,26 +6031,26 @@
      "block",
      "_dispatch",
      "1/2",
-     265,
-     386,
+     278,
+     401,
      "megabrain > megabrain/server/cli.py > def _dispatch(a, raw: list[Path], root: Path) -> None",
-     "c11bad318d606bb44e504c123837cf579dc16534"
+     "6c55736497c91e667fc8cceffb3c2a65c192846c"
     ],
     [
      "block",
      "_dispatch",
      "2/2",
-     387,
-     457,
+     402,
+     480,
      "megabrain > megabrain/server/cli.py > def _dispatch(a, raw: list[Path], root: Path) -> None",
-     "2795de22828b1fa5769a8ff259e38e7d97b279cd"
+     "6e21fb37b5f4410014f1cddf4bd486c5639be6c5"
     ],
     [
      "module",
      null,
      null,
-     458,
-     461,
+     481,
+     484,
      "megabrain > megabrain/server/cli.py (module level)",
      "494c28ef72c62a5924f4316a400d4193725ae15a"
     ]
@@ -5959,28 +6061,28 @@
      "main",
      "function",
      28,
-     230,
+     243,
      "def main(argv=None)"
     ],
     [
      "_scan",
      "function",
-     233,
-     235,
+     246,
+     248,
      "def _scan(root: Path) -> dict"
     ],
     [
      "_render_scan",
      "function",
-     238,
-     264,
+     251,
+     277,
      "def _render_scan(rep: dict) -> str"
     ],
     [
      "_dispatch",
      "function",
-     267,
-     457,
+     280,
+     480,
      "def _dispatch(a, raw: list[Path], root: Path) -> None"
     ]
    ]
@@ -6354,43 +6456,43 @@
      null,
      null,
      1,
-     62,
+     63,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "72d3db8af2bef7c17c683ff9b348ce14f263fbd6"
+     "640c370f1da0cdd76e657837742da55727ca13a8"
     ],
     [
      "block",
      null,
      "1/3",
-     63,
-     142,
+     64,
+     143,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "516fe1f8a4bf5db7d13ab2fdb63756d8b41d58b1"
+     "7c26006ea77280846563db1f9efd3960256a8168"
     ],
     [
      "block",
      null,
      "2/3",
-     143,
+     144,
      232,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "df4103ac5f702474277cbd562d9455a292a23f8c"
+     "8a43dfa945bc5bf8ef7fbb714e212332a5345b9d"
     ],
     [
      "block",
      null,
      "3/3",
      233,
-     255,
+     285,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "95d6fe0d7fd968b238e5c8191e59c56bf8905ac0"
+     "30370373f838bd5e10b082ce447b6b8603a41204"
     ],
     [
      "function",
      "_scope",
      null,
-     256,
-     265,
+     286,
+     295,
      "megabrain > megabrain/server/mcp.py > def _scope(args: dict) -> tuple[Path, str | None]",
      "1d10e662f4d499a37f52ced42ddfed4a6e7cd428"
     ],
@@ -6398,17 +6500,17 @@
      "block",
      "call_tool",
      "1/2",
-     266,
-     338,
+     296,
+     375,
      "megabrain > megabrain/server/mcp.py > def call_tool(name: str, args: dict) -> str",
-     "f0069e77841f6561718e51e1aecce929bded256c"
+     "a9eaf7e0b9b7c419105af5253a76adf3d089dce8"
     ],
     [
      "block",
      "call_tool",
      "2/2",
-     339,
-     373,
+     376,
+     410,
      "megabrain > megabrain/server/mcp.py > def call_tool(name: str, args: dict) -> str",
      "d4fdfdbe6b77a39a179b93d0390c48688fda920d"
     ],
@@ -6416,8 +6518,8 @@
      "function",
      "main",
      null,
-     374,
-     416,
+     411,
+     453,
      "megabrain > megabrain/server/mcp.py > def main()",
      "16e1a3005113960f1e0740cd3be36b7fce1e73a4"
     ]
@@ -6435,35 +6537,35 @@
      "INSTRUCTIONS",
      "constant",
      48,
-     62,
+     63,
      "INSTRUCTIONS = 'megabrain answers questions about a repo\\'s CODE from a pre-built index, so you don\\'t have to crawl fil"
     ],
     [
      "TOOLS",
      "constant",
-     64,
-     255,
+     65,
+     285,
      "TOOLS = [{'name': 'megabrain_ask', 'description': 'THE primary tool for any how/where/why question about an indexed repo"
     ],
     [
      "_scope",
      "function",
-     258,
-     265,
+     288,
+     295,
      "def _scope(args: dict) -> tuple[Path, str | None]"
     ],
     [
      "call_tool",
      "function",
-     268,
-     373,
+     298,
+     410,
      "def call_tool(name: str, args: dict) -> str"
     ],
     [
      "main",
      "function",
-     376,
-     412,
+     413,
+     449,
      "def main()"
     ]
    ]

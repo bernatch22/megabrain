@@ -140,6 +140,19 @@ def graph(root: Path, mode: str = "map", node: str | None = None,
                       target=target, path_filter=path_filter, label=label)
 
 
+def grep(root: Path, pattern: str, regex: bool = False,
+         ignore_case: bool = False, path_filter: str | None = None,
+         reindex: bool = True) -> dict:
+    """Literal search that understands what it found: every match resolved to
+    its enclosing symbol and classified (defines/reads/config/tests/docs),
+    reads ranked by graph centrality with their incoming edges shown. Zero
+    LLM, no vectors loaded — one pass over the indexed chunk text."""
+    from .retrieval.grepx import grep_repo
+    _maybe_reindex(root, reindex)
+    return grep_repo(root, pattern, regex=regex, ignore_case=ignore_case,
+                     path_filter=path_filter)
+
+
 def get(root: Path, sub: str | None, file: str, symbol: str | None = None) -> str:
     """One file or symbol. Owns resolve+rel_join so a bare name under a scope
     resolves. NOTE: get does NOT auto-reindex — faithful to today's callers

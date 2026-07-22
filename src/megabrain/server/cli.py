@@ -84,6 +84,19 @@ def main(argv=None):
                         "RELATED as a map: file, match span, symbols — ~60%% fewer tokens)")
     p.add_argument("--json", action="store_true")
 
+    p = sub.add_parser("grep",
+                       help="literal search that understands what it found: "
+                            "matches resolved to symbols and classified "
+                            "(DEFINES/READS/CONFIG/TESTS/DOCS), reads ranked by "
+                            "graph centrality with who-reaches-them shown. "
+                            "Zero LLM, ~50ms.")
+    p.add_argument("path")
+    p.add_argument("pattern")
+    p.add_argument("--regex", action="store_true",
+                   help="treat the pattern as a regex (default: literal)")
+    p.add_argument("-i", "--ignore-case", action="store_true")
+    p.add_argument("--json", action="store_true")
+
     p = sub.add_parser("ask")
     p.add_argument("path")
     p.add_argument("question")
@@ -315,6 +328,16 @@ def _dispatch(a, raw: list[Path], root: Path) -> None:
             res = app.query(roots[0], a.task, path_filter=pfs[0], docs=docs)
             print(_json.dumps(res, indent=1) if a.json
                   else render(res, compact=a.compact, related_code=a.full))
+    elif a.cmd == "grep":
+        import json as _json
+
+        from .. import app
+        from ..retrieval.grepx import render_grep
+        from ..storage.store import resolve_root
+        g_root, g_sub = resolve_root(raw[0])
+        res = app.grep(g_root, a.pattern, regex=a.regex,
+                       ignore_case=a.ignore_case, path_filter=g_sub or None)
+        print(_json.dumps(res, indent=1) if a.json else render_grep(res))
     elif a.cmd == "ask":
         # ask STREAMS on the CLI (token-by-token) — it drives stream_events
         # directly rather than app.ask (which is the buffered collector); the

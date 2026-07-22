@@ -10,8 +10,9 @@ from megabrain.server.mcp import TOOLS, _scope, call_tool
 def test_tool_schemas_are_wellformed():
     names = [t["name"] for t in TOOLS]
     # deliberately lean: no get/chunks (the host has Read/Grep for single files)
-    assert names == ["megabrain_ask", "megabrain_search", "megabrain_graph",
-                     "megabrain_index", "megabrain_forge", "megabrain_flows"]
+    assert names == ["megabrain_ask", "megabrain_search", "megabrain_grep",
+                     "megabrain_graph", "megabrain_index", "megabrain_forge",
+                     "megabrain_flows"]
     for t in TOOLS:
         req = t["inputSchema"].get("required", [])
         props = t["inputSchema"]["properties"]
@@ -121,15 +122,25 @@ def test_initialize_ships_the_instructions_over_the_wire():
     """The constant is worthless if the handshake drops it — drive the real
     stdio server and read the field a client would read."""
     import json
+    import os
     import subprocess
     import sys as _sys
+    from pathlib import Path
 
+    import megabrain
     from megabrain.server.mcp import INSTRUCTIONS
     req = json.dumps({"jsonrpc": "2.0", "id": 1, "method": "initialize",
                       "params": {"protocolVersion": "2024-11-05", "capabilities": {},
                                  "clientInfo": {"name": "t", "version": "1"}}})
+    # The subprocess must run the SAME megabrain pytest imported — without
+    # this, `python -m` resolves the pip-installed package and the test
+    # silently validates the wrong code (it only ever passed while the two
+    # texts happened to match).
+    env = {**os.environ,
+           "PYTHONPATH": str(Path(megabrain.__file__).resolve().parents[1])}
     out = subprocess.run([_sys.executable, "-m", "megabrain.mcp_server"],
-                         input=req + "\n", capture_output=True, text=True, timeout=60)
+                         input=req + "\n", capture_output=True, text=True,
+                         timeout=60, env=env)
     res = json.loads(out.stdout.splitlines()[0])["result"]
     assert res["instructions"] == INSTRUCTIONS
     assert res["serverInfo"]["name"] == "megabrain"

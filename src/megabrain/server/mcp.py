@@ -47,9 +47,10 @@ PROTOCOL = "2024-11-05"
 # session that loads this server.
 INSTRUCTIONS = """megabrain answers questions about a repo's CODE from a pre-built index, so you don't have to crawl files to understand it. Retrieval runs NO LLM: it ranks real chunks and returns verbatim code with true line numbers.
 
-Reach for it FIRST on any how/where/why question about an indexed repo — one call usually replaces several rounds of Grep + Read. Skip it when you already know the exact literal string you want; a grep is faster for that.
+Reach for it FIRST on any how/where/why question about an indexed repo — one call usually replaces several rounds of Grep + Read. When you already know the exact literal string, use megabrain_grep: same speed as grep, but each match comes back classified.
 
 Which tool:
+- megabrain_grep — you know the exact identifier/string: every match resolved against the index and grouped into DEFINES / READS (ranked by how much of the repo depends on that file, with who-reaches-it edges) / CONFIG / TESTS / DOCS. One call answers "where is this defined, who reads it, who depends on the reader" — the three greps you were about to run. Zero LLM, ~50ms.
 - megabrain_search — you want the exact code to read: ranked chunks with the real code, noise dropped, plus a cheap LLM rerank. The default for a reproducible bug — when two spans collide, seeing them side by side IS the explanation.
 - megabrain_ask — you want the flow narrated across subsystems with code spliced in at each step (broad questions fan out into sub-agents). The spliced CODE is verbatim and cannot be hallucinated; the PROSE around it is model narration, so verify its claims against that code before acting on them.
 - megabrain_graph — the repo as a map: communities, core abstractions, how two areas connect. Start an unfamiliar codebase here.
@@ -134,6 +135,35 @@ TOOLS = [
                                           "false = pure deterministic retrieval (~200ms)."},
             },
             "required": ["repo_path", "task"],
+        },
+    },
+    {
+        "name": "megabrain_grep",
+        "description": (
+            "Literal search that understands what it found — use it INSTEAD OF "
+            "plain grep when you know the exact identifier/string. Every match "
+            "is resolved against the index and grouped by ROLE: DEFINES (the "
+            "symbol's definition site), READS (real code using it — ranked by "
+            "graph centrality, each with the '← reached from' files whose "
+            "import/call edges land on it, i.e. the dependents grep cannot "
+            "see), CONFIG/DATA, TESTS, DOCS. One call answers 'where is this "
+            "defined, who reads it, who depends on the reader' — the three "
+            "greps you were about to run, already joined. A caller that is "
+            "ABSENT from a read site's reached-from list is a finding, not a "
+            "gap (that missing edge has been the bug). Literal by default; "
+            "regex=true for patterns. Zero LLM, no vectors, ~50ms."),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "repo_path": {"type": "string", "description": "path to the indexed repo root (a sub-path also works — the root is auto-detected from .megabrain)"},
+                "pattern": {"type": "string", "description": "the exact string to find (literal by default; set regex=true for a regex)"},
+                "regex": {"type": "boolean", "default": False,
+                          "description": "treat pattern as a regex (default: literal substring)"},
+                "ignore_case": {"type": "boolean", "default": False},
+                "scope_path": {"type": "string",
+                               "description": "optional repo-relative folder to scope matches to files under it"},
+            },
+            "required": ["repo_path", "pattern"],
         },
     },
     {
@@ -303,6 +333,13 @@ def call_tool(name: str, args: dict) -> str:
                             for a in out["agents"])
             text += f"\n\n— multi-agent: {tr}"
         return text
+    if name == "megabrain_grep":
+        from ..retrieval.grepx import render_grep
+        root, pf = _scope(args)
+        res = app.grep(root, args["pattern"], regex=bool(args.get("regex")),
+                       ignore_case=bool(args.get("ignore_case")),
+                       path_filter=pf)
+        return render_grep(res)
     if name == "megabrain_graph":
         from ..graph import render_graph
         root, pf = _scope(args)
