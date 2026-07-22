@@ -69,6 +69,31 @@ engine at nx (5,606 files) for the first time:
   code; without one, the NuGet behavior stands. nx census: 1,332 → 5,589
   files.
 
+**Validated against 82 real merged fixes, 9 repos, 5 languages** (evals kept
+in `evals/`, local by policy). Ground truth is never hand-made: each case's
+query is the human-written bug description (PR title + body) and its gold set
+is the non-test source files the merged fix actually touched.
+
+- nx + rails (26 cases, mined from local history): gold in the bundle 24/26;
+  rank median 1; after the live rerank the agent receives ~6 files of which
+  ~73% share the gold file's subsystem. Both misses are semantically thin
+  WIRING files (a locator, a `require` list) — the fix's neighborhood was
+  returned correctly, the one-line connection file has nothing for an
+  embedding to grip.
+- pipecat / express / gin / click / requests / ky / sinatra (56 cases mined
+  via the GitHub API, 2 live-rerank reps each = 112 measurements):
+  deterministic signal list carried the gold **112/112**; rerank kept it
+  106/112 with **zero** flip between reps; every survivor ranked **#1**;
+  median 3 files handed to the agent, median 1 unrelated. All 6 drops trace
+  to 3 mined cases that violate the eval's own premise — release/dep-bump
+  PRs whose "query" is a changelog (gold `__version__.py`), where dropping
+  the version file is the defensible judgment. On the 53 valid cases the
+  rerank is 106/106.
+
+The evals found more harness bugs than engine bugs (a merge commit's
+`--name-only` hides the real diff; "non-gold = noise" is unfair when gold is
+one file), which is the intended direction of travel.
+
 Below, the two unpublished sections this release folds in.
 
 ## 0.18.8 (unreleased) — the rerank judge finally sees the code
