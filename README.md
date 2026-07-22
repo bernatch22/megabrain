@@ -72,6 +72,13 @@ defaults:
   at the quality of models costing several times more. A full walkthrough in seconds, for
   fractions of a cent.
 
+**Yes, 3.1 on purpose — `gemini-3.5-flash-lite` was measured and lost.** This model also
+runs the rerank, where completeness is the whole point: 3.1 returned all three files a
+real fix touched in 3 of 3 runs, 3.5 got two of three in 2 of 3. Narration was a tie, and
+3.5 costs 67% more per output token. Recall traded away for a bigger bill is not an
+upgrade. Every default here is a measurement, not a guess — including the ones that look
+out of date. → [the numbers](docs/GUIDE.md#providers-and-models)
+
 ### No keys — your Claude plan + local embeddings
 
 Narration runs on the Claude Code subscription you already pay for, embeddings run on your
