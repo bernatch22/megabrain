@@ -48,11 +48,31 @@ def test_under_budget_output_is_unchanged():
 
 
 def test_single_oversized_chunk_is_line_capped_with_pointer():
+    """No query overlap -> the head window, the pre-existing behavior."""
     res = _res(n=1, body_lines=CHUNK_LINE_CAP + 40)
     out = render_pruned(res, budget=100_000)
     assert f"line {CHUNK_LINE_CAP - 1}" in out       # cap-1 shown
-    assert f"line {CHUNK_LINE_CAP}" not in out       # cap hidden
+    assert f"line {CHUNK_LINE_CAP}\n" not in out     # cap hidden
     assert f"+40 lines — Read src/f1.py:L{1 + CHUNK_LINE_CAP}-" in out
+
+
+def test_cap_window_follows_the_query_not_the_head():
+    """Field report deduction: a 180-line chunk whose relevant method sits
+    deep inside rendered its head — exactly the part the agent didn't need.
+    The cap window must center on the query-matching lines, with BOTH
+    omitted sides pointed at."""
+    n_lines = CHUNK_LINE_CAP + 120
+    lines = [f"filler {i}" for i in range(n_lines)]
+    lines[150] = "def write_usage_wrapping(self, breakpoints):"
+    res = _res(n=1, body_lines=1)
+    res["chunks"][0]["text"] = "\n".join(lines)
+    res["chunks"][0]["end_line"] = n_lines
+    res["query"] = "how does write_usage_wrapping choose breakpoints"
+    out = render_pruned(res, budget=100_000)
+    assert "write_usage_wrapping" in out             # the window found it
+    assert "filler 0" not in out                     # head not shown
+    assert "lines above — Read src/f1.py:L1-" in out
+    assert "— Read src/f1.py:L" in out
 
 
 def test_tests_tail_survives_the_budget():

@@ -5354,9 +5354,9 @@
      "render_pruned",
      null,
      101,
-     179,
+     199,
      "megabrain > megabrain/retrieval/render.py > def render_pruned(res: dict, with_text: bool=True, budget: int | None=None) -> str",
-     "9c8341b4c93e70f843d4c272b5672ae8e992580d"
+     "0b41252d4e9ee96759daf38c79155ffde1a4ea5a"
     ]
    ],
    "skeleton_sha": "3e0941b6ce75d203085baf92e19d4f0598e2c9b9",
@@ -5400,7 +5400,7 @@
      "render_pruned",
      "function",
      118,
-     179,
+     199,
      "def render_pruned(res: dict, with_text: bool=True, budget: int | None=None) -> str"
     ]
    ]
@@ -5409,33 +5409,33 @@
    "chunks": [
     [
      "module",
-     "rerank_model, _hint, _listing",
+     "rerank_model, _score_line, _hint",
      null,
      1,
-     113,
-     "megabrain > megabrain/retrieval/rerank.py > [rerank_model, _hint, _listing]",
-     "53e363b331ef52e588241ba6061cb323b1f09c52"
+     109,
+     "megabrain > megabrain/retrieval/rerank.py > [rerank_model, _score_line, _hint]",
+     "ced3c4f9e5a93b9f68875b28a72ebb4dbce60854"
     ],
     [
      "module",
-     "_parse_ids, _merge_round_robin",
+     "_listing, _parse_ids, _merge_round_robin",
      null,
-     114,
-     137,
-     "megabrain > megabrain/retrieval/rerank.py > [_parse_ids, _merge_round_robin]",
-     "335072037768319806de84c6743881ea51cab9e3"
+     110,
+     145,
+     "megabrain > megabrain/retrieval/rerank.py > [_listing, _parse_ids, _merge_round_robin]",
+     "fbabd3399d0e99544719cec4761e6850fb419d52"
     ],
     [
      "function",
      "llm_rerank",
      null,
-     138,
-     236,
+     146,
+     244,
      "megabrain > megabrain/retrieval/rerank.py > def llm_rerank(res: dict, question: str, model: str | None=None) -> dict",
      "78851e5603c8e5dd54b6eb0856af69a872695dd3"
     ]
    ],
-   "skeleton_sha": "e0c802e99b9bb84c34a8764015389ad1f0ccbf30",
+   "skeleton_sha": "5c8b1988a2269311ee309019ba7295da158c7c10",
    "symbols": [
     [
      "log",
@@ -5487,38 +5487,45 @@
      "_IDENT = re.compile('[A-Za-z_][A-Za-z0-9_]{3,}')"
     ],
     [
-     "_hint",
+     "_score_line",
      "function",
      80,
-     101,
+     85,
+     "def _score_line(ln: str, qtok: set[str]) -> int"
+    ],
+    [
+     "_hint",
+     "function",
+     88,
+     109,
      "def _hint(c: dict, question: str='') -> str"
     ],
     [
      "_listing",
      "function",
-     104,
-     113,
+     112,
+     121,
      "def _listing(chunks: list[dict], question: str, bodies: bool) -> str"
     ],
     [
      "_parse_ids",
      "function",
-     116,
-     122,
+     124,
+     130,
      "def _parse_ids(reply: str) -> list[int]"
     ],
     [
      "_merge_round_robin",
      "function",
-     125,
-     137,
+     133,
+     145,
      "def _merge_round_robin(per_batch: list[list[int]]) -> list[int]"
     ],
     [
      "llm_rerank",
      "function",
-     140,
-     236,
+     148,
+     244,
      "def llm_rerank(res: dict, question: str, model: str | None=None) -> dict"
     ]
    ]

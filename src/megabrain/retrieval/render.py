@@ -147,10 +147,30 @@ def render_pruned(res: dict, with_text: bool = True,
         if text:
             lines = text.rstrip("\n").splitlines()
             if len(lines) > CHUNK_LINE_CAP:
-                shown = lines[:CHUNK_LINE_CAP]
-                cut_from = c["start_line"] + CHUNK_LINE_CAP
-                shown.append(f'… +{len(lines) - CHUNK_LINE_CAP} lines — '
-                             f'Read {c["file"]}:L{cut_from}-{c["end_line"]}')
+                # The cap shows the QUERY-RELEVANT window, not blindly the
+                # head: a 180-line class chunk whose matching method sits at
+                # line 120 would otherwise render exactly the part the agent
+                # does not need (field report: "noise dropped is true across
+                # files, weaker within them"). Window picked by shared-
+                # identifier score, same signal the rerank cards use; no
+                # overlap -> the head, the old behavior.
+                from .rerank import _IDENT, _score_line
+                qtok = {t.lower() for t in _IDENT.findall(res.get("query", ""))}
+                scores = [_score_line(ln, qtok) for ln in lines]
+                best = max(range(len(lines)), key=scores.__getitem__) \
+                    if any(scores) else 0
+                start = max(0, min(best - CHUNK_LINE_CAP // 3,
+                                   len(lines) - CHUNK_LINE_CAP))
+                end = start + CHUNK_LINE_CAP
+                shown = lines[start:end]
+                if start:
+                    shown.insert(0, f'… {start} lines above — Read '
+                                    f'{c["file"]}:L{c["start_line"]}-'
+                                    f'{c["start_line"] + start - 1}')
+                if end < len(lines):
+                    shown.append(f'… +{len(lines) - end} lines — '
+                                 f'Read {c["file"]}:L{c["start_line"] + end}-'
+                                 f'{c["end_line"]}')
                 lines = shown
             body = "\n".join(lines)
             if spent + len(body) <= budget:

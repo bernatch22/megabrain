@@ -77,6 +77,14 @@ def rerank_model() -> str:
 _IDENT = re.compile(r"[A-Za-z_][A-Za-z0-9_]{3,}")
 
 
+def _score_line(ln: str, qtok: set[str]) -> int:
+    """Shared-identifier LENGTH between a line and the question — length, not
+    count, so one rare long name (analyzeSourceFiles) outweighs several
+    generic short ones (project + graph + read). Shared by the rerank card
+    hint and the render's cap-window picker."""
+    return sum(len(t) for t in {w.lower() for w in _IDENT.findall(ln)} & qtok)
+
+
 def _hint(c: dict, question: str = "") -> str:
     """One short line of content per candidate: the chunk line sharing the most
     identifier characters with the question, else the first non-empty line
@@ -95,7 +103,7 @@ def _hint(c: dict, question: str = "") -> str:
     qtok = {t.lower() for t in _IDENT.findall(question)}
     best, score = None, 0
     for ln in lines:
-        s = sum(len(t) for t in {w.lower() for w in _IDENT.findall(ln)} & qtok)
+        s = _score_line(ln, qtok)
         if s > score:
             best, score = ln, s
     return (best or lines[0])[:90]
