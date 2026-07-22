@@ -265,17 +265,28 @@ def prune_search(st: SearchState, query: str, path_filter: str | None = None,
     # honest noise count: chunks living in the bundle's files that we dropped.
     bundle_files = {t["file"] for t in res["tier1"]} | {t["file"] for t in res["tier2"]}
     noise: list[dict] = []
+    noise_map: list[dict] = []
     in_bundle = 0
     for i, m in enumerate(metas):
         if m.file not in bundle_files:
             continue
         in_bundle += 1
-        if include_pruned and m.id not in seen:
-            noise.append(rec(m.to_dict(), fused[i]))
+        if m.id not in seen:
+            # spans-only audit trail, ALWAYS returned: "N pruned as noise" is
+            # unfalsifiable from inside one call unless the caller can SEE
+            # what was pruned (field report: "the rerank may have dropped
+            # something relevant and I'd never know"). Spans, never bodies —
+            # auditing is a glance, expanding is a Read.
+            noise_map.append({"file": m.file, "start_line": m.start_line,
+                              "end_line": m.end_line,
+                              "score": round(float(fused[i]), 3)})
+            if include_pruned:
+                noise.append(rec(m.to_dict(), fused[i]))
     noise.sort(key=lambda c: -c["score"])
+    noise_map.sort(key=lambda c: -c["score"])
     out = {"query": query, "repo": st.repo, "chunks": kept,
            "kept": len(kept), "pruned": max(0, in_bundle - len(kept)),
-           "scanned": in_bundle, "ms": res["ms"]}
+           "scanned": in_bundle, "noise_map": noise_map, "ms": res["ms"]}
     if only_docs:
         # Report whether the lane actually RAN. filter_doc_chunks fails open, so
         # on a repo whose index holds no markdown (the demo checkouts

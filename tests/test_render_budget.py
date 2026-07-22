@@ -84,3 +84,22 @@ def test_tests_tail_survives_the_budget():
     out = render_pruned(res, budget=200)
     assert "tests pinning this behavior" in out
     assert "[99] tests/test_f.py" in out
+
+
+def test_pruned_audit_trail_renders_spans_only():
+    """'112 pruned as noise' is unfalsifiable unless the pruned spans are
+    visible. Top spans render one-per-line, rerank drops flagged, bodies
+    never included."""
+    res = _res(n=2, body_lines=5)
+    res["pruned"] = 3
+    res["noise_map"] = [
+        {"file": "src/dropped.py", "start_line": 10, "end_line": 60,
+         "score": 1.11, "rerank_drop": True},
+        {"file": "src/faint.py", "start_line": 1, "end_line": 9, "score": 0.72},
+    ]
+    out = render_pruned(res, budget=100_000)
+    assert "pruned, auditable (top 2 of 2" in out
+    assert "src/dropped.py L10-60 · `1.11` · dropped by rerank" in out
+    assert "src/faint.py L1-9 · `0.72`" in out
+    # spans only — a pruned body never renders
+    assert out.count("```") == 4              # the 2 signal chunks only

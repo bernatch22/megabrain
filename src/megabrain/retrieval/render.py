@@ -196,4 +196,17 @@ def render_pruned(res: dict, with_text: bool = True,
             L.append(f'  [{c["id"]}] {c["file"]} L{c["start_line"]}-{c["end_line"]}'
                      + (f' · {c["name"]}' if c.get("name") else ""))
         L.append("")
+    # The audit trail: "N pruned as noise" asks for faith unless the pruned
+    # spans are visible (field report: "unfalsifiable from inside a single
+    # call"). Top spans only, one line each, rerank drops flagged — a glance
+    # tells the caller whether anything relevant was cut, a Read expands it.
+    nm = res.get("noise_map") or []
+    if nm:
+        shown = nm[:10]
+        L.append(f'— pruned, auditable (top {len(shown)} of {len(nm)} by score):')
+        for c in shown:
+            flag = " · dropped by rerank" if c.get("rerank_drop") else ""
+            L.append(f'  {c["file"]} L{c["start_line"]}-{c["end_line"]} '
+                     f'· `{c["score"]}`{flag}')
+        L.append("")
     return "\n".join(L)

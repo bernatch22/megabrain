@@ -4823,16 +4823,16 @@
      "prune_search, prune_search_root",
      null,
      231,
-     300,
+     311,
      "megabrain > megabrain/retrieval/bundle.py > [prune_search, prune_search_root]",
-     "a8b578a7389993a140eb119d426e54e6181f380a"
+     "ae4006d9e8cdc6afa9df2ba196b39cb2db65358d"
     ],
     [
      "function",
      "search_multi",
      null,
-     301,
-     338,
+     312,
+     349,
      "megabrain > megabrain/retrieval/bundle.py > def search_multi(roots: list[Path], query: str, path_filters: list[str | None] | None=None, only_docs: bool=False, exclude_docs: bool=False) -> dict",
      "b6b879fc0e9ace8e6ebaede5308cdb4bf13b6c94"
     ]
@@ -4885,21 +4885,21 @@
      "prune_search",
      "function",
      233,
-     291,
+     302,
      "def prune_search(st: SearchState, query: str, path_filter: str | None=None, with_text: bool=True, include_pruned: bool=False, only_docs: bool=False, exclude_docs: bool=False) -> dict"
     ],
     [
      "prune_search_root",
      "function",
-     294,
-     300,
+     305,
+     311,
      "def prune_search_root(root: Path, query: str, path_filter: str | None=None, with_text: bool=True, include_pruned: bool=False, only_docs: bool=False, exclude_docs: bool=False) -> dict"
     ],
     [
      "search_multi",
      "function",
-     303,
-     338,
+     314,
+     349,
      "def search_multi(roots: list[Path], query: str, path_filters: list[str | None] | None=None, only_docs: bool=False, exclude_docs: bool=False) -> dict"
     ]
    ]
@@ -5371,13 +5371,22 @@
      "271b967bad515f17fe4cc7577609c404782b36f7"
     ],
     [
+     "module",
+     null,
+     null,
+     101,
+     115,
+     "megabrain > megabrain/retrieval/render.py (module level)",
+     "00450dc13ff6342cf7448218dff3fb610dc40d98"
+    ],
+    [
      "function",
      "render_pruned",
      null,
-     101,
-     199,
+     116,
+     212,
      "megabrain > megabrain/retrieval/render.py > def render_pruned(res: dict, with_text: bool=True, budget: int | None=None) -> str",
-     "0b41252d4e9ee96759daf38c79155ffde1a4ea5a"
+     "4882f140b6112045d23115dc1b7129f550aaa44c"
     ]
    ],
    "skeleton_sha": "3e0941b6ce75d203085baf92e19d4f0598e2c9b9",
@@ -5421,7 +5430,7 @@
      "render_pruned",
      "function",
      118,
-     199,
+     212,
      "def render_pruned(res: dict, with_text: bool=True, budget: int | None=None) -> str"
     ]
    ]
@@ -5447,13 +5456,22 @@
      "fbabd3399d0e99544719cec4761e6850fb419d52"
     ],
     [
-     "function",
+     "block",
      "llm_rerank",
-     null,
+     "1/2",
      146,
-     244,
+     195,
      "megabrain > megabrain/retrieval/rerank.py > def llm_rerank(res: dict, question: str, model: str | None=None) -> dict",
-     "78851e5603c8e5dd54b6eb0856af69a872695dd3"
+     "a57731f7de0738dc262247b8efc469d3deed1e59"
+    ],
+    [
+     "block",
+     "llm_rerank",
+     "2/2",
+     196,
+     251,
+     "megabrain > megabrain/retrieval/rerank.py > def llm_rerank(res: dict, question: str, model: str | None=None) -> dict",
+     "aa97adba2e58f52bbe4311b42e6d65ecebc8a63b"
     ]
    ],
    "skeleton_sha": "5c8b1988a2269311ee309019ba7295da158c7c10",
@@ -5546,7 +5564,7 @@
      "llm_rerank",
      "function",
      148,
-     244,
+     251,
      "def llm_rerank(res: dict, question: str, model: str | None=None) -> dict"
     ]
    ]

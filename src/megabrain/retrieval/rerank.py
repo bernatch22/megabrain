@@ -234,6 +234,13 @@ def llm_rerank(res: dict, question: str, model: str | None = None) -> dict:
         res["pruned"] = res.get("pruned", 0) + len(noise)
         if "noise" in res:
             res["noise"] = noise + res["noise"]
+        # the judge's drops join the audit trail FIRST — they were signal a
+        # moment ago, so they are the most audit-worthy spans of all
+        res["noise_map"] = ([{"file": c["file"], "start_line": c["start_line"],
+                              "end_line": c["end_line"],
+                              "score": round(float(c.get("score", 0)), 3),
+                              "rerank_drop": True} for c in noise]
+                            + res.get("noise_map", []))
         res["reranked"] = {"model": m, "kept": len(kept),
                            "dropped": len(dropped), "view": view,
                            "batches": n_calls,
