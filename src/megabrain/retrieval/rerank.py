@@ -4,14 +4,36 @@ The deterministic prune is recall-safe by design: every bundle file contributes
 its best chunk, so files that merely SHARE VOCABULARY with the query (tests,
 eval scripts, A/B gates) survive as "signal" and bloat the output. Cosine can't
 tell "implements scoring" from "tests scoring". This lane fixes exactly that:
-a cheap LLM sees a COMPACT view of the candidates (ids + spans + names, no
-bodies, ~2K tokens) and returns only the relevant ids, ordered. The engine then
-keeps/reorders its own verbatim chunks — the model selects, it never writes
-code (same anti-hallucination stance as ask's citation splicing).
+a cheap LLM judges the candidates and returns only the relevant ids, ordered.
+The engine then keeps/reorders its own verbatim chunks — the model selects, it
+never writes code (same anti-hallucination stance as ask's citation splicing).
 
-Fail-open everywhere: no key, timeout, malformed reply, unknown ids -> the
-deterministic result is returned untouched. The LLM is an optimization, never
-a dependency.
+WHAT THE JUDGE SEES is lane-dependent, and it was measured, not assumed
+(6 ground-truth queries x 4 views x 3 reps, nx/rails/megabrain indexes):
+
+  view                        target kept   rank(med)   note
+  1 query-aware line              18/18        2        never misses, judge is humble
+  6-line window                   12/18        -        partial evidence invites
+  full bodies, ONE call           15/18        1          confident WRONG exclusion
+  full bodies, batches of 8       18/18        1        local competition per call
+
+Partial evidence is worse than little evidence: on the cross-subsystem query
+(rails#57197 — the answering file never mentions the state the question asks
+about) every mid-size view dropped the answer 3/3, while the 1-line view and
+the batched view kept it 3/3. Small candidate pools per call keep the judge
+from over-confidently ruling files out; the price is a looser keep (median 7
+vs 4 of ~29 survive) — and completeness beats ordering, so that trade is
+taken. Hence:
+
+  - remote HTTP lane (OpenRouter/compat): full bodies, batches of
+    RERANK_BATCH chunks, parallel calls (~34K tokens ~ $0.009/rerank on
+    flash-lite, +~300ms over the 1-line view)
+  - local endpoint (Ollama serializes; big prompts choke it) and the claude
+    CLI lane (~18s per spawned call): the 1-line query-aware view, one call
+
+Fail-open everywhere, all-or-nothing across batches: no key, timeout, one
+failed batch, malformed reply, unknown ids -> the deterministic result is
+returned untouched. The LLM is an optimization, never a dependency.
 """
 
 from __future__ import annotations
@@ -26,12 +48,16 @@ log = logging.getLogger(__name__)
 
 RERANK_MAX_TOKENS = 300
 RERANK_TIMEOUT = 30
+# Candidates per judging call on the bodies lane. 8 is the measured sweet
+# spot: one 29-candidate call missed 3/18 targets the 8-per-call batches all
+# kept — small pools stop the judge from confidently ruling files out.
+RERANK_BATCH = 8
 
 _PROMPT = """You are reranking code-search results. Question:
 
 {question}
 
-Candidate chunks (id · file:lines · symbols · hint):
+Candidate chunks (id · file:lines · symbols · {view}):
 {listing}
 
 Return ONLY a JSON array of the ids worth reading to answer the question,
@@ -75,6 +101,42 @@ def _hint(c: dict, question: str = "") -> str:
     return (best or lines[0])[:90]
 
 
+def _listing(chunks: list[dict], question: str, bodies: bool) -> str:
+    """The candidate listing for one judging call: header per chunk, then the
+    full verbatim body (bodies lane) or the 1-line query-aware hint."""
+    rows = []
+    for c in chunks:
+        head = (f'[{c["id"]}] {c["file"]}:L{c["start_line"]}-{c["end_line"]} · '
+                f'{c.get("name") or "?"} ({c.get("kind") or "?"})')
+        rows.append(f'{head}\n{c.get("text") or ""}' if bodies
+                    else f'{head} · {_hint(c, question)}')
+    return "\n".join(rows)
+
+
+def _parse_ids(reply: str) -> list[int]:
+    """The first JSON int array in the reply. No array at all is a protocol
+    failure and raises (-> fail open); an empty `[]` is a legitimate verdict."""
+    arr = re.search(r"\[[\d,\s]*\]", reply)
+    if not arr:
+        raise ValueError(f"no id array in reply: {reply[:120]!r}")
+    return [int(x) for x in json.loads(arr.group(0))]
+
+
+def _merge_round_robin(per_batch: list[list[int]]) -> list[int]:
+    """Interleave each batch's ranking by position: every judge's #1 outranks
+    any judge's #2. Batches are score-ordered slices, so within a position the
+    earlier batch held the stronger deterministic candidates and stays first.
+    Measured: median target rank 1.0 across the eval, vs 2.0 for the 1-line
+    single call."""
+    merged, i = [], 0
+    while any(i < len(b) for b in per_batch):
+        for b in per_batch:
+            if i < len(b):
+                merged.append(b[i])
+        i += 1
+    return merged
+
+
 def llm_rerank(res: dict, question: str, model: str | None = None) -> dict:
     """Filter + reorder a prune_search result via one buffered LLM call.
 
@@ -98,10 +160,12 @@ def llm_rerank(res: dict, question: str, model: str | None = None) -> dict:
     # with no OpenRouter key or local endpoint there is no fast lane, so the
     # claude provider remains the (slow but working) fallback.
     chat = providers.chat_text
-    if (model is None and not os.environ.get("MEGABRAIN_RERANK_MODEL")
-            and providers.chat_provider() == "claude"
-            and (providers._is_local(providers.CHAT_BASE_URL)
-                 or providers.find_key(required=False))):
+    is_claude = providers.chat_provider() == "claude"
+    fast_lane = (model is None and not os.environ.get("MEGABRAIN_RERANK_MODEL")
+                 and is_claude
+                 and (providers._is_local(providers.CHAT_BASE_URL)
+                      or providers.find_key(required=False)))
+    if fast_lane:
         from functools import partial
 
         # key resolved HERE for the fast lane: find_chat_key() would return the
@@ -113,19 +177,37 @@ def llm_rerank(res: dict, question: str, model: str | None = None) -> dict:
                                  required=False)
         chat = partial(providers._REGISTRY["openrouter"].chat_text, key=key)
         m = providers.FAST_CHAT_MODEL
-    listing = "\n".join(
-        f'[{c["id"]}] {c["file"]}:L{c["start_line"]}-{c["end_line"]} · '
-        f'{c.get("name") or "?"} ({c.get("kind") or "?"}) · {_hint(c, question)}'
-        for c in chunks)
+    # Bodies go to the judge only on a REMOTE HTTP lane: a local server
+    # (Ollama) serializes and chokes on parallel ~9K-token prompts, and the
+    # claude CLI lane spawns a ~18s process per call — both stay on the
+    # 1-line view, one call. Same local-vs-cloud stance as embed concurrency.
+    http_lane = (not is_claude) or fast_lane
+    bodies = http_lane and not providers._is_local(providers.CHAT_BASE_URL)
+    batch = max(1, int(os.environ.get("MEGABRAIN_RERANK_BATCH",
+                                      str(RERANK_BATCH))))
     try:
-        reply = chat(m, _PROMPT.format(question=question, listing=listing),
-                     RERANK_MAX_TOKENS, timeout=RERANK_TIMEOUT)
-        arr = re.search(r"\[[\d,\s]*\]", reply)
-        ids = [int(x) for x in json.loads(arr.group(0))] if arr else []
+        view = "code" if bodies else "hint"
+
+        def _judge(group: list[dict]) -> list[int]:
+            return _parse_ids(chat(
+                m, _PROMPT.format(question=question, view=view,
+                                  listing=_listing(group, question, bodies)),
+                RERANK_MAX_TOKENS, timeout=RERANK_TIMEOUT))
+
+        n_calls = 1
+        if bodies and len(chunks) > batch:
+            from concurrent.futures import ThreadPoolExecutor
+            groups = [chunks[i:i + batch] for i in range(0, len(chunks), batch)]
+            n_calls = len(groups)
+            with ThreadPoolExecutor(max_workers=len(groups)) as ex:
+                per_batch = list(ex.map(_judge, groups))   # any failure -> open
+            ids = _merge_round_robin(per_batch)
+        else:
+            ids = _judge(chunks)
         by_id = {c["id"]: c for c in chunks}
         kept = [by_id[i] for i in ids if i in by_id]
-        if not kept:                      # model returned nothing usable
-            raise ValueError(f"no valid ids in reply: {reply[:120]!r}")
+        if not kept:                      # model kept nothing usable
+            raise ValueError(f"no valid ids kept: {ids!r}")
         dropped = [c for c in chunks if c["id"] not in set(ids)]
         # A dropped TEST file is not noise — it is often the SPEC. Field case
         # (rails#57197): the subsystem's test file pinned instance identity
@@ -145,7 +227,8 @@ def llm_rerank(res: dict, question: str, model: str | None = None) -> dict:
         if "noise" in res:
             res["noise"] = noise + res["noise"]
         res["reranked"] = {"model": m, "kept": len(kept),
-                           "dropped": len(dropped),
+                           "dropped": len(dropped), "view": view,
+                           "batches": n_calls,
                            "ms": int((time.time() - t0) * 1000)}
     except Exception:
         log.debug("llm rerank failed open", exc_info=True)

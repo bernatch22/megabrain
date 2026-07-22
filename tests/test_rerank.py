@@ -1,6 +1,8 @@
 """llm_rerank: the LLM selects/reorders ids, the engine keeps its own chunks —
 and EVERY failure mode falls open to the deterministic result."""
 
+import json
+
 import pytest
 
 from megabrain.retrieval import rerank as rr
@@ -85,13 +87,67 @@ def test_single_chunk_skips_the_call(chat):
     assert chat["calls"] == []                             # no LLM spent on 1 chunk
 
 
-def test_prompt_is_compact_no_bodies(chat):
+def test_remote_lane_sends_full_bodies(chat):
+    """Measured (6 queries x 4 views x 3 reps): the full-body view is the only
+    one that both never missed the target AND ranked it #1 — partial evidence
+    (a 6-line window) invited confident wrong exclusions, 12/18 kept. On a
+    remote HTTP lane the judge gets the code."""
     chat["reply"] = "[1]"
     rr.llm_rerank(_res(), "how", model="m")
     prompt = chat["calls"][0]["prompt"]
-    assert "def fn1(): pass" not in prompt                 # bodies never sent
-    assert "[1] src/f1.py:L1-9" in prompt                  # compact listing is
-    assert "doc 1" in prompt                               # hint line included
+    assert "def fn1(): pass" in prompt                     # bodies ARE the view
+    assert "[1] src/f1.py:L1-9" in prompt
+
+
+def test_batches_split_and_round_robin_merge(chat, monkeypatch):
+    """>batch chunks on the bodies lane -> one judging call per slice, merged
+    by position (every judge's #1 outranks any judge's #2)."""
+    monkeypatch.setenv("MEGABRAIN_RERANK_BATCH", "4")
+    import re as _re
+
+    def per_batch_reply(model, prompt, max_tokens, **kw):
+        chat["calls"].append({"model": model, "prompt": prompt})
+        ids = _re.findall(r"^\[(\d+)\] src/", prompt, flags=_re.M)
+        return json.dumps([int(i) for i in ids[:2]])       # keep first 2 of each
+    import megabrain.providers as providers
+    monkeypatch.setattr(providers, "chat_text", per_batch_reply)
+    res = rr.llm_rerank(_res(10), "q", model="m")
+    assert len(chat["calls"]) == 3                          # 4+4+2
+    # batches keep [1,2],[5,6],[9,10] -> round-robin: 1,5,9,2,6,10
+    assert [c["id"] for c in res["chunks"]] == [1, 5, 9, 2, 6, 10]
+    assert res["reranked"]["batches"] == 3
+    assert res["reranked"]["view"] == "code"
+
+
+def test_one_failed_batch_fails_open_allowing_no_partial_result(chat, monkeypatch):
+    """All-or-nothing: a partial merge would silently drop a whole batch's
+    worth of candidates — worse than no rerank at all."""
+    monkeypatch.setenv("MEGABRAIN_RERANK_BATCH", "4")
+    calls = {"n": 0}
+
+    def flaky(model, prompt, max_tokens, **kw):
+        calls["n"] += 1
+        if calls["n"] == 2:
+            raise TimeoutError("batch 2 died")
+        return "[1]"
+    import megabrain.providers as providers
+    monkeypatch.setattr(providers, "chat_text", flaky)
+    res = rr.llm_rerank(_res(10), "q", model="m")
+    assert res["reranked"] is False
+    assert len(res["chunks"]) == 10                         # untouched
+
+
+def test_local_endpoint_stays_on_the_compact_view(chat, monkeypatch):
+    """A local server (Ollama) serializes and chokes on parallel ~9K-token
+    prompts — the 1-line query-aware view, one call, is the local lane."""
+    import megabrain.providers as providers
+    monkeypatch.setattr(providers, "CHAT_BASE_URL", "http://localhost:11434/v1")
+    chat["reply"] = "[1]"
+    res = rr.llm_rerank(_res(10), "q", model="m")
+    assert len(chat["calls"]) == 1
+    assert "def fn1(): pass" not in chat["calls"][0]["prompt"]   # no bodies
+    assert "doc 1" in chat["calls"][0]["prompt"]                 # hint view
+    assert res["reranked"]["view"] == "hint"
 
 
 def test_hint_prefers_the_line_sharing_query_identifiers(chat):
@@ -193,6 +249,9 @@ def test_no_key_and_no_local_endpoint_stays_on_the_provider(claude_provider,
     assert res["reranked"] is not False
     assert len(claude_provider["provider"]) == 1
     assert claude_provider["openrouter"] == []
+    # and the CLI lane never carries bodies: each call spawns a ~18s process,
+    # so it stays on the single compact-view call
+    assert res["reranked"]["view"] == "hint"
 
 
 # ------------------------------------------------- dropped tests are the spec

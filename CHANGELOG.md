@@ -1,5 +1,45 @@
 # Changelog
 
+## 0.18.8 — the rerank judge finally sees the code
+
+The rerank model used to judge each candidate by a one-line card: id, file,
+symbols, and the chunk's FIRST non-empty line — for a whole-file chunk, its
+import statement. Field case (nx#35656): the question named
+`analyzeSourceFiles`, the answering file read it at L36, the card showed
+`import { ProjectGraphProjectNode } …` — and the judge dropped the one file
+that answered the question.
+
+What the judge should see was measured, not assumed — 6 ground-truth queries
+across the nx (5,606 files), rails and megabrain indexes, 4 views, 3 reps:
+
+| view | target kept | rank (med) |
+|---|---|---|
+| 1 query-aware line | 18/18 | 2 |
+| 6-line window | 12/18 | – |
+| full bodies, one call | 15/18 | 1 |
+| **full bodies, batches of 8** | **18/18** | **1** |
+
+Two findings drive the design. **Partial evidence is worse than little
+evidence**: on the cross-subsystem query (rails#57197 — the answering file
+never mentions the state the question asks about) the mid-size views dropped
+the answer 3/3 while the 1-line and batched views kept it 3/3. And **one big
+call is the worst of both worlds**: 29 candidates in a single 34K-token prompt
+missed 3/18 targets that the same bodies split into 8-per-call batches all
+kept — small pools stop the judge from confidently ruling files out.
+
+So the rerank now sends **full chunk bodies in batches of 8, judged in
+parallel** (`MEGABRAIN_RERANK_BATCH`), merged by per-batch position. On
+flash-lite that is ~$0.009 and ~+300 ms per rerank. A local endpoint (Ollama
+serializes; parallel 9K-token prompts choke it) and the claude CLI lane
+(~18 s per spawned call) stay on the previous view, now query-aware: the
+card's line is the one sharing the most identifier characters with the
+question, not blindly the first. Fail-open is all-or-nothing across batches —
+one failed batch returns the untouched deterministic result, never a partial
+merge that silently drops a batch's worth of candidates.
+
+Verified end-to-end on the production path: 18/18 targets kept, median rank
+1.0, median 1.3 s per rerank.
+
 ## 0.18.7 — off the preview slug; 3.5-flash-lite measured and declined
 
 `google/gemini-3.1-flash-lite` is now the OpenRouter default, replacing

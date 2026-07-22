@@ -5242,79 +5242,116 @@
    "chunks": [
     [
      "module",
-     "rerank_model, _hint",
+     "rerank_model, _hint, _listing",
      null,
      1,
-     75,
-     "megabrain > megabrain/retrieval/rerank.py > [rerank_model, _hint]",
-     "5570d35d1637674b209512f214bb617715852ccc"
+     113,
+     "megabrain > megabrain/retrieval/rerank.py > [rerank_model, _hint, _listing]",
+     "53e363b331ef52e588241ba6061cb323b1f09c52"
+    ],
+    [
+     "module",
+     "_parse_ids, _merge_round_robin",
+     null,
+     114,
+     137,
+     "megabrain > megabrain/retrieval/rerank.py > [_parse_ids, _merge_round_robin]",
+     "335072037768319806de84c6743881ea51cab9e3"
     ],
     [
      "function",
      "llm_rerank",
      null,
-     76,
-     153,
+     138,
+     236,
      "megabrain > megabrain/retrieval/rerank.py > def llm_rerank(res: dict, question: str, model: str | None=None) -> dict",
-     "83d778925154fde0781e3344ac8fae0e7e23b50a"
+     "78851e5603c8e5dd54b6eb0856af69a872695dd3"
     ]
    ],
-   "skeleton_sha": "0c7bca1d247647c3ec60c043df8ea8417e2747f6",
+   "skeleton_sha": "e0c802e99b9bb84c34a8764015389ad1f0ccbf30",
    "symbols": [
     [
      "log",
      "constant",
-     25,
-     25,
+     47,
+     47,
      "log = logging.getLogger(__name__)"
     ],
     [
      "RERANK_MAX_TOKENS",
      "constant",
-     27,
-     27,
+     49,
+     49,
      "RERANK_MAX_TOKENS = 300"
     ],
     [
      "RERANK_TIMEOUT",
      "constant",
-     28,
-     28,
+     50,
+     50,
      "RERANK_TIMEOUT = 30"
+    ],
+    [
+     "RERANK_BATCH",
+     "constant",
+     54,
+     54,
+     "RERANK_BATCH = 8"
     ],
     [
      "_PROMPT",
      "constant",
-     30,
-     41,
+     56,
+     67,
      "_PROMPT = 'You are reranking code-search results. Question:\\n\\n{question}\\n\\nCandidate chunks (id \u00b7 file:lines \u00b7 symbols"
     ],
     [
      "rerank_model",
      "function",
-     44,
-     48,
+     70,
+     74,
      "def rerank_model() -> str"
     ],
     [
      "_IDENT",
      "constant",
-     51,
-     51,
+     77,
+     77,
      "_IDENT = re.compile('[A-Za-z_][A-Za-z0-9_]{3,}')"
     ],
     [
      "_hint",
      "function",
-     54,
-     75,
+     80,
+     101,
      "def _hint(c: dict, question: str='') -> str"
+    ],
+    [
+     "_listing",
+     "function",
+     104,
+     113,
+     "def _listing(chunks: list[dict], question: str, bodies: bool) -> str"
+    ],
+    [
+     "_parse_ids",
+     "function",
+     116,
+     122,
+     "def _parse_ids(reply: str) -> list[int]"
+    ],
+    [
+     "_merge_round_robin",
+     "function",
+     125,
+     137,
+     "def _merge_round_robin(per_batch: list[list[int]]) -> list[int]"
     ],
     [
      "llm_rerank",
      "function",
-     78,
-     153,
+     140,
+     236,
      "def llm_rerank(res: dict, question: str, model: str | None=None) -> dict"
     ]
    ]

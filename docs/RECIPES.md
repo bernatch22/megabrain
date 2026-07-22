@@ -296,7 +296,10 @@ Three ways to pay less that aren't model swaps:
    over MCP) keeps it to a single call.
 
 The rerank has its own model knob (`MEGABRAIN_RERANK_MODEL`) and falls back to the ask
-model — reranking is cheap, so any fast model works.
+model — reranking is cheap, so any fast model works. On a remote HTTP lane the judge
+sees full chunk bodies in parallel batches of 8 (`MEGABRAIN_RERANK_BATCH`; ~$0.009 and
+~1.3 s per rerank on the default model); a local endpoint stays on a compact one-line
+view so Ollama-class servers aren't fed parallel 9K-token prompts.
 
 ---
 
