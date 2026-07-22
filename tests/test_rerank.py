@@ -94,6 +94,46 @@ def test_prompt_is_compact_no_bodies(chat):
     assert "doc 1" in prompt                               # hint line included
 
 
+def test_hint_prefers_the_line_sharing_query_identifiers(chat):
+    """nx#35656 field case: a whole-file chunk led its card with an import
+    line while the flag the question named (`analyzeSourceFiles`) sat at L36
+    — and the judge, shown no evidence, dropped the one file that answered
+    the question (and ranked it #3 on the runs it survived; #1 on 10/10 with
+    the query-aware hint). The hint must surface the chunk line that shares
+    identifiers with the question, falling back to the first line otherwise."""
+    c = {"text": ("import { Foo } from './config';\n"
+                  "export function build(cfg) {\n"
+                  "  if (cfg.analyzeSourceFiles === true) { run(); }\n"
+                  "}\n")}
+    q = "Where is the analyzeSourceFiles option read and what does it gate?"
+    assert "analyzeSourceFiles === true" in rr._hint(c, q)
+    # no overlap -> first non-empty line, the pre-existing behavior
+    assert rr._hint(c, "how is the rate limit refunded") == \
+        "import { Foo } from './config';"
+    assert rr._hint(c) == "import { Foo } from './config';"
+
+
+def test_hint_weighs_identifier_length_not_count(chat):
+    """One rare long name must outweigh several generic short ones — scoring
+    by token COUNT would send the card to a line of boilerplate that shares
+    `project`+`graph`+`read` over the line with the asked-about flag."""
+    c = {"text": ("// read the project graph config for the graph read path\n"
+                  "flags.analyzeSourceFiles = false;\n")}
+    q = "where is analyzeSourceFiles read in the project graph?"
+    assert "analyzeSourceFiles = false" in rr._hint(c, q)
+
+
+def test_hint_reaches_the_prompt(chat):
+    """The wiring, not just the helper: llm_rerank must pass the question
+    into _hint so the listing card shows the query-relevant line."""
+    chat["reply"] = "[1]"
+    res = _res(2)
+    res["chunks"][0]["text"] = ('import os\n'
+                                'SPECIAL_TOGGLE = True  # gates the recompute\n')
+    rr.llm_rerank(res, "what does SPECIAL_TOGGLE gate", model="m")
+    assert "SPECIAL_TOGGLE" in chat["calls"][0]["prompt"]
+
+
 def test_rerank_model_env_override(monkeypatch):
     monkeypatch.setenv("MEGABRAIN_RERANK_MODEL", "tiny/model")
     assert rr.rerank_model() == "tiny/model"

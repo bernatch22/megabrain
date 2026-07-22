@@ -5245,21 +5245,21 @@
      "rerank_model, _hint",
      null,
      1,
-     58,
+     75,
      "megabrain > megabrain/retrieval/rerank.py > [rerank_model, _hint]",
-     "98cf65818ee73371e2856751bedf1612b89fc165"
+     "5570d35d1637674b209512f214bb617715852ccc"
     ],
     [
      "function",
      "llm_rerank",
      null,
-     59,
-     136,
+     76,
+     153,
      "megabrain > megabrain/retrieval/rerank.py > def llm_rerank(res: dict, question: str, model: str | None=None) -> dict",
-     "ab38a99137bb1e19fb392125fba8691f21ce320c"
+     "83d778925154fde0781e3344ac8fae0e7e23b50a"
     ]
    ],
-   "skeleton_sha": "c49a6a5b44bb7819ffa7c0c509a2111f82cfac6e",
+   "skeleton_sha": "0c7bca1d247647c3ec60c043df8ea8417e2747f6",
    "symbols": [
     [
      "log",
@@ -5297,17 +5297,24 @@
      "def rerank_model() -> str"
     ],
     [
+     "_IDENT",
+     "constant",
+     51,
+     51,
+     "_IDENT = re.compile('[A-Za-z_][A-Za-z0-9_]{3,}')"
+    ],
+    [
      "_hint",
      "function",
-     51,
-     58,
-     "def _hint(c: dict) -> str"
+     54,
+     75,
+     "def _hint(c: dict, question: str='') -> str"
     ],
     [
      "llm_rerank",
      "function",
-     61,
-     136,
+     78,
+     153,
      "def llm_rerank(res: dict, question: str, model: str | None=None) -> dict"
     ]
    ]

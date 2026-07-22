@@ -48,14 +48,31 @@ def rerank_model() -> str:
     return os.environ.get("MEGABRAIN_RERANK_MODEL") or providers.ask_model()
 
 
-def _hint(c: dict) -> str:
-    """One short line of content per candidate: the first non-empty line of the
-    chunk (usually a docstring/signature). Compact view only — never bodies."""
-    for ln in (c.get("text") or "").splitlines():
-        ln = ln.strip().strip('"').strip("'")
-        if ln:
-            return ln[:90]
-    return ""
+_IDENT = re.compile(r"[A-Za-z_][A-Za-z0-9_]{3,}")
+
+
+def _hint(c: dict, question: str = "") -> str:
+    """One short line of content per candidate: the chunk line sharing the most
+    identifier characters with the question, else the first non-empty line
+    (usually a docstring/signature). Compact view only — never bodies.
+
+    Query-aware because the judge can only weigh what the card shows: a
+    whole-file chunk led with its import line while the flag the question
+    named sat at L36, and the rerank dropped the one file that answered it
+    (nx#35656, `analyzeSourceFiles`). Scoring by total shared-identifier
+    LENGTH lets one rare long name outweigh several generic short ones."""
+    lines = [ln.strip().strip('"').strip("'")
+             for ln in (c.get("text") or "").splitlines()]
+    lines = [ln for ln in lines if ln]
+    if not lines:
+        return ""
+    qtok = {t.lower() for t in _IDENT.findall(question)}
+    best, score = None, 0
+    for ln in lines:
+        s = sum(len(t) for t in {w.lower() for w in _IDENT.findall(ln)} & qtok)
+        if s > score:
+            best, score = ln, s
+    return (best or lines[0])[:90]
 
 
 def llm_rerank(res: dict, question: str, model: str | None = None) -> dict:
@@ -98,7 +115,7 @@ def llm_rerank(res: dict, question: str, model: str | None = None) -> dict:
         m = providers.FAST_CHAT_MODEL
     listing = "\n".join(
         f'[{c["id"]}] {c["file"]}:L{c["start_line"]}-{c["end_line"]} · '
-        f'{c.get("name") or "?"} ({c.get("kind") or "?"}) · {_hint(c)}'
+        f'{c.get("name") or "?"} ({c.get("kind") or "?"}) · {_hint(c, question)}'
         for c in chunks)
     try:
         reply = chat(m, _PROMPT.format(question=question, listing=listing),
