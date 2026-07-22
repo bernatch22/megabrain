@@ -111,7 +111,11 @@ TOOLS = [
             "this behavior' section — they are the spec of the mechanism; read them "
             "before changing it. One call hands you the real code, no follow-up "
             "fetch needed. Use it when you want the exact code to read rather than "
-            "a narration — deterministic, no LLM."),
+            "a narration — deterministic, no LLM. One boundary to know: retrieval "
+            "ranks what EXISTS — when the bug is a MISSING call/flag/parameter, "
+            "search shows you the site to inspect but cannot flag the absence. To "
+            "PROVE an absence, megabrain_grep the identifier: zero matches over "
+            "the indexed corpus, grouped by role, is the evidence."),
         "inputSchema": {
             "type": "object",
             "properties": {
