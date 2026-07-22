@@ -96,7 +96,7 @@ def discover(root: Path, exts: tuple[str, ...], exclude=(), *,
                 if report is not None:
                     report.append({"path": rel, "reason": "gitignored"})
                 continue
-            if is_vendored(rel):
+            if is_vendored(rel, root):
                 if report is not None:
                     report.append({"path": rel, "reason": "vendored"})
                 continue

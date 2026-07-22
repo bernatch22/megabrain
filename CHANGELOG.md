@@ -26,6 +26,28 @@ This closes the standing routing rule "skip megabrain when you know the
 exact string" — now the literal lane is also index-aware. The MCP
 instructions route accordingly.
 
+**Two first-index-of-a-big-monorepo bugs fixed** — both found by pointing the
+engine at nx (5,606 files) for the first time:
+
+- **Token-cap 400s now bisect instead of killing the index.** The batcher's
+  chars-per-token estimate is per-language wrong by construction: markdown
+  tokenizes at ~2.8, dense TypeScript at 1.9 — and the 2.5 estimate shipped a
+  131k-token batch against pplx-embed's 120k cap, aborting the whole index.
+  The constant drops to the measured 1.9, and any provider "too many tokens"
+  rejection now splits the batch in half and retries each side: a wrong
+  estimate costs one extra round trip, never the index. A SINGLE text over
+  the cap still fails loudly (that is a chunker-bounds violation), and
+  non-token errors (auth, quota) never bisect.
+- **`packages/` is no longer "vendored" in a JS workspace.** The scan census
+  inherited Linguist's NuGet rule — in .NET, `packages/` holds restored
+  dependencies — but in the JS ecosystem the same name is the universal
+  first-party monorepo convention, and the census proposed skipping nx's
+  entire 4,275-file source tree. A workspace manifest at the root
+  (`pnpm-workspace.yaml`, `nx.json`, `lerna.json`, `turbo.json`,
+  `rush.json`, or `package.json` `workspaces`) now marks `packages/` as
+  code; without one, the NuGet behavior stands. nx census: 1,332 → 5,589
+  files.
+
 Below, the two unpublished sections this release folds in.
 
 ## 0.18.8 (unreleased) — the rerank judge finally sees the code

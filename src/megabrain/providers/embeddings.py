@@ -22,6 +22,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import os
+import re
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -75,10 +76,14 @@ class Embedder:
         h = hashlib.sha1(f"{self.model}\x00{text}".encode()).hexdigest()
         return self.cache / f"{h}.npy"
 
-    # Deliberately pessimistic: the request that hit the cap measured 2.83
-    # chars/token, and denser scripts go lower still. Over-splitting costs one
-    # extra HTTP round trip; under-splitting fails the whole index.
-    CHARS_PER_TOKEN = 2.5
+    # Deliberately pessimistic — and MEASURED, not guessed: markdown-heavy
+    # repos tokenize at ~2.8 chars/token, but the nx TypeScript monorepo came
+    # in at exactly 1.9 (dense code is symbols + split camelCase identifiers),
+    # and a 2.5 estimate shipped a 131k-token batch against a 120k cap and
+    # killed the index. Over-splitting costs one extra HTTP round trip;
+    # under-splitting is caught by the bisect net below — this constant is the
+    # first line, not the guarantee.
+    CHARS_PER_TOKEN = 1.9
 
     def _batches(self, idxs: list[int], texts: list[str], batch_size: int):
         """Group indices into requests bounded by BOTH the item count and the
@@ -138,7 +143,7 @@ class Embedder:
         done = 0
         if self.workers > 1 and len(batches) > 1:
             with ThreadPoolExecutor(max_workers=min(self.workers, len(batches))) as ex:
-                futs = {ex.submit(self._request, [texts[i] for i in idxs]): idxs
+                futs = {ex.submit(self._request_split, [texts[i] for i in idxs]): idxs
                         for idxs in batches}
                 try:
                     for f in as_completed(futs):
@@ -152,11 +157,37 @@ class Embedder:
                     raise
         else:
             for idxs in batches:
-                _store(idxs, self._request([texts[i] for i in idxs]))
+                _store(idxs, self._request_split([texts[i] for i in idxs]))
                 done += 1
                 if on_batch is not None:
                     on_batch(done, len(batches))
         return np.stack(out) if out else np.zeros((0, self.dims or 1024))  # type: ignore[arg-type]
+
+    # Provider phrasings for "this batch has too many tokens" (pplx via
+    # OpenRouter, OpenAI-compat servers, local runtimes). Matched against the
+    # ProviderError text; anything else re-raises untouched.
+    _TOKEN_CAP_RX = re.compile(
+        r"(exceeds? .*tokens|maximum .*tokens|too many tokens|"
+        r"maximum context length|context length exceeded|reduce .*length)",
+        re.I)
+
+    def _request_split(self, batch: list[str]) -> list[np.ndarray]:
+        """`_request`, with the bisect net: a token-cap rejection splits the
+        batch in half and retries each side. CHARS_PER_TOKEN is an estimate
+        and estimates are wrong per-language (2.8 on markdown, 1.9 on dense
+        TypeScript) — a wrong estimate must cost one extra round trip, never
+        the whole index. A SINGLE text still over the cap re-raises: the
+        chunker bounds chunk size, so that is a real configuration error, and
+        failing loudly beats silently skipping content."""
+        from ..errors import ProviderError
+        try:
+            return self._request(batch)
+        except ProviderError as e:
+            if len(batch) < 2 or not self._TOKEN_CAP_RX.search(str(e)):
+                raise
+            mid = len(batch) // 2
+            return (self._request_split(batch[:mid])
+                    + self._request_split(batch[mid:]))
 
     def _request(self, batch: list[str]) -> list[np.ndarray]:
         d = providers.post_json("/embeddings", {"model": self.model, "input": batch},

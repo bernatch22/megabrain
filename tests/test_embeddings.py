@@ -115,3 +115,67 @@ def test_embed_splits_the_request_and_keeps_order(embedder, monkeypatch):
     out = embedder.embed(["a" * 2000, "b" * 2000, "c" * 2000])
     assert len(calls) == 3, f"expected one request per budgeted batch, got {calls}"
     assert out.shape == (3, 2)
+
+
+# ------------------------------------------------- the bisect net (nx field case)
+
+NX_400 = ('openrouter 400: HTTP 400: {"error":{"message":"failed to get '
+          'embeddings: POST /v1/embeddings: 400 Bad Request: Input total size '
+          'exceeds maximum number of allowed tokens: got 131400, maximum is '
+          '120000"}}')
+
+
+def _capped_api(max_texts, calls):
+    """Fake provider that rejects any batch above `max_texts` inputs with the
+    REAL error the nx index died on — the estimate said 100k tokens, the
+    provider counted 131k."""
+    from megabrain.errors import ProviderError
+
+    def fake(path, body, key=None, retries=5, timeout=120, base_url=None):
+        batch = list(body["input"])
+        calls.append(batch)
+        if len(batch) > max_texts:
+            raise ProviderError(NX_400)
+        return {"data": [{"index": i, "embedding": [float(len(t)), 1.0]}
+                         for i, t in enumerate(batch)],
+                "usage": {"total_tokens": 3, "cost": {"total_cost": 0.001}}}
+    return fake
+
+
+def test_token_cap_400_bisects_instead_of_dying(embedder, monkeypatch):
+    """CHARS_PER_TOKEN is per-language wrong by construction; a wrong estimate
+    must cost extra round trips, never the whole index."""
+    calls = []
+    monkeypatch.setattr(providers, "post_json", _capped_api(2, calls))
+    texts = [c * (i + 1) for i, c in enumerate("abcdefg")]  # one 7-text batch
+    out = embedder.embed(texts)
+    assert out.shape == (7, 2)
+    # order preserved: row i encodes len(texts[i]) in its component ratio
+    assert [round(float(r[0] / r[1])) for r in out] == [1, 2, 3, 4, 5, 6, 7]
+    # bisection tree: 7 -> 3+4 -> 1+2 / 2+2; failures retried as halves
+    assert sorted(len(c) for c in calls) == [1, 2, 2, 2, 3, 4, 7]
+
+
+def test_single_oversized_text_still_raises(embedder, monkeypatch):
+    """A single text over the cap is a chunker-bounds violation — loud, not
+    silently skipped (completeness is the contract)."""
+    from megabrain.errors import ProviderError
+    calls = []
+    monkeypatch.setattr(providers, "post_json", _capped_api(0, calls))
+    with pytest.raises(ProviderError, match="exceeds maximum"):
+        embedder.embed(["x" * 50])
+
+
+def test_non_token_errors_never_bisect(embedder, monkeypatch):
+    """Only the token-cap family splits; an auth error must surface on the
+    first try, not after log2(n) pointless retries."""
+    from megabrain.errors import ProviderError
+    calls = []
+
+    def auth_fail(path, body, key=None, retries=5, timeout=120, base_url=None):
+        calls.append(1)
+        raise ProviderError("openrouter 401: Missing Authentication header")
+    monkeypatch.setattr(providers, "post_json", auth_fail)
+    with pytest.raises(ProviderError, match="401"):
+        embedder.embed(["a" * 10, "b" * 10, "c" * 10])
+    assert len(calls) == 1
