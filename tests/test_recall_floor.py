@@ -89,16 +89,24 @@ def test_floor_restores_the_buried_file(buried_repo):
 
 
 def test_floor_is_purely_additive(buried_repo):
-    """Floor ON vs OFF: every file present without the floor is still present
-    with it, in the same tier order — additions only, zero displacement."""
+    """Floor ON vs OFF: CORE is identical and no file is ever lost.
+
+    The invariant is set CONTAINMENT of the whole bundle, not list equality of
+    the RELATED tail — because two additive lanes can trade provenance. Found
+    in the 18-repo eval (shipway / "how does logging get configured"): the
+    flow lane had been adding src/config/schema.ts; with the floor on, the
+    floor claimed it first, the flow lane's capped budget went to a DIFFERENT
+    file instead, and the bundle came out one file LARGER. Asserting list
+    equality called that a violation when the engine was right — so assert
+    what actually matters: CORE untouched, nothing dropped."""
     with load_state(buried_repo) as st:
         st.params = replace(st.params, recall_floor_top=0)
         off = search_with_state(st, QUERY)
     with load_state(buried_repo) as st:
         on = search_with_state(st, QUERY)
     assert [t["file"] for t in off["tier1"]] == [t["file"] for t in on["tier1"]]
-    non_floor_t2 = [t["file"] for t in on["tier2"] if not t.get("via_floor")]
-    assert [t["file"] for t in off["tier2"]] == non_floor_t2
+    assert set(_bundle_files(off)) <= set(_bundle_files(on))
+    assert len(_bundle_files(on)) > len(_bundle_files(off))   # it did add
 
 
 def test_floor_never_lifts_test_files(buried_repo, tmp_path):
