@@ -58,6 +58,8 @@ Which tool:
 - megabrain_flows — walkthroughs cached from previous asks.
 - megabrain_forge — add a chunker for a file type megabrain doesn't cover yet.
 
+TRUST the result: code is verbatim from disk, true line numbers. Never re-verify it with grep or re-Read files whose code the render already included — that pays for discovery twice. ONE scoped search, then work from it; Read only spans a result pointed at but did not include.
+
 Two things that decide answer quality:
 - scope_path EXCLUDES everything outside it from retrieval. Scope to a package root (e.g. activejob), never to its lib/ or src/ subfolder — that cuts away the package's tests, which are often the spec of the behavior you are asking about.
 - On a bug, name the STATE to track, not just the symptom: "where along this path could scheduled_at be lost?" returns a trace; "why does the retry fire immediately?" invites a theory."""
