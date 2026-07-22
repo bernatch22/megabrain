@@ -542,21 +542,30 @@
      "_Splicer, ask, cited_files, _splice",
      null,
      226,
-     338,
+     344,
      "megabrain > megabrain/ask/narrator.py > [_Splicer, ask, cited_files, _splice]",
-     "6e2f11dae35a67235280a084770b0d4c0b2e0dd6"
+     "09b2d5bc8bfc8a68454545bbdeb06f883a860b15"
     ],
     [
      "module",
-     "render_ask, stream_ask",
+     "_paginate, render_ask",
      null,
-     339,
-     441,
-     "megabrain > megabrain/ask/narrator.py > [render_ask, stream_ask]",
-     "a70528cf0ce54605a2b4081721bdd8d3759805fb"
+     345,
+     431,
+     "megabrain > megabrain/ask/narrator.py > [_paginate, render_ask]",
+     "079a4cca574317a8794bc2befb89e78573c8b95c"
+    ],
+    [
+     "function",
+     "stream_ask",
+     null,
+     432,
+     508,
+     "megabrain > megabrain/ask/narrator.py > def stream_ask(root: Path, question: str, out=None, show_map: bool=True, docs_only: bool=False, path_filter: str | None=None, agents: bool | None=None, model: str | None=None) -> None",
+     "fafeb35b15a42d4c1a78f4fb5e82e4150eaa2cae"
     ]
    ],
-   "skeleton_sha": "4efe2d6b023cd221783d2eaee802c67a7503bbb9",
+   "skeleton_sha": "b80fb5c5d6a87488864d170992133efc250f810a",
    "symbols": [
     [
      "DOC_EXTS",
@@ -713,17 +722,31 @@
      "def _splice(out: dict) -> tuple[str, set, set]"
     ],
     [
+     "_BLOCK",
+     "constant",
+     343,
+     344,
+     "_BLOCK = re.compile('\\\\n\\\\*\\\\*`(?P<file>[^`]+)` L(?P<lo>\\\\d+)-(?P<hi>\\\\d+)\\\\*\\\\*[^\\\\n]*\\\\n(?P<fence>`{3,})[^\\\\n]*\\\\n.*?\\"
+    ],
+    [
+     "_paginate",
+     "function",
+     347,
+     387,
+     "def _paginate(body: str, limit: int) -> list[str]"
+    ],
+    [
      "render_ask",
      "function",
-     341,
-     364,
-     "def render_ask(out: dict) -> str"
+     390,
+     431,
+     "def render_ask(out: dict, page: int=1) -> str"
     ],
     [
      "stream_ask",
      "function",
-     367,
-     441,
+     434,
+     508,
      "def stream_ask(root: Path, question: str, out=None, show_map: bool=True, docs_only: bool=False, path_filter: str | None=None, agents: bool | None=None, model: str | None=None) -> None"
     ]
    ]
@@ -6618,7 +6641,7 @@
      1,
      65,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "84eb03908a2b2565314ec772e7690f3dab6b96dd"
+     "5ffc2daf83a41b7a42c6759adcd6e6394aa8e3d6"
     ],
     [
      "block",
@@ -6627,32 +6650,32 @@
      66,
      138,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "8f2f0029fd9a76f91b402eb160542ba46db7d04e"
+     "1b32ebe2c6177ae7fb2a71533c688e28e72267db"
     ],
     [
      "block",
      null,
      "2/3",
      139,
-     234,
+     236,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "d962e227bec9ace587cf8b4fd846fc9842520b51"
+     "02170c43e94dac40a51207044685443eec83bb28"
     ],
     [
      "block",
      null,
      "3/3",
-     235,
-     291,
+     237,
+     297,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "135c50181160e9621588ef896e367e7058e0916c"
+     "0de163b077cc0c8d1a3a1b237e341307ef12e6e1"
     ],
     [
      "function",
      "_scope",
      null,
-     292,
-     301,
+     298,
+     307,
      "megabrain > megabrain/server/mcp.py > def _scope(args: dict) -> tuple[Path, str | None]",
      "1d10e662f4d499a37f52ced42ddfed4a6e7cd428"
     ],
@@ -6660,17 +6683,17 @@
      "block",
      "call_tool",
      "1/2",
-     302,
-     381,
+     308,
+     387,
      "megabrain > megabrain/server/mcp.py > def call_tool(name: str, args: dict) -> str",
-     "a9eaf7e0b9b7c419105af5253a76adf3d089dce8"
+     "027c4b86fff23841269a6513f45acf641486b072"
     ],
     [
      "block",
      "call_tool",
      "2/2",
-     382,
-     416,
+     388,
+     422,
      "megabrain > megabrain/server/mcp.py > def call_tool(name: str, args: dict) -> str",
      "d4fdfdbe6b77a39a179b93d0390c48688fda920d"
     ],
@@ -6678,8 +6701,8 @@
      "function",
      "main",
      null,
-     417,
-     459,
+     423,
+     465,
      "megabrain > megabrain/server/mcp.py > def main()",
      "16e1a3005113960f1e0740cd3be36b7fce1e73a4"
     ]
@@ -6704,28 +6727,28 @@
      "TOOLS",
      "constant",
      67,
-     291,
+     297,
      "TOOLS = [{'name': 'megabrain_ask', 'description': 'THE primary tool for any how/where/why question about an indexed repo"
     ],
     [
      "_scope",
      "function",
-     294,
-     301,
+     300,
+     307,
      "def _scope(args: dict) -> tuple[Path, str | None]"
     ],
     [
      "call_tool",
      "function",
-     304,
-     416,
+     310,
+     422,
      "def call_tool(name: str, args: dict) -> str"
     ],
     [
      "main",
      "function",
-     419,
-     455,
+     425,
+     461,
      "def main()"
     ]
    ]

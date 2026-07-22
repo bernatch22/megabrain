@@ -120,3 +120,67 @@ def test_whole_cite_without_claim_match_stays_whole():
     r = render_ask(_big_out("Some unrelated sentence here.\n[[0]]\nDone."))
     assert "code 1" in r and "code 100" in r
     assert "rest of chunk" not in r
+
+
+# ------------------------------------------------------------- pagination
+
+def _big_ask(n_blocks=6, block_lines=300):
+    """An out whose spliced body far exceeds one page."""
+    text = "Intro prose.\n" + "\n".join(
+        f"Step {k}.\n[[{k}]]" for k in range(n_blocks)) + "\nDone."
+    cands = []
+    for k in range(n_blocks):
+        body = "\n".join(f"code_{k}_{i}" for i in range(block_lines))
+        cands.append({"file": f"src/m{k}.py", "name": f"fn{k}", "kind": "function",
+                      "start_line": 1, "end_line": block_lines, "text": body + "\n"})
+    return {"cands": cands, "text": text, "file_syms": {},
+            "query": "q", "repo": "r", "retrieval_ms": 1, "llm_ms": 1,
+            "result": {"tier1": [], "tier2": []}}
+
+
+def test_long_ask_paginates_never_truncates(monkeypatch):
+    """Field case: an 80KB ask overflowed the MCP host and the agent read a
+    2KB preview. Long walkthroughs paginate at block boundaries — everything
+    is delivered, nothing degraded to pointers."""
+    monkeypatch.setenv("MEGABRAIN_RENDER_BUDGET", "8000")
+    out = _big_ask()
+    p1 = render_ask(out, page=1)
+    assert "page 1/" in p1 and "page=2" in p1
+    assert "Do not act on partial evidence" in p1
+    # a code block is atomic: fences are balanced on every page
+    total_pages = int(p1.split("page 1/")[1].split()[0])
+    seen = ""
+    for i in range(1, total_pages + 1):
+        pg = render_ask(_big_ask(), i)
+        assert pg.count("```") % 2 == 0
+        seen += pg
+    for k in range(6):                       # every block delivered somewhere
+        assert f"code_{k}_0" in seen
+    assert "not cited" not in p1             # footers close the LAST page only
+
+
+def test_short_ask_is_single_page(monkeypatch):
+    monkeypatch.setenv("MEGABRAIN_RENDER_BUDGET", "24000")
+    r = render_ask(_out("See.\n[[0]]\nDone."))
+    assert "page" not in r.split("\n")[1]    # no page tag in the header
+    assert "Do not act on partial" not in r
+
+
+def test_cached_ask_paginates_too(monkeypatch):
+    """Page 2 is what makes pagination cheap: same question hits the flow
+    cache (0ms) and slices the next page — the cached branch must paginate."""
+    monkeypatch.setenv("MEGABRAIN_RENDER_BUDGET", "2000")
+    body = "\n".join(f"line {i} {'x' * 50}" for i in range(200))
+    out = {"query": "q", "repo": "r", "retrieval_ms": 1,
+           "served_from_cache": True, "text": body}
+    p1 = render_ask(out, page=1)
+    p2 = render_ask(dict(out), page=2)
+    assert "page 1/" in p1 and "flow-cached" in p1
+    assert "line 0 " in p1 and "line 0 " not in p2
+    assert p2.splitlines()[1].startswith("repo `r` · ⚡ served from flow cache")
+
+
+def test_page_out_of_range_clamps(monkeypatch):
+    monkeypatch.setenv("MEGABRAIN_RENDER_BUDGET", "8000")
+    last = render_ask(_big_ask(), page=99)
+    assert "Do not act on partial evidence" not in last   # clamped to last page

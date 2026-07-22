@@ -11,6 +11,10 @@
      "description": "explain documentation (markdown) only, instead of code (default false)",
      "type": "boolean"
     },
+    "page": {
+     "description": "long walkthroughs paginate at code-block boundaries instead of overflowing the host limit; when the footer says there are more pages, call again with the SAME question and page=2 (flow-cached, ~0ms). Read every page before acting \u2014 partial evidence ships bugs.",
+     "type": "integer"
+    },
     "question": {
      "description": "how/where/why question, natural language",
      "type": "string"

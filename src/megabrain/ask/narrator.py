@@ -338,25 +338,92 @@ def _splice(out: dict) -> tuple[str, set, set]:
     return _SEL.sub(sub, text).strip(), seen, cited
 
 
-def render_ask(out: dict) -> str:
+# A spliced code block in the rendered body: our own header line, then the
+# fence. Matched for the output budget below.
+_BLOCK = re.compile(r"\n\*\*`(?P<file>[^`]+)` L(?P<lo>\d+)-(?P<hi>\d+)\*\*[^\n]*\n"
+                    r"(?P<fence>`{3,})[^\n]*\n.*?\n(?P=fence)\n", re.S)
+
+
+def _paginate(body: str, limit: int) -> list[str]:
+    """Split the walkthrough into pages at BLOCK boundaries — a spliced code
+    block is atomic, prose splits at its own newlines. Everything is
+    delivered, nothing degraded; the reader spends one extra turn instead of
+    losing evidence.
+
+    Field case (pytest#14763 duel): a broad fan-out ask rendered 80,719
+    chars; the MCP host refused it, persisted it to a file, and the agent
+    read two-thirds and moved on — then shipped a bug the unread third might
+    have prevented. Page 2 costs ~0ms: the ask is flow-cached, so the same
+    question again serves from cache and slices the next page."""
+    if len(body) <= limit:
+        return [body]
+    # atomic pieces: prose segments and code blocks, in order
+    pieces: list[str] = []
+    pos = 0
+    for m in _BLOCK.finditer(body):
+        if m.start() > pos:
+            pieces.append(body[pos:m.start()])
+        pieces.append(m.group(0))
+        pos = m.end()
+    if pos < len(body):
+        pieces.append(body[pos:])
+    pages: list[str] = []
+    cur = ""
+    for p in pieces:
+        while len(p) > limit and not _BLOCK.match(p):   # oversized prose
+            if cur:
+                pages.append(cur)
+                cur = ""
+            cut = p.rfind("\n", 0, limit)
+            cut = cut if cut > 0 else limit
+            pages.append(p[:cut])
+            p = p[cut:]
+        if cur and len(cur) + len(p) > limit:
+            pages.append(cur)
+            cur = ""
+        cur += p
+    if cur:
+        pages.append(cur)
+    return pages
+
+
+def render_ask(out: dict, page: int = 1) -> str:
+    import os as _os
+    limit = int(_os.environ.get("MEGABRAIN_RENDER_BUDGET", "24000"))
     text = out["text"]
     if out.get("served_from_cache"):
         # already a fully rendered body (cached from a previous splice) — wrap
-        # it in a fresh header; never fall through to the citation path.
+        # it in a fresh header. THIS is what makes page 2 free: the same
+        # question hits the flow cache (0ms) and slices the next page.
+        pages = _paginate(text, limit)
+        page = max(1, min(page, len(pages)))
+        tag = f' · page {page}/{len(pages)}' if len(pages) > 1 else ""
+        more = (f'\n\n— page {page}/{len(pages)}: call megabrain_ask again '
+                f'with the SAME question and page={page + 1} (flow-cached, '
+                f'~0ms).' if page < len(pages) else "")
         return (f'# megabrain — "{out["query"]}"\n'
-                f'repo `{out["repo"]}` · ⚡ served from flow cache · '
-                f'{out["retrieval_ms"]}ms retrieval + 0ms explain\n\n{text}')
+                f'repo `{out["repo"]}` · ⚡ served from flow cache{tag} · '
+                f'{out["retrieval_ms"]}ms retrieval + 0ms explain\n\n'
+                f'{pages[page - 1]}{more}')
     if not text or not _SEL.search(text):
         return render(out["result"])  # fail-open: unfiltered bundle
     cands = out["cands"]
     body, seen, cited = _splice(out)
+    pages = _paginate(body, limit)
+    page = max(1, min(page, len(pages)))
+    tag = f' · page {page}/{len(pages)}' if len(pages) > 1 else ""
     n_files = len({cands[k]["file"] for k in cited})
     L = [f'# megabrain — "{out["query"]}"',
-         f'repo `{out["repo"]}` · {len(seen)} code spans · {n_files} files · '
+         f'repo `{out["repo"]}` · {len(seen)} code spans · {n_files} files{tag} · '
          f'{out["retrieval_ms"]}ms retrieval + {out["llm_ms"]}ms explain\n',
-         body]
+         pages[page - 1]]
+    if page < len(pages):
+        L.append(f'\n— page {page}/{len(pages)} — EVERYTHING above is '
+                 f'complete but there is MORE: call megabrain_ask again with '
+                 f'the SAME question and page={page + 1} (flow-cached, ~0ms). '
+                 f'Do not act on partial evidence.')
     dropped = [c for i, c in enumerate(cands) if i not in cited]
-    if dropped:
+    if dropped and page == len(pages):     # footers close the LAST page
         items = ", ".join(f'{c["file"].rsplit("/", 1)[-1]}:{c["start_line"]}'
                           for c in dropped[:12])
         L.append(f'\n— not cited ({len(dropped)}): {items}')

@@ -47,10 +47,10 @@ PROTOCOL = "2024-11-05"
 # session that loads this server.
 INSTRUCTIONS = """megabrain answers questions about a repo's CODE from a pre-built index, so you don't have to crawl files to understand it. Retrieval runs NO LLM: it ranks real chunks and returns verbatim code with true line numbers.
 
-Reach for it FIRST on any how/where/why question about an indexed repo — one call usually replaces several rounds of Grep + Read. When you already know the exact literal string, use megabrain_grep: same speed as grep, but each match comes back classified.
+Reach for it FIRST on any how/where/why question about an indexed repo — one call usually replaces several rounds of Grep + Read. For exact literal strings use megabrain_grep.
 
 Which tool:
-- megabrain_grep — you know the exact identifier/string: every match resolved against the index and grouped into DEFINES / READS (ranked by how much of the repo depends on that file, with who-reaches-it edges) / CONFIG / TESTS / DOCS. One call answers "where is this defined, who reads it, who depends on the reader" — the three greps you were about to run. Zero LLM, ~50ms.
+- megabrain_grep — you know the exact identifier/string: every match resolved against the index and grouped into DEFINES / READS (ranked by dependents, with who-reaches-it edges) / CONFIG / TESTS / DOCS. One call answers "where is this defined, who reads it, who depends on the reader". Zero LLM, ~50ms.
 - megabrain_search — you want the exact code to read: ranked chunks with the real code, noise dropped, plus a cheap LLM rerank. The default for a reproducible bug — when two spans collide, seeing them side by side IS the explanation.
 - megabrain_ask — you want the flow narrated across subsystems with code spliced in at each step (broad questions fan out into sub-agents). The spliced CODE is verbatim and cannot be hallucinated; the PROSE around it is model narration, so verify its claims against that code before acting on them.
 - megabrain_graph — the repo as a map: communities, core abstractions, how two areas connect. Start an unfamiliar codebase here.
@@ -58,7 +58,7 @@ Which tool:
 - megabrain_flows — walkthroughs cached from previous asks.
 - megabrain_forge — add a chunker for a file type megabrain doesn't cover yet.
 
-TRUST the result: code is verbatim from disk, true line numbers. Never re-verify it with grep or re-Read files whose code the render already included — that pays for discovery twice. ONE scoped search, then work from it; Read only spans a result pointed at but did not include.
+TRUST the CODE, verify the PROSE. Spliced code is verbatim from disk with true line numbers — never re-verify it with grep or re-Read files whose code the render included. But ask's prose is narration: check its behavior claims (who calls what, when) against the code before hooking into anything (one narration called a summary path "failure-only"; it also serves -rP). ONE scoped search, then work from it.
 
 Two things that decide answer quality:
 - scope_path EXCLUDES everything outside it from retrieval. Scope to a package root (e.g. activejob), never to its lib/ or src/ subfolder — that cuts away the package's tests, which are often the spec of the behavior you are asking about.
@@ -95,6 +95,12 @@ TOOLS = [
                 "agents": {"type": "boolean",
                            "description": "true = force the multi-agent fan-out, false = never fan out; "
                                           "omit for AUTO (fan out only when the question is broad)"},
+                "page": {"type": "integer",
+                         "description": "long walkthroughs paginate at code-block boundaries "
+                                        "instead of overflowing the host limit; when the footer "
+                                        "says there are more pages, call again with the SAME "
+                                        "question and page=2 (flow-cached, ~0ms). Read every "
+                                        "page before acting — partial evidence ships bugs."},
             },
             "required": ["repo_path", "question"],
         },
@@ -333,7 +339,7 @@ def call_tool(name: str, args: dict) -> str:
         out = app.ask(root, args["question"], path_filter=pf,
                       docs_only=bool(args.get("docs")),
                       agents=args.get("agents"))
-        text = render_ask(out)
+        text = render_ask(out, page=int(args.get("page") or 1))
         if out.get("agents"):
             tr = " · ".join(f'{a["label"]}({len(a["files"])}f)'
                             for a in out["agents"])
