@@ -108,7 +108,11 @@ def test_render_sections_and_zero(grep_repo_fs):
     assert "← reached from: engine.py" in out
     assert "TESTS" in out and "DOCS" in out
     empty = render_grep(grep_repo(grep_repo_fs, "no_such_identifier_anywhere"))
-    assert "0 match(es)" in empty and "index fresh" in empty
+    # zero is often THE answer (a flag nobody sets inherits the default):
+    # stated as verified absence, never as self-doubt — with the honest scope
+    assert "0 match(es)" in empty and "verified absence" in empty
+    assert "index fresh" not in empty
+    assert "lockfiles" in empty                    # the not-covered caveat
 
 
 def test_render_caps_are_loud(grep_repo_fs, monkeypatch):

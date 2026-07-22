@@ -144,7 +144,16 @@ def render_grep(res: dict) -> str:
     head = (f'# megabrain grep "{res["pattern"]}" · '
             f'{res["matches"]} match(es) in {res["files"]} file(s)')
     if res["matches"] == 0:
-        return head + "\n(no matches in the indexed corpus — is the index fresh?)"
+        # Zero is often THE answer (a flag nobody sets inherits its default —
+        # proof of absence), and the entry paths refresh a stale index before
+        # searching, so hedging here undermined the one result that mattered
+        # (field report: "esa línea siembra duda"). State it as evidence, with
+        # the honest scope: the INDEXED corpus — lockfiles, config JSON and
+        # other files the scan skips are not covered.
+        return head + ("\n(0 matches — verified absence over the indexed "
+                       "corpus, refreshed before this search. Files the index "
+                       "skips — lockfiles, config JSON, binaries — are not "
+                       "covered; plain grep those.)")
     parts = [head]
     titles = {"defines": "DEFINES", "reads": "READS (by graph centrality)",
               "config": "CONFIG/DATA", "tests": "TESTS", "docs": "DOCS"}

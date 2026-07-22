@@ -293,3 +293,25 @@ def test_render_shows_the_tests_tail(chat):
     out = render_pruned(res, with_text=False)
     assert "tests pinning this behavior" in out
     assert "[99] tests/test_f1.py L1-40 · test_fn1_behavior" in out
+
+
+# --------------------------------------------------- re-export chunk labeling
+
+def test_reexport_chunks_are_labeled_for_the_judge(chat):
+    """click field case, twice: __init__.py (73 lines of re-exports) scored
+    0.86+ and survived the rerank — it names every symbol and implements
+    none. The judge's card now carries the fact; nothing is auto-dropped."""
+    chat["reply"] = "[1]"
+    res = _res(2)
+    res["chunks"][1]["text"] = "\n".join(
+        [f"from .mod{i} import thing{i} as thing{i}" for i in range(20)])
+    rr.llm_rerank(res, "where is thing3 implemented", model="m")
+    prompt = chat["calls"][0]["prompt"]
+    assert prompt.count("MOSTLY RE-EXPORTS") == 1          # tagged
+    assert "[1] src/f1.py" in prompt.split("MOSTLY")[0]    # f1 untagged
+
+
+def test_implementation_chunks_are_never_mislabeled(chat):
+    chat["reply"] = "[1]"
+    rr.llm_rerank(_res(3), "q", model="m")
+    assert "RE-EXPORTS" not in chat["calls"][0]["prompt"]

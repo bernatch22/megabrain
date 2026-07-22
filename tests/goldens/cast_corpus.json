@@ -5038,9 +5038,9 @@
      "_fmt, render_grep",
      null,
      131,
-     161,
+     170,
      "megabrain > megabrain/retrieval/grepx.py > [_fmt, render_grep]",
-     "12c42484ddb97e00f87b9e38dd2fad76122c1241"
+     "bc359baa9aa50da6d846b2207072fe0c9a0325cf"
     ]
    ],
    "skeleton_sha": "59ee826fb614bb0d12d085c016702e2547a69632",
@@ -5112,7 +5112,7 @@
      "render_grep",
      "function",
      142,
-     161,
+     170,
      "def render_grep(res: dict) -> str"
     ]
    ]
@@ -5384,9 +5384,9 @@
      "render_pruned",
      null,
      144,
-     236,
+     239,
      "megabrain > megabrain/retrieval/render.py > def render_pruned(res: dict, with_text: bool=True, budget: int | None=None) -> str",
-     "d24232a352de9b4323859afe970f2f15f2417794"
+     "4089930e63bd933e8d9735d47c1b971b57f45f39"
     ]
    ],
    "skeleton_sha": "0028028c4ad76a4b775b7b45daec6fc7e2b2d7b4",
@@ -5437,7 +5437,7 @@
      "render_pruned",
      "function",
      146,
-     236,
+     239,
      "def render_pruned(res: dict, with_text: bool=True, budget: int | None=None) -> str"
     ]
    ]
@@ -5446,28 +5446,28 @@
    "chunks": [
     [
      "module",
-     "rerank_model, _score_line, _hint",
+     "rerank_model, _score_line, _is_reexport_chunk",
      null,
      1,
-     109,
-     "megabrain > megabrain/retrieval/rerank.py > [rerank_model, _score_line, _hint]",
-     "ced3c4f9e5a93b9f68875b28a72ebb4dbce60854"
+     104,
+     "megabrain > megabrain/retrieval/rerank.py > [rerank_model, _score_line, _is_reexport_chunk]",
+     "bf9a1a6f2b9986124312c45c56cabb541459950b"
     ],
     [
      "module",
-     "_listing, _parse_ids, _merge_round_robin",
+     "_hint, _listing, _parse_ids, _merge_round_robin",
      null,
-     110,
-     145,
-     "megabrain > megabrain/retrieval/rerank.py > [_listing, _parse_ids, _merge_round_robin]",
-     "fbabd3399d0e99544719cec4761e6850fb419d52"
+     105,
+     166,
+     "megabrain > megabrain/retrieval/rerank.py > [_hint, _listing, _parse_ids, _merge_round_robin]",
+     "e743fee777ae3fc4293283d42ec5b5a1d150aa7c"
     ],
     [
      "block",
      "llm_rerank",
      "1/2",
-     146,
-     195,
+     167,
+     216,
      "megabrain > megabrain/retrieval/rerank.py > def llm_rerank(res: dict, question: str, model: str | None=None) -> dict",
      "a57731f7de0738dc262247b8efc469d3deed1e59"
     ],
@@ -5475,13 +5475,13 @@
      "block",
      "llm_rerank",
      "2/2",
-     196,
-     251,
+     217,
+     272,
      "megabrain > megabrain/retrieval/rerank.py > def llm_rerank(res: dict, question: str, model: str | None=None) -> dict",
      "aa97adba2e58f52bbe4311b42e6d65ecebc8a63b"
     ]
    ],
-   "skeleton_sha": "5c8b1988a2269311ee309019ba7295da158c7c10",
+   "skeleton_sha": "14e872876cda23863e4b4d2a95d181925c70d6e4",
    "symbols": [
     [
      "log",
@@ -5540,38 +5540,52 @@
      "def _score_line(ln: str, qtok: set[str]) -> int"
     ],
     [
+     "_REEXPORT",
+     "constant",
+     89,
+     91,
+     "_REEXPORT = re.compile('^\\\\s*(from\\\\s+\\\\S+\\\\s+import|import\\\\s|export\\\\s*(\\\\{|\\\\*|default\\\\s)|__all__|module\\\\.exports|r"
+    ],
+    [
+     "_is_reexport_chunk",
+     "function",
+     94,
+     104,
+     "def _is_reexport_chunk(text: str) -> bool"
+    ],
+    [
      "_hint",
      "function",
-     88,
-     109,
+     107,
+     128,
      "def _hint(c: dict, question: str='') -> str"
     ],
     [
      "_listing",
      "function",
-     112,
-     121,
+     131,
+     142,
      "def _listing(chunks: list[dict], question: str, bodies: bool) -> str"
     ],
     [
      "_parse_ids",
      "function",
-     124,
-     130,
+     145,
+     151,
      "def _parse_ids(reply: str) -> list[int]"
     ],
     [
      "_merge_round_robin",
      "function",
-     133,
-     145,
+     154,
+     166,
      "def _merge_round_robin(per_batch: list[list[int]]) -> list[int]"
     ],
     [
      "llm_rerank",
      "function",
-     148,
-     251,
+     169,
+     272,
      "def llm_rerank(res: dict, question: str, model: str | None=None) -> dict"
     ]
    ]

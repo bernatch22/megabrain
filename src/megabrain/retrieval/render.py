@@ -171,8 +171,11 @@ def render_pruned(res: dict, with_text: bool = True,
     omitted = 0
     for rank, c in enumerate(res["chunks"], 1):
         label = c["name"] or c["kind"]
+        from .rerank import _is_reexport_chunk
+        retag = " · re-exports" if _is_reexport_chunk(c.get("text") or "") else ""
         L.append(f'### {rank}. [{c["id"]}] {c["file"]} '
-                 f'L{c["start_line"]}-{c["end_line"]} · {label} · `{c["score"]:.3f}`')
+                 f'L{c["start_line"]}-{c["end_line"]} · {label} · '
+                 f'`{c["score"]:.3f}`{retag}')
         text = c.get("text") if with_text else None
         if text:
             lines = text.rstrip("\n").splitlines()

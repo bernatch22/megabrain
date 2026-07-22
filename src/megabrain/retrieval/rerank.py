@@ -85,6 +85,25 @@ def _score_line(ln: str, qtok: set[str]) -> int:
     return sum(len(t) for t in {w.lower() for w in _IDENT.findall(ln)} & qtok)
 
 
+# Lines that re-export rather than implement, across the indexed languages.
+_REEXPORT = re.compile(
+    r"^\s*(from\s+\S+\s+import|import\s|export\s*(\{|\*|default\s)|"
+    r"__all__|module\.exports|require\s*\()")
+
+
+def _is_reexport_chunk(text: str) -> bool:
+    """A chunk that is mostly import/export lines matches queries by pure
+    VOCABULARY — it names every symbol and implements none. Field case
+    (click#3362, twice): src/click/__init__.py, 73 lines of re-exports,
+    scored 0.86+ and survived the rerank. The judge (and the reader) get the
+    fact as a label; nothing is dropped by it."""
+    lines = [ln for ln in (text or "").splitlines()
+             if ln.strip() and not ln.strip().startswith(("#", '"', "'"))]
+    if len(lines) < 5:
+        return False
+    return sum(1 for ln in lines if _REEXPORT.match(ln)) / len(lines) >= 0.7
+
+
 def _hint(c: dict, question: str = "") -> str:
     """One short line of content per candidate: the chunk line sharing the most
     identifier characters with the question, else the first non-empty line
@@ -114,8 +133,10 @@ def _listing(chunks: list[dict], question: str, bodies: bool) -> str:
     full verbatim body (bodies lane) or the 1-line query-aware hint."""
     rows = []
     for c in chunks:
+        tag = " · MOSTLY RE-EXPORTS (names symbols, implements none)" \
+            if _is_reexport_chunk(c.get("text") or "") else ""
         head = (f'[{c["id"]}] {c["file"]}:L{c["start_line"]}-{c["end_line"]} · '
-                f'{c.get("name") or "?"} ({c.get("kind") or "?"})')
+                f'{c.get("name") or "?"} ({c.get("kind") or "?"}){tag}')
         rows.append(f'{head}\n{c.get("text") or ""}' if bodies
                     else f'{head} · {_hint(c, question)}')
     return "\n".join(rows)
