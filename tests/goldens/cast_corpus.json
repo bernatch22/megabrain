@@ -5371,25 +5371,25 @@
      "271b967bad515f17fe4cc7577609c404782b36f7"
     ],
     [
-     "module",
-     null,
+     "function",
+     "_query_window",
      null,
      101,
-     115,
-     "megabrain > megabrain/retrieval/render.py (module level)",
-     "00450dc13ff6342cf7448218dff3fb610dc40d98"
+     143,
+     "megabrain > megabrain/retrieval/render.py > def _query_window(lines: list[str], query: str, char_budget: int) -> tuple[int, int]",
+     "d128bbb0064b63844023f623d1a7d8f15fafe62b"
     ],
     [
      "function",
      "render_pruned",
      null,
-     116,
-     212,
+     144,
+     236,
      "megabrain > megabrain/retrieval/render.py > def render_pruned(res: dict, with_text: bool=True, budget: int | None=None) -> str",
-     "4882f140b6112045d23115dc1b7129f550aaa44c"
+     "d24232a352de9b4323859afe970f2f15f2417794"
     ]
    ],
-   "skeleton_sha": "3e0941b6ce75d203085baf92e19d4f0598e2c9b9",
+   "skeleton_sha": "0028028c4ad76a4b775b7b45daec6fc7e2b2d7b4",
    "symbols": [
     [
      "lang_of",
@@ -5420,17 +5420,24 @@
      "RENDER_BUDGET = 24000"
     ],
     [
-     "CHUNK_LINE_CAP",
+     "MIN_WINDOW_CHARS",
      "constant",
      115,
      115,
-     "CHUNK_LINE_CAP = 80"
+     "MIN_WINDOW_CHARS = 800"
+    ],
+    [
+     "_query_window",
+     "function",
+     118,
+     143,
+     "def _query_window(lines: list[str], query: str, char_budget: int) -> tuple[int, int]"
     ],
     [
      "render_pruned",
      "function",
-     118,
-     212,
+     146,
+     236,
      "def render_pruned(res: dict, with_text: bool=True, budget: int | None=None) -> str"
     ]
    ]

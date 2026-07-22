@@ -110,16 +110,46 @@ def render(res: dict, compact: bool = False, related_code: bool = False) -> str:
 # is chunk-list completeness, and every omitted body says exactly what to
 # Read instead.
 RENDER_BUDGET = 24_000
-# A single body may not eat the whole budget either: cap each at this many
-# lines, with the remainder said out loud.
-CHUNK_LINE_CAP = 80
+# Below this remaining budget a partial window isn't worth rendering — emit
+# the span pointer instead of a five-line fragment.
+MIN_WINDOW_CHARS = 800
+
+
+def _query_window(lines: list[str], query: str, char_budget: int) -> tuple[int, int]:
+    """The largest line window that fits `char_budget`, grown outward from the
+    line sharing the most identifier characters with the query (head when
+    nothing matches). Used ONLY when a body does not fit the remaining budget
+    — a body that fits is NEVER cut (field report, verbatim: 'me truncó justo
+    lo que necesitaba… el costo de devolverlo entero era trivial'; the old
+    unconditional 80-line cap fired with the budget nowhere near spent, and
+    the agent had to Read both files anyway)."""
+    from .rerank import _IDENT, _score_line
+    qtok = {t.lower() for t in _IDENT.findall(query)}
+    scores = [_score_line(ln, qtok) for ln in lines]
+    best = max(range(len(lines)), key=scores.__getitem__) if any(scores) else 0
+    lo = hi = best
+    used = len(lines[best]) + 1
+    while True:
+        grew = False
+        if lo > 0 and used + len(lines[lo - 1]) + 1 <= char_budget:
+            lo -= 1
+            used += len(lines[lo]) + 1
+            grew = True
+        if hi < len(lines) - 1 and used + len(lines[hi + 1]) + 1 <= char_budget:
+            hi += 1
+            used += len(lines[hi]) + 1
+            grew = True
+        if not grew:
+            return lo, hi + 1
 
 
 def render_pruned(res: dict, with_text: bool = True,
                   budget: int | None = None) -> str:
     """Pruned result -> ranked markdown list: `[id] file L… (name) · score`,
     each with its code (unless with_text=False), spent top-down against a
-    character budget — bodies past the budget render as span pointers."""
+    character budget. A body that fits the remaining budget renders WHOLE —
+    never cut; one that doesn't renders the query-centered window that does
+    fit, or a span pointer when the leftover is too small to be worth it."""
     import os
     if budget is None:
         budget = int(os.environ.get("MEGABRAIN_RENDER_BUDGET",
@@ -146,22 +176,18 @@ def render_pruned(res: dict, with_text: bool = True,
         text = c.get("text") if with_text else None
         if text:
             lines = text.rstrip("\n").splitlines()
-            if len(lines) > CHUNK_LINE_CAP:
-                # The cap shows the QUERY-RELEVANT window, not blindly the
-                # head: a 180-line class chunk whose matching method sits at
-                # line 120 would otherwise render exactly the part the agent
-                # does not need (field report: "noise dropped is true across
-                # files, weaker within them"). Window picked by shared-
-                # identifier score, same signal the rerank cards use; no
-                # overlap -> the head, the old behavior.
-                from .rerank import _IDENT, _score_line
-                qtok = {t.lower() for t in _IDENT.findall(res.get("query", ""))}
-                scores = [_score_line(ln, qtok) for ln in lines]
-                best = max(range(len(lines)), key=scores.__getitem__) \
-                    if any(scores) else 0
-                start = max(0, min(best - CHUNK_LINE_CAP // 3,
-                                   len(lines) - CHUNK_LINE_CAP))
-                end = start + CHUNK_LINE_CAP
+            body = "\n".join(lines)
+            remaining = budget - spent
+            if len(body) <= remaining:
+                # fits -> WHOLE, always. No per-chunk cap exists anymore.
+                L.append(f'```{lang_of(c["file"])}')
+                L.append(body)
+                L.append("```")
+                spent += len(body)
+            elif remaining >= MIN_WINDOW_CHARS:
+                # doesn't fit -> the query-centered window that does
+                start, end = _query_window(lines, res.get("query", ""),
+                                           remaining)
                 shown = lines[start:end]
                 if start:
                     shown.insert(0, f'… {start} lines above — Read '
@@ -171,13 +197,11 @@ def render_pruned(res: dict, with_text: bool = True,
                     shown.append(f'… +{len(lines) - end} lines — '
                                  f'Read {c["file"]}:L{c["start_line"] + end}-'
                                  f'{c["end_line"]}')
-                lines = shown
-            body = "\n".join(lines)
-            if spent + len(body) <= budget:
+                window = "\n".join(shown)
                 L.append(f'```{lang_of(c["file"])}')
-                L.append(body)
+                L.append(window)
                 L.append("```")
-                spent += len(body)
+                spent += len(window)
             else:
                 omitted += 1
                 L.append(f'(body omitted — output budget · '

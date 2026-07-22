@@ -4,7 +4,7 @@ never disappear. Field case (click#3362 run): one scoped question rendered
 preview — an unread answer. Completeness is CHUNK-LIST completeness; the
 budget spends bodies top-down by rank and says what it omitted."""
 
-from megabrain.retrieval.render import CHUNK_LINE_CAP, render_pruned
+from megabrain.retrieval.render import render_pruned
 
 
 def _res(n=6, body_lines=50):
@@ -47,30 +47,30 @@ def test_under_budget_output_is_unchanged():
     assert "output budget" not in render_pruned(res, budget=100_000)
 
 
-def test_single_oversized_chunk_is_line_capped_with_pointer():
-    """No query overlap -> the head window, the pre-existing behavior."""
-    res = _res(n=1, body_lines=CHUNK_LINE_CAP + 40)
+def test_a_body_that_fits_is_never_cut():
+    """THE contract (field report, verbatim: 'me truncó justo lo que
+    necesitaba… el costo de devolverlo entero era trivial'): no per-chunk
+    cap exists — a 500-line body under budget renders whole."""
+    res = _res(n=1, body_lines=500)
     out = render_pruned(res, budget=100_000)
-    assert f"line {CHUNK_LINE_CAP - 1}" in out       # cap-1 shown
-    assert f"line {CHUNK_LINE_CAP}\n" not in out     # cap hidden
-    assert f"+40 lines — Read src/f1.py:L{1 + CHUNK_LINE_CAP}-" in out
+    assert "line 0" in out and "line 499" in out     # first and last line
+    assert "lines above" not in out and "body omitted" not in out
+    assert "Read src/f1.py" not in out               # no pointers at all
 
 
-def test_cap_window_follows_the_query_not_the_head():
-    """Field report deduction: a 180-line chunk whose relevant method sits
-    deep inside rendered its head — exactly the part the agent didn't need.
-    The cap window must center on the query-matching lines, with BOTH
-    omitted sides pointed at."""
-    n_lines = CHUNK_LINE_CAP + 120
-    lines = [f"filler {i}" for i in range(n_lines)]
-    lines[150] = "def write_usage_wrapping(self, breakpoints):"
+def test_overflow_window_follows_the_query_not_the_head():
+    """Only when a body does NOT fit the remaining budget: render the
+    query-centered window that does, both omitted sides pointed at."""
+    n_lines = 400
+    lines = [f"filler {i} {'x' * 60}" for i in range(n_lines)]
+    lines[300] = "def write_usage_wrapping(self, breakpoints):"
     res = _res(n=1, body_lines=1)
     res["chunks"][0]["text"] = "\n".join(lines)
     res["chunks"][0]["end_line"] = n_lines
     res["query"] = "how does write_usage_wrapping choose breakpoints"
-    out = render_pruned(res, budget=100_000)
+    out = render_pruned(res, budget=6_000)           # body ~27KB: can't fit
     assert "write_usage_wrapping" in out             # the window found it
-    assert "filler 0" not in out                     # head not shown
+    assert "filler 0 " not in out                    # head not shown
     assert "lines above — Read src/f1.py:L1-" in out
     assert "— Read src/f1.py:L" in out
 
