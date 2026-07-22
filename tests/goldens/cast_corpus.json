@@ -5354,12 +5354,12 @@
      "render_pruned",
      null,
      101,
-     137,
-     "megabrain > megabrain/retrieval/render.py > def render_pruned(res: dict, with_text: bool=True) -> str",
-     "a789283e95f8efa131114c90a0a62eeaf5171d47"
+     179,
+     "megabrain > megabrain/retrieval/render.py > def render_pruned(res: dict, with_text: bool=True, budget: int | None=None) -> str",
+     "9c8341b4c93e70f843d4c272b5672ae8e992580d"
     ]
    ],
-   "skeleton_sha": "5ef2f88845a1af21aa996aee34aac88912d66479",
+   "skeleton_sha": "3e0941b6ce75d203085baf92e19d4f0598e2c9b9",
    "symbols": [
     [
      "lang_of",
@@ -5383,11 +5383,25 @@
      "def render(res: dict, compact: bool=False, related_code: bool=False) -> str"
     ],
     [
+     "RENDER_BUDGET",
+     "constant",
+     112,
+     112,
+     "RENDER_BUDGET = 24000"
+    ],
+    [
+     "CHUNK_LINE_CAP",
+     "constant",
+     115,
+     115,
+     "CHUNK_LINE_CAP = 80"
+    ],
+    [
      "render_pruned",
      "function",
-     103,
-     137,
-     "def render_pruned(res: dict, with_text: bool=True) -> str"
+     118,
+     179,
+     "def render_pruned(res: dict, with_text: bool=True, budget: int | None=None) -> str"
     ]
    ]
   },

@@ -47,6 +47,18 @@ gate passes (two golds relabeled with dated notes — the eval repo evolved
 after the 2026-03-11 labeling and grew files that answer two queries better
 than their original golds; completeness was never lost).
 
+**The pruned render now has an output budget (24K chars,
+`MEGABRAIN_RENDER_BUDGET`).** Field case (click#3362 demo run, agent
+self-score 6/10): one scoped question rendered 90KB deterministic / 60KB
+post-rerank, overflowed the MCP host's inline limit, and the agent worked
+from a 2KB preview — "one call hands you the code" is void if the host
+truncates the answer. The budget spends bodies top-down by rank; past it,
+a chunk renders as its span line + `Read file:Lx-y` pointer, and a single
+body is line-capped at 80 with the remainder said out loud. Files are
+NEVER dropped — completeness is chunk-list completeness — and the spec-test
+tail always renders (it was invisible in the overflow). The field query now
+renders 27KB with the answering chunks' full code inline.
+
 **Two first-index-of-a-big-monorepo bugs fixed** — both found by pointing the
 engine at nx (5,606 files) for the first time:
 

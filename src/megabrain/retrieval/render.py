@@ -100,9 +100,30 @@ def render(res: dict, compact: bool = False, related_code: bool = False) -> str:
     return "\n".join(L)
 
 
-def render_pruned(res: dict, with_text: bool = True) -> str:
+# Output budget for the pruned render, in characters. The agent's context is
+# the scarce resource, and MCP hosts persist oversized tool results to a FILE
+# the agent then never opens — a 90KB "answer" is an unread answer (field
+# case: click#3362 run, one scoped question rendered 90KB deterministic /
+# 60KB post-rerank, overflowed the host's inline limit, and the agent saw a
+# 2KB preview — then did its own Reads anyway, scoring the tool 6/10). The
+# budget degrades BODIES to span pointers, never drops files: completeness
+# is chunk-list completeness, and every omitted body says exactly what to
+# Read instead.
+RENDER_BUDGET = 24_000
+# A single body may not eat the whole budget either: cap each at this many
+# lines, with the remainder said out loud.
+CHUNK_LINE_CAP = 80
+
+
+def render_pruned(res: dict, with_text: bool = True,
+                  budget: int | None = None) -> str:
     """Pruned result -> ranked markdown list: `[id] file L… (name) · score`,
-    each with its code (unless with_text=False). Noise dropped, signal only."""
+    each with its code (unless with_text=False), spent top-down against a
+    character budget — bodies past the budget render as span pointers."""
+    import os
+    if budget is None:
+        budget = int(os.environ.get("MEGABRAIN_RENDER_BUDGET",
+                                    str(RENDER_BUDGET)))
     L: list[str] = []
     L.append(f'# megabrain search — "{res["query"]}"')
     rr = res.get("reranked")
@@ -116,15 +137,36 @@ def render_pruned(res: dict, with_text: bool = True) -> str:
     spec = f' · ⚠ {n_tests} spec test(s) at the BOTTOM' if n_tests else ""
     L.append(f'repo `{res["repo"]}` · {res["kept"]} signal chunks '
              f'({res["pruned"]} pruned as noise){spec} · {res["ms"]}ms{tail}\n')
+    spent = 0
+    omitted = 0
     for rank, c in enumerate(res["chunks"], 1):
         label = c["name"] or c["kind"]
         L.append(f'### {rank}. [{c["id"]}] {c["file"]} '
                  f'L{c["start_line"]}-{c["end_line"]} · {label} · `{c["score"]:.3f}`')
-        if with_text and c.get("text"):
-            L.append(f'```{lang_of(c["file"])}')
-            L.append(c["text"].rstrip("\n"))
-            L.append("```")
+        text = c.get("text") if with_text else None
+        if text:
+            lines = text.rstrip("\n").splitlines()
+            if len(lines) > CHUNK_LINE_CAP:
+                shown = lines[:CHUNK_LINE_CAP]
+                cut_from = c["start_line"] + CHUNK_LINE_CAP
+                shown.append(f'… +{len(lines) - CHUNK_LINE_CAP} lines — '
+                             f'Read {c["file"]}:L{cut_from}-{c["end_line"]}')
+                lines = shown
+            body = "\n".join(lines)
+            if spent + len(body) <= budget:
+                L.append(f'```{lang_of(c["file"])}')
+                L.append(body)
+                L.append("```")
+                spent += len(body)
+            else:
+                omitted += 1
+                L.append(f'(body omitted — output budget · '
+                         f'Read {c["file"]}:L{c["start_line"]}-{c["end_line"]})')
         L.append("")
+    if omitted:
+        L.insert(2, f'⚠ output budget {budget // 1000}K: {omitted} lower-ranked '
+                    f'bodies rendered as span pointers — every span is still '
+                    f'listed; Read the pointed lines for their code.\n')
     # Tests the rerank kept OUT of the signal list. Compact (no bodies): they
     # crowd implementation by shared vocabulary, but they are the SPEC of the
     # behavior — changing the mechanism above means reading them.
