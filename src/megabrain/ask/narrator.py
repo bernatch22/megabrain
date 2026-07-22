@@ -33,7 +33,24 @@ MAX_CTX_CHARS = int(os.environ.get("MEGABRAIN_ASK_CTX_CHARS", "200000"))
 # Tolerate an "L" prefix and stray spaces on the line range: the chunk headers in
 # the prompt read "L1-172", so the model often mirrors that as [[0:L1-172]] — accept
 # it (and [[3:705-731]], [[3]]) instead of leaking the citation as raw text.
-_SEL = re.compile(r"\[\[(\d+)(?::\s*[Ll]?(\d+)\s*-\s*[Ll]?(\d+))?\s*\]\]")
+# Multi-range too — [[1:24-28, 30-42]] splices one block per range: models
+# write it unprompted, and an unmatched citation leaks as raw prose (field
+# report: "bracket-style citations instead of spliced code").
+_RANGE = r"[Ll]?\d+\s*-\s*[Ll]?\d+"
+_SEL = re.compile(rf"\[\[(\d+)((?::\s*{_RANGE})(?:\s*,\s*{_RANGE})*)?\s*\]\]")
+
+# Whole-chunk citations above this many lines narrow to the claim-relevant
+# symbol (see _code_block). The prompt already tells the model to sub-range
+# huge chunks; when it doesn't, the reader eats 180 lines for a 2-kwarg
+# claim — the net is deterministic, prompt compliance is not.
+SPLICE_CAP = int(os.environ.get("MEGABRAIN_ASK_SPLICE_CAP", "70"))
+
+
+def _parse_ranges(spec: str | None) -> list[tuple[int, int]]:
+    if not spec:
+        return []
+    return [(int(a), int(b)) for a, b in
+            re.findall(r"[Ll]?(\d+)\s*-\s*[Ll]?(\d+)", spec)]
 
 
 def _candidates(res: dict, docs_only: bool = False) -> list[dict]:
@@ -130,13 +147,39 @@ RETRIEVED CHUNKS:
 
 
 def _code_block(c: dict, lo: int | None, hi: int | None, seen: set,
-                file_syms: dict[str, list[dict]]) -> str:
+                file_syms: dict[str, list[dict]], claim: str = "",
+                k: int | None = None) -> str:
     cs, ce = c["start_line"], c["end_line"]
     s, e = cs, ce
     if lo is not None and hi is not None and not (hi < cs or lo > ce):
         s, e = max(lo, cs), min(hi, ce)
     _FN = ("function", "async_function", "method", "async_method", "class")
     syms = [y for y in file_syms.get(c["file"], []) if y["kind"] in _FN]
+    rest_note = ""
+    if lo is None and (ce - cs + 1) > SPLICE_CAP and claim:
+        # A whole-chunk cite of a HUGE chunk: narrow to the symbol the citing
+        # sentence is actually about (field case: [[k]] on a 179-line class
+        # spliced write_heading/write_dl/the constructor to evidence two
+        # kwargs of write_usage). Deterministic — same shared-identifier
+        # score as the rerank cards; no match -> whole chunk, fail open.
+        from ..retrieval.rerank import _IDENT, _score_line
+        qtok = {t.lower() for t in _IDENT.findall(claim)}
+        inner = [y for y in syms
+                 if y["line"] >= cs and (y.get("end_line") or y["line"]) <= ce
+                 and (y.get("end_line") or y["line"]) > y["line"]]
+        scored = [(y, _score_line(f'{y["name"]} {y.get("signature") or ""}', qtok))
+                  for y in inner]
+        best = max(scored, key=lambda t: t[1], default=(None, 0))
+        if best[1] > 0:
+            y = best[0]
+            s, e = max(cs, y["line"]), min(ce, y["end_line"])
+            others = [f'{o["name"]} L{o["line"]}-{o["end_line"]}'
+                      for o in inner if o is not y][:6]
+            if others:
+                cite = f'[[{k}:lo-hi]]' if k is not None else 'a line range'
+                rest_note = (f'*(rest of chunk L{cs}-{ce} not shown: '
+                             f'{", ".join(others)} — cite {cite} or Read '
+                             f'{c["file"]})*\n')
     if (s, e) != (cs, ce):
         # snap to enclosing symbol edges when close (readable boundaries)
         encl = [y for y in syms if y["line"] <= e and y["end_line"] >= s]
@@ -171,14 +214,15 @@ def _code_block(c: dict, lo: int | None, hi: int | None, seen: set,
     # markdown for every consumer (CLI, flow cache, the studio's renderer).
     fence = "`" * max(3, max((len(m) for m in re.findall(r"`+", text)), default=0) + 1)
     return (f'\n**`{c["file"]}` L{s}-{e}** — {label}\n'
-            f'{fence}{lang_of(c["file"])}\n{text.rstrip(chr(10))}\n{fence}\n')
+            f'{fence}{lang_of(c["file"])}\n{text.rstrip(chr(10))}\n{fence}\n'
+            + rest_note)
 
 
-# A trailing PREFIX of a possible citation ("[", "[[3", "[[3:L1-"): the splicer
-# holds only this back, so prose streams token-by-token while a citation split
-# across deltas never leaks raw. Anchored to $ and bracket/digit-only, so any
-# intervening prose breaks the match.
-_PARTIAL = re.compile(r"\[(?:\[(?:\d+(?::\s*[Ll]?\d*(?:-\s*[Ll]?\d*)?)?\]?)?)?$")
+# A trailing PREFIX of a possible citation ("[", "[[3", "[[3:L1-", "[[1:24-28, 3"):
+# the splicer holds only this back, so prose streams token-by-token while a
+# citation split across deltas never leaks raw. Anchored to $ and restricted to
+# citation characters (digits/L/colon/comma/dash/space), so any prose breaks it.
+_PARTIAL = re.compile(r"\[(?:\[(?:\d+[\dLl\s:,-]*\]?)?)?$")
 
 
 class _Splicer:
@@ -194,15 +238,21 @@ class _Splicer:
         self.seen: set = set()
         self.cited: set = set()
         self._pending = ""
+        self._context = ""          # trailing prose — the claim for cap-narrowing
 
     def _sub(self, m):
         k = int(m.group(1))
         if not (0 <= k < len(self.cands)):
             return m.group(0)
         self.cited.add(k)
-        lo = int(m.group(2)) if m.group(2) else None
-        hi = int(m.group(3)) if m.group(3) else None
-        return _code_block(self.cands[k], lo, hi, self.seen, self.file_syms)
+        claim = (self._context + m.string[:m.start()])[-300:]
+        ranges = _parse_ranges(m.group(2))
+        if not ranges:
+            return _code_block(self.cands[k], None, None, self.seen,
+                               self.file_syms, claim, k)
+        return "".join(_code_block(self.cands[k], lo, hi, self.seen,
+                                   self.file_syms, claim, k)
+                       for lo, hi in ranges)
 
     def feed(self, d: str) -> str:
         self._pending += d
@@ -211,7 +261,9 @@ class _Splicer:
         if cut == 0:
             return ""
         ready, self._pending = self._pending[:cut], self._pending[cut:]
-        return _SEL.sub(self._sub, ready)
+        out = _SEL.sub(self._sub, ready)
+        self._context = (self._context + ready)[-300:]
+        return out
 
     def flush(self) -> str:
         ready, self._pending = self._pending, ""
@@ -275,9 +327,13 @@ def _splice(out: dict) -> tuple[str, set, set]:
         if not (0 <= k < len(cands)):
             return m.group(0)
         cited.add(k)
-        lo = int(m.group(2)) if m.group(2) else None
-        hi = int(m.group(3)) if m.group(3) else None
-        return _code_block(cands[k], lo, hi, seen, out.get("file_syms", {}))
+        claim = text[max(0, m.start() - 300):m.start()]
+        ranges = _parse_ranges(m.group(2))
+        fs = out.get("file_syms", {})
+        if not ranges:
+            return _code_block(cands[k], None, None, seen, fs, claim, k)
+        return "".join(_code_block(cands[k], lo, hi, seen, fs, claim, k)
+                       for lo, hi in ranges)
 
     return _SEL.sub(sub, text).strip(), seen, cited
 
