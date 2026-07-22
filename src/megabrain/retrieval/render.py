@@ -82,7 +82,8 @@ def render(res: dict, compact: bool = False, related_code: bool = False) -> str:
                  f"`megabrain get <file> [--symbol NAME]`{hint}\n")
         for t in res["tier2"]:
             via = " ·via-graph" if t["via_graph"] else (
-                " ·via-flow" if t.get("via_flow") else "")
+                " ·via-flow" if t.get("via_flow") else (
+                    " ·via-floor" if t.get("via_floor") else ""))
             match = f' · matched: {", ".join(t["matched"])}' if t["matched"] else ""
             doc = f' — {t["doc"]}' if t["doc"] else ""
             L.append(f'### {t["file"]}  `{t["score"]:.2f}`{via}{match}{doc}')

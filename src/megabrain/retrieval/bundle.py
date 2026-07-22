@@ -17,7 +17,7 @@ from pathlib import Path
 import numpy as np
 
 from .params import DEFAULT_PARAMS
-from .scoring import score_chunks, under_path
+from .scoring import _is_test_path, score_chunks, under_path
 from .state import SearchState, load_state
 
 # symbol kinds worth surfacing in the file outline (display only — not ranking).
@@ -64,7 +64,36 @@ def search_with_state(st: SearchState, query: str,
     # the rest demote to the map (bundle membership unchanged)
     top_score = fbest[tier1[0]]
     tier1 = [f for f in tier1 if fbest[f] >= top_score * p.tier1_gap] or tier1[:1]
-    tier2 = [f for f in cands if f not in tier1] + extras
+
+    # RECALL FLOOR — fusion is a ranking opinion, never a recall gate. File
+    # fusion lifts chunks whose whole FILE matches the query; that buries the
+    # small helper living inside ANOTHER feature's file — which is what prior
+    # art looks like by construction (reusable logic lives under a different
+    # name in a different subsystem). Field case (nx#35656 demo): the exact
+    # precedent the agent needed, project-glob-changes.ts, sat at raw-dense
+    # rank 13 of 10,891 and fusion pushed it to 81 — out of the bundle; the
+    # agent found it with grep and scored the tool 7/10 for exactly this.
+    # The floor: a file owning a raw-dense top-N chunk is owed a bundle slot.
+    # Same stance as the flow lane below — pure additions appended to the
+    # RELATED tail, never ranking, never displacing; bundle_full can only
+    # rise. Tests are skipped (the penalty/issue-mask down-weights them on
+    # purpose, and the tests tail already surfaces them).
+    floor_files: list[str] = []
+    if p.recall_floor_top and st.qv is not None:
+        row_of = {m.id: i for i, m in enumerate(st.metas)}
+        rows = np.array([row_of.get(m.id, -1) for m in metas])
+        ok = np.flatnonzero(rows >= 0)
+        if ok.size:
+            dense = st.M[rows[ok]] @ st.qv
+            have = set(cands) | set(extras)
+            for j in np.argsort(-dense)[:p.recall_floor_top]:
+                f = metas[int(ok[j])].file
+                if f in have or _is_test_path(f):
+                    continue
+                floor_files.append(f)
+                have.add(f)
+
+    tier2 = [f for f in cands if f not in tier1] + extras + floor_files
 
     out_t1 = []
     for f in tier1:
@@ -86,12 +115,15 @@ def search_with_state(st: SearchState, query: str,
         syms = store.symbols_for(f)
         docline = next((s["doc"] for s in syms if s["doc"]), None)
         best_chunk = metas[idxs[0]].to_dict() if idxs else None
-        out_t2.append({
+        entry = {
             "file": f, "score": float(fbest.get(f, 0)),
             "via_graph": f in extras, "matched": matched, "doc": docline,
             "best_chunk": best_chunk,
             "symbols": [s for s in syms if s["kind"] in OUTLINE_KINDS][:12],
-        })
+        }
+        if f in floor_files:
+            entry["via_floor"] = True
+        out_t2.append(entry)
     # FLOW LANE (flows.py): cached ask syntheses matching this query — cosine
     # only against the already-computed query vector. Flows ATTACH; they never
     # rank or displace files. Their source files append to the RELATED tail

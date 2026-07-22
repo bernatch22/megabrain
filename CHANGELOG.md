@@ -26,6 +26,27 @@ This closes the standing routing rule "skip megabrain when you know the
 exact string" — now the literal lane is also index-aware. The MCP
 instructions route accordingly.
 
+**Recall floor: fusion is a ranking opinion, never a recall gate.** The
+field report from the nx#35656 demo run scored search 7/10, and the one
+structural complaint was measured to the row: the prior-art file the agent
+most needed (`project-glob-changes.ts`, a 48-line helper inside another
+feature's directory) sat at **raw-dense rank 13 of 10,891** — and file
+fusion pushed it to 81, out of the bundle. The agent found it with plain
+grep. Reusable logic lives under a different name in a different subsystem
+*by construction*, so the ranking was structurally biased against exactly
+the "don't duplicate logic" lookup where retrieval matters most. Now every
+non-test file owning a raw-dense top-15 chunk is owed a bundle slot:
+appended to the RELATED tail (`·via-floor`), same stance as the flow lane —
+pure additions, never ranking, never displacing; `bundle_full` can only
+rise. The first live test also caught a partial floor (capped at 4 adds, the
+owed file was 5th) — a floor that drops the 5th owed file is not a floor, so
+N itself is the only bound. Verified: the nx query now carries the helper in
+the bundle and the prune signal list; a 4-test suite pins the burial, the
+restore, pure additivity, and the test-file exclusion; the phase-6 golden
+gate passes (two golds relabeled with dated notes — the eval repo evolved
+after the 2026-03-11 labeling and grew files that answer two queries better
+than their original golds; completeness was never lost).
+
 **Two first-index-of-a-big-monorepo bugs fixed** — both found by pointing the
 engine at nx (5,606 files) for the first time:
 

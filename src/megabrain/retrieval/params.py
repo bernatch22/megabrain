@@ -44,6 +44,12 @@ class RetrievalParams:
     chunk_keep_ratio: float = 0.8  # within a tier-1 file, keep chunks >= ratio*best
     tier1_chunk_cap: int = 12      # hard cap of chunks per CORE file
     multi_tier1_extra: int = 2     # search_multi: tier1 cap = tier1_max + this
+    # ── recall floor (see search_with_state) ────────────────────────────
+    recall_floor_top: int = 15     # raw-dense top-N chunks whose files are owed
+                                   # a bundle slot (0 disables the floor). N is
+                                   # itself the bound on floor adds — a partial
+                                   # floor that drops the 5th owed file is not
+                                   # a floor (bit on the first live test).
 
 
 DEFAULT_PARAMS = RetrievalParams()

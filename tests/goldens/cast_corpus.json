@@ -4768,32 +4768,41 @@
      1,
      27,
      "megabrain > megabrain/retrieval/bundle.py (module level)",
-     "36c8a5f40fdc5b2670252e69fd5e82862855cd81"
+     "c4fa9e6c7c24c336f58118d5192a8c0ca8fd7db7"
     ],
     [
-     "module",
-     "search_with_state, search",
-     null,
+     "block",
+     "search_with_state",
+     "1/2",
      28,
-     137,
-     "megabrain > megabrain/retrieval/bundle.py > [search_with_state, search]",
-     "f6e21e7e43ee8500862dc581393be5d8e0bd544e"
+     131,
+     "megabrain > megabrain/retrieval/bundle.py > def search_with_state(st: SearchState, query: str, path_filter: str | None=None, scored: tuple[list, np.ndarray] | None=None, exclude_docs: bool=False, only_docs: bool=False) -> dict",
+     "ae864c4d50ba27411db33672c4a9d70e9cd4f59b"
+    ],
+    [
+     "block",
+     "search_with_state",
+     "2/2",
+     132,
+     156,
+     "megabrain > megabrain/retrieval/bundle.py > def search_with_state(st: SearchState, query: str, path_filter: str | None=None, scored: tuple[list, np.ndarray] | None=None, exclude_docs: bool=False, only_docs: bool=False) -> dict",
+     "0245d271072ae72fa6625bae1b60cbf3e21b5131"
     ],
     [
      "module",
-     "selection, chunks_for_file, chunks_for_file_root",
+     "search, selection, chunks_for_file, chunks_for_file_root",
      null,
-     138,
-     198,
-     "megabrain > megabrain/retrieval/bundle.py > [selection, chunks_for_file, chunks_for_file_root]",
-     "bf4ba9e2287bf6850e33394496877909aa88f1dc"
+     157,
+     230,
+     "megabrain > megabrain/retrieval/bundle.py > [search, selection, chunks_for_file, chunks_for_file_root]",
+     "a366df0776d318826b4b9622e55803facff8823f"
     ],
     [
      "module",
      "prune_search, prune_search_root",
      null,
-     199,
-     268,
+     231,
+     300,
      "megabrain > megabrain/retrieval/bundle.py > [prune_search, prune_search_root]",
      "a8b578a7389993a140eb119d426e54e6181f380a"
     ],
@@ -4801,8 +4810,8 @@
      "function",
      "search_multi",
      null,
-     269,
-     306,
+     301,
+     338,
      "megabrain > megabrain/retrieval/bundle.py > def search_multi(roots: list[Path], query: str, path_filters: list[str | None] | None=None, only_docs: bool=False, exclude_docs: bool=False) -> dict",
      "b6b879fc0e9ace8e6ebaede5308cdb4bf13b6c94"
     ]
@@ -4820,56 +4829,56 @@
      "search_with_state",
      "function",
      30,
-     124,
+     156,
      "def search_with_state(st: SearchState, query: str, path_filter: str | None=None, scored: tuple[list, np.ndarray] | None=None, exclude_docs: bool=False, only_docs: bool=False) -> dict"
     ],
     [
      "search",
      "function",
-     127,
-     137,
+     159,
+     169,
      "def search(root: Path, query: str, path_filter: str | None=None, only_docs: bool=False, exclude_docs: bool=False) -> dict"
     ],
     [
      "selection",
      "function",
-     140,
-     158,
+     172,
+     190,
      "def selection(res: dict) -> list[tuple[dict, float]]"
     ],
     [
      "chunks_for_file",
      "function",
-     161,
-     191,
+     193,
+     223,
      "def chunks_for_file(st: SearchState, relpath: str, query: str, path_filter: str | None=None) -> dict"
     ],
     [
      "chunks_for_file_root",
      "function",
-     194,
-     198,
+     226,
+     230,
      "def chunks_for_file_root(root: Path, relpath: str, query: str, path_filter: str | None=None) -> dict"
     ],
     [
      "prune_search",
      "function",
-     201,
-     259,
+     233,
+     291,
      "def prune_search(st: SearchState, query: str, path_filter: str | None=None, with_text: bool=True, include_pruned: bool=False, only_docs: bool=False, exclude_docs: bool=False) -> dict"
     ],
     [
      "prune_search_root",
      "function",
-     262,
-     268,
+     294,
+     300,
      "def prune_search_root(root: Path, query: str, path_filter: str | None=None, with_text: bool=True, include_pruned: bool=False, only_docs: bool=False, exclude_docs: bool=False) -> dict"
     ],
     [
      "search_multi",
      "function",
-     271,
-     306,
+     303,
+     338,
      "def search_multi(roots: list[Path], query: str, path_filters: list[str | None] | None=None, only_docs: bool=False, exclude_docs: bool=False) -> dict"
     ]
    ]
@@ -5187,9 +5196,9 @@
      "RetrievalParams",
      null,
      1,
-     49,
+     55,
      "megabrain > megabrain/retrieval/params.py > class RetrievalParams",
-     "4b60fdd122f0b54edb731386168e0b191cea2893"
+     "f4f83b40d8503a03f24489059f0bec4a0cfbccd5"
     ]
    ],
    "skeleton_sha": "742aaa0a661a105322631f3a736a05ca5be01814",
@@ -5198,7 +5207,7 @@
      "RetrievalParams",
      "class",
      20,
-     46,
+     48,
      "class RetrievalParams"
     ],
     [
@@ -5314,10 +5323,17 @@
      "multi_tier1_extra: int = 2"
     ],
     [
+     "RetrievalParams.recall_floor_top",
+     "class_attr",
+     48,
+     48,
+     "recall_floor_top: int = 15"
+    ],
+    [
      "DEFAULT_PARAMS",
      "constant",
-     49,
-     49,
+     55,
+     55,
      "DEFAULT_PARAMS = RetrievalParams()"
     ]
    ]
@@ -5329,16 +5345,16 @@
      "lang_of, render",
      null,
      1,
-     99,
+     100,
      "megabrain > megabrain/retrieval/render.py > [lang_of, render]",
-     "b601549c150463e87641f074ebdc2bf6f75105a0"
+     "271b967bad515f17fe4cc7577609c404782b36f7"
     ],
     [
      "function",
      "render_pruned",
      null,
-     100,
-     136,
+     101,
+     137,
      "megabrain > megabrain/retrieval/render.py > def render_pruned(res: dict, with_text: bool=True) -> str",
      "a789283e95f8efa131114c90a0a62eeaf5171d47"
     ]
@@ -5363,14 +5379,14 @@
      "render",
      "function",
      30,
-     99,
+     100,
      "def render(res: dict, compact: bool=False, related_code: bool=False) -> str"
     ],
     [
      "render_pruned",
      "function",
-     102,
-     136,
+     103,
+     137,
      "def render_pruned(res: dict, with_text: bool=True) -> str"
     ]
    ]
