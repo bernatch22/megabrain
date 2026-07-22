@@ -35,8 +35,13 @@ MAX_CTX_CHARS = int(os.environ.get("MEGABRAIN_ASK_CTX_CHARS", "200000"))
 # it (and [[3:705-731]], [[3]]) instead of leaking the citation as raw text.
 # Multi-range too — [[1:24-28, 30-42]] splices one block per range: models
 # write it unprompted, and an unmatched citation leaks as raw prose (field
-# report: "bracket-style citations instead of spliced code").
-_RANGE = r"[Ll]?\d+\s*-\s*[Ll]?\d+"
+# report: "bracket-style citations instead of spliced code"). And POINT
+# citations — [[4:772]], chunk 4 at line 772 — the same way: a pytest#14763
+# run cited almost exclusively in point form, every one failed the
+# range-only parse, and a 28-candidate walkthrough rendered "2 code spans"
+# with raw [[k:line]] litter where its evidence should have been. A point
+# splices the enclosing symbol (see _code_block).
+_RANGE = r"[Ll]?\d+(?:\s*-\s*[Ll]?\d+)?"
 _SEL = re.compile(rf"\[\[(\d+)((?::\s*{_RANGE})(?:\s*,\s*{_RANGE})*)?\s*\]\]")
 
 # Whole-chunk citations above this many lines narrow to the claim-relevant
@@ -49,8 +54,8 @@ SPLICE_CAP = int(os.environ.get("MEGABRAIN_ASK_SPLICE_CAP", "70"))
 def _parse_ranges(spec: str | None) -> list[tuple[int, int]]:
     if not spec:
         return []
-    return [(int(a), int(b)) for a, b in
-            re.findall(r"[Ll]?(\d+)\s*-\s*[Ll]?(\d+)", spec)]
+    return [(int(a), int(b) if b else int(a)) for a, b in
+            re.findall(r"[Ll]?(\d+)(?:\s*-\s*[Ll]?(\d+))?", spec)]
 
 
 def _candidates(res: dict, docs_only: bool = False) -> list[dict]:
@@ -155,6 +160,18 @@ def _code_block(c: dict, lo: int | None, hi: int | None, seen: set,
         s, e = max(lo, cs), min(hi, ce)
     _FN = ("function", "async_function", "method", "async_method", "class")
     syms = [y for y in file_syms.get(c["file"], []) if y["kind"] in _FN]
+    if lo is not None and lo == hi and s == e:
+        # A POINT citation ([[4:772]]): the model is pointing at a line, the
+        # intent is the surrounding unit. Splice the innermost enclosing
+        # symbol; no symbol -> a small window, never a naked single line.
+        encl = [y for y in syms
+                if y["line"] <= s <= (y.get("end_line") or y["line"])]
+        if encl:
+            y = min(encl, key=lambda y: (y.get("end_line") or y["line"]) - y["line"])
+            s = max(cs, y["line"])
+            e = min(ce, y.get("end_line") or y["line"])
+        else:
+            s, e = max(cs, s - 4), min(ce, e + 12)
     rest_note = ""
     if lo is None and (ce - cs + 1) > SPLICE_CAP and claim:
         # A whole-chunk cite of a HUGE chunk: narrow to the symbol the citing
@@ -409,6 +426,16 @@ def render_ask(out: dict, page: int = 1) -> str:
         return render(out["result"])  # fail-open: unfiltered bundle
     cands = out["cands"]
     body, seen, cited = _splice(out)
+    # Unresolved citation markers left in the body are LOST EVIDENCE (a new
+    # model syntax we don't parse, or an invented id). Say so — a walkthrough
+    # silently rendering "2 code spans" out of a 28-candidate bundle reads as
+    # a retrieval failure when it is a splicing one (pytest#14763 field run).
+    leftover = body.count("[[")
+    if leftover:
+        body = (f'⚠ {leftover} citation marker(s) could not be resolved to a '
+                f'candidate and were left as raw [[...]] text — their code '
+                f'was NOT spliced. Treat those claims as UNVERIFIED prose.\n\n'
+                + body)
     pages = _paginate(body, limit)
     page = max(1, min(page, len(pages)))
     tag = f' · page {page}/{len(pages)}' if len(pages) > 1 else ""

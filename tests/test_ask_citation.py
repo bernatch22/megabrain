@@ -184,3 +184,40 @@ def test_page_out_of_range_clamps(monkeypatch):
     monkeypatch.setenv("MEGABRAIN_RENDER_BUDGET", "8000")
     last = render_ask(_big_ask(), page=99)
     assert "Do not act on partial evidence" not in last   # clamped to last page
+
+
+# ----------------------------------------------------- point citations (field)
+
+def test_sel_accepts_point_citations():
+    """pytest#14763 field run: the model cited almost exclusively [[k:LINE]]
+    (chunk k at one line) — every one failed the range-only parse and leaked
+    raw, bleeding a 28-candidate walkthrough down to '2 code spans'."""
+    assert _cites("[[4:772]]") == [("4", [(772, 772)])]
+    assert _cites("[[3:648]] and [[7:1172]]") == \
+        [("3", [(648, 648)]), ("7", [(1172, 1172)])]
+    assert _cites("[[0:L419]]") == [("0", [(419, 419)])]
+    assert _cites("[[2:10, 40-60]]") == [("2", [(10, 10), (40, 60)])]
+
+
+def test_point_citation_splices_the_enclosing_symbol():
+    """[[k:45]] means 'the thing AT line 45' — splice the innermost enclosing
+    symbol, never a naked single line."""
+    r = render_ask(_big_out("The cache lives here.\n[[0:45]]\nDone."))
+    assert "[[" not in r
+    assert "L40-60" in r                          # write_usage_wrapping whole
+    assert "code 40" in r and "code 60" in r
+
+
+def test_point_citation_without_symbol_gets_a_window():
+    r = render_ask(_out("Look.\n[[0:3]]\nDone."))
+    assert "[[" not in r
+    assert "line3" in r                           # the pointed line is there
+
+
+def test_unresolved_citations_are_announced_as_lost_evidence():
+    """An out-of-range id can't be spliced — the reader must be told the
+    claim is unverified prose, not shown a silently thinner answer."""
+    r = render_ask(_out("Real.\n[[0]]\nFake.\n[[9:100-120]]\nDone."))
+    assert "line1" in r                           # the real one spliced
+    assert "1 citation marker(s) could not be resolved" in r
+    assert "UNVERIFIED" in r

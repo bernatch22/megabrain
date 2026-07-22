@@ -515,16 +515,16 @@
      "_parse_ranges, _candidates",
      null,
      1,
-     83,
+     88,
      "megabrain > megabrain/ask/narrator.py > [_parse_ranges, _candidates]",
-     "3524fe070ce65eeba29b3068d00e13e2eab05524"
+     "a188a1dab54353c90c2db8eca0968f1a2b1dcd69"
     ],
     [
      "module",
      "_flow_ctx, _numbered, _build_body",
      null,
-     84,
-     146,
+     89,
+     151,
      "megabrain > megabrain/ask/narrator.py > [_flow_ctx, _numbered, _build_body]",
      "769db4940e217189702139f546ec2054f4ef1ad7"
     ],
@@ -532,17 +532,17 @@
      "function",
      "_code_block",
      null,
-     147,
-     225,
+     152,
+     242,
      "megabrain > megabrain/ask/narrator.py > def _code_block(c: dict, lo: int | None, hi: int | None, seen: set, file_syms: dict[str, list[dict]], claim: str='', k: int | None=None) -> str",
-     "2cebfd3efa8ce5f8edb0eeb2644a3169eef577c9"
+     "67a7003ec8a6144a790c8293251522daf0d0eea0"
     ],
     [
      "module",
      "_Splicer, ask, cited_files, _splice",
      null,
-     226,
-     344,
+     243,
+     361,
      "megabrain > megabrain/ask/narrator.py > [_Splicer, ask, cited_files, _splice]",
      "09b2d5bc8bfc8a68454545bbdeb06f883a860b15"
     ],
@@ -550,22 +550,22 @@
      "module",
      "_paginate, render_ask",
      null,
-     345,
-     431,
+     362,
+     458,
      "megabrain > megabrain/ask/narrator.py > [_paginate, render_ask]",
-     "079a4cca574317a8794bc2befb89e78573c8b95c"
+     "43bcbed332d4b7669e6d01bf2fe61580b908da70"
     ],
     [
      "function",
      "stream_ask",
      null,
-     432,
-     508,
+     459,
+     535,
      "megabrain > megabrain/ask/narrator.py > def stream_ask(root: Path, question: str, out=None, show_map: bool=True, docs_only: bool=False, path_filter: str | None=None, agents: bool | None=None, model: str | None=None) -> None",
      "fafeb35b15a42d4c1a78f4fb5e82e4150eaa2cae"
     ]
    ],
-   "skeleton_sha": "b80fb5c5d6a87488864d170992133efc250f810a",
+   "skeleton_sha": "971e73637dac2fb98d1aefc2638e5aed89c9547e",
    "symbols": [
     [
      "DOC_EXTS",
@@ -584,169 +584,169 @@
     [
      "_RANGE",
      "constant",
-     39,
-     39,
-     "_RANGE = '[Ll]?\\\\d+\\\\s*-\\\\s*[Ll]?\\\\d+'"
+     44,
+     44,
+     "_RANGE = '[Ll]?\\\\d+(?:\\\\s*-\\\\s*[Ll]?\\\\d+)?'"
     ],
     [
      "_SEL",
      "constant",
-     40,
-     40,
+     45,
+     45,
      "_SEL = re.compile(f'\\\\[\\\\[(\\\\d+)((?::\\\\s*{_RANGE})(?:\\\\s*,\\\\s*{_RANGE})*)?\\\\s*\\\\]\\\\]')"
     ],
     [
      "SPLICE_CAP",
      "constant",
-     46,
-     46,
+     51,
+     51,
      "SPLICE_CAP = int(os.environ.get('MEGABRAIN_ASK_SPLICE_CAP', '70'))"
     ],
     [
      "_parse_ranges",
      "function",
-     49,
-     53,
+     54,
+     58,
      "def _parse_ranges(spec: str | None) -> list[tuple[int, int]]"
     ],
     [
      "_candidates",
      "function",
-     56,
-     83,
+     61,
+     88,
      "def _candidates(res: dict, docs_only: bool=False) -> list[dict]"
     ],
     [
      "_RULES",
      "constant",
-     86,
-     94,
+     91,
+     99,
      "_RULES = '- NEVER paste or quote code. Cite it with DOUBLE brackets: [[3]] (whole chunk) or [[3:705-731]] (file lines 70"
     ],
     [
      "_flow_ctx",
      "function",
-     97,
-     109,
+     102,
+     114,
      "def _flow_ctx(res: dict) -> str"
     ],
     [
      "_numbered",
      "function",
-     112,
-     119,
+     117,
+     124,
      "def _numbered(c: dict) -> str"
     ],
     [
      "_build_body",
      "function",
-     122,
-     146,
+     127,
+     151,
      "def _build_body(question: str, cands: list[dict], flow_ctx: str='', model: str | None=None) -> dict"
     ],
     [
      "_code_block",
      "function",
-     149,
-     218,
+     154,
+     235,
      "def _code_block(c: dict, lo: int | None, hi: int | None, seen: set, file_syms: dict[str, list[dict]], claim: str='', k: int | None=None) -> str"
     ],
     [
      "_PARTIAL",
      "constant",
-     225,
-     225,
+     242,
+     242,
      "_PARTIAL = re.compile('\\\\[(?:\\\\[(?:\\\\d+[\\\\dLl\\\\s:,-]*\\\\]?)?)?$')"
     ],
     [
      "_Splicer",
      "class",
-     228,
-     274,
+     245,
+     291,
      "class _Splicer"
     ],
     [
      "_Splicer.__init__",
      "method",
-     236,
-     241,
+     253,
+     258,
      "def __init__(self, cands: list[dict], file_syms: dict[str, list[dict]])"
     ],
     [
      "_Splicer._sub",
      "method",
-     243,
-     255,
+     260,
+     272,
      "def _sub(self, m)"
     ],
     [
      "_Splicer.feed",
      "method",
-     257,
-     266,
+     274,
+     283,
      "def feed(self, d: str) -> str"
     ],
     [
      "_Splicer.flush",
      "method",
-     268,
-     270,
+     285,
+     287,
      "def flush(self) -> str"
     ],
     [
      "_Splicer.files",
      "method",
-     272,
-     274,
+     289,
+     291,
      "def files(self) -> int"
     ],
     [
      "ask",
      "function",
-     277,
-     301,
+     294,
+     318,
      "def ask(root: Path, question: str, docs_only: bool=False, path_filter: str | None=None, state: SearchState | None=None, agents: bool | None=False, model: str | None=None) -> dict"
     ],
     [
      "cited_files",
      "function",
-     304,
-     314,
+     321,
+     331,
      "def cited_files(out: dict) -> list[str]"
     ],
     [
      "_splice",
      "function",
-     317,
-     338,
+     334,
+     355,
      "def _splice(out: dict) -> tuple[str, set, set]"
     ],
     [
      "_BLOCK",
      "constant",
-     343,
-     344,
+     360,
+     361,
      "_BLOCK = re.compile('\\\\n\\\\*\\\\*`(?P<file>[^`]+)` L(?P<lo>\\\\d+)-(?P<hi>\\\\d+)\\\\*\\\\*[^\\\\n]*\\\\n(?P<fence>`{3,})[^\\\\n]*\\\\n.*?\\"
     ],
     [
      "_paginate",
      "function",
-     347,
-     387,
+     364,
+     404,
      "def _paginate(body: str, limit: int) -> list[str]"
     ],
     [
      "render_ask",
      "function",
-     390,
-     431,
+     407,
+     458,
      "def render_ask(out: dict, page: int=1) -> str"
     ],
     [
      "stream_ask",
      "function",
-     434,
-     508,
+     461,
+     535,
      "def stream_ask(root: Path, question: str, out=None, show_map: bool=True, docs_only: bool=False, path_filter: str | None=None, agents: bool | None=None, model: str | None=None) -> None"
     ]
    ]
