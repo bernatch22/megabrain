@@ -73,10 +73,26 @@ def chat_provider() -> str:
     return resolve().name
 
 
-# The fast/cheap OpenAI-compat default — ask narration on OpenRouter, and the
-# rerank's fast lane regardless of chat provider (a mechanical filter never
-# justifies a claude-CLI spawn; measured 0.7s here vs ~18s there).
+# The fast/cheap OpenAI-compat default for ask NARRATION on OpenRouter.
 FAST_CHAT_MODEL = "google/gemini-3.1-flash-lite"
+
+# The rerank's model, separate from narration because the two jobs are not the
+# same: narration reasons about a flow in prose, the rerank emits a short id
+# array under a 30K-char prompt. Measured on the mined merged-fix cases
+# (20 cases x 3 reps each, identical candidate lists):
+#
+#   3.5-flash-lite   recall 19/20/19 · rank1 19/19/19 · kept 2,2,2 · ~1.13s
+#   3.1-flash-lite   recall 19/19/19 · rank1 19/19/19 · kept 3,2,3 · ~1.28s
+#
+# Equal recall and ordering; 3.5 prunes one file tighter, every rep. (0.18.7
+# rejected 3.5 on RECALL — correct then, for the 1-line-hint task it judged;
+# full bodies changed the job and the verdict with it.)
+#
+# Bigger is WORSE here, measured: gpt-5-nano and glm-4.7-flash return empty
+# (reasoning eats the 300-token cap), minimax truncates the JSON array, and
+# gemini-3.5-flash — 5x the price — failed open at 5.6s. The rerank wants an
+# obedient fast model, not a smart one.
+FAST_RERANK_MODEL = "google/gemini-3.5-flash-lite"
 
 
 def ask_model() -> str:

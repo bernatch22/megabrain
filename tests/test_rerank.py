@@ -225,8 +225,10 @@ def test_claude_provider_reranks_on_the_fast_lane(claude_provider):
     OpenRouter key available the rerank must take the fast lane."""
     import megabrain.providers as providers
     res = rr.llm_rerank(_res(), "q")
-    assert res["reranked"] and res["reranked"]["model"] == providers.FAST_CHAT_MODEL
-    assert claude_provider["openrouter"] == [providers.FAST_CHAT_MODEL]
+    # the RERANK constant, not the narration one: the two jobs are measured
+    # separately (rerank wants an obedient fast model, narration wants reasoning)
+    assert res["reranked"] and res["reranked"]["model"] == providers.FAST_RERANK_MODEL
+    assert claude_provider["openrouter"] == [providers.FAST_RERANK_MODEL]
     assert claude_provider["provider"] == []
 
 

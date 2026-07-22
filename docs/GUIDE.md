@@ -205,6 +205,13 @@ UI on top of the JSON API, `serve-api` runs the same API headless. Four tabs:
 - **Search** — `SIGNAL · KEPT` and `NOISE · PRUNED` **side by side**, so you see what the
   engine read *and* what it threw away. Toggle the LLM rerank and the header names the
   model, how many chunks it dropped, and what it cost.
+  **`grep`** sits on the same bar, next to the rerank toggle: it switches the box from
+  "rank what's relevant" to `megabrain grep` — the exact string, with every match grouped
+  by role (**DEFINES**, **READS** ranked by graph centrality with the files that reach
+  them, **CONFIG/DATA**, **TESTS**, **DOCS**). `.*` opts into regex, `Aa` into
+  case-insensitive; both are sticky and re-run instantly (no LLM, no vectors, ~50ms).
+  Every hit opens in the code navigator at its line, and **0 matches is rendered as
+  evidence** — verified absence over the index, with the files the index skips named.
 
 **Docs only** sits on both the Ask and the Search bar. It confines retrieval to the
 indexed markdown *before* scoring, so the answer comes from the docs rather than from

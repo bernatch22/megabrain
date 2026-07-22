@@ -26,6 +26,30 @@ This closes the standing routing rule "skip megabrain when you know the
 exact string" — now the literal lane is also index-aware. The MCP
 instructions route accordingly.
 
+**The rerank and the narrator are now separate model knobs, each measured at
+its own job.** They had shared one constant, which assumed the two jobs want
+the same thing. They don't: narration reasons about a flow in prose, the rerank
+emits a short id array under a 30K-char prompt.
+
+- **rerank → `google/gemini-3.5-flash-lite`** (`providers.FAST_RERANK_MODEL`).
+  20 mined merged-fix cases x 3 reps, identical candidate lists: recall and
+  rank-1 tie with 3.1 (19/20 both, every rep), but 3.5 hands the agent **2
+  files where 3.1 hands 3** — every rep, no exceptions. Less noise, same
+  answers, ~1.13s.
+- **narration stays `google/gemini-3.1-flash-lite`** (`FAST_CHAT_MODEL`).
+  On rails#57197 — the state-race case 0.18.1 called a model-tier limit —
+  both models now return the CORRECT verdict 3/3, so 3.1 wins on speed
+  (~3.8s vs ~5.6s) and price. **That both now pass is the finding**: the
+  narration failure was never the model's tier, it was what retrieval fed it.
+  The recall floor, body-batched rerank and untruncated render fixed the
+  narration by fixing its evidence.
+
+Bigger is measurably WORSE at reranking: `gpt-5-nano` and `glm-4.7-flash`
+return empty (reasoning spends the 300-token cap), `minimax-m2.7` truncates
+the JSON array, `qwen3.5-flash` takes **49s** on one case (vs 1.2s), and
+`gemini-3.5-flash` — 5x the price — failed open at 5.6s. The rerank wants an
+obedient fast model, not a smart one.
+
 **Recall floor: fusion is a ranking opinion, never a recall gate.** The
 field report from the nx#35656 demo run scored search 7/10, and the one
 structural complaint was measured to the row: the prior-art file the agent
@@ -172,6 +196,13 @@ to pay 67% more per output token is not a trade. Narration was a tie at *bad* �
 both models assert the deferred enqueue sees the right value when it demonstrably
 does not, which is a model-tier limit rather than a version one (see 0.18.1).
 3.5 is marginally faster and more concise; that buys nothing here.
+
+> **Both verdicts here were overturned in 1.0.0 — read that section, not this
+> one.** Neither was wrong when measured; both measured a system that no longer
+> exists. The rerank judged 1-line hint cards then and full chunk bodies now
+> (3.5 wins on the new task). And the narration failure was never a model-tier
+> limit: with 1.0.0's retrieval feeding it, *both* models now call rails#57197
+> correctly, 3/3. Quality attributed to the model belonged to what reached it.
 
 The two provider tests that hardcoded the slug now assert against
 `providers.FAST_CHAT_MODEL`, so the next model bump changes one constant instead

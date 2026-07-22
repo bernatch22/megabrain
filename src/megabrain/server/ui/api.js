@@ -98,6 +98,13 @@
     prune: (q, repo, rerank, docs) =>
       j("/prune?q=" + encodeURIComponent(q) + (repo ? "&repo=" + encodeURIComponent(repo) : "") +
         (rerank ? "&rerank=1" : "") + (docs ? "&docs=1" : "")),
+    // literal search, role-grouped — the API returns RECORDS (defines/reads/
+    // config/tests/docs + counts), not the CLI's rendered text, so the UI can
+    // draw file/symbol/in-degree/reached-from instead of parsing a string.
+    grep: (q, repo, regex, icase, path) =>
+      j("/grep?q=" + encodeURIComponent(q) + (repo ? "&repo=" + encodeURIComponent(repo) : "") +
+        (regex ? "&regex=1" : "") + (icase ? "&ignore_case=1" : "") +
+        (path ? "&path=" + encodeURIComponent(path) : "")),
     graph: (params, repo) => {
       const p = new URLSearchParams();
       for (const k of ["mode", "node", "source", "target"]) if (params[k]) p.set(k, params[k]);

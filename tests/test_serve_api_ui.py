@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import threading
+import urllib.error
 import urllib.parse
 import urllib.request
 from http.server import ThreadingHTTPServer
@@ -112,6 +113,42 @@ def test_prune_signal_and_noise(server):
     assert "chunks" in body and "noise" in body
     assert body["kept"] == len(body["chunks"])
     assert set(("kept", "pruned", "scanned", "ms")) <= set(body)
+
+
+def test_grep_returns_records_not_text(server):
+    """The studio DRAWS grep, so the route answers with the role-grouped
+    result as data — sections of records + true counts. (The CLI/MCP string
+    view is render_grep over the same result; only the rendering differs.)"""
+    status, body = _get(server[0], "/grep?q=check_password")
+    assert status == 200
+    assert body["pattern"] == "check_password" and body["matches"] >= 2
+    assert body["counts"]["defines"] == len(body["defines"]) >= 1
+    d = body["defines"][0]
+    # the fields a UI lays out — a string view would have flattened these
+    assert d["file"].endswith("login.py") and isinstance(d["line"], int)
+    assert d["symbol"] == "check_password" and "in_deg" in d
+    assert isinstance(d.get("reached_from"), list)
+
+
+def test_grep_zero_is_a_stated_result(server):
+    """0 matches is evidence, not an error: a well-formed empty payload with
+    every section present, so the UI can say 'verified absence' honestly."""
+    status, body = _get(server[0], "/grep?q=nonexistent_symbol_xyz")
+    assert status == 200 and body["matches"] == 0 and body["files"] == 0
+    assert all(body["counts"][k] == 0 for k in
+               ("defines", "reads", "config", "tests", "docs"))
+
+
+def test_grep_flags_and_bad_regex(server):
+    base = server[0]
+    assert _get(base, "/grep?q=CHECK_PASSWORD")[1]["matches"] == 0
+    assert _get(base, "/grep?q=CHECK_PASSWORD&ignore_case=1")[1]["matches"] >= 2
+    assert _get(base, "/grep?q=check_%5Cw%2B&regex=1")[1]["matches"] >= 2
+    assert _get(base, "/grep?q=check_%5Cw%2B")[1]["matches"] == 0   # literal default
+    # a half-typed regex from the UI is a 400 with a reason, never a 500
+    with pytest.raises(urllib.error.HTTPError) as e:
+        _get(base, "/grep?q=%28unclosed&regex=1")
+    assert e.value.code == 400 and "invalid regex" in e.value.read().decode()
 
 
 def test_search_repo_param(server):

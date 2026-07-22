@@ -122,6 +122,20 @@ def test_render_caps_are_loud(grep_repo_fs, monkeypatch):
     assert "more (narrow with" in out          # overflow counted, never silent
 
 
+def test_payload_keeps_records_and_true_counts(grep_repo_fs):
+    """The API view (studio) and the text view (CLI/MCP) are two renderings of
+    ONE result: the payload keeps the sections as records so a UI can lay them
+    out, and reports the true totals so a capped list never reads as complete."""
+    from megabrain.retrieval.grepx import grep_payload
+    res = grep_repo(grep_repo_fs, "resolve_flag")
+    p = grep_payload(res, limit=1)
+    assert p["pattern"] == "resolve_flag" and p["matches"] == res["matches"]
+    assert p["counts"]["reads"] == len(res["reads"])       # the TRUE total…
+    assert len(p["reads"]) == 1 and p["limit"] == 1        # …not what was sent
+    assert p["defines"][0]["symbol"] == res["defines"][0]["symbol"]
+    assert "reached_from" in p["defines"][0]
+
+
 def test_mcp_tool_registered_and_dispatches(grep_repo_fs):
     from megabrain.server import mcp
     assert any(t["name"] == "megabrain_grep" for t in mcp.TOOLS)

@@ -69,6 +69,27 @@ window.mockApi = function () {
         .map((c) => ({ ...c, file: "engine/flow_cache.py" })),
       noise: gen(8, []).map((c) => ({ ...c, file: "engine/http.py" })),
     }),
+    grep: async (q, repo, regex, icase) => {
+      await wait(60);                       // grep is ~50ms for real: no LLM
+      const mk = (file, line, symbol, kind, in_deg, text, reached) =>
+        ({ file, line, symbol, kind, in_deg, text, reached_from: reached || [] });
+      if (/^zero/i.test(q)) return { pattern: q, regex: !!regex, ignore_case: !!icase,
+        matches: 0, files: 0, limit: 200,
+        counts: { defines: 0, reads: 0, config: 0, tests: 0, docs: 0 },
+        defines: [], reads: [], config: [], tests: [], docs: [] };
+      const defines = [mk("engine/flow_cache.py", 88, q, "function", 6,
+        `def ${q}(root, flows):`, ["engine/http.py", "engine/indexer.py"])];
+      const reads = [
+        mk("engine/http.py", 214, "do_POST", "method", 9, `    out = ${q}(root, flows)`, ["engine/serve.py"]),
+        mk("engine/indexer.py", 61, "index_repo", "function", 4, `        if ${q}(root, f):`, ["engine/http.py"]),
+      ];
+      const config = [mk("pyproject.toml", 12, null, null, 0, `${q} = true`)];
+      const tests = [mk("tests/test_cache.py", 33, "test_serve", "function", 0, `    assert ${q}(tmp, [])`)];
+      const docs = [mk("README.md", 140, null, null, 0, `\`${q}\` serves a cached flow verbatim.`)];
+      return { pattern: q, regex: !!regex, ignore_case: !!icase, matches: 6, files: 6,
+        limit: 200, counts: { defines: 1, reads: 2, config: 1, tests: 1, docs: 1 },
+        defines, reads, config, tests, docs };
+    },
     graph: async (params) => {
       await wait(260);
       if (params.mode === "node") {

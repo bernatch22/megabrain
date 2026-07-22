@@ -124,6 +124,7 @@ repo.
 | `GET /symbol?name=` | repo-wide definitions of a bare name (go-to-definition) |
 | `GET /chunks?file=&q=` | every chunk of one file, scored + `selected` |
 | `GET /prune?q=&rerank=&docs=` | the flat signal list (`rerank=1` adds the LLM lane; `docs=1` searches the docs only) |
+| `GET /grep?q=&regex=&ignore_case=&path=` | literal search, **structured**: `{pattern, matches, files, counts, defines[], reads[], config[], tests[], docs[]}` — each match a record (`file`, `line`, `text`, `symbol`, `kind`, `in_deg`, `reached_from`), so a client draws it instead of parsing the CLI/MCP text view. Sections capped at 200 per role with the true totals in `counts`; a bad `regex` is a 400, not a 500 |
 | `GET /graph?mode=&node=&source=&target=` | the knowledge graph |
 | `GET /flows` | the flow cache listed (id · question · files · created · stale) |
 | `GET /flow?id=` | one cached flow in full |
@@ -164,7 +165,7 @@ answered to know the answer ended.
 | `MEGABRAIN_EMBED_BATCH` | — | shrink request size for local servers |
 | `MEGABRAIN_EMBED_CONCURRENCY` | `8` · `1` on a local endpoint | parallel embed requests during `index` |
 | `MEGABRAIN_ASK_MODEL` | `google/gemini-3.1-flash-lite` · `haiku` on Claude | the narration model |
-| `MEGABRAIN_RERANK_MODEL` | the ask model | model for `search --rerank` / MCP rerank |
+| `MEGABRAIN_RERANK_MODEL` | `google/gemini-3.5-flash-lite` | model for `search --rerank` / MCP rerank (measured separately from the ask model — see CHANGELOG 1.0.0) |
 | `MEGABRAIN_RERANK_BATCH` | `8` | candidates per judging call on the full-body rerank lane (remote HTTP only; local endpoints use the compact view) |
 | `MEGABRAIN_FORGE_MODEL` | the ask model | model that writes forged chunkers |
 | `MEGABRAIN_CHAT_PROVIDER` | auto | pin `claude` or `openrouter` (auto = claude when its SDK is importable) |

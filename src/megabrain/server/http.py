@@ -21,6 +21,10 @@ Endpoints:
     GET  /get           ?file=&symbol=&repo= -> {code}
     GET  /chunks        ?file=&q=&repo=   -> every chunk of one file (heatmap)
     GET  /prune         ?q=&rerank=&docs=&repo= -> {chunks(signal), noise, kept, pruned, …}
+    GET  /grep          ?q=&regex=&ignore_case=&path=&repo= -> role-grouped matches
+                                       (STRUCTURED: defines/reads/config/tests/docs
+                                        as records + counts; the CLI/MCP string view
+                                        is render_grep over the same result)
     GET  /graph         ?mode=&node=&source=&target=&repo= -> knowledge graph
     GET  /symbols       ?file=&repo=  -> one file's outline (no file: every name)
     GET  /symbol        ?name=&repo=  -> repo-wide definitions of a name
@@ -471,6 +475,24 @@ def _make_handler(reg: Registry, cors: str | None, enable_llm: bool,
                 if path == "/queries":
                     from .. import app
                     return self._send(200, app.example_queries(reg.get(repo_name).root))
+                if path == "/grep":
+                    pat = (qs.get("q") or qs.get("pattern") or [""])[0]
+                    if not pat.strip():
+                        return self._err(400, "missing q")
+                    import re as _re
+
+                    from ..retrieval.grepx import grep_payload, grep_repo
+                    flag = lambda k: (qs.get(k) or ["0"])[0] in ("1", "true")  # noqa: E731
+                    try:
+                        res = grep_repo(
+                            reg.get(repo_name).root, pat, regex=flag("regex"),
+                            ignore_case=flag("ignore_case"),
+                            path_filter=((qs.get("path") or [""])[0].strip() or None))
+                    except _re.error as e:
+                        # a half-typed pattern in the studio's regex mode is a
+                        # user error, not a server fault: say WHAT is wrong.
+                        return self._err(400, f"invalid regex: {e}")
+                    return self._send(200, grep_payload(res))
                 if path == "/prune":
                     q = (qs.get("q") or qs.get("query") or [""])[0].strip()
                     if not q:

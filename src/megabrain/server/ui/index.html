@@ -73,7 +73,7 @@
   .shell{display:flex;height:100vh;width:100%;position:relative;overflow:hidden}
   .rail{width:248px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);
         display:flex;flex-direction:column;position:relative;z-index:1}
-  .rail-brand{display:flex;align-items:center;gap:10px;padding:18px 18px 14px}
+  .rail-brand{display:flex;align-items:center;gap:10px;padding:18px 18px 14px;flex-shrink:0}
   .logo{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;
         color:#0a0f24;background:linear-gradient(135deg,var(--accent) 0%,var(--accent2) 100%);
         box-shadow:0 0 20px var(--accent-dim)}
@@ -81,7 +81,14 @@
   :root[data-theme="light"] .logo{color:#fff}
   .rail-title{font-weight:600;font-size:13px;letter-spacing:-0.01em}
   .rail-sub{font-size:10px;color:var(--muted);margin-top:3px;letter-spacing:0.02em}
-  .rail-section{padding:14px 10px 10px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:2px}
+  /* The repo list is the rail's SCROLLING region — brand and footer are fixed
+     ends, this takes the rest and scrolls. `min-height:0` is the whole fix:
+     a flex item defaults to min-height:auto, which refuses to shrink below its
+     content, so with enough repos the list grew past the rail and .shell's
+     overflow:hidden simply CLIPPED it — no scrollbar anywhere, and the footer
+     pushed out of view. Same pattern as .viewport. */
+  .rail-section{padding:14px 10px 10px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:2px;
+                flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain}
   .rail-label{font-size:10px;color:var(--muted);letter-spacing:0.1em;padding:0 8px 10px}
   .repo-row{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:7px;text-align:left;
             transition:background 120ms;position:relative}
@@ -97,7 +104,9 @@
   .add-repo{display:flex;align-items:center;gap:8px;padding:10px 12px;margin-top:4px;border-radius:7px;
             font-size:12px;font-weight:500;color:var(--muted);border:1px dashed var(--border2);transition:all 150ms}
   .add-repo:hover{color:var(--text);border-color:var(--accent-bd)}
-  .rail-foot{padding:14px 14px 16px;border-top:1px solid var(--border);margin-top:auto}
+  /* margin-top:auto still pins it to the bottom when the list is SHORT; the
+     flex-shrink:0 keeps it whole when the list is long. */
+  .rail-foot{padding:14px 14px 16px;border-top:1px solid var(--border);margin-top:auto;flex-shrink:0}
   .rail-foot-btn{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border-radius:6px;
                  font-size:12px;font-weight:500;color:var(--muted);transition:background 150ms,color 150ms}
   .rail-foot-btn:hover{background:var(--panel2);color:var(--text)}
@@ -134,6 +143,25 @@
   .btn-ghost{display:flex;align-items:center;gap:6px;padding:8px 12px;margin-right:4px;background:var(--panel2);
              border:1px solid var(--border);border-radius:7px;font-size:11.5px;font-weight:500;color:var(--text);transition:background 150ms}
   .btn-ghost:hover{background:var(--border)}
+  /* Tooltip — a glyph-only control cannot do without one. Native `title=` is
+     ~1s late, unstyleable, and easy to miss, which is exactly how `.*` and
+     `Aa` read as mystery buttons. Any element: data-tip="…", plus
+     data-tip-align="right" when it sits near the right edge (a centered
+     tooltip there would run off screen). Hover-capable pointers ONLY: touch
+     has no hover, and a tooltip that latches on tap is worse than none. */
+  @media (hover:hover){
+    [data-tip]{position:relative}
+    [data-tip]::after{content:attr(data-tip);position:absolute;top:calc(100% + 9px);left:50%;
+      transform:translateX(-50%) translateY(-4px);background:var(--panel2);color:var(--text);
+      border:1px solid var(--border2);border-radius:8px;padding:8px 11px;font-size:11px;
+      font-weight:450;line-height:1.55;letter-spacing:0;text-align:left;white-space:normal;
+      width:max-content;max-width:280px;box-shadow:0 10px 30px rgba(0,0,0,0.32);
+      opacity:0;pointer-events:none;z-index:90;transition:opacity 130ms ease,transform 130ms ease}
+    [data-tip][data-tip-align="right"]::after{left:auto;right:0;transform:translateY(-4px)}
+    [data-tip]:hover::after,[data-tip]:focus-visible::after{opacity:1;transform:translateX(-50%) translateY(0)}
+    [data-tip][data-tip-align="right"]:hover::after,
+    [data-tip][data-tip-align="right"]:focus-visible::after{transform:translateY(0)}
+  }
   .stats-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px;padding:0 4px;
              font-size:11.5px;font-weight:500;color:var(--muted)}
   .stats-row b{color:var(--text);font-weight:600}

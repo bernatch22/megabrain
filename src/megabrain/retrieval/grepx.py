@@ -31,6 +31,9 @@ from .scoring import _is_test_path
 # a bounded listing that reads as complete is a lie).
 MAX_PER_SECTION = 40
 MAX_REACHED_FROM = 4
+# The wire cap for `GET /grep`. Higher than the text one because a UI SCROLLS
+# — the 40-line ceiling exists to protect an agent's context, not a viewport.
+API_MAX_PER_SECTION = 200
 
 _DOC_EXT = {".md", ".rst", ".txt"}
 _DATA_EXT = {".json", ".yaml", ".yml", ".toml", ".xml"}
@@ -128,6 +131,25 @@ def grep_repo(root: Path, pattern: str, regex: bool = False,
     return {"pattern": pattern, "regex": regex, "ignore_case": ignore_case,
             "matches": total, "files": len(files_hit),
             **{k: v for k, v in sections.items()}}
+
+
+SECTIONS = ("defines", "reads", "config", "tests", "docs")
+
+
+def grep_payload(res: dict, limit: int = API_MAX_PER_SECTION) -> dict:
+    """The JSON shape of a grep result — for a client that DRAWS it (`GET
+    /grep`, the studio) instead of reading a string. Same roles, same order,
+    same ranking as `render_grep`; the difference is that the sections stay
+    lists of records so the caller can lay out file/symbol/in-degree/
+    reached-from as UI instead of re-parsing text.
+
+    Sections are capped for the wire, and `counts` carries the TRUE totals —
+    the same rule the text view follows: a bounded listing that reads as
+    complete is a lie, so a client can always say "200 of 1240" and mean it."""
+    return {**{k: v for k, v in res.items() if k not in SECTIONS},
+            "counts": {k: len(res[k]) for k in SECTIONS},
+            "limit": limit,
+            **{k: res[k][:limit] for k in SECTIONS}}
 
 
 def _fmt(m: dict, arrow: bool = False) -> str:

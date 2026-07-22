@@ -20,6 +20,8 @@
     search: I('<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/>', 16),
     prune: I('<path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/>', 16),
     ask: I('<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>', 16),
+    // literal search: the magnifier over lines of text (lucide text-search)
+    grep: I('<circle cx="11" cy="11" r="7"/><path d="M21 21l-3.6-3.6M8.4 9.4h5.2M8.4 12.6h3.4"/>', 16),
     graph: I('<circle cx="5" cy="6" r="2.2"/><circle cx="19" cy="6" r="2.2"/><circle cx="12" cy="18" r="2.2"/><path d="M7 7.2l3.6 8.6M17 7.2l-3.6 8.6M7.2 6h9.6"/>', 16),
     gear: I('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>', 14),
     sun: I('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>', 14),
@@ -58,6 +60,13 @@
     // `pruneRerank` here meant the persisted rerank state never came back).
     prune: null, rerank: ls.get("mb-rerank", "0") === "1",
     docsOnly: ls.get("mb-docs", "0") === "1",   // search/ask the DOCS, not the code
+    // grep lane of the Search tab: the SAME box, switched from "rank what is
+    // relevant" to "find this exact string and tell me what each hit IS".
+    // Deterministic and free, so every toggle re-runs it immediately.
+    grepOn: ls.get("mb-grep", "0") === "1",
+    grep: null, grepQ: "",              // grepQ = the pattern the result is FOR
+    grepRegex: ls.get("mb-grep-rx", "0") === "1",
+    grepICase: ls.get("mb-grep-ic", "0") === "1",
     ask: null, askCtl: null,
     flows: null, flowsLoading: false, flowSel: null,   // flow-cache list + viewer
     queries: null,                       // .megabrainqueries starter chips
@@ -184,7 +193,7 @@
 
   function queryBar(placeholder, right) {
     return `<div class="query-wrap">
-      <div class="query-icon">${st.view === "search" ? ico.prune : st.view === "ask" ? ico.ask : ico.search}</div>
+      <div class="query-icon">${st.view === "search" ? (st.grepOn ? ico.grep : ico.prune) : st.view === "ask" ? ico.ask : ico.search}</div>
       <input id="q" class="query-input" value="${esc(st.q)}" placeholder="${esc(placeholder)}" autocomplete="off" spellcheck="false"/>
       ${right || ""}
     </div>`;
@@ -209,18 +218,32 @@
   const docsOn = () => st.docsOnly && docsAvailable();
   const docsBtn = () => {
     const off = !docsAvailable();
-    return `<button class="btn-ghost" data-act="docs-toggle" ${off ? "disabled" : ""}
-      title="${off ? "This repo has no indexed markdown — nothing to search. (Files can exist on disk and still be excluded by .megabrainignore.)"
-        : "Search the indexed DOCS only (markdown) instead of the code. Retrieval is confined before scoring, so the whole answer comes from the docs — not code that merely mentions them."}"
-      style="${off ? "opacity:.45;cursor:not-allowed"
-        : docsOn() ? "background:var(--accent-dim);border-color:var(--accent-bd);color:var(--accent)" : ""}">${ico.fileL}<span>${off ? "No docs indexed" : `Docs only ${docsOn() ? "on" : "off"}`}</span></button>`;
+    return `<button class="btn-ghost" data-act="docs-toggle" ${off ? "disabled" : ""} data-tip-align="right"
+      data-tip="${off ? "This repo has no indexed markdown — nothing to search. (Files can exist on disk and still be excluded by .megabrainignore.)"
+        : "Search the indexed DOCS only (markdown) instead of the code. Retrieval is confined to them BEFORE scoring, so the whole answer comes from the docs — never from code that merely mentions them."}"
+      aria-pressed="${docsOn()}" style="${off ? "opacity:.45;cursor:not-allowed" : onStyle(docsOn())}">${ico.fileL}<span>${off ? "No docs indexed" : `Docs only ${docsOn() ? "on" : "off"}`}</span></button>`;
   };
 
+  // The lit-up style every toggle in the query bar shares — one definition so
+  // grep's switches can't drift from rerank's and docs'.
+  const onStyle = (on) => (on ? "background:var(--accent-dim);border-color:var(--accent-bd);color:var(--accent)" : "");
+
+  // The grep switch lives in the SAME query bar as rerank/docs because it is
+  // the same box asking a different question: ranked relevance (prune) vs
+  // "find this exact string and tell me what each hit IS" (grep).
+  const grepBtn = () => `<button class="btn-ghost" data-act="grep-toggle" data-tip-align="right"
+      data-tip="${st.grepOn
+        ? "grep ON — searching for the exact string. Click to go back to ranked relevance (signal vs noise)."
+        : "Find an exact string instead of ranking relevance: every match grouped by role — where it is DEFINED, what READS it (core first, with who reaches those files), plus config, tests and docs. No LLM, no vectors, ~50ms."}"
+      aria-pressed="${st.grepOn}" style="${onStyle(st.grepOn)}">${ico.grep}<span>grep ${st.grepOn ? "on" : "off"}</span></button>`;
+
   function viewSearch() {
+    if (st.grepOn) return viewGrep();
     const r = st.search;
-    const rerankBtn = `<button class="btn-ghost" data-act="rerank-toggle" title="LLM pass: drop vocabulary-only matches (tests/evals), reorder — fails open to the deterministic list"
-        style="${st.rerank ? "background:var(--accent-dim);border-color:var(--accent-bd);color:var(--accent)" : ""}">✨<span>LLM rerank ${st.rerank ? "on" : "off"}</span></button>`;
-    const right = docsBtn() + rerankBtn + (st.loading ? `<div class="badge"><span class="spinner"></span></div>`
+    const rerankBtn = `<button class="btn-ghost" data-act="rerank-toggle" data-tip-align="right"
+        data-tip="One cheap LLM pass over the kept list: drops matches that only SHARE VOCABULARY with the query (tests, eval scripts) and reorders the rest. Fails open — on any error you get the deterministic list untouched."
+        aria-pressed="${st.rerank}" style="${onStyle(st.rerank)}">✨<span>LLM rerank ${st.rerank ? "on" : "off"}</span></button>`;
+    const right = docsBtn() + rerankBtn + grepBtn() + (st.loading ? `<div class="badge"><span class="spinner"></span></div>`
       : r ? `<div class="badge"><b style="color:var(--accent)">${r.kept}</b><span>kept</span><span style="opacity:.5">·</span><span style="color:var(--muted)">${r.pruned} pruned</span></div>` : "");
     let body;
     if (r) {
@@ -275,6 +298,128 @@
       </div>
       <div class="mono" style="flex-shrink:0">${(n.score || 0).toFixed(2)}</div>
     </div>`;
+  }
+
+  // ── grep lane: literal search, drawn from RECORDS ────────────────────
+  // GET /grep answers with the role-grouped result as DATA (defines/reads/
+  // config/tests/docs + true counts), not the CLI's rendered text — so the
+  // roles become sections, the enclosing symbol becomes a pill, in-degree
+  // becomes a rank, and `reached_from` becomes clickable files. The CLI and
+  // MCP still get the string (render_grep); both are views of one result.
+
+  const GREP_SECTIONS = [
+    ["defines", "DEFINES", "where the name is declared", true],
+    ["reads", "READS · by graph centrality", "real code using it — the site more of the repo depends on comes first", true],
+    ["config", "CONFIG / DATA", "data files, or a line inside no symbol", false],
+    ["tests", "TESTS", "the spec of the behavior — listed, never dropped", false],
+    ["docs", "DOCS", "prose mentions", false],
+  ];
+
+  // Highlight the hit inside the matched line. Marking is done on the RAW
+  // text and each piece escaped after, because marking escaped HTML would
+  // corrupt entities (`a &amp;& b` searched for `&`).
+  function grepHl(text, r) {
+    let rx;
+    try {
+      rx = new RegExp(r.regex ? r.pattern : r.pattern.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+                      "g" + (r.ignore_case ? "i" : ""));
+    } catch (e) { return esc(text); }
+    let out = "", last = 0, m, guard = 0;
+    while ((m = rx.exec(text)) && guard++ < 400) {
+      if (!m[0]) { rx.lastIndex++; continue; }        // zero-width: never loop
+      out += esc(text.slice(last, m.index)) +
+        '<mark style="background:var(--accent-dim);color:var(--accent);border-radius:2px;padding:0 1px">' +
+        esc(m[0]) + "</mark>";
+      last = m.index + m[0].length;
+    }
+    return out + esc(text.slice(last));
+  }
+
+  function grepRow(m, r, arrow) {
+    // `reached from` is the half of the diagnosis plain grep cannot show: the
+    // files whose import/call edges land on this one. An expected caller
+    // MISSING from it is a finding, so the list is rendered even when short.
+    const reached = arrow && (m.reached_from || []).length
+      ? `<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:6px 12px 10px;border-top:1px solid var(--border)">
+           <span class="mono" style="font-size:10px;color:var(--muted);flex-shrink:0">← reached from</span>
+           ${m.reached_from.map((f) => `<button class="file-pill mono" data-act="vopen" data-file="${esc(f)}" data-line="1" title="open ${esc(f)}">${esc(f.split("/").pop())}</button>`).join("")}
+         </div>` : "";
+    return `<div class="chunk" style="border-left:2px solid ${arrow ? "var(--accent)" : "var(--border)"}">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px 5px">
+        <div style="display:flex;align-items:center;gap:8px;min-width:0">
+          ${m.kind ? `<div class="kind-pill on">${esc(m.kind)}</div>` : ""}
+          <div class="mono" style="font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(m.symbol || "—")}</div>
+        </div>
+        ${arrow ? `<div class="mono" style="font-size:10px;color:var(--muted);flex-shrink:0" title="how many files import/call this file — what READS is ranked by">in-deg ${m.in_deg || 0}</div>` : ""}
+      </div>
+      <button class="mono" data-act="vopen" data-file="${esc(m.file)}" data-line="${m.line}"
+        style="display:block;font-size:10.5px;color:var(--muted);padding:0 12px 6px;text-align:left"
+        title="open this file at line ${m.line}">${esc(m.file)}<span style="opacity:.55">:${m.line}</span> ⤢</button>
+      <pre class="mono" style="font-size:11px;padding:8px 12px;background:var(--code);border-top:1px solid var(--border);overflow-x:auto">${grepHl(m.text || "", r)}</pre>
+      ${reached}</div>`;
+  }
+
+  function grepSections(r) {
+    return GREP_SECTIONS.map(([key, title, hint, arrow]) => {
+      const total = (r.counts || {})[key] || 0;
+      if (!total) return "";
+      const rows = r[key] || [];
+      // The wire cap is announced with the TRUE total — a listing that reads
+      // as complete when it isn't is the one thing this view must never do.
+      const more = total > rows.length
+        ? `<div style="font-size:11px;color:var(--muted);padding:6px 2px">… +${total - rows.length} more of ${total} (narrow with a longer pattern)</div>` : "";
+      return `<div style="min-width:0">
+        <div class="section-head"><div class="${arrow ? "signal-label" : "noise-label"} mono">${arrow ? '<div class="dotlive"></div>' : ico.x}${title}</div>
+          <div class="section-rule"></div><div class="mono" style="font-size:10.5px;font-weight:600">${total}</div></div>
+        <div style="font-size:11px;color:var(--muted);margin:-4px 0 8px">${esc(hint)}</div>
+        <div style="display:flex;flex-direction:column;gap:8px;min-width:0">${rows.map((m) => grepRow(m, r, arrow)).join("")}</div>
+        ${more}</div>`;
+    }).join("");
+  }
+
+  function viewGrep() {
+    const r = st.grep;
+    // Two glyphs with no label, so the tooltip says BOTH what is active right
+    // now and what a click does. `Aa` especially: lit vs unlit is not self-
+    // evident, and it is INVERTED from an editor's "match case" (here ON =
+    // ignore case), so naming the current state is the whole point.
+    const modeBtn = (act, on, label, tip) =>
+      `<button class="btn-ghost" data-act="${act}" data-tip="${esc(tip)}" data-tip-align="right"
+        aria-pressed="${on}" style="${onStyle(on)}">${label}</button>`;
+    const right = grepBtn()
+      + modeBtn("grep-regex", st.grepRegex, ".*", st.grepRegex
+        ? "Regex ON — the pattern is a regular expression: resolve_\\w+ matches resolve_flag and resolve_path. Click for a literal search."
+        : "Literal (default) — ( . * [ ] match themselves, so config.get( finds exactly that string. Click to switch to regex.")
+      + modeBtn("grep-icase", st.grepICase, "Aa", st.grepICase
+        ? "Ignoring case — Foo also matches foo and FOO. Click to go back to case-sensitive."
+        : "Case-sensitive (the default, same as the CLI) — Foo does NOT match foo. Click to ignore case.")
+      + (st.loading ? `<div class="badge"><span class="spinner"></span></div>`
+        : r ? `<div class="badge"><b style="color:var(--accent)">${r.matches}</b><span>match${r.matches === 1 ? "" : "es"}</span><span style="opacity:.5">·</span><span style="color:var(--muted)">${r.files} file${r.files === 1 ? "" : "s"}</span></div>` : "");
+    let body;
+    if (r && r.matches === 0) {
+      // Zero is often THE answer — a flag nobody sets inherits its default.
+      // State it as evidence with its honest scope (the INDEX), never as a
+      // shrug: hedging here throws away the one result that mattered.
+      body = `<div class="chunk" style="border-left:2px solid var(--accent);padding:16px 18px">
+        <div style="font-size:13px;font-weight:600">0 matches — verified absence over the index</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-top:6px">
+          Nothing in <b class="mono">${esc(st.repo || "")}</b>'s indexed corpus contains
+          <code class="mono">${esc(r.pattern)}</code>. That is evidence, not a gap: a name nothing
+          reads inherits its default. Files the index skips — lockfiles, config JSON, binaries,
+          anything <code class="mono">.megabrainignore</code>d — are NOT covered; plain-grep those.
+          If the repo changed since the last index, re-index before trusting the zero.</div></div>`;
+    } else if (r) {
+      body = `<div class="stats-row">
+          <div><span style="color:var(--muted)">pattern</span> <b class="mono">${esc(r.pattern)}</b></div><div class="sdot"></div>
+          <div><b>${r.matches}</b> match${r.matches === 1 ? "" : "es"} in <b>${r.files}</b> file${r.files === 1 ? "" : "s"}</div><div class="sdot"></div>
+          <div style="color:var(--muted)">${r.regex ? "regex" : "literal"}${r.ignore_case ? " · ignore case" : " · case-sensitive"} · no LLM, no vectors</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:18px">${grepSections(r)}</div>`;
+    } else {
+      body = emptyState("Literal search that understands what it found.",
+        "Type the exact identifier and hit ⏎ — every match comes back grouped: where it's DEFINED, what READS it (core first, with who reaches those files), plus config, tests and docs.");
+    }
+    return `<div class="view-wrap mb-fade" style="max-width:1280px">${queryBar("Exact identifier or string — where is it defined, who reads it?", right)}${body}</div>`;
   }
 
   // ── code navigator: a read-only IDE over the index ───────────────────
@@ -1538,6 +1683,19 @@
     catch (e) { toast(e.message); }
     st.loading = false; renderView();
   }
+  async function runGrep() {
+    if (!st.q.trim() || !st.repo) return;
+    st.loading = true; renderView();
+    try {
+      st.grep = await api.grep(st.q.trim(), st.repo, st.grepRegex, st.grepICase);
+      st.grepQ = st.q.trim();
+    } catch (e) {
+      // a half-typed regex 400s — drop the old result rather than leaving
+      // yesterday's matches on screen under today's pattern
+      st.grep = null; toast(e.message);
+    }
+    st.loading = false; renderView();
+  }
   function runAsk() {
     if (!st.q.trim() || !st.repo) return;
     if (st.askCtl) { try { st.askCtl.abort(); } catch (e) {} st.askCtl = null; }
@@ -2144,6 +2302,18 @@
       st.repo = t.dataset.name; clearRepoState(); render();
     }
     else if (act === "rerank-toggle") { st.rerank = !st.rerank; ls.set("mb-rerank", st.rerank ? "1" : "0"); if (st.q.trim()) runSearch(); else renderView(); }
+    else if (act === "grep-toggle") {
+      st.grepOn = !st.grepOn; ls.set("mb-grep", st.grepOn ? "1" : "0");
+      // Entering grep runs it (deterministic, ~50ms, no LLM) unless the
+      // showing result is already for this pattern. LEAVING only repaints:
+      // re-running prune with rerank on would spend an LLM call on a toggle.
+      if (st.grepOn && st.q.trim() && st.grepQ !== st.q.trim()) runGrep(); else renderView();
+    }
+    else if (act === "grep-regex" || act === "grep-icase") {
+      if (act === "grep-regex") { st.grepRegex = !st.grepRegex; ls.set("mb-grep-rx", st.grepRegex ? "1" : "0"); }
+      else { st.grepICase = !st.grepICase; ls.set("mb-grep-ic", st.grepICase ? "1" : "0"); }
+      if (st.q.trim()) runGrep(); else renderView();
+    }
     else if (act === "docs-toggle") {
       if (!docsAvailable()) return;        // nothing to filter — the chip says so
       st.docsOnly = !st.docsOnly; ls.set("mb-docs", st.docsOnly ? "1" : "0");
@@ -2232,7 +2402,7 @@
     }
     if (e.key === "Enter" && document.activeElement && document.activeElement.id === "q") {
       st.q = document.activeElement.value;
-      if (st.view === "search") runSearch();
+      if (st.view === "search") { if (st.grepOn) runGrep(); else runSearch(); }
       else if (st.view === "graph") runGraphQuery(); else runAsk();
     }
     if (e.key === "Enter" && document.activeElement && document.activeElement.id === "add-path") { doScan(); }
@@ -2253,6 +2423,7 @@
   function clearRepoState() {
     st.q = "";                 // the input belonged to the previous repo —
     st.search = st.ask = null; // leaving it filled reads as a stale request
+    st.grep = null; st.grepQ = "";   // matches were THAT repo's, not this one
     st.flows = null; st.flowSel = null; st.queries = null; st.warm = null;
     st.graph = null; st.graphNode = null; st.graphSel = null;
     st.graphPath = null; st.graphPos = {};

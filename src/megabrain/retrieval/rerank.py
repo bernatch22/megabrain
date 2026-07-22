@@ -68,10 +68,13 @@ mechanism asked about. Example output: [12, 7, 31]"""
 
 
 def rerank_model() -> str:
-    """`MEGABRAIN_RERANK_MODEL` or the ask default — reranking is cheap, any
-    fast model works."""
+    """`MEGABRAIN_RERANK_MODEL`, else the measured rerank default (see
+    providers.FAST_RERANK_MODEL) — on the claude provider, the CLI alias, so a
+    claude-only setup still works without an OpenRouter key."""
     from .. import providers
-    return os.environ.get("MEGABRAIN_RERANK_MODEL") or providers.ask_model()
+    return (os.environ.get("MEGABRAIN_RERANK_MODEL")
+            or ("haiku" if providers.chat_provider() == "claude"
+                else providers.FAST_RERANK_MODEL))
 
 
 _IDENT = re.compile(r"[A-Za-z_][A-Za-z0-9_]{3,}")
@@ -205,7 +208,7 @@ def llm_rerank(res: dict, question: str, model: str | None = None) -> dict:
                                  os.environ.get("MEGABRAIN_CHAT_API_KEY"),
                                  required=False)
         chat = partial(providers._REGISTRY["openrouter"].chat_text, key=key)
-        m = providers.FAST_CHAT_MODEL
+        m = providers.FAST_RERANK_MODEL
     # Bodies go to the judge only on a REMOTE HTTP lane: a local server
     # (Ollama) serializes and chokes on parallel ~9K-token prompts, and the
     # claude CLI lane spawns a ~18s process per call — both stay on the
