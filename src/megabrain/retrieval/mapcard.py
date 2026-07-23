@@ -79,6 +79,33 @@ def _expand_terms(query: str, chunks: list[dict], model: str | None) -> list[str
     return [t for t in terms if 3 <= len(t) <= 60][:5]
 
 
+def expand_pool(st, query: str, res: dict, model: str | None = None, *,
+                path_filter: str | None = None, with_text: bool = True,
+                only_docs: bool = False, exclude_docs: bool = False) -> dict | None:
+    """THE EXPANDER, shared by map and search — the judge can only reorder
+    what cosine FOUND; when the cause never enters the pool (jinja lesson:
+    the symptom query missed _textwrap.py entirely) no reordering rescues
+    it. One cheap call names the mechanism vocabulary the query lacks, a
+    second deterministic pass over query+terms widens `res["chunks"]` in
+    place (deduped by id), and `res["expanded"]` records the terms. The LLM
+    never picks spans — it only names search terms. Fails open to None."""
+    try:
+        terms = _expand_terms(query, res["chunks"], model)
+        if not terms:
+            return None
+        wide = prune_search(st, query + " " + " ".join(terms),
+                            path_filter=path_filter, with_text=with_text,
+                            only_docs=only_docs, exclude_docs=exclude_docs)
+        seen = {c["id"] for c in res["chunks"]}
+        res["chunks"] += [c for c in wide["chunks"] if c["id"] not in seen]
+        res["kept"] = len(res["chunks"])
+        res["expanded"] = {"terms": terms}
+        return res["expanded"]
+    except Exception:
+        log.debug("expansion failed open", exc_info=True)
+        return None
+
+
 def map_repo(root: Path, query: str, path_filter: str | None = None,
              rerank: bool = False, expand: bool = False,
              model: str | None = None) -> dict:
@@ -95,26 +122,11 @@ def map_repo(root: Path, query: str, path_filter: str | None = None,
         # the result or the render (the no-bodies contract is the point).
         res = prune_search(st, query, path_filter=path_filter,
                            with_text=llm, exclude_docs=True)
-        # THE EXPANDER — the judge can only reorder what cosine FOUND; when
-        # the cause never enters the pool (jinja lesson: the symptom query
-        # missed _textwrap.py entirely) no reordering rescues it. One cheap
-        # call names the mechanism vocabulary the query lacks, and a second
-        # deterministic pass over query+terms widens the pool BEFORE judging.
-        # The LLM never picks spans — it only names search terms.
         expanded = None
         if expand:
-            try:
-                terms = _expand_terms(query, res["chunks"], model)
-                if terms:
-                    wide = prune_search(st, query + " " + " ".join(terms),
-                                        path_filter=path_filter,
-                                        with_text=llm, exclude_docs=True)
-                    seen_ids = {c["id"] for c in res["chunks"]}
-                    res["chunks"] += [c for c in wide["chunks"]
-                                      if c["id"] not in seen_ids]
-                    expanded = {"terms": terms}
-            except Exception:
-                log.debug("map expansion failed open", exc_info=True)
+            expanded = expand_pool(st, query, res, model,
+                                   path_filter=path_filter, with_text=llm,
+                                   exclude_docs=True)
     # THE JUDGE — cosine can't tell "formats the symptom" from "causes it":
     # on the mypy field run messages.py (which only BUILDS the error text the
     # query quotes) near-tied with constraints.py (where the fix lived) and

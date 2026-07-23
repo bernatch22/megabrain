@@ -50,6 +50,15 @@
      "description": "default false = search the CODE. true = search the indexed DOCS (markdown) instead. It is one or the other, never a blend: a large README otherwise outranks the implementation it describes.",
      "type": "boolean"
     },
+    "expand": {
+     "default": true,
+     "description": "default true: one cheap LLM call names the mechanism identifiers your query lacks and a second deterministic pass widens the pool with them before the judge \u2014 kills the follow-up search/grep round (fails open).",
+     "type": "boolean"
+    },
+    "model": {
+     "description": "optional model pin for the judge/expander calls.",
+     "type": "string"
+    },
     "repo_path": {
      "description": "path to the indexed repo root (a sub-path also works \u2014 the root is auto-detected from .megabrain)",
      "type": "string"

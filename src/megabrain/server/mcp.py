@@ -155,6 +155,14 @@ TOOLS = [
                                           "matches (tests/evals/tangential files) and reorders "
                                           "(~1-2s). Fails open to the deterministic list. "
                                           "false = pure deterministic retrieval (~200ms)."},
+                "expand": {"type": "boolean", "default": True,
+                           "description": "default true: one cheap LLM call names the "
+                                          "mechanism identifiers your query lacks and a second "
+                                          "deterministic pass widens the pool with them before "
+                                          "the judge — kills the follow-up search/grep round "
+                                          "(fails open)."},
+                "model": {"type": "string",
+                          "description": "optional model pin for the judge/expander calls."},
             },
             "required": ["repo_path", "task"],
         },
@@ -438,6 +446,8 @@ def call_tool(name: str, args: dict) -> str:
         with_text = not bool(args.get("compact"))
         res = app.prune(root, args["task"], path_filter=pf, with_text=with_text,
                         llm_rerank=bool(args.get("rerank", True)),
+                        expand=bool(args.get("expand", True)),
+                        model=args.get("model"),
                         docs=bool(args.get("docs")))
         return render_pruned(res, with_text=with_text)
     if name == "megabrain_ask":

@@ -144,3 +144,23 @@ def test_mcp_tool_registered_and_dispatches(grep_repo_fs):
                         {"repo_path": str(grep_repo_fs),
                          "pattern": "resolve_flag"})
     assert "DEFINES (1)" in out and "core.py" in out
+
+
+def test_render_compacts_tests_docs_to_one_line_per_file(grep_repo_fs):
+    """click field run: 'multiple=True' rendered 26 quoted test lines — a
+    wall. Tests/docs/config matter as LOCATIONS: one line per file with the
+    count and line numbers, never the quoted bodies."""
+    out = render_grep(grep_repo(grep_repo_fs, "resolve_flag"))
+    tests_sec = out.split("TESTS (")[1].split("\n\n")[0]
+    assert "×" in tests_sec and "L" in tests_sec
+    assert "test_build_honors" not in tests_sec      # no quoted line bodies
+
+
+def test_render_prints_each_reached_from_list_once(grep_repo_fs):
+    """The same reached-from list printed verbatim under every match of the
+    same core module (click field run: 20 repeats) — each distinct list
+    renders once; repeats add zero information."""
+    out = render_grep(grep_repo(grep_repo_fs, "resolve_flag"))
+    import re as _re
+    arrows = _re.findall(r"← reached from: (.+)", out)
+    assert len(arrows) == len(set(arrows))           # no duplicate lists

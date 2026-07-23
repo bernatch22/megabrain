@@ -173,6 +173,10 @@ def render_pruned(res: dict, with_text: bool = True,
     spec = f' · ⚠ {n_tests} spec test(s) at the BOTTOM' if n_tests else ""
     L.append(f'repo `{res["repo"]}` · {res["kept"]} signal chunks '
              f'({res["pruned"]} pruned as noise){spec} · {res["ms"]}ms{tail}\n')
+    if res.get("expanded"):
+        # the terms double as vocabulary hints for the reader, not just lanes
+        L.insert(1, "expanded with mechanism terms: "
+                    + ", ".join(res["expanded"]["terms"]))
     spent = 0
     omitted = 0
     for rank, c in enumerate(res["chunks"], 1):

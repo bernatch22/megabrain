@@ -36,7 +36,8 @@ def test_search_always_prunes_and_exposes_no_bundle_switch():
     props = t["inputSchema"]["properties"]
     assert "prune_noise" not in props
     assert "full" not in props
-    assert set(props) == {"repo_path", "task", "scope_path", "compact", "rerank", "docs"}
+    assert set(props) == {"repo_path", "task", "scope_path", "compact",
+                          "rerank", "expand", "model", "docs"}
 
 
 def test_search_takes_the_prune_path(monkeypatch):

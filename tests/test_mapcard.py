@@ -208,6 +208,41 @@ def test_demo_files_never_make_the_head(tmp_path, fake_embedder):
     assert all("demo_login_user" != t["ident"] for t in res["trail"])
 
 
+def test_search_expand_widens_the_pool_and_renders_terms(tiny_repo, monkeypatch):
+    """The expander is SHARED: app.prune(expand=True) runs the same PRF as
+    map — the click field run needed a second search + greps because the
+    first query lacked the mechanism vocabulary; the expander kills that
+    follow-up round."""
+    import megabrain.providers as providers
+    from megabrain import app
+    from megabrain.retrieval.render import render_pruned
+
+    def fake_chat_text(model, prompt, max_tokens, **kw):
+        assert "JSON array" in prompt
+        return '["create_invoice", "billing amount"]'
+    monkeypatch.setattr(providers, "chat_text", fake_chat_text)
+    res = app.prune(tiny_repo, "how is a user login password checked",
+                    expand=True)
+    assert res["expanded"]["terms"] == ["create_invoice", "billing amount"]
+    assert any(c["file"] == "billing/invoice.py" for c in res["chunks"])
+    out = render_pruned(res)
+    assert "expanded with mechanism terms: create_invoice" in out
+
+
+def test_search_expand_fails_open(tiny_repo, monkeypatch):
+    import megabrain.providers as providers
+    from megabrain import app
+
+    def broken_chat(model, prompt, max_tokens, **kw):
+        raise TimeoutError("provider down")
+    monkeypatch.setattr(providers, "chat_text", broken_chat)
+    res = app.prune(tiny_repo, "how is a user login password checked",
+                    expand=True)
+    det = app.prune(tiny_repo, "how is a user login password checked")
+    assert "expanded" not in res
+    assert [c["id"] for c in res["chunks"]] == [c["id"] for c in det["chunks"]]
+
+
 def test_defines_budget_prefers_specific_tokens(tiny_repo):
     """Field run: the agent put do_indent in the query and the generic words
     (indent, filter, first) consumed all 4 DEFINES slots, pushing out the one

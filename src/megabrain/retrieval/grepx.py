@@ -179,14 +179,37 @@ def render_grep(res: dict) -> str:
     parts = [head]
     titles = {"defines": "DEFINES", "reads": "READS (by graph centrality)",
               "config": "CONFIG/DATA", "tests": "TESTS", "docs": "DOCS"}
+    # a reached-from list repeats verbatim across matches of the same core
+    # module (click field run: the identical 4-file list printed 20 times) —
+    # print each distinct list ONCE; repeats add zero information.
+    seen_arrows: set[tuple] = set()
     for key, title in titles.items():
         ms = res[key]
         if not ms:
             continue
-        shown = ms[:MAX_PER_SECTION]
         parts.append(f"\n{title} ({len(ms)})")
-        parts += [_fmt(m, arrow=key in ("defines", "reads")) for m in shown]
-        if len(ms) > len(shown):
-            parts.append(f"  … +{len(ms) - len(shown)} more (narrow with a "
-                         f"scope_path or a longer pattern)")
+        if key in ("defines", "reads"):
+            shown = ms[:MAX_PER_SECTION]
+            for m in shown:
+                rf = tuple(m.get("reached_from") or ())
+                arrow = bool(rf) and rf not in seen_arrows
+                seen_arrows.add(rf)
+                parts.append(_fmt(m, arrow=arrow))
+            if len(ms) > len(shown):
+                parts.append(f"  … +{len(ms) - len(shown)} more (narrow with "
+                             f"a scope_path or a longer pattern)")
+        else:
+            # tests/docs/config matter as LOCATIONS, not as 26 quoted lines
+            # (click field run: 'multiple=True' listed every test verbatim —
+            # a wall). One line per file: count + the line numbers.
+            by_file: dict[str, list[int]] = {}
+            for m in ms:
+                by_file.setdefault(m["file"], []).append(m["line"])
+            for f, lns in list(by_file.items())[:MAX_PER_SECTION]:
+                nums = " ".join(f"L{n}" for n in lns[:8])
+                extra = f" +{len(lns) - 8} more" if len(lns) > 8 else ""
+                parts.append(f"  {f} ×{len(lns)} · {nums}{extra}")
+            if len(by_file) > MAX_PER_SECTION:
+                parts.append(f"  … +{len(by_file) - MAX_PER_SECTION} more "
+                             f"file(s)")
     return "\n".join(parts)

@@ -95,19 +95,29 @@ def query_multi(roots: list[Path], task: str,
 def prune(root: Path, task: str, path_filter: str | None = None,
           with_text: bool = True, include_pruned: bool = False,
           reindex: bool = True, llm_rerank: bool = False,
-          docs: bool = False) -> dict:
+          docs: bool = False, expand: bool = False,
+          model: str | None = None) -> dict:
     """No-LLM noise pruning -> flat ranked signal chunks, over the CODE;
-    `docs=True` prunes the indexed markdown instead. `llm_rerank` adds the
-    opt-in LLM lane on top (drop vocabulary-only matches, reorder); it fails
-    open to the deterministic result, so the floor never drops."""
-    from .retrieval.bundle import prune_search_root
+    `docs=True` prunes the indexed markdown instead. `expand` runs the
+    shared expander first (one cheap LLM call names the mechanism terms the
+    query lacks, a second deterministic pass widens the pool) and
+    `llm_rerank` adds the judge on top (drop vocabulary-only matches,
+    reorder). Both fail open, so the deterministic floor never drops."""
+    from .retrieval.bundle import prune_search
+    from .retrieval.state import load_state
     _maybe_reindex(root, reindex)
-    res = prune_search_root(root, task, path_filter=path_filter,
-                            with_text=with_text, include_pruned=include_pruned,
-                            **content_filters(docs))
+    cf = content_filters(docs)
+    with load_state(Path(root)) as st:
+        res = prune_search(st, task, path_filter=path_filter,
+                           with_text=with_text, include_pruned=include_pruned,
+                           **cf)
+        if expand:
+            from .retrieval.mapcard import expand_pool
+            expand_pool(st, task, res, model,
+                        path_filter=path_filter, with_text=with_text, **cf)
     if llm_rerank:
         from .retrieval.rerank import llm_rerank as _rerank
-        res = _rerank(res, task)
+        res = _rerank(res, task, model=model)
     return res
 
 
