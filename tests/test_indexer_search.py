@@ -159,6 +159,23 @@ def test_discover_honors_exclude_and_ignorefile(tmp_path, fake_embedder):
     assert Store(tmp_path).all_paths() == {"src/keep.py"}
 
 
+def test_agent_instruction_files_never_index(tmp_path, fake_embedder):
+    """Field case (jinja arena): a docs search returned the arena's own
+    CLAUDE.md as result #5 — agent-instruction files are context for the
+    AGENT, not content of the repo, and must never masquerade as docs."""
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "keep.py").write_text("def f():\n    return 1\n")
+    (tmp_path / "README.md").write_text("# real docs\n\nlegit content\n")
+    (tmp_path / "CLAUDE.md").write_text("# Reglas de trabajo\n\nagent rules\n")
+    (tmp_path / "AGENTS.md").write_text("# How agents run this repo\n")
+    from megabrain.indexing.indexer import index_repo
+    index_repo(tmp_path)
+    from megabrain.storage.store import Store
+    paths = Store(tmp_path).all_paths()
+    assert "README.md" in paths
+    assert "CLAUDE.md" not in paths and "AGENTS.md" not in paths
+
+
 def test_is_test_path_detects_all_layouts():
     """Regression: the old detector checked only the SECOND path component and
     `tests/` plural, so `test/retry.ts` (ky, express) and `spec/…` (Ruby) never

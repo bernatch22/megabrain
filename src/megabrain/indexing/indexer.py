@@ -25,6 +25,12 @@ from .strategies import (
 EXCLUDE_DIRS = {".git", "__pycache__", ".venv", "venv", "node_modules", "dist",
                 "build", "coverage", ".next", ".nuxt", ".pytest_cache", ".tox",
                 ".mypy_cache", ".ruff_cache", "target", "vendor", ".megabrain"}
+# Agent-instruction files are context for the AGENT, not content of the repo.
+# Indexing them feeds a search its own operating rules back as "docs" (field
+# case: a docs search on the jinja arena returned the arena's CLAUDE.md as
+# result #5) — and they routinely contain prompts that must never masquerade
+# as repository documentation.
+EXCLUDE_FILES = {"CLAUDE.md", "CLAUDE.local.md", "AGENTS.md"}
 AUTO_REFRESH_TTL = 60  # seconds; ask/query refresh a staler index before answering
 MAX_FILE_BYTES = 600_000
 IGNORE_FILE = ".megabrainignore"
@@ -77,7 +83,7 @@ def discover(root: Path, exts: tuple[str, ...], exclude=(), *,
     add-repo flow and `index --scan` turn it on. `report` collects one
     {path, reason} per SKIPPED candidate (for `scan`/dry-run transparency)."""
     names, globs = _split_patterns(exclude)
-    names |= EXCLUDE_DIRS
+    names |= EXCLUDE_DIRS | EXCLUDE_FILES
     gi = None
     if use_scan_filters:
         from .ignore import GitignoreMatcher, is_generated, is_vendored

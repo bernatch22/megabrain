@@ -3478,16 +3478,16 @@
      "load_ignore, _split_patterns, _excluded, discover, maybe_reindex",
      null,
      1,
-     130,
+     136,
      "megabrain > megabrain/indexing/indexer.py > [load_ignore, _split_patterns, _excluded, discover, maybe_reindex]",
-     "62557386527976770727593bf0dfc67109f0158a"
+     "66be56eb01ba6224e575521f4f446e25c202ee6a"
     ],
     [
      "function",
      "index_repo",
      null,
-     131,
-     155,
+     137,
+     161,
      "megabrain > megabrain/indexing/indexer.py > def index_repo(root: Path, repo_name: str | None=None, force: bool=False, exclude=(), strategies=(), prune_flows: bool=True, scan_filters: bool=False, on_progress=None) -> dict",
      "2d1bdaea6c40db2059214f1f1792bcea7bbb71e9"
     ],
@@ -3495,8 +3495,8 @@
      "block",
      "_index_into",
      "1/2",
-     156,
-     260,
+     162,
+     266,
      "megabrain > megabrain/indexing/indexer.py > def _index_into(store: Store, emb: Embedder, root: Path, name: str, *, force, exclude, strategies, prune_flows, t0, scan_filters=False, on_progress=None) -> dict",
      "291f5f46344e64fa7a699b310fa27fef78dddc9b"
     ],
@@ -3504,13 +3504,13 @@
      "block",
      "_index_into",
      "2/2",
-     261,
-     296,
+     267,
+     302,
      "megabrain > megabrain/indexing/indexer.py > def _index_into(store: Store, emb: Embedder, root: Path, name: str, *, force, exclude, strategies, prune_flows, t0, scan_filters=False, on_progress=None) -> dict",
      "02fe1c7d30cb9533d6ff73e30bda9601cd8f2403"
     ]
    ],
-   "skeleton_sha": "7ae8a342b52176099e2b1bf0e1b5364e75de5e2a",
+   "skeleton_sha": "7967d108cd5dff85828a8016e816d5879ea22214",
    "symbols": [
     [
      "EXCLUDE_DIRS",
@@ -3520,73 +3520,80 @@
      "EXCLUDE_DIRS = {'.git', '__pycache__', '.venv', 'venv', 'node_modules', 'dist', 'build', 'coverage', '.next', '.nuxt', '"
     ],
     [
+     "EXCLUDE_FILES",
+     "constant",
+     33,
+     33,
+     "EXCLUDE_FILES = {'CLAUDE.md', 'CLAUDE.local.md', 'AGENTS.md'}"
+    ],
+    [
      "AUTO_REFRESH_TTL",
      "constant",
-     28,
-     28,
+     34,
+     34,
      "AUTO_REFRESH_TTL = 60"
     ],
     [
      "MAX_FILE_BYTES",
      "constant",
-     29,
-     29,
+     35,
+     35,
      "MAX_FILE_BYTES = 600000"
     ],
     [
      "IGNORE_FILE",
      "constant",
-     30,
-     30,
+     36,
+     36,
      "IGNORE_FILE = '.megabrainignore'"
     ],
     [
      "load_ignore",
      "function",
-     33,
-     44,
+     39,
+     50,
      "def load_ignore(root: Path) -> list[str]"
     ],
     [
      "_split_patterns",
      "function",
-     47,
-     59,
+     53,
+     65,
      "def _split_patterns(patterns) -> tuple[set[str], list[str]]"
     ],
     [
      "_excluded",
      "function",
-     62,
-     69,
+     68,
+     75,
      "def _excluded(rel: str, names: set[str], globs: list[str]) -> bool"
     ],
     [
      "discover",
      "function",
-     72,
-     112,
+     78,
+     118,
      "def discover(root: Path, exts: tuple[str, ...], exclude=(), *, use_scan_filters: bool=False, report: list | None=None) -> list[Path]"
     ],
     [
      "maybe_reindex",
      "function",
-     115,
-     130,
+     121,
+     136,
      "def maybe_reindex(root: Path, ttl: int=AUTO_REFRESH_TTL) -> bool"
     ],
     [
      "index_repo",
      "function",
-     133,
-     155,
+     139,
+     161,
      "def index_repo(root: Path, repo_name: str | None=None, force: bool=False, exclude=(), strategies=(), prune_flows: bool=True, scan_filters: bool=False, on_progress=None) -> dict"
     ],
     [
      "_index_into",
      "function",
-     158,
-     296,
+     164,
+     302,
      "def _index_into(store: Store, emb: Embedder, root: Path, name: str, *, force, exclude, strategies, prune_flows, t0, scan_filters=False, on_progress=None) -> dict"
     ]
    ]
