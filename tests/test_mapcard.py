@@ -253,3 +253,28 @@ def test_defines_budget_prefers_specific_tokens(tiny_repo):
     toks = [d["token"] for d in res["defines"]]
     assert "login_user" in toks
     assert "user" not in toks and "login" not in toks   # ride the specific one
+
+
+def test_search_brings_related_docs_not_just_code(tmp_path, fake_embedder):
+    """Field run (click aliases): a feature fix touches code+tests+docs, but a
+    code-only search showed only code and the agent burned turns on
+    'grep <feature> docs/'. with_docs runs the SAME pruner over docs (reusing
+    the expander's terms, no extra LLM) and attaches them."""
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "commands.py").write_text(
+        "def register_alias(group, name):\n"
+        "    '''Register a command alias on a group.'''\n"
+        "    group.aliases[name] = group\n")
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "aliases.md").write_text(
+        "# Aliases\n\nUse register_alias to give a command another name.\n")
+    (tmp_path / "docs" / "unrelated.md").write_text("# Colors\n\nANSI stuff.\n")
+    from megabrain.indexing.indexer import index_repo
+    index_repo(tmp_path)
+    from megabrain import app
+    res = app.prune(tmp_path, "register a command alias on a group",
+                    with_docs=True)
+    docs = [d["file"] for d in res.get("related_docs", [])]
+    assert "docs/aliases.md" in docs
+    from megabrain.retrieval.render import render_pruned
+    assert "docs that reference this mechanism" in render_pruned(res)

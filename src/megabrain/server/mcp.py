@@ -467,7 +467,8 @@ def call_tool(name: str, args: dict) -> str:
                         llm_rerank=bool(args.get("rerank", True)),
                         expand=bool(args.get("expand", True)),
                         model=args.get("model"),
-                        docs=bool(args.get("docs")))
+                        docs=bool(args.get("docs")),
+                        with_docs=not bool(args.get("docs")))
         return render_pruned(res, with_text=with_text,
                              seen_ids=_seen_chunks(root))
     if name == "megabrain_ask":

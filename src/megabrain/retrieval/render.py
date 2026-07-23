@@ -251,6 +251,12 @@ def render_pruned(res: dict, with_text: bool = True,
     # Tests the rerank kept OUT of the signal list. Compact (no bodies): they
     # crowd implementation by shared vocabulary, but they are the SPEC of the
     # behavior — changing the mechanism above means reading them.
+    if res.get("related_docs"):
+        L.append("— docs that reference this mechanism (a feature fix updates "
+                 "them too — read/edit these, don't grep for them):")
+        for d in res["related_docs"]:
+            L.append(f'  {d["file"]}')
+        L.append("")
     if res.get("tests"):
         L.append("— tests pinning this behavior (read before changing it):")
         for c in res["tests"]:

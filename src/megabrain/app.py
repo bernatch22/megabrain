@@ -96,13 +96,21 @@ def prune(root: Path, task: str, path_filter: str | None = None,
           with_text: bool = True, include_pruned: bool = False,
           reindex: bool = True, llm_rerank: bool = False,
           docs: bool = False, expand: bool = False,
-          model: str | None = None) -> dict:
+          model: str | None = None, with_docs: bool = False) -> dict:
     """No-LLM noise pruning -> flat ranked signal chunks, over the CODE;
     `docs=True` prunes the indexed markdown instead. `expand` runs the
     shared expander first (one cheap LLM call names the mechanism terms the
     query lacks, a second deterministic pass widens the pool) and
     `llm_rerank` adds the judge on top (drop vocabulary-only matches,
-    reorder). Both fail open, so the deterministic floor never drops."""
+    reorder). Both fail open, so the deterministic floor never drops.
+
+    `with_docs` (code searches only) runs the SAME pruner a second time over
+    the DOCS, reusing the expander's terms so it costs no extra LLM call, and
+    attaches the related doc files as `res["related_docs"]`. A feature fix
+    touches three layers — code, tests, docs — but a code-only search shows
+    one; the agent then hunts the docs with host greps (field run: the click
+    aliases task burned minutes on `grep aliases docs/`). One search now
+    returns all three."""
     from .retrieval.bundle import prune_search
     from .retrieval.state import load_state
     _maybe_reindex(root, reindex)
@@ -111,10 +119,27 @@ def prune(root: Path, task: str, path_filter: str | None = None,
         res = prune_search(st, task, path_filter=path_filter,
                            with_text=with_text, include_pruned=include_pruned,
                            **cf)
+        terms: list[str] = []
         if expand:
             from .retrieval.mapcard import expand_pool
-            expand_pool(st, task, res, model,
-                        path_filter=path_filter, with_text=with_text, **cf)
+            ex = expand_pool(st, task, res, model,
+                             path_filter=path_filter, with_text=with_text, **cf)
+            terms = (ex or {}).get("terms", []) or []
+        if with_docs and not docs:
+            # reuse the expander's mechanism terms; the docs corpus is small,
+            # so a single deterministic pass (no rerank) picks the right files
+            q = task + ((" " + " ".join(terms)) if terms else "")
+            dres = prune_search(st, q, path_filter=path_filter,
+                                with_text=False, only_docs=True,
+                                exclude_docs=False)
+            seen: list[str] = []
+            for c in dres["chunks"]:
+                if c["file"] not in seen:
+                    seen.append(c["file"])
+            res["related_docs"] = [
+                {"file": f, "start_line": next(
+                    c["start_line"] for c in dres["chunks"] if c["file"] == f)}
+                for f in seen[:5]]
     if llm_rerank:
         from .retrieval.rerank import llm_rerank as _rerank
         res = _rerank(res, task, model=model)
