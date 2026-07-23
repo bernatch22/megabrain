@@ -5795,9 +5795,9 @@
      "llm_rerank",
      null,
      208,
-     280,
+     293,
      "megabrain > megabrain/retrieval/rerank.py > def llm_rerank(res: dict, question: str, model: str | None=None) -> dict",
-     "7e1b2cd2b71a57153f38c851c0862533e3d6f245"
+     "d36d3bb12e0afeec9de4812c56d561dda445e9b6"
     ]
    ],
    "skeleton_sha": "b7f447f9087de63f4ebfb4da0d08e5932b2a3e3f",
@@ -5911,7 +5911,7 @@
      "llm_rerank",
      "function",
      210,
-     280,
+     293,
      "def llm_rerank(res: dict, question: str, model: str | None=None) -> dict"
     ]
    ]

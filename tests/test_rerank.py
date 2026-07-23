@@ -51,13 +51,31 @@ def test_reorders_and_drops(chat):
 def test_prose_around_the_array_is_tolerated(chat):
     chat["reply"] = "Sure! The relevant chunks are: [2, 4] — hope that helps."
     res = rr.llm_rerank(_res(), "q")
-    assert [c["id"] for c in res["chunks"]] == [2, 4]
+    # id 1 is the deterministic top: rescued at the END, judge order intact
+    assert [c["id"] for c in res["chunks"]] == [2, 4, 1]
 
 
 def test_unknown_ids_are_ignored(chat):
     chat["reply"] = "[99, 2, 77]"
     res = rr.llm_rerank(_res(), "q")
-    assert [c["id"] for c in res["chunks"]] == [2]
+    assert [c["id"] for c in res["chunks"]] == [2, 1]
+
+
+def test_deterministic_top_always_survives_the_judge(chat):
+    """click#3652 field run: the pool's top-scored chunk (get_help_record,
+    1.15 — the CONSUMER of the mechanism the query named) was judged
+    'tangential' and the agent burned a whole extra search round recovering
+    it. Dropping retrieval's strongest signal is the most expensive judge
+    error there is: the deterministic #1 is rescued at the end, flagged."""
+    chat["reply"] = "[3, 4]"                     # judge drops the top (id 1)
+    res = rr.llm_rerank(_res(), "q")
+    assert [c["id"] for c in res["chunks"]] == [3, 4, 1]
+    assert res["reranked"]["rescued_top"] is True
+    assert all(c["id"] != 1 for c in res["noise"])   # not double-booked
+    # and when the judge KEEPS the top, no rescue is flagged
+    chat["reply"] = "[1, 3]"
+    res = rr.llm_rerank(_res(), "q")
+    assert res["reranked"]["rescued_top"] is False
 
 
 def test_fail_open_on_garbage_reply(chat):

@@ -245,6 +245,19 @@ def llm_rerank(res: dict, question: str, model: str | None = None) -> dict:
         kept = [by_id[i] for i in ids if i in by_id]
         if not kept:                      # model kept nothing usable
             raise ValueError(f"no valid ids kept: {ids!r}")
+        # The deterministic #1 ALWAYS survives the judge. Field case (click
+        # #3652 search-first run): the top-scored chunk of the whole pool —
+        # Option.get_help_record at 1.15, the CONSUMER of the mechanism the
+        # query named — was judged "tangential", and the agent spent a whole
+        # extra search round recovering it. Dropping retrieval's strongest
+        # signal is the most expensive judge error there is; rescue it at the
+        # END of the kept list (the judge's ordering stays intact), flagged.
+        rescued = False
+        top = chunks[0]
+        if top["id"] not in {c["id"] for c in kept}:
+            kept.append(top)
+            ids = list(ids) + [top["id"]]
+            rescued = True
         dropped = [c for c in chunks if c["id"] not in set(ids)]
         # A dropped TEST file is not noise — it is often the SPEC. Field case
         # (rails#57197): the subsystem's test file pinned instance identity
@@ -272,7 +285,7 @@ def llm_rerank(res: dict, question: str, model: str | None = None) -> dict:
                             + res.get("noise_map", []))
         res["reranked"] = {"model": m, "kept": len(kept),
                            "dropped": len(dropped), "view": view,
-                           "batches": n_calls,
+                           "batches": n_calls, "rescued_top": rescued,
                            "ms": int((time.time() - t0) * 1000)}
     except Exception:
         log.debug("llm rerank failed open", exc_info=True)
