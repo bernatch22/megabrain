@@ -5679,30 +5679,30 @@
      "_query_window, _numbered",
      null,
      101,
-     149,
+     157,
      "megabrain > megabrain/retrieval/render.py > [_query_window, _numbered]",
-     "6a3424dc633d9f9ddb92a028b3e91839b1fa0df8"
+     "7caca82aa44cb50617b330cb4775a0f78257e98f"
     ],
     [
      "block",
      "render_pruned",
      "1/2",
-     150,
-     250,
+     158,
+     262,
      "megabrain > megabrain/retrieval/render.py > def render_pruned(res: dict, with_text: bool=True, budget: int | None=None, seen_ids: set | None=None) -> str",
-     "7a66305763c705c34769485b4f8a5413c8cac201"
+     "9ec89b5971c8ba450bc01588c5b4c2df397c0875"
     ],
     [
      "block",
      "render_pruned",
      "2/2",
-     251,
-     308,
+     263,
+     324,
      "megabrain > megabrain/retrieval/render.py > def render_pruned(res: dict, with_text: bool=True, budget: int | None=None, seen_ids: set | None=None) -> str",
-     "9f44244d38728a076b6ef8af8bfdee58a128983a"
+     "9b445bf4e10b99cddef02ee31fc520b7e8cfdc41"
     ]
    ],
-   "skeleton_sha": "86642f4379a013a1211c0e3f5673c928155099e5",
+   "skeleton_sha": "986680cc7cef720fe2cf2ee56ae154767079a892",
    "symbols": [
     [
      "lang_of",
@@ -5728,36 +5728,36 @@
     [
      "RENDER_BUDGET",
      "constant",
-     112,
-     112,
-     "RENDER_BUDGET = 24000"
+     120,
+     120,
+     "RENDER_BUDGET = 38000"
     ],
     [
      "MIN_WINDOW_CHARS",
      "constant",
-     115,
-     115,
+     123,
+     123,
      "MIN_WINDOW_CHARS = 800"
     ],
     [
      "_query_window",
      "function",
-     118,
-     143,
+     126,
+     151,
      "def _query_window(lines: list[str], query: str, char_budget: int) -> tuple[int, int]"
     ],
     [
      "_numbered",
      "function",
-     146,
-     149,
+     154,
+     157,
      "def _numbered(lines: list[str], first: int) -> list[str]"
     ],
     [
      "render_pruned",
      "function",
-     152,
-     308,
+     160,
+     324,
      "def render_pruned(res: dict, with_text: bool=True, budget: int | None=None, seen_ids: set | None=None) -> str"
     ]
    ]
@@ -7007,52 +7007,61 @@
      null,
      null,
      1,
+     36,
+     "megabrain > megabrain/server/mcp.py (module level)",
+     "8efa5accb40b848df18cb49909fa806b008c2d07"
+    ],
+    [
+     "module",
+     null,
+     null,
+     37,
      68,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "716c9dc2a94d85e9bea45508b0470687435474f7"
+     "201ffa9e514b73a26b8b2bfe296e3c8617ad52cf"
     ],
     [
      "block",
      null,
      "1/4",
      69,
-     142,
+     143,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "cfd4251de3296e63c58593e5579c64cef58dfe5b"
+     "bf215a3629d7851d97a07a1764a63a3f3dfc43c9"
     ],
     [
      "block",
      null,
      "2/4",
-     143,
-     229,
+     144,
+     242,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "12fbe26a4e3dac547e1d53b7b4868ce2eb7f746b"
+     "5f9e6a2ad9bc61b065187e06d8a47809855ec13a"
     ],
     [
      "block",
      null,
      "3/4",
-     230,
-     331,
+     243,
+     347,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "df84b0d766a03858eb0b1b5064b99aa6b846c478"
+     "c89d87865fb17f5d4799fc92eaa5c9036f7e148a"
     ],
     [
      "block",
      null,
      "4/4",
-     332,
-     417,
+     348,
+     413,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "8651d27eaeecd93cd3cbf7feaad9c72f27ee82cf"
+     "7ed676dab5fb1f2b2e118d85ea6e97ec733678f3"
     ],
     [
      "module",
      "_seen_chunks, _scope",
      null,
-     418,
-     446,
+     414,
+     442,
      "megabrain > megabrain/server/mcp.py > [_seen_chunks, _scope]",
      "69ac2a9efdf6409478e3dd2f14bcd3d2188e1b30"
     ],
@@ -7060,26 +7069,26 @@
      "block",
      "call_tool",
      "1/2",
-     447,
-     550,
+     443,
+     528,
      "megabrain > megabrain/server/mcp.py > def call_tool(name: str, args: dict) -> str",
-     "3a5f508448486de59117af0d81906ac20d5f4364"
+     "b3b3b29063dd9b6523ff6a7f316f5d0f64c29395"
     ],
     [
      "block",
      "call_tool",
      "2/2",
-     551,
-     585,
+     529,
+     583,
      "megabrain > megabrain/server/mcp.py > def call_tool(name: str, args: dict) -> str",
-     "d4fdfdbe6b77a39a179b93d0390c48688fda920d"
+     "cbb5381aa7c55aa5fdcd394bd784b9e9d00d59c5"
     ],
     [
      "function",
      "main",
      null,
-     586,
-     628,
+     584,
+     626,
      "megabrain > megabrain/server/mcp.py > def main()",
      "16e1a3005113960f1e0740cd3be36b7fce1e73a4"
     ]
@@ -7104,49 +7113,49 @@
      "TOOLS",
      "constant",
      70,
-     417,
+     413,
      "TOOLS = [{'name': 'megabrain_ask', 'description': 'THE primary tool for any how/where/why question about an indexed repo"
     ],
     [
      "_SEEN_TTL",
      "constant",
-     425,
-     425,
+     421,
+     421,
      "_SEEN_TTL = 600"
     ],
     [
      "_seen",
      "constant",
-     426,
-     426,
+     422,
+     422,
      "_seen: dict[str, tuple[float, set]] = {}"
     ],
     [
      "_seen_chunks",
      "function",
-     429,
-     436,
+     425,
+     432,
      "def _seen_chunks(root: Path) -> set"
     ],
     [
      "_scope",
      "function",
-     439,
-     446,
+     435,
+     442,
      "def _scope(args: dict) -> tuple[Path, str | None]"
     ],
     [
      "call_tool",
      "function",
-     449,
-     585,
+     445,
+     583,
      "def call_tool(name: str, args: dict) -> str"
     ],
     [
      "main",
      "function",
-     588,
-     624,
+     586,
+     622,
      "def main()"
     ]
    ]

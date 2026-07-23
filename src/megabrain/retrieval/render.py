@@ -109,7 +109,15 @@ def render(res: dict, compact: bool = False, related_code: bool = False) -> str:
 # budget degrades BODIES to span pointers, never drops files: completeness
 # is chunk-list completeness, and every omitted body says exactly what to
 # Read instead.
-RENDER_BUDGET = 24_000
+#
+# 38K, not the old 24K: the render is the agent's READ — every body that
+# degrades to a pointer forces a follow-up megabrain_read round-trip (click
+# aliases duel: 4 pointered bodies -> 3 extra read calls re-fetching spans
+# the search had ranked). Budget counts RAW body chars; the `N→` gutter adds
+# ~25%, so 38K raw ≈ 48K rendered ≈ safely under the host's ~25K-token MCP
+# ceiling (the observed spill point was 66K chars). The judged surface
+# renders WHOLE and replace follows directly.
+RENDER_BUDGET = 38_000
 # Below this remaining budget a partial window isn't worth rendering — emit
 # the span pointer instead of a five-line fragment.
 MIN_WINDOW_CHARS = 800
@@ -184,14 +192,22 @@ def render_pruned(res: dict, with_text: bool = True,
         # the terms double as vocabulary hints for the reader, not just lanes
         L.insert(1, "expanded with mechanism terms: "
                     + ", ".join(res["expanded"]["terms"]))
+    if not with_text:
+        # the surface card: every span in megabrain_read's spec form, no
+        # bodies — the next step is ONE read, so say so where it gets read
+        L.append("no bodies by design — fetch them in ONE megabrain_read: "
+                 "list every span you will touch (edit sites, set-aside "
+                 "constructor/serialization sites, tests, doc sections) "
+                 "GENEROUSLY in a single call; oversized batches auto-split.\n")
     spent = 0
     omitted = 0
     for rank, c in enumerate(res["chunks"], 1):
         label = c["name"] or c["kind"]
         from .rerank import _is_reexport_chunk
         retag = " · re-exports" if _is_reexport_chunk(c.get("text") or "") else ""
-        L.append(f'### {rank}. [{c["id"]}] {c["file"]} '
-                 f'L{c["start_line"]}-{c["end_line"]} · {label} · '
+        loc = (f'{c["file"]}:{c["start_line"]}-{c["end_line"]}' if not with_text
+               else f'{c["file"]} L{c["start_line"]}-{c["end_line"]}')
+        L.append(f'### {rank}. [{c["id"]}] {loc} · {label} · '
                  f'`{c["score"]:.3f}`{retag}')
         text = c.get("text") if with_text else None
         if text and seen_ids is not None and c["id"] in seen_ids:

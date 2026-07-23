@@ -47,14 +47,14 @@ PROTOCOL = "2024-11-05"
 # session that loads this server.
 INSTRUCTIONS = """megabrain answers questions about a repo's CODE from a pre-built index, so you don't have to crawl files to understand it. Retrieval runs NO LLM: it ranks real chunks and returns verbatim code with true line numbers.
 
-The implement/fix loop, all inside megabrain: megabrain_map -> ONE megabrain_read with EVERY target of the whole task (file#symbol / file:start-end from the map's spans — not whole files) -> write the pinning tests FIRST -> ONE megabrain_replace with every edit -> run the gates. No host Read/Edit round-trips, no grep.
+The implement/fix loop, ONE discovery call: megabrain_search returns the task's whole surface WITH bodies — the render IS your read; NEVER re-fetch a span it showed. megabrain_read only for spans rendered as POINTERS (omitted/set-aside/docs/tests), one batch (auto-splits). Then pinning tests FIRST -> ONE megabrain_replace built from the rendered code -> gates. No host Read/Edit, no grep.
 
 Which tool:
 - megabrain_map — FIRST call for any task: files ranked, spans, symbol outline, edges both ways, def sites, pinning tests. No bodies, judge-ranked.
 - megabrain_read — batch fetch: ALL read targets in ONE call (path, path#symbol, path:start-end). Verbatim, true line numbers.
 - megabrain_replace — batch exact-string edits in ONE call, transactional: validates every op first, any failure writes NOTHING. Existing files only (Write for new).
 - megabrain_grep — exact identifier/string: matches grouped into DEFINES / READS (ranked by dependents, with who-reaches-it edges) / CONFIG / TESTS / DOCS. Zero LLM, ~50ms.
-- megabrain_search — ranked chunks WITH code, true line numbers per line (the `N→` gutter): read it, or use it as the source for a megabrain_replace.
+- megabrain_search — the task's whole surface WITH code bodies (`N→` gutter): ranked chunks + set-aside sites, doc sections, changelog, pinning tests. Replace directly from it; read only its pointers.
 - megabrain_ask — the flow narrated across subsystems, code spliced in (broad questions fan out into sub-agents). Spliced CODE is verbatim; the PROSE is narration — verify its claims against that code.
 - megabrain_graph — communities, core abstractions, how two areas connect.
 - megabrain_index — register/refresh a repo (auto-refreshes when stale).
@@ -113,22 +113,17 @@ TOOLS = [
     {
         "name": "megabrain_search",
         "description": (
-            "The same retrieval as megabrain_ask but with NO LLM (~200ms): a flat, "
-            "relevance-ranked list of exactly the chunks worth reading "
-            "([id] file:lines · score + CODE), with the noise dropped. EVERY related "
-            "file still appears, each with its best-matching chunk — so nothing "
-            "relevant is missed at the FILE level. Chunks are filtered though: a "
-            "file's other chunks are cut, so when you need one file in full, Read it "
-            "(the path and line numbers are right there). Test files the rerank "
-            "keeps out of the signal list are appended as a compact 'tests pinning "
-            "this behavior' section — they are the spec of the mechanism; read them "
-            "before changing it. Every line carries its true line number (the "
-            "`N→` gutter, same as megabrain_read), so a search result is a valid "
-            "SOURCE for megabrain_replace — build the find/replace from the code "
-            "it showed, no host Read needed. A multi-part task = SEVERAL searches "
-            "fired in ONE message (they run in parallel); omitted bodies are "
-            "listed as ready-to-paste megabrain_read specs — collect them into "
-            "ONE batched read, never one fetch per file. Deterministic, no LLM. "
+            "ONE call that returns a task's WHOLE surface, code included: "
+            "relevance-ranked chunks WITH bodies (true line numbers, the `N→` "
+            "gutter), plus the set-aside sites a change must touch "
+            "(constructor/declaration, serialization), the doc sections that "
+            "describe the mechanism, the changelog, and the tests pinning the "
+            "behavior. EVERY related file appears with its best span. The "
+            "render IS your read: build megabrain_replace find/replace "
+            "strings straight from it and NEVER re-fetch a span it already "
+            "showed. megabrain_read is only for what rendered as a POINTER "
+            "(omitted body, set-aside, doc section) — batch those in ONE "
+            "call. Do not search again for facets of the same task. "
             "One boundary to know: retrieval "
             "ranks what EXISTS — when the bug is a MISSING call/flag/parameter, "
             "search shows you the site to inspect but cannot flag the absence. To "
@@ -141,10 +136,11 @@ TOOLS = [
                 "task": {"type": "string", "description": "feature/question, natural language"},
                 "scope_path": {"type": "string",
                                "description": "optional repo-relative folder to scope the bundle to files under it; omit for the whole repo. Scoping EXCLUDES everything outside the folder from retrieval entirely — scope to the package/subsystem root (e.g. activejob, src/dispatch), never to its lib/ or src/ subfolder, or you cut away the package's tests, which are often the spec of the behavior you are searching for (the 'tests pinning this behavior' section can only show tests the scope let in)"},
-                "compact": {"type": "boolean", "default": False,
-                            "description": "default false (code bodies included). Set true for "
-                                           "signatures only — drop the code bodies, keep the "
-                                           "ranked spans (ids/files/lines/scores)."},
+                "bodies": {"type": "boolean", "default": True,
+                           "description": "default true: code bodies render inline — the "
+                                          "result is your read. false = spans-only surface "
+                                          "card (file:start-end + symbols), for when you only "
+                                          "want the map of the mechanism."},
                 "docs": {"type": "boolean", "default": False,
                          "description": "default false = search the CODE. true = search the "
                                         "indexed DOCS (markdown) instead. It is one or the "
@@ -451,27 +447,29 @@ def call_tool(name: str, args: dict) -> str:
     if name in ("megabrain_search", "megabrain_query"):
         # megabrain_query = deprecated 0.9 alias (dispatch only — not in TOOLS,
         # so it costs no agent context; registered clients keep working).
-        # ALWAYS the pruned, flat signal list. The file-grouped bundle rendered
-        # RELATED as a code-less map, which is a dead end over MCP (there is no
-        # get/chunks tool to expand it) — and pruning keeps every bundle file
-        # anyway, each with its best chunk.
         #
-        # What pruning DOES cost is chunk-level completeness: a CORE file's
-        # other chunks are dropped by the keep-ratio cut. That is a deliberate
-        # trade — context is the agent's scarce resource — and it is only safe
-        # because the agent has Read for the full file, which is why the tool
-        # description SAYS so. Claiming "nothing is lost" (it used to) talks an
-        # agent out of the one fallback that makes the trade work.
+        # BODIES BY DEFAULT — the render IS the agent's read. The click
+        # aliases duels measured both failure modes: a workflow that forces a
+        # read AFTER a bodies search pays every span twice (the arena prompt
+        # mandated it, ~2x the plain arm's tokens), and a card-only search
+        # forces a read round-trip that a complete render makes unnecessary.
+        # The winning flow is ONE search whose bodies are complete enough to
+        # replace FROM directly; megabrain_read exists for the spans the
+        # render left as pointers (omitted/set-aside/docs), one batch, only
+        # when needed. `bodies: false` opts into the spans-only card.
+        # prune always loads text (judge/expander evidence — same stance as
+        # the map); `bodies` only controls the RENDER.
         from ..retrieval.render import render_pruned
         root, pf = _scope(args)
-        with_text = not bool(args.get("compact"))
-        res = app.prune(root, args["task"], path_filter=pf, with_text=with_text,
+        bodies = (args.get("bodies", True) is not False
+                  and not bool(args.get("compact")))
+        res = app.prune(root, args["task"], path_filter=pf, with_text=True,
                         llm_rerank=bool(args.get("rerank", True)),
                         expand=bool(args.get("expand", True)),
                         model=args.get("model"),
                         docs=bool(args.get("docs")),
                         with_docs=not bool(args.get("docs")))
-        return render_pruned(res, with_text=with_text,
+        return render_pruned(res, with_text=bodies,
                              seen_ids=_seen_chunks(root))
     if name == "megabrain_ask":
         from ..ask import render_ask

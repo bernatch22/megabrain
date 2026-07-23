@@ -29,14 +29,17 @@ def test_ask_and_search_expose_scope_path():
 
 
 def test_search_always_prunes_and_exposes_no_bundle_switch():
-    """megabrain_search is signal-only, always: the code-less RELATED map was a
-    dead end over MCP (no get/chunks tool to expand it). No prune_noise/full
-    switch may come back — pruning already keeps every bundle file."""
+    """megabrain_search is signal-only, always: no prune_noise/full switch may
+    come back — pruning already keeps every bundle file. `bodies` (default
+    true: the render IS the agent's read) replaced the old `compact` flag;
+    the dispatch still honors compact for registered clients, but the schema
+    advertises one switch only."""
     t = next(t for t in TOOLS if t["name"] == "megabrain_search")
     props = t["inputSchema"]["properties"]
     assert "prune_noise" not in props
     assert "full" not in props
-    assert set(props) == {"repo_path", "task", "scope_path", "compact",
+    assert props["bodies"]["default"] is True
+    assert set(props) == {"repo_path", "task", "scope_path", "bodies",
                           "rerank", "expand", "model", "docs"}
 
 
