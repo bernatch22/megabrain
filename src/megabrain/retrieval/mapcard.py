@@ -31,6 +31,16 @@ MAX_OUTLINE = 10
 MAX_EDGES = 4
 MAX_SPANS = 4
 _IDENT = re.compile(r"[A-Za-z_][A-Za-z0-9_]{3,}")
+# path segments marking demo/stub code: shares the subsystem's vocabulary by
+# DESIGN while implementing none of it. Field runs: typing-examples/baseline.py
+# ranked #2 on the attrs arena and fed the trail NGClass/NGClass2; click's
+# examples/ ranked over core. Segment-exact, same stance as TEST_DIR_SEGS.
+_DEMO_SEGS = frozenset({"example", "examples", "samples", "demo", "demos",
+                        "benchmarks", "typing-examples"})
+
+
+def _is_demo_path(relpath: str) -> bool:
+    return any(p in _DEMO_SEGS for p in relpath.lower().split("/")[:-1])
 _OUTLINE_KINDS = ("class", "function", "async_function", "method",
                   "async_method", "interface", "type", "enum", "module")
 
@@ -129,6 +139,12 @@ def map_repo(root: Path, query: str, path_filter: str | None = None,
     ranked = sorted(files.values(),
                     key=(lambda f: f["pos"]) if judged
                     else (lambda f: -f["score"]))
+    # demo/stub files never make the head: they share the subsystem's
+    # vocabulary by design (the judge keeps them for exactly that reason)
+    # while implementing none of it. They stay on the map — in the tail,
+    # labeled — in case the task really is about an example.
+    demos = [f for f in ranked if _is_demo_path(f["file"])]
+    ranked = [f for f in ranked if not _is_demo_path(f["file"])]
     ordered = ranked[:MAX_FILES]
     # FLAT TAIL — retrieval scores often near-tie past the head (mypy field
     # run: 1.17..1.04 across 13 files) and a hard cut at MAX_FILES throws the
@@ -139,6 +155,10 @@ def map_repo(root: Path, query: str, path_filter: str | None = None,
              "span": f'L{f["spans"][0]["start_line"]}-{f["spans"][0]["end_line"]}',
              "names": str(f["spans"][0]["name"])[:80]}
             for f in ranked[MAX_FILES:MAX_FILES + 8] if not f["test"]]
+    tail += [{"file": f["file"], "score": f["score"],
+              "span": f'L{f["spans"][0]["start_line"]}-{f["spans"][0]["end_line"]}',
+              "names": str(f["spans"][0]["name"])[:80], "demo": True}
+             for f in demos[:2]]
     # what the judge dropped joins the tail LABELED, never destroyed — judges
     # err (a dropped test file was the spec once, rails#57197), and one line
     # is cheap insurance against a confident wrong exclusion.
@@ -326,7 +346,8 @@ def render_map(res: dict) -> str:
         L.append("ALSO MATCHED (scores nearly tie — when the top files only "
                  "FORMAT the symptom, the cause is often down here):")
         for f in res["tail"]:
-            mark = " · judged noise" if f.get("judged_noise") else ""
+            mark = (" · judged noise" if f.get("judged_noise")
+                    else " · example/stub" if f.get("demo") else "")
             L.append(f'  {f["file"]}  {f["span"]}  {f["names"]}{mark}')
         L.append("")
     if tests:

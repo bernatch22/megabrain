@@ -181,6 +181,33 @@ def test_map_expand_fails_open(tiny_repo, monkeypatch):
     assert [f["file"] for f in res["files"]] == [f["file"] for f in det["files"]]
 
 
+def test_demo_files_never_make_the_head(tmp_path, fake_embedder):
+    """attrs arena field run: typing-examples/baseline.py ranked #2 and fed
+    the trail NGClass junk — demo/stub code shares the subsystem's vocabulary
+    by DESIGN while implementing none of it. Demos drop to the tail labeled;
+    the head and the trail stay implementation."""
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "auth.py").write_text(
+        'def login_user(name, password):\n'
+        '    """Authenticate a user login with password check."""\n'
+        '    return bool(name and password)\n')
+    (tmp_path / "examples").mkdir()
+    (tmp_path / "examples" / "login_demo.py").write_text(
+        'def demo_login_user():\n'
+        '    """Example: authenticate a user login with password check."""\n'
+        '    return "login_user(name, password) demo"\n')
+    from megabrain.indexing.indexer import index_repo
+    index_repo(tmp_path)
+    res = map_repo(tmp_path, "how is a user login password checked")
+    head = [f["file"] for f in res["files"]]
+    assert "src/auth.py" in head
+    assert "examples/login_demo.py" not in head
+    demo = [t for t in res["tail"] if t.get("demo")]
+    assert [t["file"] for t in demo] == ["examples/login_demo.py"]
+    assert "example/stub" in render_map(res)
+    assert all("demo_login_user" != t["ident"] for t in res["trail"])
+
+
 def test_defines_budget_prefers_specific_tokens(tiny_repo):
     """Field run: the agent put do_indent in the query and the generic words
     (indent, filter, first) consumed all 4 DEFINES slots, pushing out the one
