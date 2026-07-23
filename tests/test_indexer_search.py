@@ -173,6 +173,10 @@ def test_is_test_path_detects_all_layouts():
     assert _is_test_path("lib/foo_test.go")            # filename token
     assert _is_test_path("test_client.py")
     assert _is_test_path("api.spec.ts")
+    # token match in a DIRECTORY segment + fixtures dirs (mypy field run:
+    # mypyc/test-data/fixtures/ir.py slipped into the map's DEFINES lane)
+    assert _is_test_path("mypyc/test-data/fixtures/ir.py")
+    assert _is_test_path("pkg/fixtures/users.py")
     # never substring matches:
     assert not _is_test_path("src/contest/rank.py")
     assert not _is_test_path("lib/inspect.py")

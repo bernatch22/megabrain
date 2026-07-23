@@ -64,6 +64,42 @@ def test_map_trail_ranks_query_sharing_symbols_over_chunk_neighbours(tiny_repo):
         assert res["trail"][0]["ident"] == "login_user"   # shares "login"
 
 
+def test_defines_never_resolve_to_test_files(tmp_path, fake_embedder):
+    """Field runs: 'method' resolved to tests/test_slots.py and 'function' to
+    mypyc/test-data/fixtures — test files absorb generic names and slip past
+    the ambiguity gate. DEFINES resolves against non-test symbols only."""
+    (tmp_path / "core.py").write_text(
+        'def process_order(order):\n'
+        '    """Process an order end to end."""\n'
+        '    return order\n')
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "tests" / "test_core.py").write_text(
+        'def helper(x):\n'
+        '    """Test helper for order checks."""\n'
+        '    return x\n')
+    from megabrain.indexing.indexer import index_repo
+    index_repo(tmp_path)
+    res = map_repo(tmp_path, "why does helper break process_order handling")
+    assert any(d["token"] == "process_order" for d in res["defines"])
+    assert not any("tests/" in d["file"] for d in res["defines"])
+
+
+def test_map_keeps_a_flat_tail_past_the_file_cap(tiny_repo, monkeypatch):
+    """mypy field run: scores near-tied across 13 files and the hard cut at
+    MAX_FILES dropped solve.py/constraints.py — where the fix lived — while
+    messages.py (which only FORMATS the symptom) topped the list. Files past
+    the cap stay on the map as one-liners: file, span, symbol names."""
+    from megabrain.retrieval import mapcard
+    monkeypatch.setattr(mapcard, "MAX_FILES", 1)
+    res = mapcard.map_repo(tiny_repo, "how is a user login password checked")
+    assert res["files"][0]["file"] == "auth/login.py"
+    assert res["tail"], "files past the cap must land in the tail"
+    t = res["tail"][0]
+    assert t["file"] != "auth/login.py" and t["span"].startswith("L")
+    out = mapcard.render_map(res)
+    assert "ALSO MATCHED" in out and t["file"] in out
+
+
 def test_defines_budget_prefers_specific_tokens(tiny_repo):
     """Field run: the agent put do_indent in the query and the generic words
     (indent, filter, first) consumed all 4 DEFINES slots, pushing out the one

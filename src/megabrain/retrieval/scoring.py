@@ -34,19 +34,21 @@ from .state import SearchState
 # directory names that mark a file as test/spec code wherever they appear in
 # the path. Segment-exact (never substring: "src/contest/" is not a test dir).
 # Vocabulary, not a tuning knob — the knobs live in params.RetrievalParams.
-TEST_DIR_SEGS = frozenset({"test", "tests", "spec", "specs", "__tests__", "testing"})
+TEST_DIR_SEGS = frozenset({"test", "tests", "spec", "specs", "__tests__",
+                           "testing", "fixtures"})
 
 
 def _is_test_path(relpath: str) -> bool:
     """Test-file detector for the ranking down-weight. Two signals:
-    any directory segment named test/tests/spec/… (repos use both singular
-    and plural), or "test"/"spec" in the FILENAME as a token-ish match
-    (foo_test.go, test_foo.py, foo.spec.ts — but not inspect.py/protest.py)."""
+    any path segment named test/tests/spec/fixtures/… (repos use both singular
+    and plural), or "test"/"spec" as a token-ish match in ANY segment
+    (foo_test.go, test_foo.py, foo.spec.ts, mypyc/test-data/fixtures/ir.py —
+    but not inspect.py/protest.py/src/contest)."""
     parts = relpath.lower().split("/")
     if any(p in TEST_DIR_SEGS for p in parts[:-1]):
         return True
-    return bool(re.search(r"(^|[._-])(test|spec)s?([._-]|$)",
-                          parts[-1].rsplit(".", 1)[0]))
+    return any(re.search(r"(^|[._-])(test|spec)s?([._-]|$)",
+                         p.rsplit(".", 1)[0]) for p in parts)
 
 
 def under_path(relpath: str, path_filter: str) -> bool:

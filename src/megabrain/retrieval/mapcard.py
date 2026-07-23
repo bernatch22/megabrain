@@ -46,7 +46,17 @@ def map_repo(root: Path, query: str, path_filter: str | None = None) -> dict:
             f["spans"].append({"start_line": c["start_line"],
                                "end_line": c["end_line"],
                                "name": c["name"] or c["kind"]})
-    ordered = sorted(files.values(), key=lambda f: -f["score"])[:MAX_FILES]
+    ranked = sorted(files.values(), key=lambda f: -f["score"])
+    ordered = ranked[:MAX_FILES]
+    # FLAT TAIL — retrieval scores often near-tie past the head (mypy field
+    # run: 1.17..1.04 across 13 files) and a hard cut at MAX_FILES throws the
+    # cause away exactly when the top is presentation/messaging code that
+    # merely NAMES the symptom (messages.py outranked solve.py/constraints.py,
+    # where the fix lived). One line per file keeps them on the map.
+    tail = [{"file": f["file"], "score": f["score"],
+             "span": f'L{f["spans"][0]["start_line"]}-{f["spans"][0]["end_line"]}',
+             "names": str(f["spans"][0]["name"])[:80]}
+            for f in ranked[MAX_FILES:MAX_FILES + 8] if not f["test"]]
 
     with Store(root) as store:
         for rank, f in enumerate(ordered, 1):
@@ -91,9 +101,14 @@ def map_repo(root: Path, query: str, path_filter: str | None = None) -> dict:
         for tok in toks:
             if len(defines) >= 4:
                 break
-            rows = store.db.execute(
+            # test files absorb generic names and slip past the ambiguity
+            # gate (field runs: "method" -> tests/test_slots.py, "function"/
+            # "list" -> mypyc/test-data/fixtures) — a def site inside a test
+            # is never the lead, so resolve against non-test symbols only.
+            rows = [r for r in store.db.execute(
                 "SELECT file, line FROM symbols WHERE name=? "
-                "OR name LIKE ? LIMIT 4", (tok, f"%.{tok}")).fetchall()
+                "OR name LIKE ? LIMIT 8", (tok, f"%.{tok}")).fetchall()
+                if not _is_test_path(r[0])]
             if 1 <= len(rows) <= 2:
                 defines += [{"token": tok, "file": fl, "line": ln}
                             for fl, ln in rows]
@@ -156,7 +171,7 @@ def map_repo(root: Path, query: str, path_filter: str | None = None) -> dict:
                 "tests": list(dict.fromkeys(m["file"] for m in g["tests"]))[:2],
             })
     return {"query": query, "repo": res["repo"], "files": ordered,
-            "defines": defines[:4], "trail": trail,
+            "tail": tail, "defines": defines[:4], "trail": trail,
             "pruned": res.get("pruned", 0),
             "ms": int((time.time() - t0) * 1000)}
 
@@ -199,6 +214,12 @@ def render_map(res: dict) -> str:
             if t["tests"]:
                 bits.append(f'tests {", ".join(t["tests"])}')
             L.append(f'  {t["ident"]} — {" · ".join(bits)}')
+        L.append("")
+    if res.get("tail"):
+        L.append("ALSO MATCHED (scores nearly tie — when the top files only "
+                 "FORMAT the symptom, the cause is often down here):")
+        for f in res["tail"]:
+            L.append(f'  {f["file"]}  {f["span"]}  {f["names"]}')
         L.append("")
     if tests:
         L.append("— tests pinning this behavior (the spec — read before changing):")
