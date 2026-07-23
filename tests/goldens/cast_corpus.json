@@ -5590,9 +5590,9 @@
      "_safe, _parse, read_specs, render_read",
      null,
      1,
-     121,
+     133,
      "megabrain > megabrain/retrieval/readx.py > [_safe, _parse, read_specs, render_read]",
-     "444a1131f83cbc21b1f7266628fc07ee3ec042d1"
+     "7e4a67c129bb050f4e4a744bb5c8a0ee9065c8af"
     ]
    ],
    "skeleton_sha": "3ef5863928f9ffc6db261c98e5357f3f259f7236",
@@ -5622,14 +5622,14 @@
      "read_specs",
      "function",
      51,
-     106,
+     118,
      "def read_specs(root: Path, specs: list[str]) -> dict"
     ],
     [
      "render_read",
      "function",
-     109,
      121,
+     133,
      "def render_read(res: dict) -> str"
     ]
    ]
@@ -5659,21 +5659,21 @@
      "render_pruned",
      "1/2",
      150,
-     249,
-     "megabrain > megabrain/retrieval/render.py > def render_pruned(res: dict, with_text: bool=True, budget: int | None=None) -> str",
-     "1abb380813bca82fa4f8d8232f760707402e5b19"
+     250,
+     "megabrain > megabrain/retrieval/render.py > def render_pruned(res: dict, with_text: bool=True, budget: int | None=None, seen_ids: set | None=None) -> str",
+     "7a66305763c705c34769485b4f8a5413c8cac201"
     ],
     [
      "block",
      "render_pruned",
      "2/2",
-     250,
-     258,
-     "megabrain > megabrain/retrieval/render.py > def render_pruned(res: dict, with_text: bool=True, budget: int | None=None) -> str",
-     "2a66ecf66f101e2764ff4d88e11210f55ff44f4f"
+     251,
+     273,
+     "megabrain > megabrain/retrieval/render.py > def render_pruned(res: dict, with_text: bool=True, budget: int | None=None, seen_ids: set | None=None) -> str",
+     "5d7cad5e60253c907fb3f8d5dd497cc802f3a3b8"
     ]
    ],
-   "skeleton_sha": "b58d45b47dadb070346c95b863c84d26c4dab52c",
+   "skeleton_sha": "86642f4379a013a1211c0e3f5673c928155099e5",
    "symbols": [
     [
      "lang_of",
@@ -5728,8 +5728,8 @@
      "render_pruned",
      "function",
      152,
-     258,
-     "def render_pruned(res: dict, with_text: bool=True, budget: int | None=None) -> str"
+     273,
+     "def render_pruned(res: dict, with_text: bool=True, budget: int | None=None, seen_ids: set | None=None) -> str"
     ]
    ]
   },
@@ -6962,29 +6962,29 @@
      "c8e9b22c08b79bf356377b7b2484b196e931e39f"
     ],
     [
-     "function",
-     "_scope",
+     "module",
+     "_seen_chunks, _scope",
      null,
      416,
-     425,
-     "megabrain > megabrain/server/mcp.py > def _scope(args: dict) -> tuple[Path, str | None]",
-     "1d10e662f4d499a37f52ced42ddfed4a6e7cd428"
+     444,
+     "megabrain > megabrain/server/mcp.py > [_seen_chunks, _scope]",
+     "69ac2a9efdf6409478e3dd2f14bcd3d2188e1b30"
     ],
     [
      "block",
      "call_tool",
      "1/2",
-     426,
-     522,
+     445,
+     542,
      "megabrain > megabrain/server/mcp.py > def call_tool(name: str, args: dict) -> str",
-     "caf2d5f1e3892adb9fb67f2f4b2bf5b9e1a54b19"
+     "c7fc79dcbcf95000df443e87bdf3f8112cfb6c4c"
     ],
     [
      "block",
      "call_tool",
      "2/2",
-     523,
-     557,
+     543,
+     577,
      "megabrain > megabrain/server/mcp.py > def call_tool(name: str, args: dict) -> str",
      "d4fdfdbe6b77a39a179b93d0390c48688fda920d"
     ],
@@ -6992,13 +6992,13 @@
      "function",
      "main",
      null,
-     558,
-     600,
+     578,
+     620,
      "megabrain > megabrain/server/mcp.py > def main()",
      "16e1a3005113960f1e0740cd3be36b7fce1e73a4"
     ]
    ],
-   "skeleton_sha": "c358c93bc12b4a514e3e63b6a39a22f647da424c",
+   "skeleton_sha": "132f05d0c187ae41547842304d9edff03905ee8c",
    "symbols": [
     [
      "PROTOCOL",
@@ -7022,24 +7022,45 @@
      "TOOLS = [{'name': 'megabrain_ask', 'description': 'THE primary tool for any how/where/why question about an indexed repo"
     ],
     [
+     "_SEEN_TTL",
+     "constant",
+     423,
+     423,
+     "_SEEN_TTL = 600"
+    ],
+    [
+     "_seen",
+     "constant",
+     424,
+     424,
+     "_seen: dict[str, tuple[float, set]] = {}"
+    ],
+    [
+     "_seen_chunks",
+     "function",
+     427,
+     434,
+     "def _seen_chunks(root: Path) -> set"
+    ],
+    [
      "_scope",
      "function",
-     418,
-     425,
+     437,
+     444,
      "def _scope(args: dict) -> tuple[Path, str | None]"
     ],
     [
      "call_tool",
      "function",
-     428,
-     557,
+     447,
+     577,
      "def call_tool(name: str, args: dict) -> str"
     ],
     [
      "main",
      "function",
-     560,
-     596,
+     580,
+     616,
      "def main()"
     ]
    ]

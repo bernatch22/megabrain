@@ -112,3 +112,12 @@ def test_replace_rejects_escape_and_new_files(tiny_repo):
         {"file": "brand_new.py", "find": "x", "replace": "y"}])
     assert not res["ok"] and "use Write for new ones" in res["report"][0]["error"]
     assert not (tiny_repo / "brand_new.py").exists()
+
+
+def test_read_missing_file_suggests_the_real_one(tiny_repo):
+    """Field run (click#3652): the agent guessed CHANGES.rst on a repo that
+    uses CHANGES.md and burned a recovery turn — a wrong-extension miss must
+    name the sibling with the same stem."""
+    (tiny_repo / "CHANGES.md").write_text("# changes\n")
+    res = read_specs(tiny_repo, ["CHANGES.rst:1-10"])
+    assert "Did you mean: CHANGES.md?" in res["targets"][0]["error"]

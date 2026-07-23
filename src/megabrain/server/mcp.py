@@ -415,6 +415,25 @@ TOOLS = [
 ]
 
 
+# Chunk bodies rendered per repo in this server's lifetime, TTL'd. Parallel
+# searches over facets of ONE mechanism overlap by design (click#3652 field
+# run: the same get_help_record chunk rendered three times in one message) —
+# a body the agent already has renders as a pointer, never twice. The TTL
+# keeps a later, unrelated task from inheriting stale dedup.
+_SEEN_TTL = 600
+_seen: dict[str, tuple[float, set]] = {}
+
+
+def _seen_chunks(root: Path) -> set:
+    import time as _t
+    key = str(root)
+    ts, ids = _seen.get(key, (0.0, set()))
+    if _t.time() - ts > _SEEN_TTL:
+        ids = set()
+    _seen[key] = (_t.time(), ids)
+    return ids
+
+
 def _scope(args: dict) -> tuple[Path, str | None]:
     """Resolve repo_path (+ optional scope_path) to (repo_root, path_filter) for
     PATH-SCOPE (thin wrapper over app.resolve_scope, kept as the documented MCP
@@ -449,7 +468,8 @@ def call_tool(name: str, args: dict) -> str:
                         expand=bool(args.get("expand", True)),
                         model=args.get("model"),
                         docs=bool(args.get("docs")))
-        return render_pruned(res, with_text=with_text)
+        return render_pruned(res, with_text=with_text,
+                             seen_ids=_seen_chunks(root))
     if name == "megabrain_ask":
         from ..ask import render_ask
         root, pf = _scope(args)

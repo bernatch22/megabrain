@@ -104,3 +104,29 @@ def test_pruned_audit_trail_renders_spans_only():
     assert "src/faint.py L1-9 · `0.72`" in out
     # spans only — a pruned body never renders
     assert out.count("```") == 4              # the 2 signal chunks only
+
+
+def test_seen_ids_dedup_repeats_across_calls():
+    """click#3652 field run: three parallel searches over facets of one
+    mechanism rendered the same get_help_record chunk THREE times. With a
+    shared seen set, a body renders once; repeats become a one-line pointer
+    and spend no budget."""
+    seen: set = set()
+    r1 = render_pruned(_res(n=2, body_lines=10), budget=100_000, seen_ids=seen)
+    assert "line 0" in r1 and seen == {1, 2}
+    r2 = render_pruned(_res(n=2, body_lines=10), budget=100_000, seen_ids=seen)
+    assert "line 0" not in r2                       # body not repeated
+    assert r2.count("already rendered in a previous result") == 2
+    assert "megabrain_read src/f1.py:1-10" in r2    # pointer to refetch
+
+
+def test_seen_ids_only_marks_whole_bodies():
+    """A query-centered WINDOW is partial — it must not poison the seen set,
+    or a later full render would degrade to a pointer."""
+    seen: set = set()
+    res = _res(n=1, body_lines=400)
+    res["chunks"][0]["text"] = "\n".join(
+        f"filler {i} {'x' * 60}" for i in range(400))
+    res["chunks"][0]["end_line"] = 400
+    render_pruned(res, budget=6_000, seen_ids=seen)   # window, not whole
+    assert 1 not in seen

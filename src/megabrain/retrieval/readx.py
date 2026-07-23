@@ -66,7 +66,19 @@ def read_specs(root: Path, specs: list[str]) -> dict:
                 out.append({"spec": spec, "error": str(e)})
                 continue
             if not p.is_file():
-                out.append({"spec": spec, "error": f"no such file: {path}"})
+                # a wrong-extension guess is the common miss (field run:
+                # CHANGES.rst / docs/options.rst on a repo that uses .md)
+                # and it cost a whole recovery turn — name the real file.
+                sugg = sorted(str(s.relative_to(root))
+                              for s in p.parent.glob(p.stem + ".*")
+                              if s.is_file()) if p.parent.is_dir() else []
+                if not sugg:
+                    import difflib
+                    sugg = difflib.get_close_matches(
+                        path, sorted(store.all_paths()), 3, 0.6)
+                hint = f' Did you mean: {", ".join(sugg[:3])}?' if sugg else ""
+                out.append({"spec": spec,
+                            "error": f"no such file: {path}.{hint}"})
                 continue
             lines = p.read_text(encoding="utf-8",
                                 errors="replace").splitlines()

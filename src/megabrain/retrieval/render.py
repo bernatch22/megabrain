@@ -150,12 +150,19 @@ def _numbered(lines: list[str], first: int) -> list[str]:
 
 
 def render_pruned(res: dict, with_text: bool = True,
-                  budget: int | None = None) -> str:
+                  budget: int | None = None,
+                  seen_ids: set | None = None) -> str:
     """Pruned result -> ranked markdown list: `[id] file L… (name) · score`,
     each with its code (unless with_text=False), spent top-down against a
     character budget. A body that fits the remaining budget renders WHOLE —
     never cut; one that doesn't renders the query-centered window that does
-    fit, or a span pointer when the leftover is too small to be worth it."""
+    fit, or a span pointer when the leftover is too small to be worth it.
+
+    `seen_ids` (consulted AND updated in place) dedups across calls: a chunk
+    whose body already rendered in this session renders as a one-line pointer
+    instead. Field case (click#3652, three parallel searches): the same
+    get_help_record chunk rendered THREE times — facets of one mechanism
+    overlap by design, and the reader already has the body in context."""
     import os
     if budget is None:
         budget = int(os.environ.get("MEGABRAIN_RENDER_BUDGET",
@@ -187,6 +194,12 @@ def render_pruned(res: dict, with_text: bool = True,
                  f'L{c["start_line"]}-{c["end_line"]} · {label} · '
                  f'`{c["score"]:.3f}`{retag}')
         text = c.get("text") if with_text else None
+        if text and seen_ids is not None and c["id"] in seen_ids:
+            L.append("(body already rendered in a previous result — reuse it; "
+                     f'megabrain_read {c["file"]}:{c["start_line"]}-'
+                     f'{c["end_line"]} only if it truly left your context)')
+            L.append("")
+            continue
         if text:
             lines = text.rstrip("\n").splitlines()
             body = "\n".join(lines)
@@ -202,6 +215,8 @@ def render_pruned(res: dict, with_text: bool = True,
                 L.append("\n".join(_numbered(lines, c["start_line"])))
                 L.append("```")
                 spent += len(body)
+                if seen_ids is not None:
+                    seen_ids.add(c["id"])
             elif remaining >= MIN_WINDOW_CHARS:
                 # doesn't fit -> the query-centered window that does
                 start, end = _query_window(lines, res.get("query", ""),
