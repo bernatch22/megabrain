@@ -50,9 +50,9 @@ INSTRUCTIONS = """megabrain answers questions about a repo's CODE from a pre-bui
 For an implement/fix task the token-optimal loop is: megabrain_map -> Read each edit target ONCE -> Edit. The map is a structure card with NO code bodies (files ranked, match spans, symbol outline, edges both ways, def sites, pinning tests, ~40 lines) — bodies of edit targets get paid twice because the host requires Read before Edit.
 
 Which tool:
-- megabrain_map — FIRST call for any task: where, who, what shape. No bodies, no LLM, ~300ms.
+- megabrain_map — FIRST call for any task: where/who/what shape + a mechanism trail that pre-runs your follow-up greps. No bodies, no LLM.
 - megabrain_grep — you know the exact identifier/string: every match resolved against the index and grouped into DEFINES / READS (ranked by dependents, with who-reaches-it edges) / CONFIG / TESTS / DOCS. One call answers "where is this defined, who reads it, who depends on the reader". Zero LLM, ~50ms.
-- megabrain_search — ranked chunks WITH code: only for files you will NOT open (understanding a bug across spans you won't edit).
+- megabrain_search — chunks WITH code: only for files you will NOT open.
 - megabrain_ask — you want the flow narrated across subsystems with code spliced in at each step (broad questions fan out into sub-agents). The spliced CODE is verbatim and cannot be hallucinated; the PROSE around it is model narration, so verify its claims against that code before acting on them.
 - megabrain_graph — communities, core abstractions, how two areas connect.
 - megabrain_index — register/refresh a repo (ask/search already auto-refresh a stale index).

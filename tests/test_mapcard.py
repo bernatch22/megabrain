@@ -39,3 +39,17 @@ def test_map_defines_lane_resolves_exact_identifiers(tiny_repo):
 
 def test_map_render_is_grep_priced(mapped):
     assert len(render_map(mapped)) < 4000     # structure, not a dump
+
+
+def test_map_expands_mechanism_identifiers_the_query_lacks(tiny_repo):
+    """The query names the SYMPTOM; the mechanism identifier
+    (check_password) is not in it. The map extracts it from the top matches
+    and pre-runs its grep: def site, readers, edges — no follow-up grep."""
+    res = map_repo(tiny_repo, "how is a user login verified")
+    idents = [t["ident"] for t in res["trail"]]
+    assert "check_password" in idents             # extracted, not in query
+    t = next(x for x in res["trail"] if x["ident"] == "check_password")
+    assert t["defined"].startswith("auth/login.py:")
+    out = render_map(res)
+    assert "MECHANISM TRAIL" in out and "pre-run" in out
+    assert "check_password — defined auth/login.py:" in out

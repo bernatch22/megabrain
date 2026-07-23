@@ -5264,22 +5264,31 @@
   "megabrain/retrieval/mapcard.py": {
    "chunks": [
     [
+     "module",
+     null,
+     null,
+     1,
+     32,
+     "megabrain > megabrain/retrieval/mapcard.py (module level)",
+     "8dc400a2597f5e73ee68a226cfaf4d5160c56e83"
+    ],
+    [
      "function",
      "map_repo",
      null,
-     1,
-     91,
+     33,
+     129,
      "megabrain > megabrain/retrieval/mapcard.py > def map_repo(root: Path, query: str, path_filter: str | None=None) -> dict",
-     "775e3d52140172456a754f25dacaa161daafbe41"
+     "8dd7dae9e73a4acd37494c56bd43ff6a6b37b8a5"
     ],
     [
      "function",
      "render_map",
      null,
-     92,
-     125,
+     130,
+     178,
      "megabrain > megabrain/retrieval/mapcard.py > def render_map(res: dict) -> str",
-     "af5d443a6d04329b570da9e33b6dbb70db7481bb"
+     "d3b6b8cde7c5ab2cd1736edd33a7a29102e9cb0a"
     ]
    ],
    "skeleton_sha": "3ccc81902235b9ba337f8a81811bb8eb0d0c8da9",
@@ -5330,14 +5339,14 @@
      "map_repo",
      "function",
      35,
-     91,
+     129,
      "def map_repo(root: Path, query: str, path_filter: str | None=None) -> dict"
     ],
     [
      "render_map",
      "function",
-     94,
-     125,
+     132,
+     178,
      "def render_map(res: dict) -> str"
     ]
    ]
@@ -6722,7 +6731,7 @@
      1,
      66,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "02cc156a50c62ed72054fe0ea4d3358086d3557a"
+     "b92045a1b445a033f4717183e3a02f04e5815f01"
     ],
     [
      "block",

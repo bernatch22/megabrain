@@ -86,8 +86,46 @@ def map_repo(root: Path, query: str, path_filter: str | None = None) -> dict:
             if 1 <= len(rows) <= 2:
                 defines += [{"token": tok, "file": fl, "line": ln}
                             for fl, ln in rows]
+
+    # EXPANSION — the query names the SYMPTOM; the mechanism lives under
+    # identifiers the query does not contain (jinja lesson: the symptom
+    # query missed _textwrap.py entirely). Extract the mechanism identifiers
+    # FROM the top matches and pre-run the greps the agent would have run:
+    # def site, reader files, incoming edges — deterministic PRF, no LLM.
+    qtok = {t.lower() for t in _IDENT.findall(query)}
+    mech: list[str] = []
+    for f in ordered[:3]:
+        names = [n.strip() for s in f["spans"]
+                 for n in str(s["name"]).split(",")]
+        names += [s["signature"].split("(")[0].split()[-1]
+                  for s in f["outline"][:4]]
+        for n in names:
+            bare = n.rsplit(".", 1)[-1]
+            if (len(bare) >= 4 and bare.lower() not in qtok
+                    and bare not in mech
+                    and ("_" in bare or not bare.islower() or len(bare) >= 8)):
+                mech.append(bare)
+    trail = []
+    if mech:
+        from .grepx import grep_repo
+        for ident in mech[:4]:
+            g = grep_repo(root, ident)
+            if not g["matches"]:
+                continue
+            d = g["defines"][0] if g["defines"] else None
+            readers = list(dict.fromkeys(
+                m["file"] for m in g["reads"]
+                if not d or m["file"] != d["file"]))[:3]
+            trail.append({
+                "ident": ident,
+                "defined": f'{d["file"]}:{d["line"]}' if d else None,
+                "readers": readers,
+                "reached_from": (d or {}).get("reached_from", [])[:3],
+                "tests": list(dict.fromkeys(m["file"] for m in g["tests"]))[:2],
+            })
     return {"query": query, "repo": res["repo"], "files": ordered,
-            "defines": defines[:4], "pruned": res.get("pruned", 0),
+            "defines": defines[:4], "trail": trail,
+            "pruned": res.get("pruned", 0),
             "ms": int((time.time() - t0) * 1000)}
 
 
@@ -114,6 +152,21 @@ def render_map(res: dict) -> str:
             L.append(f'   ← reached from: {", ".join(f["reached_from"])}')
         if f["reaches"]:
             L.append(f'   → reaches: {", ".join(f["reaches"])}')
+        L.append("")
+    if res.get("trail"):
+        L.append("MECHANISM TRAIL (identifiers extracted from the top matches "
+                 "— your follow-up greps, pre-run):")
+        for t in res["trail"]:
+            bits = []
+            if t["defined"]:
+                bits.append(f'defined {t["defined"]}')
+            if t["readers"]:
+                bits.append(f'read by {", ".join(t["readers"])}')
+            if t["reached_from"]:
+                bits.append(f'← {", ".join(t["reached_from"])}')
+            if t["tests"]:
+                bits.append(f'tests {", ".join(t["tests"])}')
+            L.append(f'  {t["ident"]} — {" · ".join(bits)}')
         L.append("")
     if tests:
         L.append("— tests pinning this behavior (the spec — read before changing):")
