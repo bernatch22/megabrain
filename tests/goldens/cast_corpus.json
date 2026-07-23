@@ -7070,16 +7070,16 @@
      "call_tool",
      "1/2",
      443,
-     528,
+     537,
      "megabrain > megabrain/server/mcp.py > def call_tool(name: str, args: dict) -> str",
-     "b3b3b29063dd9b6523ff6a7f316f5d0f64c29395"
+     "fe665cad73a172af8d33c2b6161030af383e816a"
     ],
     [
      "block",
      "call_tool",
      "2/2",
-     529,
-     583,
+     538,
+     592,
      "megabrain > megabrain/server/mcp.py > def call_tool(name: str, args: dict) -> str",
      "cbb5381aa7c55aa5fdcd394bd784b9e9d00d59c5"
     ],
@@ -7087,8 +7087,8 @@
      "function",
      "main",
      null,
-     584,
-     626,
+     593,
+     635,
      "megabrain > megabrain/server/mcp.py > def main()",
      "16e1a3005113960f1e0740cd3be36b7fce1e73a4"
     ]
@@ -7148,14 +7148,14 @@
      "call_tool",
      "function",
      445,
-     583,
+     592,
      "def call_tool(name: str, args: dict) -> str"
     ],
     [
      "main",
      "function",
-     586,
-     622,
+     595,
+     631,
      "def main()"
     ]
    ]

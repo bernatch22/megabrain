@@ -509,7 +509,16 @@ def call_tool(name: str, args: dict) -> str:
     if name == "megabrain_grep":
         from ..retrieval.grepx import render_grep
         root, pf = _scope(args)
-        res = app.grep(root, args["pattern"], regex=bool(args.get("regex")),
+        # `pattern` is canonical; tolerate the names agents type from habit
+        # (field run: grep(query="def set") KeyError'd and the agent fell
+        # back to HOST grep for the same string — the exact call this tool
+        # exists to replace). Same alias stance as megabrain_replace's ops.
+        pat = (args.get("pattern") or args.get("query") or args.get("q")
+               or args.get("search"))
+        if not pat:
+            return ("megabrain_grep needs `pattern` (the exact string to "
+                    "find). Example: {\"pattern\": \"def set\"}")
+        res = app.grep(root, pat, regex=bool(args.get("regex")),
                        ignore_case=bool(args.get("ignore_case")),
                        path_filter=pf)
         return render_grep(res)

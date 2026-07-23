@@ -56,6 +56,27 @@ def test_search_takes_the_prune_path(monkeypatch):
     assert calls == ["prune"]
 
 
+def test_grep_tolerates_habit_param_names(monkeypatch):
+    """Field run (rails#57197): the agent called grep with `query:` — the
+    KeyError sent it back to HOST grep for the same string, the exact call
+    the tool exists to replace. Aliases accepted, canonical `pattern` wins,
+    and a missing pattern gets a usage message instead of a stack trace."""
+    import megabrain.app as app
+    import megabrain.server.mcp as mcp
+    seen = []
+    monkeypatch.setattr(app, "grep", lambda root, pat, **k: seen.append(pat) or {})
+    monkeypatch.setattr(mcp, "_scope", lambda args: (Path("/tmp"), None))
+    monkeypatch.setattr("megabrain.retrieval.grepx.render_grep", lambda r: "ok")
+
+    mcp.call_tool("megabrain_grep", {"repo_path": "/tmp", "query": "def set"})
+    mcp.call_tool("megabrain_grep", {"repo_path": "/tmp", "q": "x"})
+    mcp.call_tool("megabrain_grep", {"repo_path": "/tmp",
+                                     "pattern": "a", "query": "b"})
+    assert seen == ["def set", "x", "a"]
+    out = mcp.call_tool("megabrain_grep", {"repo_path": "/tmp"})
+    assert "needs `pattern`" in out
+
+
 def test_query_is_a_deprecated_dispatch_alias(monkeypatch):
     """0.9 clients still call megabrain_query — same prune path, not in TOOLS."""
     import megabrain.app as app
