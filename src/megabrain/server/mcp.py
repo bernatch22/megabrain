@@ -499,7 +499,12 @@ def call_tool(name: str, args: dict) -> str:
     if name == "megabrain_replace":
         from ..retrieval.replacex import apply_ops, render_replace
         root, _ = _scope(args)
-        return render_replace(apply_ops(root, list(args["operations"])))
+        # `operations` is canonical; tolerate `edits`/`ops` and a JSON string
+        ops = args.get("operations") or args.get("edits") or args.get("ops")
+        if isinstance(ops, str):
+            import json as _json
+            ops = _json.loads(ops)
+        return render_replace(apply_ops(root, list(ops or [])))
     if name == "megabrain_grep":
         from ..retrieval.grepx import render_grep
         root, pf = _scope(args)

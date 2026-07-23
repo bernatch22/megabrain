@@ -22,6 +22,15 @@ import difflib
 from pathlib import Path
 
 
+def _field(op: dict, *names: str):
+    """First present alias among *names* — tolerates agents that reach for
+    path/old/new instead of the canonical file/find/replace."""
+    for n in names:
+        if op.get(n) is not None:
+            return op[n]
+    return None
+
+
 def _safe(root: Path, rel: str) -> Path:
     p = (root / rel).resolve()
     if not str(p).startswith(str(root.resolve()) + "/"):
@@ -52,12 +61,20 @@ def apply_ops(root: Path, operations: list[dict]) -> dict:
     report: list[dict] = []
     failed = False
     for i, op in enumerate(operations, 1):
-        rel = str(op.get("file", ""))
-        find = str(op.get("find", ""))
-        repl = str(op.get("replace", ""))
+        # accept the aliases agents reach for by habit (the host Edit uses
+        # old_string/new_string; many tools use path/old/new) — a field-name
+        # mismatch used to fail cryptically as "path escapes the repo: ''".
+        rel = str(_field(op, "file", "path", "filename") or "")
+        find = str(_field(op, "find", "old", "old_string", "search") or "")
+        repl = str(_field(op, "replace", "new", "new_string", "with") or "")
         want = int(op.get("count", 1))
         row = {"op": i, "file": rel}
         report.append(row)
+        if not rel:
+            row["error"] = ("missing 'file'. Each operation is "
+                            "{file, find, replace, count?}.")
+            failed = True
+            continue
         try:
             p = _safe(root, rel)
         except ValueError as e:

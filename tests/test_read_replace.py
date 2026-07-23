@@ -121,3 +121,26 @@ def test_read_missing_file_suggests_the_real_one(tiny_repo):
     (tiny_repo / "CHANGES.md").write_text("# changes\n")
     res = read_specs(tiny_repo, ["CHANGES.rst:1-10"])
     assert "Did you mean: CHANGES.md?" in res["targets"][0]["error"]
+
+
+def test_replace_tolerates_path_old_new_aliases(tiny_repo):
+    """Field run (attrs#1549): the agent called replace with {path, old, new}
+    and {edits: "<json>"} by habit — it failed cryptically as 'path escapes
+    the repo'. The canonical names are file/find/replace, but the common
+    aliases now work, and a missing file names the field."""
+    res = apply_ops(tiny_repo, [
+        {"path": "util.py", "old": "Flatten a nested list one level.",
+         "new": "Flattened."}])
+    assert res["ok"] and "Flattened." in (tiny_repo / "util.py").read_text()
+    # and a genuinely missing file field is a clear error, not a path-escape
+    res = apply_ops(tiny_repo, [{"find": "x", "replace": "y"}])
+    assert not res["ok"] and "missing 'file'" in res["report"][0]["error"]
+
+
+def test_replace_dispatch_accepts_edits_and_json_string(tiny_repo):
+    from megabrain.server import mcp
+    out = mcp.call_tool("megabrain_replace", {
+        "repo_path": str(tiny_repo),
+        "edits": '[{"path": "util.py", "old": "Flatten a nested list one level.", "new": "Z"}]'})
+    assert "1 op(s) applied" in out
+    assert "Z" in (tiny_repo / "util.py").read_text()
