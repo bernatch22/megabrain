@@ -50,6 +50,12 @@ def _parse(spec: str) -> tuple[str, list[str], tuple[int, int] | None]:
 
 def read_specs(root: Path, specs: list[str]) -> dict:
     root = Path(root)
+    # #symbol resolves line ranges from the INDEX — after an edit the file
+    # shifts and a stale index hands back the wrong window (smoke run: the
+    # attrs arena returned __init__'s body for #default). Same freshness
+    # gate as search/ask: 60s TTL, fail-open.
+    from ..indexing.indexer import maybe_reindex
+    maybe_reindex(root)
     out: list[dict] = []
     with Store(root) as store:
         for spec in specs:

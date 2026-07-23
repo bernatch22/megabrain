@@ -5277,16 +5277,16 @@
      "map_repo",
      "1/3",
      80,
-     174,
+     179,
      "megabrain > megabrain/retrieval/mapcard.py > def map_repo(root: Path, query: str, path_filter: str | None=None, rerank: bool=False, expand: bool=False, model: str | None=None) -> dict",
-     "581c12546e649302d664f363c2fe70e31c7b1fe7"
+     "ed611c7aeb5b9884df4d12ae9f3ef63c1451bab9"
     ],
     [
      "block",
      "map_repo",
      "2/3",
-     175,
-     274,
+     180,
+     279,
      "megabrain > megabrain/retrieval/mapcard.py > def map_repo(root: Path, query: str, path_filter: str | None=None, rerank: bool=False, expand: bool=False, model: str | None=None) -> dict",
      "a78e1af110dc93c2f6553ea40e768f83d0589f6b"
     ],
@@ -5294,8 +5294,8 @@
      "block",
      "map_repo",
      "3/3",
-     275,
-     296,
+     280,
+     301,
      "megabrain > megabrain/retrieval/mapcard.py > def map_repo(root: Path, query: str, path_filter: str | None=None, rerank: bool=False, expand: bool=False, model: str | None=None) -> dict",
      "1b76aa69696e2afb591a93c237cf9b08bd79c32c"
     ],
@@ -5303,8 +5303,8 @@
      "function",
      "render_map",
      null,
-     297,
-     360,
+     302,
+     365,
      "megabrain > megabrain/retrieval/mapcard.py > def render_map(res: dict) -> str",
      "54c8e547fe34bf2877e099bceeffe89792ea4495"
     ]
@@ -5399,14 +5399,14 @@
      "map_repo",
      "function",
      82,
-     296,
+     301,
      "def map_repo(root: Path, query: str, path_filter: str | None=None, rerank: bool=False, expand: bool=False, model: str | None=None) -> dict"
     ],
     [
      "render_map",
      "function",
-     299,
-     360,
+     304,
+     365,
      "def render_map(res: dict) -> str"
     ]
    ]
@@ -5567,9 +5567,9 @@
      "_safe, _parse, read_specs, render_read",
      null,
      1,
-     115,
+     121,
      "megabrain > megabrain/retrieval/readx.py > [_safe, _parse, read_specs, render_read]",
-     "1db566b8bd2d0c5d62754f6c63c27925f89c6326"
+     "444a1131f83cbc21b1f7266628fc07ee3ec042d1"
     ]
    ],
    "skeleton_sha": "3ef5863928f9ffc6db261c98e5357f3f259f7236",
@@ -5599,14 +5599,14 @@
      "read_specs",
      "function",
      51,
-     100,
+     106,
      "def read_specs(root: Path, specs: list[str]) -> dict"
     ],
     [
      "render_read",
      "function",
-     103,
-     115,
+     109,
+     121,
      "def render_read(res: dict) -> str"
     ]
    ]

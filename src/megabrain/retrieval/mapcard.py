@@ -84,6 +84,11 @@ def map_repo(root: Path, query: str, path_filter: str | None = None,
              model: str | None = None) -> dict:
     t0 = time.time()
     root = Path(root)
+    # symbol outlines and span lines come from the index — refresh vs disk
+    # first (60s TTL, fail-open), same gate as search/ask, or an edited repo
+    # maps to yesterday's line numbers.
+    from ..indexing.indexer import maybe_reindex
+    maybe_reindex(root)
     llm = rerank or expand
     with load_state(root) as st:
         # text is fetched ONLY as evidence for the judge — it never reaches
