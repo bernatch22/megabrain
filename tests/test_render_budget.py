@@ -24,11 +24,12 @@ def test_budget_degrades_bodies_never_spans():
     # every chunk's span line survives
     for i in range(1, 7):
         assert f"[{i}] src/f{i}.py" in out
-    # rank 1 gets its body; the tail gets pointers
+    # rank 1 gets its body; the tail gets pointers in megabrain_read's spec
+    # format, ready to paste into ONE batched read
     assert "line 0" in out
     assert out.count("body omitted") >= 3
-    assert "Read src/f6.py:L1-50" in out
-    assert "output budget" in out.splitlines()[2] or "output budget" in out
+    assert "megabrain_read src/f6.py:1-50" in out
+    assert "batch the pointed specs in ONE megabrain_read" in out
 
 
 def test_rank_order_is_the_spending_order():
@@ -55,7 +56,7 @@ def test_a_body_that_fits_is_never_cut():
     out = render_pruned(res, budget=100_000)
     assert "line 0" in out and "line 499" in out     # first and last line
     assert "lines above" not in out and "body omitted" not in out
-    assert "Read src/f1.py" not in out               # no pointers at all
+    assert "megabrain_read src/f1.py" not in out     # no pointers at all
 
 
 def test_overflow_window_follows_the_query_not_the_head():
@@ -71,8 +72,8 @@ def test_overflow_window_follows_the_query_not_the_head():
     out = render_pruned(res, budget=6_000)           # body ~27KB: can't fit
     assert "write_usage_wrapping" in out             # the window found it
     assert "filler 0 " not in out                    # head not shown
-    assert "lines above — Read src/f1.py:L1-" in out
-    assert "— Read src/f1.py:L" in out
+    assert "lines above — megabrain_read src/f1.py:1-" in out
+    assert "— megabrain_read src/f1.py:" in out
 
 
 def test_tests_tail_survives_the_budget():

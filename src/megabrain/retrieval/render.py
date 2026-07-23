@@ -202,14 +202,18 @@ def render_pruned(res: dict, with_text: bool = True,
                 # doesn't fit -> the query-centered window that does
                 start, end = _query_window(lines, res.get("query", ""),
                                            remaining)
+                # omitted-side pointers speak megabrain_read's spec format
+                # (file:start-end) so the agent pastes them into ONE batched
+                # read instead of host-Reading files one per turn.
                 shown = _numbered(lines[start:end], c["start_line"] + start)
                 if start:
-                    shown.insert(0, f'… {start} lines above — Read '
-                                    f'{c["file"]}:L{c["start_line"]}-'
+                    shown.insert(0, f'… {start} lines above — megabrain_read '
+                                    f'{c["file"]}:{c["start_line"]}-'
                                     f'{c["start_line"] + start - 1}')
                 if end < len(lines):
                     shown.append(f'… +{len(lines) - end} lines — '
-                                 f'Read {c["file"]}:L{c["start_line"] + end}-'
+                                 f'megabrain_read '
+                                 f'{c["file"]}:{c["start_line"] + end}-'
                                  f'{c["end_line"]}')
                 window = "\n".join(shown)
                 L.append(f'```{lang_of(c["file"])}')
@@ -218,13 +222,13 @@ def render_pruned(res: dict, with_text: bool = True,
                 spent += len(window)
             else:
                 omitted += 1
-                L.append(f'(body omitted — output budget · '
-                         f'Read {c["file"]}:L{c["start_line"]}-{c["end_line"]})')
+                L.append(f'(body omitted — output budget · megabrain_read '
+                         f'{c["file"]}:{c["start_line"]}-{c["end_line"]})')
         L.append("")
     if omitted:
         L.insert(2, f'⚠ output budget {budget // 1000}K: {omitted} lower-ranked '
                     f'bodies rendered as span pointers — every span is still '
-                    f'listed; Read the pointed lines for their code.\n')
+                    f'listed; batch the pointed specs in ONE megabrain_read.\n')
     # Tests the rerank kept OUT of the signal list. Compact (no bodies): they
     # crowd implementation by shared vocabulary, but they are the SPEC of the
     # behavior — changing the mechanism above means reading them.
