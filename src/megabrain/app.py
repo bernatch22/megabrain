@@ -144,9 +144,15 @@ def prune(root: Path, task: str, path_filter: str | None = None,
             for c in dres["chunks"]:
                 if c["file"] not in seen:
                     seen.append(c["file"])
+            # carry the best chunk's SPAN, not just the file — a bare file
+            # name makes the agent read the whole doc (field run: 426 lines
+            # of commands-and-groups.md fetched for an ~80-line section)
             res["related_docs"] = [
-                {"file": f, "start_line": next(
-                    c["start_line"] for c in dres["chunks"] if c["file"] == f)}
+                {"file": f,
+                 "start_line": next(c["start_line"] for c in dres["chunks"]
+                                    if c["file"] == f),
+                 "end_line": next(c["end_line"] for c in dres["chunks"]
+                                  if c["file"] == f)}
                 for f in seen[:5]]
             # The changelog is a FIXED edit target of any behavior change —
             # not a retrieval question. Ranked retrieval reliably misses it

@@ -255,9 +255,13 @@ def render_pruned(res: dict, with_text: bool = True,
         L.append("— docs that reference this mechanism (a feature fix updates "
                  "them too — read/edit these, don't grep for them):")
         for d in res["related_docs"]:
-            L.append(f'  {d["file"]}'
+            span = (f':{d["start_line"]}-{d["end_line"]}'
+                    if d.get("end_line") else "")
+            L.append(f'  {d["file"]}{span}'
                      + (' ← the changelog: a behavior change adds an entry here'
-                        if d.get("changelog") else ""))
+                        if d.get("changelog") else
+                        ' ← the relevant section; read this span, not the'
+                        ' whole file' if span else ""))
         L.append("")
     # judge-bucketed test chunks first (spans + symbols), then the
     # deterministic closure's extra files — same section, deduped, so the

@@ -91,16 +91,16 @@
      "prune",
      "2/2",
      118,
-     216,
+     222,
      "megabrain > megabrain/app.py > def prune(root: Path, task: str, path_filter: str | None=None, with_text: bool=True, include_pruned: bool=False, reindex: bool=True, llm_rerank: bool=False, docs: bool=False, expand: bool=False, model: str | None=None, with_docs: bool=False) -> dict",
-     "86af8f99de48a7679a7c83e3c654d46a76859cf0"
+     "a4508aa3a83a99c017c6a5a99fb80b09337d672d"
     ],
     [
      "module",
      "ask, graph, grep, get, chunks, index, scan, stats, flows_list",
      null,
-     217,
-     322,
+     223,
+     328,
      "megabrain > megabrain/app.py > [ask, graph, grep, get, chunks, index, scan, stats, flows_list]",
      "9fb9ea0fb3ddff86db26752855a6e69062e23242"
     ],
@@ -108,8 +108,8 @@
      "module",
      "flow_get, flow_delete, example_queries",
      null,
-     323,
-     375,
+     329,
+     381,
      "megabrain > megabrain/app.py > [flow_get, flow_delete, example_queries]",
      "4253ce7a0374ff18b3ce0d52fa93b30e50104c4e"
     ]
@@ -169,91 +169,91 @@
      "prune",
      "function",
      95,
-     216,
+     222,
      "def prune(root: Path, task: str, path_filter: str | None=None, with_text: bool=True, include_pruned: bool=False, reindex: bool=True, llm_rerank: bool=False, docs: bool=False, expand: bool=False, model: str | None=None, with_docs: bool=False) -> dict"
     ],
     [
      "ask",
      "function",
-     219,
-     231,
+     225,
+     237,
      "def ask(root: Path, question: str, path_filter: str | None=None, docs_only: bool=False, agents: Any=None, reindex: bool=True, model: str | None=None) -> dict"
     ],
     [
      "graph",
      "function",
-     234,
-     245,
+     240,
+     251,
      "def graph(root: Path, mode: str='map', node: str | None=None, source: str | None=None, target: str | None=None, path_filter: str | None=None, reindex: bool=True, label: bool=True) -> dict"
     ],
     [
      "grep",
      "function",
-     248,
-     258,
+     254,
+     264,
      "def grep(root: Path, pattern: str, regex: bool=False, ignore_case: bool=False, path_filter: str | None=None, reindex: bool=True) -> dict"
     ],
     [
      "get",
      "function",
-     261,
-     266,
+     267,
+     272,
      "def get(root: Path, sub: str | None, file: str, symbol: str | None=None) -> str"
     ],
     [
      "chunks",
      "function",
-     269,
      275,
+     281,
      "def chunks(root: Path, sub: str | None, file: str, query_str: str, path_filter: str | None=None, reindex: bool=True) -> dict"
     ],
     [
      "index",
      "function",
-     278,
-     283,
+     284,
+     289,
      "def index(root: Path, force: bool=False, exclude=(), scan_filters: bool=False) -> dict"
     ],
     [
      "scan",
      "function",
-     286,
-     295,
+     292,
+     301,
      "def scan(root: Path) -> dict"
     ],
     [
      "stats",
      "function",
-     298,
-     302,
+     304,
+     308,
      "def stats(root: Path) -> dict"
     ],
     [
      "flows_list",
      "function",
-     305,
-     322,
+     311,
+     328,
      "def flows_list(root: Path) -> dict"
     ],
     [
      "flow_get",
      "function",
-     325,
-     338,
+     331,
+     344,
      "def flow_get(root: Path, flow_id: int) -> dict"
     ],
     [
      "flow_delete",
      "function",
-     341,
-     346,
+     347,
+     352,
      "def flow_delete(root: Path, flow_id: int) -> dict"
     ],
     [
      "example_queries",
      "function",
-     349,
-     375,
+     355,
+     381,
      "def example_queries(root: Path, limit: int=6) -> dict"
     ]
    ]
@@ -5697,9 +5697,9 @@
      "render_pruned",
      "2/2",
      251,
-     304,
+     308,
      "megabrain > megabrain/retrieval/render.py > def render_pruned(res: dict, with_text: bool=True, budget: int | None=None, seen_ids: set | None=None) -> str",
-     "e74136bd2781180cf081726009759d9c861b751a"
+     "9f44244d38728a076b6ef8af8bfdee58a128983a"
     ]
    ],
    "skeleton_sha": "86642f4379a013a1211c0e3f5673c928155099e5",
@@ -5757,7 +5757,7 @@
      "render_pruned",
      "function",
      152,
-     304,
+     308,
      "def render_pruned(res: dict, with_text: bool=True, budget: int | None=None, seen_ids: set | None=None) -> str"
     ]
    ]
