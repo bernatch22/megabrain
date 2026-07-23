@@ -5587,15 +5587,24 @@
    "chunks": [
     [
      "module",
-     "_safe, _parse, read_specs, render_read",
+     "_safe, _parse, read_specs",
      null,
      1,
-     133,
-     "megabrain > megabrain/retrieval/readx.py > [_safe, _parse, read_specs, render_read]",
-     "7e4a67c129bb050f4e4a744bb5c8a0ee9065c8af"
+     127,
+     "megabrain > megabrain/retrieval/readx.py > [_safe, _parse, read_specs]",
+     "d2196242068be53344bee203cd00c9168909f907"
+    ],
+    [
+     "function",
+     "render_read",
+     null,
+     128,
+     180,
+     "megabrain > megabrain/retrieval/readx.py > def render_read(res: dict, budget: int=MAX_RENDER_CHARS) -> str",
+     "1cbc3089803aff5e9976e88d41a8f220d70b86d9"
     ]
    ],
-   "skeleton_sha": "3ef5863928f9ffc6db261c98e5357f3f259f7236",
+   "skeleton_sha": "b4abac3af4a1e5f87d8294a81003ed068f7885da",
    "symbols": [
     [
      "MAX_WHOLE_FILE",
@@ -5605,32 +5614,39 @@
      "MAX_WHOLE_FILE = 1200"
     ],
     [
+     "MAX_RENDER_CHARS",
+     "constant",
+     32,
+     32,
+     "MAX_RENDER_CHARS = 48000"
+    ],
+    [
      "_safe",
      "function",
-     26,
-     30,
+     35,
+     39,
      "def _safe(root: Path, rel: str) -> Path"
     ],
     [
      "_parse",
      "function",
-     33,
-     48,
+     42,
+     57,
      "def _parse(spec: str) -> tuple[str, list[str], tuple[int, int] | None]"
     ],
     [
      "read_specs",
      "function",
-     51,
-     118,
+     60,
+     127,
      "def read_specs(root: Path, specs: list[str]) -> dict"
     ],
     [
      "render_read",
      "function",
-     121,
-     133,
-     "def render_read(res: dict) -> str"
+     130,
+     180,
+     "def render_read(res: dict, budget: int=MAX_RENDER_CHARS) -> str"
     ]
    ]
   },
@@ -6948,32 +6964,32 @@
      143,
      229,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "efbe77c79ab8bcbf3c56ac2da7e054b2e670a2f3"
+     "12fbe26a4e3dac547e1d53b7b4868ce2eb7f746b"
     ],
     [
      "block",
      null,
      "3/4",
      230,
-     332,
+     331,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "b21944618b029dcc4bb71cad8fc95107109f9955"
+     "df84b0d766a03858eb0b1b5064b99aa6b846c478"
     ],
     [
      "block",
      null,
      "4/4",
-     333,
-     415,
+     332,
+     417,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "c8e9b22c08b79bf356377b7b2484b196e931e39f"
+     "8651d27eaeecd93cd3cbf7feaad9c72f27ee82cf"
     ],
     [
      "module",
      "_seen_chunks, _scope",
      null,
-     416,
-     444,
+     418,
+     446,
      "megabrain > megabrain/server/mcp.py > [_seen_chunks, _scope]",
      "69ac2a9efdf6409478e3dd2f14bcd3d2188e1b30"
     ],
@@ -6981,8 +6997,8 @@
      "block",
      "call_tool",
      "1/2",
-     445,
-     548,
+     447,
+     550,
      "megabrain > megabrain/server/mcp.py > def call_tool(name: str, args: dict) -> str",
      "3a5f508448486de59117af0d81906ac20d5f4364"
     ],
@@ -6990,8 +7006,8 @@
      "block",
      "call_tool",
      "2/2",
-     549,
-     583,
+     551,
+     585,
      "megabrain > megabrain/server/mcp.py > def call_tool(name: str, args: dict) -> str",
      "d4fdfdbe6b77a39a179b93d0390c48688fda920d"
     ],
@@ -6999,8 +7015,8 @@
      "function",
      "main",
      null,
-     584,
-     626,
+     586,
+     628,
      "megabrain > megabrain/server/mcp.py > def main()",
      "16e1a3005113960f1e0740cd3be36b7fce1e73a4"
     ]
@@ -7025,49 +7041,49 @@
      "TOOLS",
      "constant",
      70,
-     415,
+     417,
      "TOOLS = [{'name': 'megabrain_ask', 'description': 'THE primary tool for any how/where/why question about an indexed repo"
     ],
     [
      "_SEEN_TTL",
      "constant",
-     423,
-     423,
+     425,
+     425,
      "_SEEN_TTL = 600"
     ],
     [
      "_seen",
      "constant",
-     424,
-     424,
+     426,
+     426,
      "_seen: dict[str, tuple[float, set]] = {}"
     ],
     [
      "_seen_chunks",
      "function",
-     427,
-     434,
+     429,
+     436,
      "def _seen_chunks(root: Path) -> set"
     ],
     [
      "_scope",
      "function",
-     437,
-     444,
+     439,
+     446,
      "def _scope(args: dict) -> tuple[Path, str | None]"
     ],
     [
      "call_tool",
      "function",
-     447,
-     583,
+     449,
+     585,
      "def call_tool(name: str, args: dict) -> str"
     ],
     [
      "main",
      "function",
-     586,
-     622,
+     588,
+     624,
      "def main()"
     ]
    ]

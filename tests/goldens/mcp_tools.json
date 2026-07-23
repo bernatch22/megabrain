@@ -125,7 +125,7 @@
   "name": "megabrain_map"
  },
  {
-  "description": "Batch read: EVERY read target of the whole task in ONE call, verbatim from disk with true line numbers. Three spec forms per target: 'path' (whole file, capped \u2014 big files must narrow), 'path#symbol' or 'path#sym1,sym2' (the symbol's exact line range, resolved from the index), 'path:120-180' (explicit line range). Use the map's spans/symbols as targets instead of whole files. This replaces one-file-per-turn host Reads: list edit targets, the tests you will touch and docs/changelog in a single call, then edit with megabrain_replace.",
+  "description": "Batch read: EVERY read target of the whole task in ONE call, verbatim from disk with true line numbers. Three spec forms per target: 'path' (whole file, capped \u2014 big files must narrow), 'path#symbol' or 'path#sym1,sym2' (the symbol's exact line range, resolved from the index), 'path:120-180' (explicit line range). Use the map's spans/symbols as targets instead of whole files. This replaces one-file-per-turn host Reads: list edit targets, the tests you will touch and docs/changelog in a single call, then edit with megabrain_replace. Oversized batches auto-split: what fits renders now, the tail comes back as a ready re-call list under 'NOT RENDERED' \u2014 issue that one follow-up call.",
   "inputSchema": {
    "properties": {
     "repo_path": {

@@ -221,7 +221,9 @@ TOOLS = [
             "Use the map's spans/symbols as targets instead of whole files. "
             "This replaces one-file-per-turn host Reads: list edit targets, "
             "the tests you will touch and docs/changelog in a single call, "
-            "then edit with megabrain_replace."),
+            "then edit with megabrain_replace. Oversized batches auto-split: "
+            "what fits renders now, the tail comes back as a ready re-call "
+            "list under 'NOT RENDERED' — issue that one follow-up call."),
         "inputSchema": {
             "type": "object",
             "properties": {

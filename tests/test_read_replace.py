@@ -50,6 +50,34 @@ def test_read_whole_file_cap_redirects_to_symbols(tiny_repo):
     assert res["targets"][0]["lines"] == ["x1 = 1", "x2 = 2"]
 
 
+def test_read_oversized_batch_defers_tail_never_spills(tiny_repo):
+    # A batch over the render budget must SPLIT: what fits renders now, the
+    # rest comes back as a ready re-call — if the full render went out, the
+    # MCP host would dump it to a file the agent has to Read back in host
+    # chunks (the exact round-trips this tool exists to kill).
+    res = read_specs(tiny_repo, ["util.py",
+                                 "auth/login.py#check_password",
+                                 "billing/invoice.py:1-2"])
+    out = render_read(res, budget=len(render_read(res)) - 40)
+    assert "NOT RENDERED" in out and "megabrain_read" in out
+    assert '"billing/invoice.py:1-2"' in out       # the tail, verbatim spec
+    assert "def flatten(xs):" in out               # the head DID render
+    assert "create_invoice" not in out             # the tail did NOT
+
+
+def test_read_first_target_over_budget_renders_prefix_with_continuation(tiny_repo):
+    big = tiny_repo / "wide.py"
+    big.write_text("\n".join(f"v{i} = {i}" for i in range(1, 201)) + "\n")
+    res = read_specs(tiny_repo, ["wide.py:1-200"])
+    out = render_read(res, budget=900)
+    # never an empty result: the prefix renders, the remainder is an exact spec
+    assert "    1→v1 = 1" in out
+    assert "NOT RENDERED" in out and '"wide.py:' in out
+    import re
+    cont = re.search(r'"wide\.py:(\d+)-200"', out)
+    assert cont and int(cont.group(1)) > 1
+
+
 # ---------------------------------------------------------------- replace
 
 def test_replace_batch_applies_and_reports(tiny_repo):

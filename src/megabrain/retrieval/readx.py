@@ -22,6 +22,15 @@ from ..storage.store import Store
 
 MAX_WHOLE_FILE = 1200      # lines; beyond this a whole-file spec must narrow
 
+# The MCP host truncates a tool result over its token ceiling (~25k tokens)
+# into a FILE the agent must Read back in host chunks — the exact round-trips
+# this tool exists to kill (field run: a 66k-char, 7-target batch cost 3 host
+# turns of recovery). So the render self-splits BELOW the ceiling: targets
+# render in caller order until the budget is spent; the tail comes back as a
+# ready-to-paste re-call, never a spill. ~2.5 chars/token for guttered code
+# puts 48k chars safely under 25k tokens.
+MAX_RENDER_CHARS = 48_000
+
 
 def _safe(root: Path, rel: str) -> Path:
     p = (root / rel).resolve()
@@ -118,7 +127,7 @@ def read_specs(root: Path, specs: list[str]) -> dict:
     return {"targets": out}
 
 
-def render_read(res: dict) -> str:
+def render_read(res: dict, budget: int = MAX_RENDER_CHARS) -> str:
     ok = [t for t in res["targets"] if "error" not in t]
     bad = [t for t in res["targets"] if "error" in t]
     L = [f'# megabrain read — {len(ok)} target(s)'
@@ -126,8 +135,46 @@ def render_read(res: dict) -> str:
          + ' · verbatim from disk, true line numbers']
     for t in bad:
         L.append(f'FAILED {t["spec"]} — {t["error"]}')
+    used = sum(len(x) + 1 for x in L)
+    rendered = 0
+    deferred: list[str] = []
     for t in ok:
-        L.append(f'\n## {t["spec"]}  L{t["start"]}-{t["end"]}')
-        for i, ln in enumerate(t["lines"], t["start"]):
-            L.append(f'{i:>5}→{ln}')
+        if deferred:              # budget already spent — keep caller order
+            deferred.append(t["spec"])
+            continue
+        body = [f'\n## {t["spec"]}  L{t["start"]}-{t["end"]}']
+        body += [f'{i:>5}→{ln}' for i, ln in enumerate(t["lines"], t["start"])]
+        size = sum(len(x) + 1 for x in body)
+        if used + size > budget:
+            if rendered == 0:
+                # the FIRST target alone busts the budget — render the prefix
+                # that fits and defer the exact remaining range, so the call
+                # is never empty and the continuation spec is precise.
+                keep = [body[0]]
+                room = used + len(body[0]) + 1
+                cut = t["start"] - 1
+                for line in body[1:]:
+                    if room + len(line) + 1 > budget:
+                        break
+                    keep.append(line)
+                    room += len(line) + 1
+                    cut += 1
+                if cut >= t["start"]:
+                    L.extend(keep)
+                    used = room
+                    rendered += 1
+                    if cut < t["end"]:
+                        deferred.append(f'{t["file"]}:{cut + 1}-{t["end"]}')
+                    continue
+            deferred.append(t["spec"])
+            continue
+        L.extend(body)
+        used += size
+        rendered += 1
+    if deferred:
+        import json
+        L.append(f'\n— NOT RENDERED ({len(deferred)} target(s)): the full batch '
+                 'would exceed the MCP output ceiling and spill to a host file. '
+                 'Fetch the rest with ONE more megabrain_read:')
+        L.append(f'  targets: {json.dumps(deferred)}')
     return "\n".join(L)
