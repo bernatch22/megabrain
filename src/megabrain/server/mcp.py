@@ -54,7 +54,7 @@ Which tool:
 - megabrain_read — batch fetch: ALL read targets in ONE call (path, path#symbol, path:start-end). Verbatim, true line numbers.
 - megabrain_replace — batch exact-string edits in ONE call, transactional: validates every op first, any failure writes NOTHING. Existing files only (Write for new).
 - megabrain_grep — exact identifier/string: matches grouped into DEFINES / READS (ranked by dependents, with who-reaches-it edges) / CONFIG / TESTS / DOCS. Zero LLM, ~50ms.
-- megabrain_search — chunks WITH code: only for files you will NOT edit.
+- megabrain_search — ranked chunks WITH code, true line numbers per line (the `N→` gutter): read it, or use it as the source for a megabrain_replace.
 - megabrain_ask — the flow narrated across subsystems, code spliced in (broad questions fan out into sub-agents). Spliced CODE is verbatim; the PROSE is narration — verify its claims against that code.
 - megabrain_graph — communities, core abstractions, how two areas connect.
 - megabrain_index — register/refresh a repo (auto-refreshes when stale).
@@ -122,13 +122,11 @@ TOOLS = [
             "(the path and line numbers are right there). Test files the rerank "
             "keeps out of the signal list are appended as a compact 'tests pinning "
             "this behavior' section — they are the spec of the mechanism; read them "
-            "before changing it. One call hands you the real code, no follow-up "
-            "fetch needed. Use it when you want the exact code to read rather than "
-            "a narration — deterministic, no LLM. TOKEN RULE for implement/edit "
-            "tasks: full bodies are for files you will NOT edit. The host requires "
-            "Read before Edit, so a full-body render of an edit target gets paid "
-            "TWICE — call with compact=true for a span map, then Read each edit "
-            "target once. One boundary to know: retrieval "
+            "before changing it. Every line carries its true line number (the "
+            "`N→` gutter, same as megabrain_read), so a search result is a valid "
+            "SOURCE for megabrain_replace — build the find/replace from the code "
+            "it showed, no host Read needed. Deterministic, no LLM. One boundary "
+            "to know: retrieval "
             "ranks what EXISTS — when the bug is a MISSING call/flag/parameter, "
             "search shows you the site to inspect but cannot flag the absence. To "
             "PROVE an absence, megabrain_grep the identifier: zero matches over "

@@ -5623,25 +5623,25 @@
      "271b967bad515f17fe4cc7577609c404782b36f7"
     ],
     [
-     "function",
-     "_query_window",
+     "module",
+     "_query_window, _numbered",
      null,
      101,
-     143,
-     "megabrain > megabrain/retrieval/render.py > def _query_window(lines: list[str], query: str, char_budget: int) -> tuple[int, int]",
-     "d128bbb0064b63844023f623d1a7d8f15fafe62b"
+     149,
+     "megabrain > megabrain/retrieval/render.py > [_query_window, _numbered]",
+     "6a3424dc633d9f9ddb92a028b3e91839b1fa0df8"
     ],
     [
      "function",
      "render_pruned",
      null,
-     144,
-     239,
+     150,
+     250,
      "megabrain > megabrain/retrieval/render.py > def render_pruned(res: dict, with_text: bool=True, budget: int | None=None) -> str",
-     "4089930e63bd933e8d9735d47c1b971b57f45f39"
+     "553e0e8f56ca375a6350ea711d151bc36e6f0fd2"
     ]
    ],
-   "skeleton_sha": "0028028c4ad76a4b775b7b45daec6fc7e2b2d7b4",
+   "skeleton_sha": "b58d45b47dadb070346c95b863c84d26c4dab52c",
    "symbols": [
     [
      "lang_of",
@@ -5686,10 +5686,17 @@
      "def _query_window(lines: list[str], query: str, char_budget: int) -> tuple[int, int]"
     ],
     [
-     "render_pruned",
+     "_numbered",
      "function",
      146,
-     239,
+     149,
+     "def _numbered(lines: list[str], first: int) -> list[str]"
+    ],
+    [
+     "render_pruned",
+     "function",
+     152,
+     250,
      "def render_pruned(res: dict, with_text: bool=True, budget: int | None=None) -> str"
     ]
    ]
@@ -6884,7 +6891,7 @@
      1,
      68,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "977eeb78563a85c1fc1970cbd08485327c8d84c1"
+     "716c9dc2a94d85e9bea45508b0470687435474f7"
     ],
     [
      "block",
@@ -6893,41 +6900,41 @@
      69,
      141,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "f551a9b0e63bac816cf6bdf7cd7a421a55cc1823"
+     "3209b508b2b1407fd9de06304661623f9e410ecd"
     ],
     [
      "block",
      null,
      "2/4",
      142,
-     232,
+     244,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "a4bdc90d44702a0edc058410e7a2a7b166f5856b"
+     "10d5dc2e5401e7ef5e233e38127ab37303fd900a"
     ],
     [
      "block",
      null,
      "3/4",
-     233,
-     333,
+     245,
+     343,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "4d9d284d914e76d7e9885b200b5b480df215587f"
+     "dd3982a446fdb3ffc9310ffe96c7eebef84e4c20"
     ],
     [
      "block",
      null,
      "4/4",
-     334,
-     406,
+     344,
+     404,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "ea76d446c5d6fa2cadde3d23dec272a2b70f54f9"
+     "0de163b077cc0c8d1a3a1b237e341307ef12e6e1"
     ],
     [
      "function",
      "_scope",
      null,
-     407,
-     416,
+     405,
+     414,
      "megabrain > megabrain/server/mcp.py > def _scope(args: dict) -> tuple[Path, str | None]",
      "1d10e662f4d499a37f52ced42ddfed4a6e7cd428"
     ],
@@ -6935,8 +6942,8 @@
      "block",
      "call_tool",
      "1/2",
-     417,
-     511,
+     415,
+     509,
      "megabrain > megabrain/server/mcp.py > def call_tool(name: str, args: dict) -> str",
      "90a15fcae2df66751e160dd13fd3377af3ae7b77"
     ],
@@ -6944,8 +6951,8 @@
      "block",
      "call_tool",
      "2/2",
-     512,
-     546,
+     510,
+     544,
      "megabrain > megabrain/server/mcp.py > def call_tool(name: str, args: dict) -> str",
      "d4fdfdbe6b77a39a179b93d0390c48688fda920d"
     ],
@@ -6953,8 +6960,8 @@
      "function",
      "main",
      null,
-     547,
-     589,
+     545,
+     587,
      "megabrain > megabrain/server/mcp.py > def main()",
      "16e1a3005113960f1e0740cd3be36b7fce1e73a4"
     ]
@@ -6979,28 +6986,28 @@
      "TOOLS",
      "constant",
      70,
-     406,
+     404,
      "TOOLS = [{'name': 'megabrain_ask', 'description': 'THE primary tool for any how/where/why question about an indexed repo"
     ],
     [
      "_scope",
      "function",
-     409,
-     416,
+     407,
+     414,
      "def _scope(args: dict) -> tuple[Path, str | None]"
     ],
     [
      "call_tool",
      "function",
-     419,
-     546,
+     417,
+     544,
      "def call_tool(name: str, args: dict) -> str"
     ],
     [
      "main",
      "function",
-     549,
-     585,
+     547,
+     583,
      "def main()"
     ]
    ]

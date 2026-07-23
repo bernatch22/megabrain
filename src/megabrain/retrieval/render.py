@@ -143,6 +143,12 @@ def _query_window(lines: list[str], query: str, char_budget: int) -> tuple[int, 
             return lo, hi + 1
 
 
+def _numbered(lines: list[str], first: int) -> list[str]:
+    """Prefix each line with its true line number and the `→` gutter that
+    megabrain_read uses — one gutter format across both tools."""
+    return [f'{first + i:>6}→{ln}' for i, ln in enumerate(lines)]
+
+
 def render_pruned(res: dict, with_text: bool = True,
                   budget: int | None = None) -> str:
     """Pruned result -> ranked markdown list: `[id] file L… (name) · score`,
@@ -181,17 +187,22 @@ def render_pruned(res: dict, with_text: bool = True,
             lines = text.rstrip("\n").splitlines()
             body = "\n".join(lines)
             remaining = budget - spent
+            # true line numbers per line (same `N→` gutter as megabrain_read),
+            # so a search result feeds megabrain_replace directly: the reader
+            # sees exactly where each line lives, and the `→` marks the prefix
+            # to strip when building a find string. Budget is spent on the RAW
+            # body (the gutter is presentation, not the disk text).
             if len(body) <= remaining:
                 # fits -> WHOLE, always. No per-chunk cap exists anymore.
                 L.append(f'```{lang_of(c["file"])}')
-                L.append(body)
+                L.append("\n".join(_numbered(lines, c["start_line"])))
                 L.append("```")
                 spent += len(body)
             elif remaining >= MIN_WINDOW_CHARS:
                 # doesn't fit -> the query-centered window that does
                 start, end = _query_window(lines, res.get("query", ""),
                                            remaining)
-                shown = lines[start:end]
+                shown = _numbered(lines[start:end], c["start_line"] + start)
                 if start:
                     shown.insert(0, f'… {start} lines above — Read '
                                     f'{c["file"]}:L{c["start_line"]}-'
