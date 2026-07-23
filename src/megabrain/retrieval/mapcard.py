@@ -93,18 +93,39 @@ def map_repo(root: Path, query: str, path_filter: str | None = None) -> dict:
     # FROM the top matches and pre-run the greps the agent would have run:
     # def site, reader files, incoming edges — deterministic PRF, no LLM.
     qtok = {t.lower() for t in _IDENT.findall(query)}
-    mech: list[str] = []
+
+    def subtoks(name: str) -> set[str]:
+        # camelCase / snake_case parts of an identifier, lowered
+        parts = re.findall(r"[A-Z]+(?=[A-Z][a-z])|[A-Z]?[a-z]+|[A-Z]+|\d+",
+                           name.replace("_", " "))
+        return {p.lower() for p in parts if len(p) >= 3}
+
+    # Candidate mechanism identifiers, from the OUTLINE (overlap-ranked per
+    # file) NOT the span names — a fat chunk names 4 sibling functions and the
+    # span would drag all 4 in (do_filesizeformat/do_pprint alongside
+    # do_indent). Rank the candidates by how many sub-tokens they SHARE with
+    # the query: do_indent shares "indent", get_usage shares "usage", a chunk
+    # neighbour shares nothing and sinks. The symbol the query is about leads;
+    # its callees (which may share no token — break_on_hyphens) ride its grep.
+    seen_c: set[str] = set()
+    scored: list[tuple[int, str]] = []
     for f in ordered[:3]:
-        names = [n.strip() for s in f["spans"]
+        cands = [n.strip() for s in f["spans"]
                  for n in str(s["name"]).split(",")]
-        names += [s["signature"].split("(")[0].split()[-1]
-                  for s in f["outline"][:4]]
-        for n in names:
+        cands += [s["signature"].split("(")[0].split()[-1]
+                  for s in f["outline"][:6]]
+        for n in cands:
             bare = n.rsplit(".", 1)[-1]
-            if (len(bare) >= 4 and bare.lower() not in qtok
-                    and bare not in mech
-                    and ("_" in bare or not bare.islower() or len(bare) >= 8)):
-                mech.append(bare)
+            if (len(bare) < 4 or bare.lower() in qtok or bare in seen_c
+                    or not ("_" in bare or not bare.islower() or len(bare) >= 8)):
+                continue
+            seen_c.add(bare)
+            scored.append((len(subtoks(bare) & qtok), bare))
+    scored.sort(key=lambda x: -x[0])
+    # keep only candidates that actually share a query token; if none do
+    # (mechanism named nothing like the symptom), fall back to the top-2 by
+    # outline rank so the trail is never empty on a pure-symptom query.
+    mech = [b for sc, b in scored if sc > 0] or [b for _, b in scored[:2]]
     trail = []
     if mech:
         from .grepx import grep_repo

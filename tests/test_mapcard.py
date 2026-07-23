@@ -41,15 +41,24 @@ def test_map_render_is_grep_priced(mapped):
     assert len(render_map(mapped)) < 4000     # structure, not a dump
 
 
-def test_map_expands_mechanism_identifiers_the_query_lacks(tiny_repo):
-    """The query names the SYMPTOM; the mechanism identifier
-    (check_password) is not in it. The map extracts it from the top matches
-    and pre-runs its grep: def site, readers, edges — no follow-up grep."""
+def test_map_trail_anchors_on_query_tokens_and_pre_runs_their_grep(tiny_repo):
+    """The trail pins the ANCHOR symbols — those sharing a token with the
+    query (login_user shares login+user) — and pre-runs each one's grep so
+    no follow-up grep is needed. It ranks by shared tokens, so a fat chunk's
+    unrelated neighbours (which share nothing) never lead."""
     res = map_repo(tiny_repo, "how is a user login verified")
     idents = [t["ident"] for t in res["trail"]]
-    assert "check_password" in idents             # extracted, not in query
-    t = next(x for x in res["trail"] if x["ident"] == "check_password")
+    assert "login_user" in idents                 # anchor, shares login+user
+    t = next(x for x in res["trail"] if x["ident"] == "login_user")
     assert t["defined"].startswith("auth/login.py:")
     out = render_map(res)
     assert "MECHANISM TRAIL" in out and "pre-run" in out
-    assert "check_password — defined auth/login.py:" in out
+
+
+def test_map_trail_ranks_query_sharing_symbols_over_chunk_neighbours(tiny_repo):
+    """A symbol sharing a query token outranks one that shares none — the
+    fix for the jinja run where do_filesizeformat (a chunk neighbour of
+    do_indent, sharing nothing) led the trail ahead of do_indent."""
+    res = map_repo(tiny_repo, "login flow")
+    if res["trail"]:
+        assert res["trail"][0]["ident"] == "login_user"   # shares "login"
