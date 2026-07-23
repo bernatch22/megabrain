@@ -80,6 +80,15 @@
   "description": "THE first call for any implement/fix task: a task-level structure card with NO code bodies \u2014 the token-optimal workflow is map -> ONE batched message of Reads (every target at once, each once) -> Edit. Give it the task in natural language (or an identifier); it returns the relevant files ranked, each with match-span pointers (exact L ranges for a surgical Read), the AST-level symbol outline (signatures + line ranges), the import/call edges BOTH ways (who reaches this file, what it reaches), exact identifiers from your query resolved to their definition sites, and the tests pinning the behavior. A cheap LLM judge reorders the near-tied head so mechanism outranks files that merely FORMAT the symptom (fails open to the deterministic order). Grep-priced output (~50 lines), never a body. Bodies from megabrain_search are only worth it for files you will NOT open \u2014 the host requires Read before Edit, so a body of an edit target gets paid twice.",
   "inputSchema": {
    "properties": {
+    "expand": {
+     "default": true,
+     "description": "default true: one cheap LLM call names the mechanism identifiers your query lacks and a second deterministic pass widens the pool with them before judging \u2014 the LLM names search terms, never spans (fails open).",
+     "type": "boolean"
+    },
+    "model": {
+     "description": "optional model pin for the judge/expander calls (default: the measured fast-lane rerank model).",
+     "type": "string"
+    },
     "query": {
      "description": "the task in natural language, or an exact identifier",
      "type": "string"

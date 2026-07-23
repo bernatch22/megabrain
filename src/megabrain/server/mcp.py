@@ -186,6 +186,15 @@ TOOLS = [
                                           "near-tied head — mechanism over symptom-formatting "
                                           "(~1-2s, fails open). false = pure deterministic "
                                           "(~300ms)."},
+                "expand": {"type": "boolean", "default": True,
+                           "description": "default true: one cheap LLM call names the "
+                                          "mechanism identifiers your query lacks and a second "
+                                          "deterministic pass widens the pool with them before "
+                                          "judging — the LLM names search terms, never spans "
+                                          "(fails open)."},
+                "model": {"type": "string",
+                          "description": "optional model pin for the judge/expander calls "
+                                         "(default: the measured fast-lane rerank model)."},
             },
             "required": ["repo_path", "query"],
         },
@@ -390,7 +399,9 @@ def call_tool(name: str, args: dict) -> str:
         from ..retrieval.mapcard import map_repo, render_map
         root, pf = _scope(args)
         return render_map(map_repo(root, args["query"], path_filter=pf,
-                                   rerank=bool(args.get("rerank", True))))
+                                   rerank=bool(args.get("rerank", True)),
+                                   expand=bool(args.get("expand", True)),
+                                   model=args.get("model")))
     if name == "megabrain_grep":
         from ..retrieval.grepx import render_grep
         root, pf = _scope(args)

@@ -169,28 +169,21 @@ def _merge_round_robin(per_batch: list[list[int]]) -> list[int]:
     return merged
 
 
-def llm_rerank(res: dict, question: str, model: str | None = None) -> dict:
-    """Filter + reorder a prune_search result via one buffered LLM call.
-
-    Kept chunks are reordered to the model's ranking; dropped ones move to
-    `noise` (created if absent) so nothing is silently destroyed. Annotates
-    `res["reranked"] = {model, kept, dropped, ms}` on success, `False` on any
-    failure (fail-open: the deterministic result is the floor, never worse)."""
-    chunks = res.get("chunks") or []
-    if len(chunks) < 2:
-        res["reranked"] = False
-        return res
-    t0 = time.time()
+def judge_lane(model: str | None = None) -> tuple:
+    """(chat_fn, resolved_model, bodies) — the FASTEST lane for mechanical
+    judge/expander calls, not the narration provider: on the claude provider
+    each chat_text spawns the Claude CLI — measured ~18s per rerank from the
+    MCP server vs ~0.7s on the OpenAI-compat lane, for identical selections
+    (both kept the bug file, both dropped the noise, 3/3 queries). An explicit
+    model pin (arg or MEGABRAIN_RERANK_MODEL) is respected and keeps the
+    provider routing; and with no OpenRouter key or local endpoint there is
+    no fast lane, so the claude provider remains the (slow but working)
+    fallback. `bodies` = full chunk bodies are affordable in the prompt: only
+    on a REMOTE HTTP lane — a local server (Ollama) serializes and chokes on
+    parallel ~9K-token prompts, and the claude CLI lane spawns a ~18s process
+    per call. Same local-vs-cloud stance as embed concurrency."""
     from .. import providers
     m = model or rerank_model()
-    # Rerank is a mechanical id filter, so it takes the FASTEST lane available,
-    # not the narration provider: on the claude provider each chat_text spawns
-    # the Claude CLI — measured ~18s per rerank from the MCP server vs ~0.7s on
-    # the OpenAI-compat lane, for identical selections (both kept the bug file,
-    # both dropped the noise, 3/3 queries). An explicit model pin (arg or
-    # MEGABRAIN_RERANK_MODEL) is respected and keeps the provider routing; and
-    # with no OpenRouter key or local endpoint there is no fast lane, so the
-    # claude provider remains the (slow but working) fallback.
     chat = providers.chat_text
     is_claude = providers.chat_provider() == "claude"
     fast_lane = (model is None and not os.environ.get("MEGABRAIN_RERANK_MODEL")
@@ -209,12 +202,24 @@ def llm_rerank(res: dict, question: str, model: str | None = None) -> dict:
                                  required=False)
         chat = partial(providers._REGISTRY["openrouter"].chat_text, key=key)
         m = providers.FAST_RERANK_MODEL
-    # Bodies go to the judge only on a REMOTE HTTP lane: a local server
-    # (Ollama) serializes and chokes on parallel ~9K-token prompts, and the
-    # claude CLI lane spawns a ~18s process per call — both stay on the
-    # 1-line view, one call. Same local-vs-cloud stance as embed concurrency.
     http_lane = (not is_claude) or fast_lane
     bodies = http_lane and not providers._is_local(providers.CHAT_BASE_URL)
+    return chat, m, bodies
+
+
+def llm_rerank(res: dict, question: str, model: str | None = None) -> dict:
+    """Filter + reorder a prune_search result via one buffered LLM call.
+
+    Kept chunks are reordered to the model's ranking; dropped ones move to
+    `noise` (created if absent) so nothing is silently destroyed. Annotates
+    `res["reranked"] = {model, kept, dropped, ms}` on success, `False` on any
+    failure (fail-open: the deterministic result is the floor, never worse)."""
+    chunks = res.get("chunks") or []
+    if len(chunks) < 2:
+        res["reranked"] = False
+        return res
+    t0 = time.time()
+    chat, m, bodies = judge_lane(model)
     batch = max(1, int(os.environ.get("MEGABRAIN_RERANK_BATCH",
                                       str(RERANK_BATCH))))
     try:

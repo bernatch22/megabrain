@@ -145,6 +145,42 @@ def test_map_rerank_fails_open_to_deterministic_order(tiny_repo, monkeypatch):
     assert "judged by" not in mapcard.render_map(res)
 
 
+def test_map_expand_widens_the_pool_with_llm_terms(tiny_repo, monkeypatch):
+    """The judge can only reorder what cosine FOUND — expansion lets one
+    cheap LLM call name the mechanism vocabulary the query lacks, and a
+    second deterministic pass widens the pool. The LLM names search terms,
+    never spans. A query about invoices that never says 'invoice' finds
+    billing/invoice.py once the expander names it."""
+    import megabrain.providers as providers
+    from megabrain.retrieval import mapcard
+
+    def fake_chat_text(model, prompt, max_tokens, **kw):
+        assert "JSON array" in prompt
+        return '["create_invoice", "billing amount"]'
+    monkeypatch.setattr(providers, "chat_text", fake_chat_text)
+    res = mapcard.map_repo(tiny_repo, "how is a user login password checked",
+                           expand=True)
+    assert res["expanded"]["terms"] == ["create_invoice", "billing amount"]
+    assert any(f["file"] == "billing/invoice.py" for f in res["files"])
+    out = mapcard.render_map(res)
+    assert "expanded with mechanism terms: create_invoice" in out
+    assert "```" not in out
+
+
+def test_map_expand_fails_open(tiny_repo, monkeypatch):
+    import megabrain.providers as providers
+    from megabrain.retrieval import mapcard
+
+    def broken_chat(model, prompt, max_tokens, **kw):
+        raise TimeoutError("provider down")
+    monkeypatch.setattr(providers, "chat_text", broken_chat)
+    res = mapcard.map_repo(tiny_repo, "how is a user login password checked",
+                           expand=True)
+    det = mapcard.map_repo(tiny_repo, "how is a user login password checked")
+    assert res["expanded"] is None
+    assert [f["file"] for f in res["files"]] == [f["file"] for f in det["files"]]
+
+
 def test_defines_budget_prefers_specific_tokens(tiny_repo):
     """Field run: the agent put do_indent in the query and the generic words
     (indent, filter, first) consumed all 4 DEFINES slots, pushing out the one

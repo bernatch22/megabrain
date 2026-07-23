@@ -14,6 +14,7 @@ map-shaped.
 
 from __future__ import annotations
 
+import logging
 import re
 import time
 from pathlib import Path
@@ -22,6 +23,8 @@ from ..storage.store import Store
 from .bundle import prune_search
 from .scoring import _is_test_path
 from .state import load_state
+
+log = logging.getLogger(__name__)
 
 MAX_FILES = 8
 MAX_OUTLINE = 10
@@ -32,21 +35,79 @@ _OUTLINE_KINDS = ("class", "function", "async_function", "method",
                   "async_method", "interface", "type", "enum", "module")
 
 
+_EXPAND_MAX_TOKENS = 200
+_EXPAND_PROMPT = """A developer is working on this task in a codebase:
+
+{query}
+
+Best matches so far (file · symbols):
+{listing}
+
+The task names the SYMPTOM; the mechanism often lives under identifiers the
+task never mentions. Name up to 5 code identifiers or short subsystem phrases
+likely implementing the mechanism behind this task and MISSING from the list
+above. Return ONLY a JSON array of strings, no prose.
+Example: ["solve_constraints", "type inference solver"]"""
+
+
+def _expand_terms(query: str, chunks: list[dict], model: str | None) -> list[str]:
+    """One cheap LLM call: mechanism vocabulary the query lacks. The model
+    only NAMES search terms — retrieval stays deterministic, so a bad term
+    costs one wasted lane, never a wrong span. Raises on any failure; the
+    caller fails open."""
+    import json as _json
+
+    from .rerank import _hint, judge_lane
+    chat, m, _ = judge_lane(model)
+    listing = "\n".join(
+        f'{c["file"]} · {c.get("name") or c.get("kind") or "?"} · '
+        f'{_hint(c, query)}' for c in chunks[:12])
+    reply = chat(m, _EXPAND_PROMPT.format(query=query, listing=listing),
+                 _EXPAND_MAX_TOKENS, timeout=30)
+    arr = re.search(r"\[.*?\]", reply, re.S)
+    terms = [str(t).strip() for t in _json.loads(arr.group(0))] if arr else []
+    return [t for t in terms if 3 <= len(t) <= 60][:5]
+
+
 def map_repo(root: Path, query: str, path_filter: str | None = None,
-             rerank: bool = False) -> dict:
+             rerank: bool = False, expand: bool = False,
+             model: str | None = None) -> dict:
     t0 = time.time()
     root = Path(root)
+    llm = rerank or expand
     with load_state(root) as st:
         # text is fetched ONLY as evidence for the judge — it never reaches
         # the result or the render (the no-bodies contract is the point).
         res = prune_search(st, query, path_filter=path_filter,
-                           with_text=rerank, exclude_docs=True)
+                           with_text=llm, exclude_docs=True)
+        # THE EXPANDER — the judge can only reorder what cosine FOUND; when
+        # the cause never enters the pool (jinja lesson: the symptom query
+        # missed _textwrap.py entirely) no reordering rescues it. One cheap
+        # call names the mechanism vocabulary the query lacks, and a second
+        # deterministic pass over query+terms widens the pool BEFORE judging.
+        # The LLM never picks spans — it only names search terms.
+        expanded = None
+        if expand:
+            try:
+                terms = _expand_terms(query, res["chunks"], model)
+                if terms:
+                    wide = prune_search(st, query + " " + " ".join(terms),
+                                        path_filter=path_filter,
+                                        with_text=llm, exclude_docs=True)
+                    seen_ids = {c["id"] for c in res["chunks"]}
+                    res["chunks"] += [c for c in wide["chunks"]
+                                      if c["id"] not in seen_ids]
+                    expanded = {"terms": terms}
+            except Exception:
+                log.debug("map expansion failed open", exc_info=True)
     # THE JUDGE — cosine can't tell "formats the symptom" from "causes it":
     # on the mypy field run messages.py (which only BUILDS the error text the
     # query quotes) near-tied with constraints.py (where the fix lived) and
     # won on vocabulary. The rerank judge reorders the pool BEFORE grouping,
     # so file order, the cut, and the trail's top-3 anchor all inherit the
     # verdict. Fail-open: the deterministic order is the floor, never worse.
+    # After expansion the judge is also the FILTER that keeps a bad expansion
+    # term from polluting the head — judged against the ORIGINAL query.
     judged = None
     if rerank:
         from .rerank import llm_rerank
@@ -54,7 +115,7 @@ def map_repo(root: Path, query: str, path_filter: str | None = None,
         # this seed the judged-out chunks vanish and the tail can't label them
         # (live run: checkexpr.py dropped invisibly, tail came back empty).
         res.setdefault("noise", [])
-        res = llm_rerank(res, query)
+        res = llm_rerank(res, query, model=model)
         judged = res.get("reranked") or None
     files: dict[str, dict] = {}
     for pos, c in enumerate(list(res["chunks"]) + list(res.get("tests") or [])):
@@ -210,7 +271,8 @@ def map_repo(root: Path, query: str, path_filter: str | None = None,
             })
     return {"query": query, "repo": res["repo"], "files": ordered,
             "tail": tail, "defines": defines[:4], "trail": trail,
-            "judged": judged, "pruned": res.get("pruned", 0),
+            "judged": judged, "expanded": expanded,
+            "pruned": res.get("pruned", 0),
             "ms": int((time.time() - t0) * 1000)}
 
 
@@ -221,6 +283,10 @@ def render_map(res: dict) -> str:
     L = [f'# megabrain map — "{res["query"]}"',
          f'repo `{res["repo"]}` · {len(res["files"])} files · {res["ms"]}ms{judge} · '
          f'NO code bodies: batch ALL your Reads in ONE message (each target once), then Edit.\n']
+    if res.get("expanded"):
+        # the terms double as vocabulary hints for the reader, not just lanes
+        L.insert(1, "expanded with mechanism terms: "
+                    + ", ".join(res["expanded"]["terms"]))
     if res["defines"]:
         L.append("DEFINES (exact identifiers from your query):")
         for d in res["defines"]:
