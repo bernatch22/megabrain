@@ -5261,6 +5261,87 @@
     ]
    ]
   },
+  "megabrain/retrieval/mapcard.py": {
+   "chunks": [
+    [
+     "function",
+     "map_repo",
+     null,
+     1,
+     91,
+     "megabrain > megabrain/retrieval/mapcard.py > def map_repo(root: Path, query: str, path_filter: str | None=None) -> dict",
+     "775e3d52140172456a754f25dacaa161daafbe41"
+    ],
+    [
+     "function",
+     "render_map",
+     null,
+     92,
+     125,
+     "megabrain > megabrain/retrieval/mapcard.py > def render_map(res: dict) -> str",
+     "af5d443a6d04329b570da9e33b6dbb70db7481bb"
+    ]
+   ],
+   "skeleton_sha": "3ccc81902235b9ba337f8a81811bb8eb0d0c8da9",
+   "symbols": [
+    [
+     "MAX_FILES",
+     "constant",
+     26,
+     26,
+     "MAX_FILES = 8"
+    ],
+    [
+     "MAX_OUTLINE",
+     "constant",
+     27,
+     27,
+     "MAX_OUTLINE = 10"
+    ],
+    [
+     "MAX_EDGES",
+     "constant",
+     28,
+     28,
+     "MAX_EDGES = 4"
+    ],
+    [
+     "MAX_SPANS",
+     "constant",
+     29,
+     29,
+     "MAX_SPANS = 4"
+    ],
+    [
+     "_IDENT",
+     "constant",
+     30,
+     30,
+     "_IDENT = re.compile('[A-Za-z_][A-Za-z0-9_]{3,}')"
+    ],
+    [
+     "_OUTLINE_KINDS",
+     "constant",
+     31,
+     32,
+     "_OUTLINE_KINDS = ('class', 'function', 'async_function', 'method', 'async_method', 'interface', 'type', 'enum', 'module'"
+    ],
+    [
+     "map_repo",
+     "function",
+     35,
+     91,
+     "def map_repo(root: Path, query: str, path_filter: str | None=None) -> dict"
+    ],
+    [
+     "render_map",
+     "function",
+     94,
+     125,
+     "def render_map(res: dict) -> str"
+    ]
+   ]
+  },
   "megabrain/retrieval/params.py": {
    "chunks": [
     [
@@ -6639,43 +6720,52 @@
      null,
      null,
      1,
-     65,
+     66,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "5ffc2daf83a41b7a42c6759adcd6e6394aa8e3d6"
+     "02cc156a50c62ed72054fe0ea4d3358086d3557a"
     ],
     [
      "block",
      null,
-     "1/3",
-     66,
-     138,
+     "1/4",
+     67,
+     139,
      "megabrain > megabrain/server/mcp.py (module level)",
      "f551a9b0e63bac816cf6bdf7cd7a421a55cc1823"
     ],
     [
      "block",
      null,
-     "2/3",
-     139,
-     223,
+     "2/4",
+     140,
+     225,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "71b040501bc3107d126f89aeb227c48b91ed5f6e"
+     "e63e54266b976184ffa050846d05ac0ea57cc817"
     ],
     [
      "block",
      null,
-     "3/3",
-     224,
-     303,
+     "3/4",
+     226,
+     318,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "3d3b29270bd43a8a20fcc8f3026b774069d83bf4"
+     "97f40c4b653865328f721588ab03332a64ca1a29"
+    ],
+    [
+     "block",
+     null,
+     "4/4",
+     319,
+     331,
+     "megabrain > megabrain/server/mcp.py (module level)",
+     "5b3a39e886b68af4605927c4a9d9c82871318002"
     ],
     [
      "function",
      "_scope",
      null,
-     304,
-     313,
+     332,
+     341,
      "megabrain > megabrain/server/mcp.py > def _scope(args: dict) -> tuple[Path, str | None]",
      "1d10e662f4d499a37f52ced42ddfed4a6e7cd428"
     ],
@@ -6683,17 +6773,17 @@
      "block",
      "call_tool",
      "1/2",
-     314,
-     393,
+     342,
+     425,
      "megabrain > megabrain/server/mcp.py > def call_tool(name: str, args: dict) -> str",
-     "027c4b86fff23841269a6513f45acf641486b072"
+     "ba69aa0c61dedb35ebec5d9d92521a5e108cbe9f"
     ],
     [
      "block",
      "call_tool",
      "2/2",
-     394,
-     428,
+     426,
+     460,
      "megabrain > megabrain/server/mcp.py > def call_tool(name: str, args: dict) -> str",
      "d4fdfdbe6b77a39a179b93d0390c48688fda920d"
     ],
@@ -6701,8 +6791,8 @@
      "function",
      "main",
      null,
-     429,
-     471,
+     461,
+     503,
      "megabrain > megabrain/server/mcp.py > def main()",
      "16e1a3005113960f1e0740cd3be36b7fce1e73a4"
     ]
@@ -6720,35 +6810,35 @@
      "INSTRUCTIONS",
      "constant",
      48,
-     65,
+     66,
      "INSTRUCTIONS = 'megabrain answers questions about a repo\\'s CODE from a pre-built index, so you don\\'t have to crawl fil"
     ],
     [
      "TOOLS",
      "constant",
-     67,
-     303,
+     68,
+     331,
      "TOOLS = [{'name': 'megabrain_ask', 'description': 'THE primary tool for any how/where/why question about an indexed repo"
     ],
     [
      "_scope",
      "function",
-     306,
-     313,
+     334,
+     341,
      "def _scope(args: dict) -> tuple[Path, str | None]"
     ],
     [
      "call_tool",
      "function",
-     316,
-     428,
+     344,
+     460,
      "def call_tool(name: str, args: dict) -> str"
     ],
     [
      "main",
      "function",
-     431,
-     467,
+     463,
+     499,
      "def main()"
     ]
    ]

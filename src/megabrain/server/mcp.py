@@ -47,18 +47,19 @@ PROTOCOL = "2024-11-05"
 # session that loads this server.
 INSTRUCTIONS = """megabrain answers questions about a repo's CODE from a pre-built index, so you don't have to crawl files to understand it. Retrieval runs NO LLM: it ranks real chunks and returns verbatim code with true line numbers.
 
-Reach for it FIRST on any how/where/why question about an indexed repo — one call usually replaces several rounds of Grep + Read. For exact literal strings use megabrain_grep.
+For an implement/fix task the token-optimal loop is: megabrain_map -> Read each edit target ONCE -> Edit. The map is a structure card with NO code bodies (files ranked, match spans, symbol outline, edges both ways, def sites, pinning tests, ~40 lines) — bodies of edit targets get paid twice because the host requires Read before Edit.
 
 Which tool:
+- megabrain_map — FIRST call for any task: where, who, what shape. No bodies, no LLM, ~300ms.
 - megabrain_grep — you know the exact identifier/string: every match resolved against the index and grouped into DEFINES / READS (ranked by dependents, with who-reaches-it edges) / CONFIG / TESTS / DOCS. One call answers "where is this defined, who reads it, who depends on the reader". Zero LLM, ~50ms.
-- megabrain_search — you want the exact code to read: ranked chunks with the real code, noise dropped, plus a cheap LLM rerank. The default for a reproducible bug — when two spans collide, seeing them side by side IS the explanation.
+- megabrain_search — ranked chunks WITH code: only for files you will NOT open (understanding a bug across spans you won't edit).
 - megabrain_ask — you want the flow narrated across subsystems with code spliced in at each step (broad questions fan out into sub-agents). The spliced CODE is verbatim and cannot be hallucinated; the PROSE around it is model narration, so verify its claims against that code before acting on them.
-- megabrain_graph — the repo as a map: communities, core abstractions, how two areas connect. Start an unfamiliar codebase here.
+- megabrain_graph — communities, core abstractions, how two areas connect.
 - megabrain_index — register/refresh a repo (ask/search already auto-refresh a stale index).
-- megabrain_flows — walkthroughs cached from previous asks.
+- megabrain_flows — cached ask walkthroughs.
 - megabrain_forge — add a chunker for a file type megabrain doesn't cover yet.
 
-TRUST the CODE, verify the PROSE. Spliced code is verbatim from disk with true line numbers — never re-verify it with grep or re-Read files whose code the render included. But ask's prose is narration: check its behavior claims (who calls what, when) against the code before hooking into anything (one narration called a summary path "failure-only"; it also serves -rP). ONE scoped search, then work from it.
+TRUST the CODE, verify the PROSE. Spliced code is verbatim from disk with true line numbers — never re-verify it with grep or re-Read files whose code the render included. But ask's prose is narration: check its behavior claims (who calls what, when) against the code before hooking into anything. ONE scoped search, then work from it.
 
 Two things that decide answer quality:
 - scope_path EXCLUDES everything outside it from retrieval. Scope to a package root (e.g. activejob), never to its lib/ or src/ subfolder — that cuts away the package's tests, which are often the spec of the behavior you are asking about.
@@ -153,6 +154,33 @@ TOOLS = [
                                           "false = pure deterministic retrieval (~200ms)."},
             },
             "required": ["repo_path", "task"],
+        },
+    },
+    {
+        "name": "megabrain_map",
+        "description": (
+            "THE first call for any implement/fix task: a task-level structure "
+            "card with NO code bodies — the token-optimal workflow is map -> "
+            "Read each edit target ONCE -> Edit. Give it the task in natural "
+            "language (or an identifier); it returns the relevant files ranked, "
+            "each with match-span pointers (exact L ranges for a surgical "
+            "Read), the AST-level symbol outline (signatures + line ranges), "
+            "the import/call edges BOTH ways (who reaches this file, what it "
+            "reaches), exact identifiers from your query resolved to their "
+            "definition sites, and the tests pinning the behavior. "
+            "Deterministic, no LLM, ~300ms, grep-priced output (~40 lines). "
+            "Bodies from megabrain_search are only worth it for files you "
+            "will NOT open — the host requires Read before Edit, so a body "
+            "of an edit target gets paid twice."),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "repo_path": {"type": "string", "description": "path to the indexed repo root (a sub-path also works — the root is auto-detected from .megabrain)"},
+                "query": {"type": "string", "description": "the task in natural language, or an exact identifier"},
+                "scope_path": {"type": "string",
+                               "description": "optional repo-relative folder to scope the map to files under it"},
+            },
+            "required": ["repo_path", "query"],
         },
     },
     {
@@ -351,6 +379,10 @@ def call_tool(name: str, args: dict) -> str:
                             for a in out["agents"])
             text += f"\n\n— multi-agent: {tr}"
         return text
+    if name == "megabrain_map":
+        from ..retrieval.mapcard import map_repo, render_map
+        root, pf = _scope(args)
+        return render_map(map_repo(root, args["query"], path_filter=pf))
     if name == "megabrain_grep":
         from ..retrieval.grepx import render_grep
         root, pf = _scope(args)
