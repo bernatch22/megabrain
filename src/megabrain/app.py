@@ -125,6 +125,14 @@ def prune(root: Path, task: str, path_filter: str | None = None,
             ex = expand_pool(st, task, res, model,
                              path_filter=path_filter, with_text=with_text, **cf)
             terms = (ex or {}).get("terms", []) or []
+        # the judge runs BEFORE the docs/tests closures so they read the
+        # JUDGED surface (kept + set-aside), not the raw det order — on the
+        # click aliases task Command.__init__ sat past det rank 12 but the
+        # judge kept it, and the closure missed to_info_dict (and with it
+        # tests/test_info_dict.py) by looking at the wrong list
+        if llm_rerank:
+            from .retrieval.rerank import llm_rerank as _rerank
+            res = _rerank(res, task, model=model)
         if with_docs and not docs:
             # reuse the expander's mechanism terms; the docs corpus is small,
             # so a single deterministic pass (no rerank) picks the right files
@@ -140,9 +148,71 @@ def prune(root: Path, task: str, path_filter: str | None = None,
                 {"file": f, "start_line": next(
                     c["start_line"] for c in dres["chunks"] if c["file"] == f)}
                 for f in seen[:5]]
-    if llm_rerank:
-        from .retrieval.rerank import llm_rerank as _rerank
-        res = _rerank(res, task, model=model)
+            # The changelog is a FIXED edit target of any behavior change —
+            # not a retrieval question. Ranked retrieval reliably misses it
+            # (its entries describe OTHER features), and the duel agent
+            # guessed CHANGES.rst on an .md repo and burned a recovery turn.
+            # Deterministic: if the repo has one, it is always listed, named.
+            listed = {d["file"] for d in res["related_docs"]}
+            for name in ("CHANGES.md", "CHANGELOG.md", "CHANGES.rst",
+                         "CHANGELOG.rst", "HISTORY.md", "NEWS.md"):
+                if not (Path(root) / name).is_file():
+                    continue
+                if name not in listed:
+                    res["related_docs"].append(
+                        {"file": name, "start_line": 1})
+                # flag by NAME, not by which path added it — when the docs
+                # pruner itself surfaces the changelog, the entry must still
+                # carry the label
+                for d in res["related_docs"]:
+                    if d["file"] == name:
+                        d["changelog"] = True
+                break
+            # Deterministic pinning-tests closure. The judge-dependent tests
+            # bucket appears and disappears with the pool (field runs: the
+            # same click task phrased two ways produced two different test
+            # sections). The tests that PIN a mechanism are the test files
+            # that NAME its symbols — a literal scan over the indexed test
+            # corpus, megabrain_grep's TESTS-role doctrine: zero LLM, stable
+            # across phrasings. Symbols come from the judged surface (kept +
+            # set-aside; det head when the judge is off), multi-word only
+            # ("command" alone would match every test in the repo).
+            from .retrieval.scoring import _is_test_path
+            syms: list[str] = []
+            # the whole set-aside joins the head: it is small (<=8) and holds
+            # exactly the near-tie spans whose symbols the judge undervalued
+            surface = list(res["chunks"])[:12] + list(res.get("setaside") or [])
+            for c in surface:
+                for n in (c.get("name") or "").split(","):
+                    n = n.strip().rsplit(".", 1)[-1]
+                    if (len(n) >= 6 and n not in syms
+                            and ("_" in n or any(ch.isupper()
+                                                 for ch in n[1:]))):
+                        syms.append(n)
+            if syms:
+                import re as _re
+                hits: dict[str, dict] = {}
+                for file, start, text in st.store.db.execute(
+                        "SELECT file, start_line, text FROM chunks"):
+                    if not _is_test_path(file):
+                        continue
+                    n_hit = sum(1 for s in syms if s in text)
+                    if not n_hit:
+                        continue
+                    # a test file NAMED after a mechanism symbol is its
+                    # DEDICATED spec and must dominate the n=1 tie-break
+                    # (field run: test_info_dict.py lost a tie against
+                    # test_defaults.py and fell off the cap — the one file
+                    # whose golden the feature was guaranteed to change)
+                    base = _re.sub(r"^test[_-]?|[_-]?tests?$",
+                                   "", file.rsplit("/", 1)[-1].rsplit(".", 1)[0])
+                    if base and any(base in s or s in base for s in syms):
+                        n_hit += 10
+                    h = hits.setdefault(file, {"file": file,
+                                               "start_line": start, "n": 0})
+                    h["n"] = max(h["n"], n_hit)
+                res["related_tests"] = sorted(
+                    hits.values(), key=lambda h: -h["n"])[:8]
     return res
 
 

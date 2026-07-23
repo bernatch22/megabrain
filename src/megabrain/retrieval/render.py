@@ -255,13 +255,38 @@ def render_pruned(res: dict, with_text: bool = True,
         L.append("— docs that reference this mechanism (a feature fix updates "
                  "them too — read/edit these, don't grep for them):")
         for d in res["related_docs"]:
-            L.append(f'  {d["file"]}')
+            L.append(f'  {d["file"]}'
+                     + (' ← the changelog: a behavior change adds an entry here'
+                        if d.get("changelog") else ""))
         L.append("")
-    if res.get("tests"):
+    # judge-bucketed test chunks first (spans + symbols), then the
+    # deterministic closure's extra files — same section, deduped, so the
+    # list no longer shifts with the judge's mood or the query's phrasing
+    seen_tf = {c["file"] for c in (res.get("tests") or [])}
+    extra_tests = [t for t in (res.get("related_tests") or [])
+                   if t["file"] not in seen_tf]
+    if res.get("tests") or extra_tests:
         L.append("— tests pinning this behavior (read before changing it):")
-        for c in res["tests"]:
+        for c in res.get("tests") or []:
             L.append(f'  [{c["id"]}] {c["file"]} L{c["start_line"]}-{c["end_line"]}'
                      + (f' · {c["name"]}' if c.get("name") else ""))
+        for t in extra_tests:
+            L.append(f'  {t["file"]} · names {t["n"]} mechanism symbol(s)')
+        L.append("")
+    # High-signal spans the judge set aside — deterministic top-ranked chunks
+    # the rerank dropped. Not noise: the judge's known failure mode is
+    # dropping the edit surface (constructor/serialization/completion sites).
+    # Pointers only, spec-formatted, so they cost no budget and slot straight
+    # into the ONE read batch.
+    if res.get("setaside"):
+        L.append("— high-signal spans the judge set aside (if the task CHANGES "
+                 "this mechanism, add the relevant ones to your megabrain_read "
+                 "batch — e.g. the constructor/declaration and serialization "
+                 "sites live here):")
+        for c in res["setaside"]:
+            L.append(f'  {c["file"]}:{c["start_line"]}-{c["end_line"]}'
+                     + (f' · {c["name"]}' if c.get("name") else "")
+                     + f' · `{round(float(c.get("score", 0)), 3)}`')
         L.append("")
     # The audit trail: "N pruned as noise" asks for faith unless the pruned
     # spans are visible (field report: "unfalsifiable from inside a single

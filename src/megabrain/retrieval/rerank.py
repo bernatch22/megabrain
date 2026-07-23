@@ -53,18 +53,29 @@ RERANK_TIMEOUT = 30
 # kept — small pools stop the judge from confidently ruling files out.
 RERANK_BATCH = 8
 
-_PROMPT = """You are reranking code-search results. Question:
+# The keep-criterion is the TASK'S EDIT SURFACE, not "answers the question".
+# Field case (click aliases duel): the pool held Command.__init__ (where the
+# new parameter goes), the command() decorator and shell_complete — the judge
+# dropped all three as "tangential" because they don't ANSWER a query about
+# name resolution, and the agent paid 3 manual reads to recover them. A chunk
+# a change must TOUCH is relevant even when it answers nothing.
+_PROMPT = """You are selecting code-search results for an engineer about to
+work on this task:
 
 {question}
 
 Candidate chunks (id · file:lines · symbols · {view}):
 {listing}
 
-Return ONLY a JSON array of the ids worth reading to answer the question,
-most relevant first. Drop chunks that are merely vocabulary-related: test
-files, eval/benchmark scripts, docs restating the code, and tangential
-subsystems. Keep every chunk that implements or directly configures the
-mechanism asked about. Example output: [12, 7, 31]"""
+Return ONLY a JSON array of the ids worth reading for the task, most relevant
+first. Judge by the task's full surface, not by vocabulary overlap: keep every
+chunk that implements or directly configures the mechanism — and, when the
+task adds or changes behavior, also the sites the change must touch: the
+constructor/declaration where its objects and parameters are defined, the
+serialization/info/help output that exposes them, and the completion or
+dispatch hooks that consume them. Drop chunks that are merely
+vocabulary-related: test files, eval/benchmark scripts, docs restating the
+code, and unrelated subsystems. Example output: [12, 7, 31]"""
 
 
 def rerank_model() -> str:
@@ -242,7 +253,14 @@ def llm_rerank(res: dict, question: str, model: str | None = None) -> dict:
         else:
             ids = _judge(chunks)
         by_id = {c["id"]: c for c in chunks}
-        kept = [by_id[i] for i in ids if i in by_id]
+        # dedup, order-preserving: a judge may echo an id twice in one reply
+        # (field run: chunk [1201] rendered twice in the same message)
+        uniq: list[int] = []
+        for i in ids:
+            if i in by_id and i not in uniq:
+                uniq.append(i)
+        ids = uniq
+        kept = [by_id[i] for i in ids]
         if not kept:                      # model kept nothing usable
             raise ValueError(f"no valid ids kept: {ids!r}")
         # The deterministic #1 ALWAYS survives the judge. Field case (click
@@ -270,6 +288,35 @@ def llm_rerank(res: dict, question: str, model: str | None = None) -> dict:
         from .scoring import _is_test_path
         tests = [c for c in dropped if _is_test_path(c["file"])]
         noise = [c for c in dropped if not _is_test_path(c["file"])]
+        # A judge-dropped chunk that DETERMINISTIC ranking put near the top
+        # is a candidate, not noise — the judge's known failure mode is
+        # dropping the edit surface a change must touch (click aliases duel:
+        # Command.__init__ at det-rank ~8 dropped in every run, and the
+        # agent re-fetched it manually every time). Same stance as the tests
+        # bucket and rescued_top: structure, not deletion. They render as
+        # ready-to-read span POINTERS (no bodies — the output budget stays
+        # intact), so one search still NAMES the whole surface.
+        # Demo/example files never earn the rescue: they rank high on shared
+        # vocabulary by DESIGN and dropping them is the judge doing its job
+        # (field run: examples/completion + examples/repo filled all the
+        # set-aside slots on the click aliases task).
+        # "Near the top" is the UNION of a score band and a rank cut — each
+        # covers the other's failure mode. The band (within 15% of the pool
+        # top): a rank cutoff missed Command.__init__ by ONE position at
+        # 1.058 vs a 1.196 top. The rank cut (det top-10): when the pool's
+        # scores compress (0.96 top, drops at 0.88) the band goes empty on
+        # exactly the aggressive-judge runs that need the rescue most
+        # (field run: same query, judge kept 10 then 3 — the second render
+        # lost format_commands and to_info_dict entirely).
+        from .scoring import _is_demo_path
+        floor = float(chunks[0].get("score", 0)) * 0.85
+        det_rank = {c["id"]: i for i, c in enumerate(chunks)}
+        setaside = [c for c in noise
+                    if (float(c.get("score", 0)) >= floor
+                        or det_rank[c["id"]] < 10)
+                    and not _is_demo_path(c["file"])][:8]
+        noise = [c for c in noise if c["id"] not in {s["id"] for s in setaside}]
+        res["setaside"] = setaside
         res["chunks"] = kept
         res["tests"] = tests
         res["kept"] = len(kept)

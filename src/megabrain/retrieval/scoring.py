@@ -51,6 +51,20 @@ def _is_test_path(relpath: str) -> bool:
                          p.rsplit(".", 1)[0]) for p in parts)
 
 
+# path segments marking demo/stub code: shares the subsystem's vocabulary by
+# DESIGN while implementing none of it. Field runs: typing-examples/baseline.py
+# ranked #2 on the attrs arena and fed the trail NGClass/NGClass2; click's
+# examples/ ranked over core. Segment-exact, same stance as TEST_DIR_SEGS.
+# Lives here (not mapcard) because rerank's set-aside rescue needs it too and
+# mapcard already imports from rerank — one home, no cycle.
+DEMO_SEGS = frozenset({"example", "examples", "samples", "demo", "demos",
+                       "benchmarks", "typing-examples"})
+
+
+def _is_demo_path(relpath: str) -> bool:
+    return any(p in DEMO_SEGS for p in relpath.lower().split("/")[:-1])
+
+
 def under_path(relpath: str, path_filter: str) -> bool:
     """True when `relpath` is the filter file itself or lives under the filter
     directory (directory-boundary aware, so `src/dispatch` never matches

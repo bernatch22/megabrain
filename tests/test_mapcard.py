@@ -278,3 +278,48 @@ def test_search_brings_related_docs_not_just_code(tmp_path, fake_embedder):
     assert "docs/aliases.md" in docs
     from megabrain.retrieval.render import render_pruned
     assert "docs that reference this mechanism" in render_pruned(res)
+
+
+def test_search_names_the_changelog_and_the_pinning_tests(tmp_path,
+                                                          fake_embedder):
+    """The two FIXED edit targets of a behavior change reach the render
+    deterministically, never via the judge:
+    - the changelog: ranked retrieval reliably misses it (its entries
+      describe OTHER features) — the duel agent guessed CHANGES.rst on an
+      .md repo and burned a recovery turn;
+    - the pinning tests: the judge-dependent bucket appeared and vanished
+      with the query's phrasing. Test files that NAME the mechanism's
+      symbols are its spec — and a test file NAMED AFTER a symbol
+      (test_info_dict.py ~ to_info_dict) outranks incidental mentions."""
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "commands.py").write_text(
+        "def register_alias(group, name):\n"
+        "    '''Register a command alias on a group.'''\n"
+        "    group.aliases[name] = group\n\n"
+        "def to_info_dict(group):\n"
+        "    '''Serialize the group, register_alias output included.'''\n"
+        "    return {'aliases': group.aliases}\n")
+    (tmp_path / "CHANGES.md").write_text("## 1.0\n\n- old entry\n")
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "tests" / "test_info_dict.py").write_text(
+        "def test_golden():\n"
+        "    assert to_info_dict is not None\n")
+    (tmp_path / "tests" / "test_misc.py").write_text(
+        "def test_other():\n"
+        "    assert register_alias is not None\n")
+    from megabrain.indexing.indexer import index_repo
+    index_repo(tmp_path)
+    from megabrain import app
+    res = app.prune(tmp_path, "register a command alias on a group",
+                    with_docs=True)
+    docs = [d["file"] for d in res.get("related_docs", [])]
+    assert "CHANGES.md" in docs
+    tests = [t["file"] for t in res.get("related_tests", [])]
+    assert "tests/test_info_dict.py" in tests
+    # the dedicated test file (named after the symbol) outranks the mention
+    assert tests.index("tests/test_info_dict.py") \
+        < tests.index("tests/test_misc.py")
+    from megabrain.retrieval.render import render_pruned
+    out = render_pruned(res)
+    assert "the changelog: a behavior change adds an entry here" in out
+    assert "tests/test_info_dict.py" in out

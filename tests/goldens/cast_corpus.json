@@ -78,22 +78,40 @@
      "4cce04127adc3831d930775a0bd6dde641954030"
     ],
     [
-     "module",
-     "prune, ask, graph, grep, get",
-     null,
+     "block",
+     "prune",
+     "1/2",
      93,
-     196,
-     "megabrain > megabrain/app.py > [prune, ask, graph, grep, get]",
-     "974d9dd128af78486105dd54a67a14737b242235"
+     117,
+     "megabrain > megabrain/app.py > def prune(root: Path, task: str, path_filter: str | None=None, with_text: bool=True, include_pruned: bool=False, reindex: bool=True, llm_rerank: bool=False, docs: bool=False, expand: bool=False, model: str | None=None, with_docs: bool=False) -> dict",
+     "968cc194d5537e3490e7a35843cdce7ebe410e98"
+    ],
+    [
+     "block",
+     "prune",
+     "2/2",
+     118,
+     216,
+     "megabrain > megabrain/app.py > def prune(root: Path, task: str, path_filter: str | None=None, with_text: bool=True, include_pruned: bool=False, reindex: bool=True, llm_rerank: bool=False, docs: bool=False, expand: bool=False, model: str | None=None, with_docs: bool=False) -> dict",
+     "86af8f99de48a7679a7c83e3c654d46a76859cf0"
     ],
     [
      "module",
-     "chunks, index, scan, stats, flows_list, flow_get, flow_delete, example_queries",
+     "ask, graph, grep, get, chunks, index, scan, stats, flows_list",
      null,
-     197,
-     305,
-     "megabrain > megabrain/app.py > [chunks, index, scan, stats, flows_list, flow_get, flow_delete, example_queries]",
-     "092717bbc07773c1da7b5cc44677b85b19b7e5c7"
+     217,
+     322,
+     "megabrain > megabrain/app.py > [ask, graph, grep, get, chunks, index, scan, stats, flows_list]",
+     "9fb9ea0fb3ddff86db26752855a6e69062e23242"
+    ],
+    [
+     "module",
+     "flow_get, flow_delete, example_queries",
+     null,
+     323,
+     375,
+     "megabrain > megabrain/app.py > [flow_get, flow_delete, example_queries]",
+     "4253ce7a0374ff18b3ce0d52fa93b30e50104c4e"
     ]
    ],
    "skeleton_sha": "953948212e347a3b75b2aa8911e7e18dba448aa8",
@@ -151,91 +169,91 @@
      "prune",
      "function",
      95,
-     146,
+     216,
      "def prune(root: Path, task: str, path_filter: str | None=None, with_text: bool=True, include_pruned: bool=False, reindex: bool=True, llm_rerank: bool=False, docs: bool=False, expand: bool=False, model: str | None=None, with_docs: bool=False) -> dict"
     ],
     [
      "ask",
      "function",
-     149,
-     161,
+     219,
+     231,
      "def ask(root: Path, question: str, path_filter: str | None=None, docs_only: bool=False, agents: Any=None, reindex: bool=True, model: str | None=None) -> dict"
     ],
     [
      "graph",
      "function",
-     164,
-     175,
+     234,
+     245,
      "def graph(root: Path, mode: str='map', node: str | None=None, source: str | None=None, target: str | None=None, path_filter: str | None=None, reindex: bool=True, label: bool=True) -> dict"
     ],
     [
      "grep",
      "function",
-     178,
-     188,
+     248,
+     258,
      "def grep(root: Path, pattern: str, regex: bool=False, ignore_case: bool=False, path_filter: str | None=None, reindex: bool=True) -> dict"
     ],
     [
      "get",
      "function",
-     191,
-     196,
+     261,
+     266,
      "def get(root: Path, sub: str | None, file: str, symbol: str | None=None) -> str"
     ],
     [
      "chunks",
      "function",
-     199,
-     205,
+     269,
+     275,
      "def chunks(root: Path, sub: str | None, file: str, query_str: str, path_filter: str | None=None, reindex: bool=True) -> dict"
     ],
     [
      "index",
      "function",
-     208,
-     213,
+     278,
+     283,
      "def index(root: Path, force: bool=False, exclude=(), scan_filters: bool=False) -> dict"
     ],
     [
      "scan",
      "function",
-     216,
-     225,
+     286,
+     295,
      "def scan(root: Path) -> dict"
     ],
     [
      "stats",
      "function",
-     228,
-     232,
+     298,
+     302,
      "def stats(root: Path) -> dict"
     ],
     [
      "flows_list",
      "function",
-     235,
-     252,
+     305,
+     322,
      "def flows_list(root: Path) -> dict"
     ],
     [
      "flow_get",
      "function",
-     255,
-     268,
+     325,
+     338,
      "def flow_get(root: Path, flow_id: int) -> dict"
     ],
     [
      "flow_delete",
      "function",
-     271,
-     276,
+     341,
+     346,
      "def flow_delete(root: Path, flow_id: int) -> dict"
     ],
     [
      "example_queries",
      "function",
-     279,
-     305,
+     349,
+     375,
      "def example_queries(root: Path, limit: int=6) -> dict"
     ]
    ]
@@ -5280,20 +5298,29 @@
   "megabrain/retrieval/mapcard.py": {
    "chunks": [
     [
-     "module",
-     "_is_demo_path, _expand_terms, expand_pool",
+     "function",
+     "_expand_terms",
      null,
      1,
-     106,
-     "megabrain > megabrain/retrieval/mapcard.py > [_is_demo_path, _expand_terms, expand_pool]",
-     "41dd950553fee825091eeffb619590381a0a472d"
+     85,
+     "megabrain > megabrain/retrieval/mapcard.py > def _expand_terms(query: str, chunks: list[dict], model: str | None) -> list[str]",
+     "39786407345f3125b184e2f5e5de25cba2befe07"
+    ],
+    [
+     "function",
+     "expand_pool",
+     null,
+     86,
+     112,
+     "megabrain > megabrain/retrieval/mapcard.py > def expand_pool(st, query: str, res: dict, model: str | None=None, *, path_filter: str | None=None, with_text: bool=True, only_docs: bool=False, exclude_docs: bool=False) -> dict | None",
+     "32791b44bd0fc0cfd805b168edc05d5a356615d4"
     ],
     [
      "block",
      "map_repo",
      "1/3",
-     107,
-     191,
+     113,
+     197,
      "megabrain > megabrain/retrieval/mapcard.py > def map_repo(root: Path, query: str, path_filter: str | None=None, rerank: bool=False, expand: bool=False, model: str | None=None) -> dict",
      "945462da5743735143928d4b7b067b6a107146be"
     ],
@@ -5301,8 +5328,8 @@
      "block",
      "map_repo",
      "2/3",
-     192,
-     291,
+     198,
+     297,
      "megabrain > megabrain/retrieval/mapcard.py > def map_repo(root: Path, query: str, path_filter: str | None=None, rerank: bool=False, expand: bool=False, model: str | None=None) -> dict",
      "a78e1af110dc93c2f6553ea40e768f83d0589f6b"
     ],
@@ -5310,8 +5337,8 @@
      "block",
      "map_repo",
      "3/3",
-     292,
-     313,
+     298,
+     319,
      "megabrain > megabrain/retrieval/mapcard.py > def map_repo(root: Path, query: str, path_filter: str | None=None, rerank: bool=False, expand: bool=False, model: str | None=None) -> dict",
      "1b76aa69696e2afb591a93c237cf9b08bd79c32c"
     ],
@@ -5319,117 +5346,103 @@
      "function",
      "render_map",
      null,
-     314,
-     377,
+     320,
+     383,
      "megabrain > megabrain/retrieval/mapcard.py > def render_map(res: dict) -> str",
      "54c8e547fe34bf2877e099bceeffe89792ea4495"
     ]
    ],
-   "skeleton_sha": "a7b07bace78e3ce2939d3437e39e9306e427330b",
+   "skeleton_sha": "b669c849a3cbeda5cfc833e39b81a76d8a99fa2f",
    "symbols": [
     [
      "log",
      "constant",
-     27,
-     27,
+     30,
+     30,
      "log = logging.getLogger(__name__)"
     ],
     [
      "MAX_FILES",
      "constant",
-     29,
-     29,
+     32,
+     32,
      "MAX_FILES = 8"
     ],
     [
      "MAX_OUTLINE",
      "constant",
-     30,
-     30,
+     33,
+     33,
      "MAX_OUTLINE = 10"
     ],
     [
      "MAX_EDGES",
      "constant",
-     31,
-     31,
+     34,
+     34,
      "MAX_EDGES = 4"
     ],
     [
      "MAX_SPANS",
      "constant",
-     32,
-     32,
+     35,
+     35,
      "MAX_SPANS = 4"
     ],
     [
      "_IDENT",
      "constant",
-     33,
-     33,
+     36,
+     36,
      "_IDENT = re.compile('[A-Za-z_][A-Za-z0-9_]{3,}')"
-    ],
-    [
-     "_DEMO_SEGS",
-     "constant",
-     38,
-     39,
-     "_DEMO_SEGS = frozenset({'example', 'examples', 'samples', 'demo', 'demos', 'benchmarks', 'typing-examples'})"
-    ],
-    [
-     "_is_demo_path",
-     "function",
-     42,
-     43,
-     "def _is_demo_path(relpath: str) -> bool"
     ],
     [
      "_OUTLINE_KINDS",
      "constant",
-     44,
-     45,
+     37,
+     38,
      "_OUTLINE_KINDS = ('class', 'function', 'async_function', 'method', 'async_method', 'interface', 'type', 'enum', 'module'"
     ],
     [
      "_EXPAND_MAX_TOKENS",
      "constant",
-     48,
-     48,
+     41,
+     41,
      "_EXPAND_MAX_TOKENS = 200"
     ],
     [
      "_EXPAND_PROMPT",
      "constant",
-     49,
-     60,
+     42,
+     57,
      "_EXPAND_PROMPT = 'A developer is working on this task in a codebase:\\n\\n{query}\\n\\nBest matches so far (file \u00b7 symbols):"
     ],
     [
      "_expand_terms",
      "function",
-     63,
-     79,
+     60,
+     85,
      "def _expand_terms(query: str, chunks: list[dict], model: str | None) -> list[str]"
     ],
     [
      "expand_pool",
      "function",
-     82,
-     106,
+     88,
+     112,
      "def expand_pool(st, query: str, res: dict, model: str | None=None, *, path_filter: str | None=None, with_text: bool=True, only_docs: bool=False, exclude_docs: bool=False) -> dict | None"
     ],
     [
      "map_repo",
      "function",
-     109,
-     313,
+     115,
+     319,
      "def map_repo(root: Path, query: str, path_filter: str | None=None, rerank: bool=False, expand: bool=False, model: str | None=None) -> dict"
     ],
     [
      "render_map",
      "function",
-     316,
-     377,
+     322,
+     383,
      "def render_map(res: dict) -> str"
     ]
    ]
@@ -5684,9 +5697,9 @@
      "render_pruned",
      "2/2",
      251,
-     279,
+     304,
      "megabrain > megabrain/retrieval/render.py > def render_pruned(res: dict, with_text: bool=True, budget: int | None=None, seen_ids: set | None=None) -> str",
-     "f9144b38e0a24c6059b4f70d59127ec5463aa4d7"
+     "e74136bd2781180cf081726009759d9c861b751a"
     ]
    ],
    "skeleton_sha": "86642f4379a013a1211c0e3f5673c928155099e5",
@@ -5744,7 +5757,7 @@
      "render_pruned",
      "function",
      152,
-     279,
+     304,
      "def render_pruned(res: dict, with_text: bool=True, budget: int | None=None, seen_ids: set | None=None) -> str"
     ]
    ]
@@ -5804,33 +5817,69 @@
    "chunks": [
     [
      "module",
-     "rerank_model, _score_line, _is_reexport_chunk",
+     "rerank_model, _score_line",
      null,
      1,
-     107,
-     "megabrain > megabrain/retrieval/rerank.py > [rerank_model, _score_line, _is_reexport_chunk]",
-     "222a2548ec741fffa0cf3ff8a1779fd51a0ee471"
+     99,
+     "megabrain > megabrain/retrieval/rerank.py > [rerank_model, _score_line]",
+     "da9c53c26579c579f5ce87fae9a1fa58b57f10a3"
     ],
     [
      "module",
-     "_hint, _listing, _parse_ids, _merge_round_robin, judge_lane",
+     "_is_reexport_chunk, _hint, _listing, _parse_ids, _merge_round_robin",
      null,
-     108,
-     207,
-     "megabrain > megabrain/retrieval/rerank.py > [_hint, _listing, _parse_ids, _merge_round_robin, judge_lane]",
-     "fdeeafb32e45694e1e54c6f26076c0cedcc4bb33"
+     100,
+     180,
+     "megabrain > megabrain/retrieval/rerank.py > [_is_reexport_chunk, _hint, _listing, _parse_ids, _merge_round_robin]",
+     "314f1f2f9969695f63dbc8c89adf0e55b8c474fd"
     ],
     [
      "function",
-     "llm_rerank",
+     "judge_lane",
      null,
-     208,
-     293,
+     181,
+     218,
+     "megabrain > megabrain/retrieval/rerank.py > def judge_lane(model: str | None=None) -> tuple",
+     "b77a17d30ba4a8900a71f6f9098f7e0a2f7fe486"
+    ],
+    [
+     "block",
+     "llm_rerank",
+     "1/4",
+     219,
+     235,
      "megabrain > megabrain/retrieval/rerank.py > def llm_rerank(res: dict, question: str, model: str | None=None) -> dict",
-     "d36d3bb12e0afeec9de4812c56d561dda445e9b6"
+     "6446eee6d4a75914e55100df2c89fb90454586ab"
+    ],
+    [
+     "block",
+     "llm_rerank",
+     "2/4",
+     236,
+     338,
+     "megabrain > megabrain/retrieval/rerank.py > def llm_rerank(res: dict, question: str, model: str | None=None) -> dict",
+     "42b1911696de3c81773e9cea51415ae491f42ec2"
+    ],
+    [
+     "block",
+     "llm_rerank",
+     "3/4",
+     339,
+     339,
+     "megabrain > megabrain/retrieval/rerank.py > def llm_rerank(res: dict, question: str, model: str | None=None) -> dict",
+     "20fcc4f7b3e17bdeb31a5eae3516cc3769ca168a"
+    ],
+    [
+     "block",
+     "llm_rerank",
+     "4/4",
+     340,
+     340,
+     "megabrain > megabrain/retrieval/rerank.py > def llm_rerank(res: dict, question: str, model: str | None=None) -> dict",
+     "9b1d7be743a903e4b70ca3d2ff671dae955f8fa4"
     ]
    ],
-   "skeleton_sha": "b7f447f9087de63f4ebfb4da0d08e5932b2a3e3f",
+   "skeleton_sha": "f4883e4556f7bf37d737baf8d3f7196d2e872e29",
    "symbols": [
     [
      "log",
@@ -5863,85 +5912,85 @@
     [
      "_PROMPT",
      "constant",
-     56,
-     67,
-     "_PROMPT = 'You are reranking code-search results. Question:\\n\\n{question}\\n\\nCandidate chunks (id \u00b7 file:lines \u00b7 symbols"
+     62,
+     78,
+     "_PROMPT = \"You are selecting code-search results for an engineer about to\\nwork on this task:\\n\\n{question}\\n\\nCandidate"
     ],
     [
      "rerank_model",
      "function",
-     70,
-     77,
+     81,
+     88,
      "def rerank_model() -> str"
     ],
     [
      "_IDENT",
      "constant",
-     80,
-     80,
+     91,
+     91,
      "_IDENT = re.compile('[A-Za-z_][A-Za-z0-9_]{3,}')"
     ],
     [
      "_score_line",
      "function",
-     83,
-     88,
+     94,
+     99,
      "def _score_line(ln: str, qtok: set[str]) -> int"
     ],
     [
      "_REEXPORT",
      "constant",
-     92,
-     94,
+     103,
+     105,
      "_REEXPORT = re.compile('^\\\\s*(from\\\\s+\\\\S+\\\\s+import|import\\\\s|export\\\\s*(\\\\{|\\\\*|default\\\\s)|__all__|module\\\\.exports|r"
     ],
     [
      "_is_reexport_chunk",
      "function",
-     97,
-     107,
+     108,
+     118,
      "def _is_reexport_chunk(text: str) -> bool"
     ],
     [
      "_hint",
      "function",
-     110,
-     131,
+     121,
+     142,
      "def _hint(c: dict, question: str='') -> str"
     ],
     [
      "_listing",
      "function",
-     134,
      145,
+     156,
      "def _listing(chunks: list[dict], question: str, bodies: bool) -> str"
     ],
     [
      "_parse_ids",
      "function",
-     148,
-     154,
+     159,
+     165,
      "def _parse_ids(reply: str) -> list[int]"
     ],
     [
      "_merge_round_robin",
      "function",
-     157,
-     169,
+     168,
+     180,
      "def _merge_round_robin(per_batch: list[list[int]]) -> list[int]"
     ],
     [
      "judge_lane",
      "function",
-     172,
-     207,
+     183,
+     218,
      "def judge_lane(model: str | None=None) -> tuple"
     ],
     [
      "llm_rerank",
      "function",
-     210,
-     293,
+     221,
+     340,
      "def llm_rerank(res: dict, question: str, model: str | None=None) -> dict"
     ]
    ]
@@ -5950,28 +5999,28 @@
    "chunks": [
     [
      "module",
-     "_is_test_path, under_path, apply_path_filter, filter_doc_chunks, ident_tokens",
+     "_is_test_path, _is_demo_path, under_path, apply_path_filter",
      null,
      1,
-     109,
-     "megabrain > megabrain/retrieval/scoring.py > [_is_test_path, under_path, apply_path_filter, filter_doc_chunks, ident_tokens]",
-     "9e5f1ebba5401efb5bfa67af30428d48ef3132bc"
+     89,
+     "megabrain > megabrain/retrieval/scoring.py > [_is_test_path, _is_demo_path, under_path, apply_path_filter]",
+     "4c383dd4d5ea556adebed5b4844072f87fd3ba3a"
     ],
     [
      "module",
-     "QueryCtx, ScoreLane, DenseFileFusionLane, TestPenaltyLane",
+     "filter_doc_chunks, ident_tokens, QueryCtx, ScoreLane, DenseFileFusionLane, TestPenaltyLane",
      null,
-     110,
-     175,
-     "megabrain > megabrain/retrieval/scoring.py > [QueryCtx, ScoreLane, DenseFileFusionLane, TestPenaltyLane]",
-     "87cc40bb70ab5b6aef27de014ba8c2f57ed5cca9"
+     90,
+     189,
+     "megabrain > megabrain/retrieval/scoring.py > [filter_doc_chunks, ident_tokens, QueryCtx, ScoreLane, DenseFileFusionLane, TestPenaltyLane]",
+     "66db9b760430be069b824e24dee7ca51e2fcce59"
     ],
     [
      "module",
      "IssueLane, LexicalBoostLane",
      null,
-     176,
-     292,
+     190,
+     306,
      "megabrain > megabrain/retrieval/scoring.py > [IssueLane, LexicalBoostLane]",
      "66c569112d2c82f9400fc19dc7122bf47de7d6b9"
     ],
@@ -5979,13 +6028,13 @@
      "function",
      "score_chunks",
      null,
-     293,
-     330,
+     307,
+     344,
      "megabrain > megabrain/retrieval/scoring.py > def score_chunks(st: SearchState, query: str, path_filter: str | None=None, exclude_docs: bool=False, only_docs: bool=False) -> tuple[list, np.ndarray]",
      "99adb3b17497ca9004caa46ac40ae69b87f6e679"
     ]
    ],
-   "skeleton_sha": "397eeeb0fcad24260863812a5cfb7fabf0f5543b",
+   "skeleton_sha": "6bd7f94a629d7ce4385148f6a372184f4086faf0",
    "symbols": [
     [
      "TEST_DIR_SEGS",
@@ -6002,290 +6051,304 @@
      "def _is_test_path(relpath: str) -> bool"
     ],
     [
+     "DEMO_SEGS",
+     "constant",
+     60,
+     61,
+     "DEMO_SEGS = frozenset({'example', 'examples', 'samples', 'demo', 'demos', 'benchmarks', 'typing-examples'})"
+    ],
+    [
+     "_is_demo_path",
+     "function",
+     64,
+     65,
+     "def _is_demo_path(relpath: str) -> bool"
+    ],
+    [
      "under_path",
      "function",
-     54,
-     61,
+     68,
+     75,
      "def under_path(relpath: str, path_filter: str) -> bool"
     ],
     [
      "apply_path_filter",
      "function",
-     64,
-     75,
+     78,
+     89,
      "def apply_path_filter(metas: list, M: np.ndarray, path_filter: str | None)"
     ],
     [
      "filter_doc_chunks",
      "function",
-     78,
-     98,
+     92,
+     112,
      "def filter_doc_chunks(metas: list, M: np.ndarray, doc_exts: tuple, keep: bool)"
     ],
     [
      "ident_tokens",
      "function",
-     101,
-     109,
+     115,
+     123,
      "def ident_tokens(text: str) -> set[str]"
     ],
     [
      "QueryCtx",
      "class",
-     112,
-     137,
+     126,
+     151,
      "class QueryCtx"
     ],
     [
      "QueryCtx.st",
      "class_attr",
-     118,
-     118,
+     132,
+     132,
      "st: SearchState"
     ],
     [
      "QueryCtx.query",
      "class_attr",
-     119,
-     119,
+     133,
+     133,
      "query: str"
     ],
     [
      "QueryCtx.path_filter",
      "class_attr",
-     120,
-     120,
+     134,
+     134,
      "path_filter: str | None"
     ],
     [
      "QueryCtx.p",
      "class_attr",
-     121,
-     121,
+     135,
+     135,
      "p: RetrievalParams"
     ],
     [
      "QueryCtx.metas",
      "class_attr",
-     122,
-     122,
+     136,
+     136,
      "metas: list"
     ],
     [
      "QueryCtx.M",
      "class_attr",
-     123,
-     123,
+     137,
+     137,
      "M: np.ndarray"
     ],
     [
      "QueryCtx.fpaths",
      "class_attr",
-     124,
-     124,
+     138,
+     138,
      "fpaths: list"
     ],
     [
      "QueryCtx.F",
      "class_attr",
-     125,
-     125,
+     139,
+     139,
      "F: np.ndarray"
     ],
     [
      "QueryCtx.qv",
      "class_attr",
-     126,
-     126,
+     140,
+     140,
      "qv: np.ndarray"
     ],
     [
      "QueryCtx.cfi",
      "class_attr",
-     127,
-     127,
+     141,
+     141,
      "cfi: np.ndarray"
     ],
     [
      "QueryCtx.is_test",
      "class_attr",
-     128,
-     128,
+     142,
+     142,
      "is_test: np.ndarray"
     ],
     [
      "QueryCtx.qtok",
      "class_attr",
-     129,
-     129,
+     143,
+     143,
      "qtok: set"
     ],
     [
      "QueryCtx.store",
      "method",
-     131,
-     133,
+     145,
+     147,
      "def store(self)"
     ],
     [
      "QueryCtx.emb",
      "method",
-     135,
-     137,
+     149,
+     151,
      "def emb(self)"
     ],
     [
      "ScoreLane",
      "class",
-     140,
-     149,
+     154,
+     163,
      "class ScoreLane(Protocol)"
     ],
     [
      "ScoreLane.name",
      "class_attr",
-     145,
-     145,
+     159,
+     159,
      "name: str"
     ],
     [
      "ScoreLane.applies",
      "method",
-     147,
-     147,
+     161,
+     161,
      "def applies(self, ctx: QueryCtx) -> bool"
     ],
     [
      "ScoreLane.apply",
      "method",
-     149,
-     149,
+     163,
+     163,
      "def apply(self, ctx: QueryCtx, fused: np.ndarray | None) -> np.ndarray"
     ],
     [
      "DenseFileFusionLane",
      "class",
-     152,
-     163,
+     166,
+     177,
      "class DenseFileFusionLane"
     ],
     [
      "DenseFileFusionLane.name",
      "class_attr",
-     155,
-     155,
+     169,
+     169,
      "name = 'dense+file'"
     ],
     [
      "DenseFileFusionLane.applies",
-     "method",
-     157,
-     158,
-     "def applies(self, ctx: QueryCtx) -> bool"
-    ],
-    [
-     "DenseFileFusionLane.apply",
-     "method",
-     160,
-     163,
-     "def apply(self, ctx: QueryCtx, fused: np.ndarray | None) -> np.ndarray"
-    ],
-    [
-     "TestPenaltyLane",
-     "class",
-     166,
-     175,
-     "class TestPenaltyLane"
-    ],
-    [
-     "TestPenaltyLane.name",
-     "class_attr",
-     169,
-     169,
-     "name = 'test-penalty'"
-    ],
-    [
-     "TestPenaltyLane.applies",
      "method",
      171,
      172,
      "def applies(self, ctx: QueryCtx) -> bool"
     ],
     [
-     "TestPenaltyLane.apply",
+     "DenseFileFusionLane.apply",
      "method",
      174,
-     175,
-     "def apply(self, ctx: QueryCtx, fused: np.ndarray) -> np.ndarray"
+     177,
+     "def apply(self, ctx: QueryCtx, fused: np.ndarray | None) -> np.ndarray"
     ],
     [
-     "IssueLane",
+     "TestPenaltyLane",
      "class",
-     178,
-     262,
-     "class IssueLane"
+     180,
+     189,
+     "class TestPenaltyLane"
     ],
     [
-     "IssueLane.name",
+     "TestPenaltyLane.name",
      "class_attr",
      183,
      183,
-     "name = 'issue'"
+     "name = 'test-penalty'"
     ],
     [
-     "IssueLane.applies",
+     "TestPenaltyLane.applies",
      "method",
      185,
      186,
      "def applies(self, ctx: QueryCtx) -> bool"
     ],
     [
-     "IssueLane.apply",
+     "TestPenaltyLane.apply",
      "method",
      188,
-     262,
+     189,
+     "def apply(self, ctx: QueryCtx, fused: np.ndarray) -> np.ndarray"
+    ],
+    [
+     "IssueLane",
+     "class",
+     192,
+     276,
+     "class IssueLane"
+    ],
+    [
+     "IssueLane.name",
+     "class_attr",
+     197,
+     197,
+     "name = 'issue'"
+    ],
+    [
+     "IssueLane.applies",
+     "method",
+     199,
+     200,
+     "def applies(self, ctx: QueryCtx) -> bool"
+    ],
+    [
+     "IssueLane.apply",
+     "method",
+     202,
+     276,
      "def apply(self, ctx: QueryCtx, fused: np.ndarray) -> np.ndarray"
     ],
     [
      "LexicalBoostLane",
      "class",
-     265,
-     286,
+     279,
+     300,
      "class LexicalBoostLane"
     ],
     [
      "LexicalBoostLane.name",
      "class_attr",
-     272,
-     272,
+     286,
+     286,
      "name = 'lexical'"
     ],
     [
      "LexicalBoostLane.applies",
      "method",
-     274,
-     275,
+     288,
+     289,
      "def applies(self, ctx: QueryCtx) -> bool"
     ],
     [
      "LexicalBoostLane.apply",
      "method",
-     277,
-     286,
+     291,
+     300,
      "def apply(self, ctx: QueryCtx, fused: np.ndarray) -> np.ndarray"
     ],
     [
      "LANES",
      "constant",
-     291,
-     292,
+     305,
+     306,
      "LANES: tuple[ScoreLane, ...] = (DenseFileFusionLane(), TestPenaltyLane(), IssueLane(), LexicalBoostLane())"
     ],
     [
      "score_chunks",
      "function",
-     295,
-     330,
+     309,
+     344,
      "def score_chunks(st: SearchState, query: str, path_filter: str | None=None, exclude_docs: bool=False, only_docs: bool=False) -> tuple[list, np.ndarray]"
     ]
    ]

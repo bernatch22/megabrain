@@ -42,10 +42,41 @@ def test_reorders_and_drops(chat):
     chat["reply"] = "[3, 1]"
     res = rr.llm_rerank(_res(), "how does X work", model="m")
     assert [c["id"] for c in res["chunks"]] == [3, 1]
-    assert res["kept"] == 2 and res["pruned"] == 2
-    assert [c["id"] for c in res["noise"]] == [2, 4]      # dropped, not destroyed
+    assert res["kept"] == 2
+    # dropped, not destroyed — and near-the-top drops (score band / det
+    # top-10) are SET-ASIDE pointers, not noise: the judge's known failure
+    # mode is dropping the edit surface a change must touch
+    assert [c["id"] for c in res["setaside"]] == [2, 4]
+    assert res["noise"] == [] and res["pruned"] == 0
     assert res["reranked"]["model"] == "m"
     assert res["reranked"]["kept"] == 2 and res["reranked"]["dropped"] == 2
+
+
+def test_setaside_excludes_demos_and_renders_as_read_specs(chat):
+    """click aliases field run: the judge dropped Command.__init__ (where
+    the new parameter goes) in EVERY run, and the agent re-fetched it
+    manually every time — while examples/ files rode the same rescue on
+    shared vocabulary. Near-the-top drops become ready-to-read pointers;
+    demos never earn the rescue (dropping them is the judge doing its job)."""
+    res = _res()
+    res["chunks"][3]["file"] = "examples/demo.py"     # id 4 -> demo path
+    chat["reply"] = "[3, 1]"
+    res = rr.llm_rerank(res, "add a frobnicate option to fn1", model="m")
+    assert [c["id"] for c in res["setaside"]] == [2]  # near-top, non-demo
+    assert [c["id"] for c in res["noise"]] == [4]     # the demo stays noise
+    from megabrain.retrieval.render import render_pruned
+    out = render_pruned(res, with_text=False)
+    assert "spans the judge set aside" in out
+    assert "src/f2.py:1-9" in out                     # spec-formatted pointer
+    assert "examples/demo.py" not in out.split("set aside")[1].split("—")[0]
+
+
+def test_judge_echoing_an_id_twice_renders_it_once(chat):
+    """Field run: chunk [1201] rendered twice in one message — the judge
+    echoed an id and kept passed it through. Dedup, order-preserving."""
+    chat["reply"] = "[3, 3, 1, 3]"
+    res = rr.llm_rerank(_res(), "q", model="m")
+    assert [c["id"] for c in res["chunks"]] == [3, 1]
 
 
 def test_prose_around_the_array_is_tolerated(chat):
@@ -296,7 +327,9 @@ def test_dropped_test_files_surface_as_tests_not_noise(chat):
     assert [c["id"] for c in res["chunks"]] == [1, 2]
     assert [c["id"] for c in res["tests"]] == [99]
     assert all(c["id"] != 99 for c in res["noise"]), "test chunk lumped into noise"
-    assert res["pruned"] == 1                       # the non-test drop only
+    assert all(c["id"] != 99 for c in res["setaside"]), "test chunk in setaside"
+    # the non-test drop is near-the-top in this tiny pool -> set-aside
+    assert res["pruned"] == 0
 
 
 def test_a_test_the_model_keeps_stays_in_the_signal_list(chat):

@@ -21,7 +21,10 @@ from pathlib import Path
 
 from ..storage.store import Store
 from .bundle import prune_search
-from .scoring import _is_test_path
+
+# _is_demo_path lives in scoring (rerank's set-aside rescue needs it too —
+# one home, no cycle) and stays re-exported here for existing importers.
+from .scoring import _is_demo_path, _is_test_path  # noqa: F401
 from .state import load_state
 
 log = logging.getLogger(__name__)
@@ -31,16 +34,6 @@ MAX_OUTLINE = 10
 MAX_EDGES = 4
 MAX_SPANS = 4
 _IDENT = re.compile(r"[A-Za-z_][A-Za-z0-9_]{3,}")
-# path segments marking demo/stub code: shares the subsystem's vocabulary by
-# DESIGN while implementing none of it. Field runs: typing-examples/baseline.py
-# ranked #2 on the attrs arena and fed the trail NGClass/NGClass2; click's
-# examples/ ranked over core. Segment-exact, same stance as TEST_DIR_SEGS.
-_DEMO_SEGS = frozenset({"example", "examples", "samples", "demo", "demos",
-                        "benchmarks", "typing-examples"})
-
-
-def _is_demo_path(relpath: str) -> bool:
-    return any(p in _DEMO_SEGS for p in relpath.lower().split("/")[:-1])
 _OUTLINE_KINDS = ("class", "function", "async_function", "method",
                   "async_method", "interface", "type", "enum", "module")
 
@@ -53,11 +46,15 @@ _EXPAND_PROMPT = """A developer is working on this task in a codebase:
 Best matches so far (file · symbols):
 {listing}
 
-The task names the SYMPTOM; the mechanism often lives under identifiers the
-task never mentions. Name up to 5 code identifiers or short subsystem phrases
-likely implementing the mechanism behind this task and MISSING from the list
-above. Return ONLY a JSON array of strings, no prose.
-Example: ["solve_constraints", "type inference solver"]"""
+The task names the SYMPTOM or the desired capability; the code it must touch
+often lives under identifiers the task never mentions. Name up to 5 code
+identifiers or short subsystem phrases MISSING from the list above that the
+task will need: the mechanism implementing the behavior, and — when the task
+adds or changes a capability — the constructor/declaration where it would be
+configured, the serialization/info/help output that exposes it, and the
+completion hooks that consume it. Do NOT repeat identifiers already visible
+above — only vocabulary the list lacks. Return ONLY a JSON array of strings,
+no prose. Example: ["solve_constraints", "type inference solver"]"""
 
 
 def _expand_terms(query: str, chunks: list[dict], model: str | None) -> list[str]:
@@ -76,6 +73,15 @@ def _expand_terms(query: str, chunks: list[dict], model: str | None) -> list[str
                  _EXPAND_MAX_TOKENS, timeout=30)
     arr = re.search(r"\[.*?\]", reply, re.S)
     terms = [str(t).strip() for t in _json.loads(arr.group(0))] if arr else []
+    # A term that only repeats the QUERY's own identifiers re-searches the
+    # same pool — a wasted lane. Field run (click aliases): the model echoed
+    # `Group.get_command, resolve_command, ...` straight from the query
+    # despite the MISSING instruction, and the expansion changed nothing.
+    # Query-only filter — a term merely present somewhere in the POOL is
+    # still a legitimate booster.
+    vocab = {w.lower() for w in _IDENT.findall(query)}
+    terms = [t for t in terms
+             if not all(w.lower() in vocab for w in _IDENT.findall(t))]
     return [t for t in terms if 3 <= len(t) <= 60][:5]
 
 
