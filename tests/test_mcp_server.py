@@ -9,8 +9,10 @@ from megabrain.server.mcp import TOOLS, _scope, call_tool
 
 def test_tool_schemas_are_wellformed():
     names = [t["name"] for t in TOOLS]
-    # deliberately lean: no get/chunks (the host has Read/Grep for single files)
+    # read/replace close the map's loop in-engine: batch fetch + transactional
+    # batch edit, so implement tasks never pay one-host-Read-per-turn again
     assert names == ["megabrain_ask", "megabrain_search", "megabrain_map",
+                     "megabrain_read", "megabrain_replace",
                      "megabrain_grep", "megabrain_graph", "megabrain_index",
                      "megabrain_forge", "megabrain_flows"]
     for t in TOOLS:

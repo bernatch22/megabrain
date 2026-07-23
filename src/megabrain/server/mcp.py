@@ -47,19 +47,21 @@ PROTOCOL = "2024-11-05"
 # session that loads this server.
 INSTRUCTIONS = """megabrain answers questions about a repo's CODE from a pre-built index, so you don't have to crawl files to understand it. Retrieval runs NO LLM: it ranks real chunks and returns verbatim code with true line numbers.
 
-For an implement/fix task the token-optimal loop is: megabrain_map -> ONE batched message Reading every edit target -> Edit. The map is a structure card with NO code bodies (files ranked, match spans, symbol outline, edges both ways, def sites, pinning tests, ~40 lines) — bodies of edit targets get paid twice because the host requires Read before Edit.
+The implement/fix loop, all inside megabrain: megabrain_map -> ONE megabrain_read with EVERY target of the whole task (file#symbol / file:start-end from the map's spans — not whole files) -> write the pinning tests FIRST -> ONE megabrain_replace with every edit -> run the gates. No host Read/Edit round-trips, no grep.
 
 Which tool:
-- megabrain_map — FIRST call for any task: where/who/what shape + a mechanism trail that pre-runs your follow-up greps. No bodies, judge-ranked.
-- megabrain_grep — you know the exact identifier/string: every match resolved against the index and grouped into DEFINES / READS (ranked by dependents, with who-reaches-it edges) / CONFIG / TESTS / DOCS. One call answers "where is this defined, who reads it, who depends on the reader". Zero LLM, ~50ms.
-- megabrain_search — chunks WITH code: only for files you will NOT open.
-- megabrain_ask — you want the flow narrated across subsystems with code spliced in at each step (broad questions fan out into sub-agents). The spliced CODE is verbatim and cannot be hallucinated; the PROSE around it is model narration, so verify its claims against that code before acting on them.
+- megabrain_map — FIRST call for any task: files ranked, spans, symbol outline, edges both ways, def sites, pinning tests. No bodies, judge-ranked.
+- megabrain_read — batch fetch: ALL read targets in ONE call (path, path#symbol, path:start-end). Verbatim, true line numbers.
+- megabrain_replace — batch exact-string edits in ONE call, transactional: validates every op first, any failure writes NOTHING. Existing files only (Write for new).
+- megabrain_grep — exact identifier/string: matches grouped into DEFINES / READS (ranked by dependents, with who-reaches-it edges) / CONFIG / TESTS / DOCS. Zero LLM, ~50ms.
+- megabrain_search — chunks WITH code: only for files you will NOT edit.
+- megabrain_ask — the flow narrated across subsystems, code spliced in (broad questions fan out into sub-agents). Spliced CODE is verbatim; the PROSE is narration — verify its claims against that code.
 - megabrain_graph — communities, core abstractions, how two areas connect.
-- megabrain_index — register/refresh a repo (ask/search already auto-refresh a stale index).
+- megabrain_index — register/refresh a repo (auto-refreshes when stale).
 - megabrain_flows — cached ask walkthroughs.
-- megabrain_forge — add a chunker for a file type megabrain doesn't cover yet.
+- megabrain_forge — add a chunker for an uncovered file type.
 
-TRUST the CODE, verify the PROSE. Spliced code is verbatim from disk with true line numbers — never re-verify it with grep or re-Read files whose code the render included. But ask's prose is narration: check its behavior claims (who calls what, when) against the code before hooking into anything. ONE scoped search, then work from it.
+TRUST the CODE, verify the PROSE: never grep or re-read what a render already showed. ONE scoped call, then work from it.
 
 Two things that decide answer quality:
 - scope_path EXCLUDES everything outside it from retrieval. Scope to a package root (e.g. activejob), never to its lib/ or src/ subfolder — that cuts away the package's tests, which are often the spec of the behavior you are asking about.
@@ -197,6 +199,63 @@ TOOLS = [
                                          "(default: the measured fast-lane rerank model)."},
             },
             "required": ["repo_path", "query"],
+        },
+    },
+    {
+        "name": "megabrain_read",
+        "description": (
+            "Batch read: EVERY read target of the whole task in ONE call, "
+            "verbatim from disk with true line numbers. Three spec forms per "
+            "target: 'path' (whole file, capped — big files must narrow), "
+            "'path#symbol' or 'path#sym1,sym2' (the symbol's exact line range, "
+            "resolved from the index), 'path:120-180' (explicit line range). "
+            "Use the map's spans/symbols as targets instead of whole files. "
+            "This replaces one-file-per-turn host Reads: list edit targets, "
+            "the tests you will touch and docs/changelog in a single call, "
+            "then edit with megabrain_replace."),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "repo_path": {"type": "string", "description": "path to the indexed repo root"},
+                "targets": {"type": "array", "items": {"type": "string"},
+                            "description": "specs: 'path', 'path#symbol[,symbol2]', 'path:start-end'"},
+            },
+            "required": ["repo_path", "targets"],
+        },
+    },
+    {
+        "name": "megabrain_replace",
+        "description": (
+            "Batch exact-string edits in ONE transactional call. Each "
+            "operation is {file, find, replace, count?}: `find` must occur "
+            "exactly `count` times (default 1) in the current text — add "
+            "surrounding lines to make it unique. ALL operations are "
+            "validated in memory first; if ANY fails, NOTHING is written and "
+            "the report says which op failed and why (with the nearest line "
+            "when the text was not found). Edits existing files only — "
+            "create new files with the host Write tool. After a successful "
+            "replace, run the repo's gates."),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "repo_path": {"type": "string", "description": "path to the indexed repo root"},
+                "operations": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "file": {"type": "string", "description": "repo-relative file"},
+                            "find": {"type": "string", "description": "exact text to replace (must occur exactly `count` times)"},
+                            "replace": {"type": "string", "description": "replacement text"},
+                            "count": {"type": "integer", "default": 1,
+                                      "description": "exact number of occurrences expected (default 1)"},
+                        },
+                        "required": ["file", "find", "replace"],
+                    },
+                    "description": "edits applied in order; same-file ops see the previous op's result",
+                },
+            },
+            "required": ["repo_path", "operations"],
         },
     },
     {
@@ -402,6 +461,14 @@ def call_tool(name: str, args: dict) -> str:
                                    rerank=bool(args.get("rerank", True)),
                                    expand=bool(args.get("expand", True)),
                                    model=args.get("model")))
+    if name == "megabrain_read":
+        from ..retrieval.readx import read_specs, render_read
+        root, _ = _scope(args)
+        return render_read(read_specs(root, list(args["targets"])))
+    if name == "megabrain_replace":
+        from ..retrieval.replacex import apply_ops, render_replace
+        root, _ = _scope(args)
+        return render_replace(apply_ops(root, list(args["operations"])))
     if name == "megabrain_grep":
         from ..retrieval.grepx import render_grep
         root, pf = _scope(args)
