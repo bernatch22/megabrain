@@ -62,3 +62,15 @@ def test_map_trail_ranks_query_sharing_symbols_over_chunk_neighbours(tiny_repo):
     res = map_repo(tiny_repo, "login flow")
     if res["trail"]:
         assert res["trail"][0]["ident"] == "login_user"   # shares "login"
+
+
+def test_defines_budget_prefers_specific_tokens(tiny_repo):
+    """Field run: the agent put do_indent in the query and the generic words
+    (indent, filter, first) consumed all 4 DEFINES slots, pushing out the one
+    identifier that mattered. Specific tokens (underscored/camel, longer)
+    spend the budget first, and a token that is a substring of a more
+    specific one is dropped."""
+    res = map_repo(tiny_repo, "how does login_user handle a user login")
+    toks = [d["token"] for d in res["defines"]]
+    assert "login_user" in toks
+    assert "user" not in toks and "login" not in toks   # ride the specific one

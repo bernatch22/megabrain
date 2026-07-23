@@ -47,7 +47,7 @@ PROTOCOL = "2024-11-05"
 # session that loads this server.
 INSTRUCTIONS = """megabrain answers questions about a repo's CODE from a pre-built index, so you don't have to crawl files to understand it. Retrieval runs NO LLM: it ranks real chunks and returns verbatim code with true line numbers.
 
-For an implement/fix task the token-optimal loop is: megabrain_map -> Read each edit target ONCE -> Edit. The map is a structure card with NO code bodies (files ranked, match spans, symbol outline, edges both ways, def sites, pinning tests, ~40 lines) — bodies of edit targets get paid twice because the host requires Read before Edit.
+For an implement/fix task the token-optimal loop is: megabrain_map -> ONE batched message Reading every edit target -> Edit. The map is a structure card with NO code bodies (files ranked, match spans, symbol outline, edges both ways, def sites, pinning tests, ~40 lines) — bodies of edit targets get paid twice because the host requires Read before Edit.
 
 Which tool:
 - megabrain_map — FIRST call for any task: where/who/what shape + a mechanism trail that pre-runs your follow-up greps. No bodies, no LLM.
@@ -161,7 +161,7 @@ TOOLS = [
         "description": (
             "THE first call for any implement/fix task: a task-level structure "
             "card with NO code bodies — the token-optimal workflow is map -> "
-            "Read each edit target ONCE -> Edit. Give it the task in natural "
+            "ONE batched message of Reads (every target at once, each once) -> Edit. Give it the task in natural "
             "language (or an identifier); it returns the relevant files ranked, "
             "each with match-span pointers (exact L ranges for a surgical "
             "Read), the AST-level symbol outline (signatures + line ranges), "

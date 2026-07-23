@@ -78,8 +78,19 @@ def map_repo(root: Path, query: str, path_filter: str | None = None) -> dict:
         # literal lane: exact identifiers from the query -> def sites.
         # A token with MANY def sites is a generic word ("filter", "first"),
         # not a lead — ambiguity is noise, so it is dropped, not listed.
+        # SPECIFIC tokens spend the budget first (field run: the agent put
+        # do_indent in the query and generic words consumed all 4 slots,
+        # pushing the one identifier that mattered out of DEFINES), and a
+        # token that is a substring of a more specific one rides it for free.
         defines = []
-        for tok in dict.fromkeys(_IDENT.findall(query)):
+        toks = sorted(dict.fromkeys(_IDENT.findall(query)),
+                      key=lambda t: ("_" in t or not t.islower(), len(t)),
+                      reverse=True)
+        toks = [t for t in toks
+                if not any(t != o and t.lower() in o.lower() for o in toks)]
+        for tok in toks:
+            if len(defines) >= 4:
+                break
             rows = store.db.execute(
                 "SELECT file, line FROM symbols WHERE name=? "
                 "OR name LIKE ? LIMIT 4", (tok, f"%.{tok}")).fetchall()
@@ -153,7 +164,7 @@ def map_repo(root: Path, query: str, path_filter: str | None = None) -> dict:
 def render_map(res: dict) -> str:
     L = [f'# megabrain map — "{res["query"]}"',
          f'repo `{res["repo"]}` · {len(res["files"])} files · {res["ms"]}ms · '
-         f'NO code bodies: Read an edit target ONCE, then Edit.\n']
+         f'NO code bodies: batch ALL your Reads in ONE message (each target once), then Edit.\n']
     if res["defines"]:
         L.append("DEFINES (exact identifiers from your query):")
         for d in res["defines"]:
