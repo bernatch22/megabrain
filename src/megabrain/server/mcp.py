@@ -82,7 +82,9 @@ TOOLS = [
             "files one by one or spawning explore agents — one call replaces minutes "
             "of navigation. Non-cited related files are listed at the end. Explains "
             "CODE only by default; set docs=true to explain documentation (markdown) "
-            "instead. ~6-19s (broad fan-out: up to ~40s)."),
+            "instead. ~6-19s (broad fan-out: up to ~40s). Budget your discovery: "
+            "ONE ask covers a flow — do not chain asks per sub-question; after it, "
+            "Read only the files you will edit."),
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -119,7 +121,11 @@ TOOLS = [
             "this behavior' section — they are the spec of the mechanism; read them "
             "before changing it. One call hands you the real code, no follow-up "
             "fetch needed. Use it when you want the exact code to read rather than "
-            "a narration — deterministic, no LLM. One boundary to know: retrieval "
+            "a narration — deterministic, no LLM. TOKEN RULE for implement/edit "
+            "tasks: full bodies are for files you will NOT edit. The host requires "
+            "Read before Edit, so a full-body render of an edit target gets paid "
+            "TWICE — call with compact=true for a span map, then Read each edit "
+            "target once. One boundary to know: retrieval "
             "ranks what EXISTS — when the bug is a MISSING call/flag/parameter, "
             "search shows you the site to inspect but cannot flag the absence. To "
             "PROVE an absence, megabrain_grep the identifier: zero matches over "

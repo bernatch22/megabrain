@@ -6650,32 +6650,32 @@
      66,
      138,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "1b32ebe2c6177ae7fb2a71533c688e28e72267db"
+     "f551a9b0e63bac816cf6bdf7cd7a421a55cc1823"
     ],
     [
      "block",
      null,
      "2/3",
      139,
-     236,
+     223,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "02170c43e94dac40a51207044685443eec83bb28"
+     "71b040501bc3107d126f89aeb227c48b91ed5f6e"
     ],
     [
      "block",
      null,
      "3/3",
-     237,
-     297,
+     224,
+     303,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "0de163b077cc0c8d1a3a1b237e341307ef12e6e1"
+     "3d3b29270bd43a8a20fcc8f3026b774069d83bf4"
     ],
     [
      "function",
      "_scope",
      null,
-     298,
-     307,
+     304,
+     313,
      "megabrain > megabrain/server/mcp.py > def _scope(args: dict) -> tuple[Path, str | None]",
      "1d10e662f4d499a37f52ced42ddfed4a6e7cd428"
     ],
@@ -6683,8 +6683,8 @@
      "block",
      "call_tool",
      "1/2",
-     308,
-     387,
+     314,
+     393,
      "megabrain > megabrain/server/mcp.py > def call_tool(name: str, args: dict) -> str",
      "027c4b86fff23841269a6513f45acf641486b072"
     ],
@@ -6692,8 +6692,8 @@
      "block",
      "call_tool",
      "2/2",
-     388,
-     422,
+     394,
+     428,
      "megabrain > megabrain/server/mcp.py > def call_tool(name: str, args: dict) -> str",
      "d4fdfdbe6b77a39a179b93d0390c48688fda920d"
     ],
@@ -6701,8 +6701,8 @@
      "function",
      "main",
      null,
-     423,
-     465,
+     429,
+     471,
      "megabrain > megabrain/server/mcp.py > def main()",
      "16e1a3005113960f1e0740cd3be36b7fce1e73a4"
     ]
@@ -6727,28 +6727,28 @@
      "TOOLS",
      "constant",
      67,
-     297,
+     303,
      "TOOLS = [{'name': 'megabrain_ask', 'description': 'THE primary tool for any how/where/why question about an indexed repo"
     ],
     [
      "_scope",
      "function",
-     300,
-     307,
+     306,
+     313,
      "def _scope(args: dict) -> tuple[Path, str | None]"
     ],
     [
      "call_tool",
      "function",
-     310,
-     422,
+     316,
+     428,
      "def call_tool(name: str, args: dict) -> str"
     ],
     [
      "main",
      "function",
-     425,
-     461,
+     431,
+     467,
      "def main()"
     ]
    ]
