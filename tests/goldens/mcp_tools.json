@@ -77,7 +77,7 @@
   "name": "megabrain_search"
  },
  {
-  "description": "THE first call for any implement/fix task: a task-level structure card with NO code bodies \u2014 the token-optimal workflow is map -> ONE batched message of Reads (every target at once, each once) -> Edit. Give it the task in natural language (or an identifier); it returns the relevant files ranked, each with match-span pointers (exact L ranges for a surgical Read), the AST-level symbol outline (signatures + line ranges), the import/call edges BOTH ways (who reaches this file, what it reaches), exact identifiers from your query resolved to their definition sites, and the tests pinning the behavior. Deterministic, no LLM, ~300ms, grep-priced output (~40 lines). Bodies from megabrain_search are only worth it for files you will NOT open \u2014 the host requires Read before Edit, so a body of an edit target gets paid twice.",
+  "description": "THE first call for any implement/fix task: a task-level structure card with NO code bodies \u2014 the token-optimal workflow is map -> ONE batched message of Reads (every target at once, each once) -> Edit. Give it the task in natural language (or an identifier); it returns the relevant files ranked, each with match-span pointers (exact L ranges for a surgical Read), the AST-level symbol outline (signatures + line ranges), the import/call edges BOTH ways (who reaches this file, what it reaches), exact identifiers from your query resolved to their definition sites, and the tests pinning the behavior. A cheap LLM judge reorders the near-tied head so mechanism outranks files that merely FORMAT the symptom (fails open to the deterministic order). Grep-priced output (~50 lines), never a body. Bodies from megabrain_search are only worth it for files you will NOT open \u2014 the host requires Read before Edit, so a body of an edit target gets paid twice.",
   "inputSchema": {
    "properties": {
     "query": {
@@ -87,6 +87,11 @@
     "repo_path": {
      "description": "path to the indexed repo root (a sub-path also works \u2014 the root is auto-detected from .megabrain)",
      "type": "string"
+    },
+    "rerank": {
+     "default": true,
+     "description": "default true: a cheap LLM judge reorders the near-tied head \u2014 mechanism over symptom-formatting (~1-2s, fails open). false = pure deterministic (~300ms).",
+     "type": "boolean"
     },
     "scope_path": {
      "description": "optional repo-relative folder to scope the map to files under it",

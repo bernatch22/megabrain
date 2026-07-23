@@ -5275,32 +5275,41 @@
     [
      "block",
      "map_repo",
-     "1/2",
+     "1/3",
      33,
-     127,
-     "megabrain > megabrain/retrieval/mapcard.py > def map_repo(root: Path, query: str, path_filter: str | None=None) -> dict",
-     "13cf6cd333931b2ad13abfe2602f902859761bbd"
+     93,
+     "megabrain > megabrain/retrieval/mapcard.py > def map_repo(root: Path, query: str, path_filter: str | None=None, rerank: bool=False) -> dict",
+     "f3a52d24fac7376139e3ee05d4aa2d615f5da4b5"
     ],
     [
      "block",
      "map_repo",
-     "2/2",
-     128,
-     176,
-     "megabrain > megabrain/retrieval/mapcard.py > def map_repo(root: Path, query: str, path_filter: str | None=None) -> dict",
-     "a3c5fad8c3b81315eb18abff5347a60841a0ad95"
+     "2/3",
+     94,
+     193,
+     "megabrain > megabrain/retrieval/mapcard.py > def map_repo(root: Path, query: str, path_filter: str | None=None, rerank: bool=False) -> dict",
+     "a78e1af110dc93c2f6553ea40e768f83d0589f6b"
+    ],
+    [
+     "block",
+     "map_repo",
+     "3/3",
+     194,
+     214,
+     "megabrain > megabrain/retrieval/mapcard.py > def map_repo(root: Path, query: str, path_filter: str | None=None, rerank: bool=False) -> dict",
+     "8afbc7100dddb6a20664a94a5444ee1501bf6c90"
     ],
     [
      "function",
      "render_map",
      null,
-     177,
-     231,
+     215,
+     273,
      "megabrain > megabrain/retrieval/mapcard.py > def render_map(res: dict) -> str",
-     "6e1268504fe629f546b670bab4ee0451b28135a9"
+     "01a87321cdbb404495d5db9b2242418bd23ef6d5"
     ]
    ],
-   "skeleton_sha": "3ccc81902235b9ba337f8a81811bb8eb0d0c8da9",
+   "skeleton_sha": "d505c117e7d27e4bfacfa964a3f9f17326c8c30c",
    "symbols": [
     [
      "MAX_FILES",
@@ -5348,14 +5357,14 @@
      "map_repo",
      "function",
      35,
-     176,
-     "def map_repo(root: Path, query: str, path_filter: str | None=None) -> dict"
+     214,
+     "def map_repo(root: Path, query: str, path_filter: str | None=None, rerank: bool=False) -> dict"
     ],
     [
      "render_map",
      "function",
-     179,
-     231,
+     217,
+     273,
      "def render_map(res: dict) -> str"
     ]
    ]
@@ -6749,7 +6758,7 @@
      37,
      66,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "0ba1a64b616adbd28661b37594555e646e2fca56"
+     "e2fa3abfc6a19de7293208a298ea4f57fa18febc"
     ],
     [
      "block",
@@ -6765,34 +6774,34 @@
      null,
      "2/4",
      140,
-     224,
+     226,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "8e93ef606254f48f91255a2ee9ad4e890c47ac35"
+     "b0570ed84bb7b7463f9255f9065b1ee049c8103f"
     ],
     [
      "block",
      null,
      "3/4",
-     225,
-     314,
+     227,
+     316,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "f638dc06a91b327e3a8bb31c20c3662e0ba5c057"
+     "ac4d3a4b47ed7bdc5bb9293826333cc5804b1520"
     ],
     [
      "block",
      null,
      "4/4",
-     315,
-     331,
+     317,
+     338,
      "megabrain > megabrain/server/mcp.py (module level)",
-     "acf5a96b62e8423c44ab4f3cd7d1903b074732ac"
+     "66656bff7e5e0d195d061dd9508ece2e012f6108"
     ],
     [
      "function",
      "_scope",
      null,
-     332,
-     341,
+     339,
+     348,
      "megabrain > megabrain/server/mcp.py > def _scope(args: dict) -> tuple[Path, str | None]",
      "1d10e662f4d499a37f52ced42ddfed4a6e7cd428"
     ],
@@ -6800,17 +6809,17 @@
      "block",
      "call_tool",
      "1/2",
-     342,
-     425,
+     349,
+     433,
      "megabrain > megabrain/server/mcp.py > def call_tool(name: str, args: dict) -> str",
-     "ba69aa0c61dedb35ebec5d9d92521a5e108cbe9f"
+     "780c3bcf75e8334e13ca5f6c8969a0688ef407a9"
     ],
     [
      "block",
      "call_tool",
      "2/2",
-     426,
-     460,
+     434,
+     468,
      "megabrain > megabrain/server/mcp.py > def call_tool(name: str, args: dict) -> str",
      "d4fdfdbe6b77a39a179b93d0390c48688fda920d"
     ],
@@ -6818,8 +6827,8 @@
      "function",
      "main",
      null,
-     461,
-     503,
+     469,
+     511,
      "megabrain > megabrain/server/mcp.py > def main()",
      "16e1a3005113960f1e0740cd3be36b7fce1e73a4"
     ]
@@ -6844,28 +6853,28 @@
      "TOOLS",
      "constant",
      68,
-     331,
+     338,
      "TOOLS = [{'name': 'megabrain_ask', 'description': 'THE primary tool for any how/where/why question about an indexed repo"
     ],
     [
      "_scope",
      "function",
-     334,
      341,
+     348,
      "def _scope(args: dict) -> tuple[Path, str | None]"
     ],
     [
      "call_tool",
      "function",
-     344,
-     460,
+     351,
+     468,
      "def call_tool(name: str, args: dict) -> str"
     ],
     [
      "main",
      "function",
-     463,
-     499,
+     471,
+     507,
      "def main()"
     ]
    ]

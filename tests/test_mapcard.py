@@ -100,6 +100,51 @@ def test_map_keeps_a_flat_tail_past_the_file_cap(tiny_repo, monkeypatch):
     assert "ALSO MATCHED" in out and t["file"] in out
 
 
+def test_map_rerank_reorders_files_and_labels_judge_drops(tiny_repo, monkeypatch):
+    """With rerank=True the judge's order drives the file ranking (mypy field
+    run: messages.py, which only FORMATS the symptom, cosine-beat the
+    constraint solver where the fix lived) and its drops land in the tail
+    LABELED — structure, never deletion."""
+    from megabrain.retrieval import mapcard, rerank
+
+    def fake_rerank(res, q, model=None):
+        ch = res["chunks"]
+        first = [c for c in ch if "invoice" in c["file"]]
+        rest = [c for c in ch if "invoice" not in c["file"]
+                and "util" not in c["file"]]
+        noise = [c for c in ch if "util" in c["file"]]
+        res["chunks"] = first + rest
+        res["noise"] = noise + res.get("noise", [])
+        res["reranked"] = {"model": "fake-judge", "kept": len(first + rest),
+                           "dropped": len(noise), "ms": 1}
+        return res
+    monkeypatch.setattr(rerank, "llm_rerank", fake_rerank)
+    res = mapcard.map_repo(tiny_repo, "how is a user login password checked",
+                           rerank=True)
+    assert res["files"][0]["file"] == "billing/invoice.py"   # judge order wins
+    assert res["judged"]["model"] == "fake-judge"
+    dropped = [t for t in res["tail"] if t.get("judged_noise")]
+    assert [t["file"] for t in dropped] == ["util.py"]
+    out = mapcard.render_map(res)
+    assert "judged by fake-judge" in out and "judged noise" in out
+    assert "```" not in out                                  # still no bodies
+
+
+def test_map_rerank_fails_open_to_deterministic_order(tiny_repo, monkeypatch):
+    from megabrain.retrieval import mapcard, rerank
+
+    def fake_rerank(res, q, model=None):
+        res["reranked"] = False
+        return res
+    monkeypatch.setattr(rerank, "llm_rerank", fake_rerank)
+    res = mapcard.map_repo(tiny_repo, "how is a user login password checked",
+                           rerank=True)
+    det = mapcard.map_repo(tiny_repo, "how is a user login password checked")
+    assert [f["file"] for f in res["files"]] == [f["file"] for f in det["files"]]
+    assert res["judged"] is None
+    assert "judged by" not in mapcard.render_map(res)
+
+
 def test_defines_budget_prefers_specific_tokens(tiny_repo):
     """Field run: the agent put do_indent in the query and the generic words
     (indent, filter, first) consumed all 4 DEFINES slots, pushing out the one

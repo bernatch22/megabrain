@@ -50,7 +50,7 @@ INSTRUCTIONS = """megabrain answers questions about a repo's CODE from a pre-bui
 For an implement/fix task the token-optimal loop is: megabrain_map -> ONE batched message Reading every edit target -> Edit. The map is a structure card with NO code bodies (files ranked, match spans, symbol outline, edges both ways, def sites, pinning tests, ~40 lines) — bodies of edit targets get paid twice because the host requires Read before Edit.
 
 Which tool:
-- megabrain_map — FIRST call for any task: where/who/what shape + a mechanism trail that pre-runs your follow-up greps. No bodies, no LLM.
+- megabrain_map — FIRST call for any task: where/who/what shape + a mechanism trail that pre-runs your follow-up greps. No bodies, judge-ranked.
 - megabrain_grep — you know the exact identifier/string: every match resolved against the index and grouped into DEFINES / READS (ranked by dependents, with who-reaches-it edges) / CONFIG / TESTS / DOCS. One call answers "where is this defined, who reads it, who depends on the reader". Zero LLM, ~50ms.
 - megabrain_search — chunks WITH code: only for files you will NOT open.
 - megabrain_ask — you want the flow narrated across subsystems with code spliced in at each step (broad questions fan out into sub-agents). The spliced CODE is verbatim and cannot be hallucinated; the PROSE around it is model narration, so verify its claims against that code before acting on them.
@@ -167,11 +167,13 @@ TOOLS = [
             "Read), the AST-level symbol outline (signatures + line ranges), "
             "the import/call edges BOTH ways (who reaches this file, what it "
             "reaches), exact identifiers from your query resolved to their "
-            "definition sites, and the tests pinning the behavior. "
-            "Deterministic, no LLM, ~300ms, grep-priced output (~40 lines). "
-            "Bodies from megabrain_search are only worth it for files you "
-            "will NOT open — the host requires Read before Edit, so a body "
-            "of an edit target gets paid twice."),
+            "definition sites, and the tests pinning the behavior. A cheap "
+            "LLM judge reorders the near-tied head so mechanism outranks "
+            "files that merely FORMAT the symptom (fails open to the "
+            "deterministic order). Grep-priced output (~50 lines), never a "
+            "body. Bodies from megabrain_search are only worth it for files "
+            "you will NOT open — the host requires Read before Edit, so a "
+            "body of an edit target gets paid twice."),
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -179,6 +181,11 @@ TOOLS = [
                 "query": {"type": "string", "description": "the task in natural language, or an exact identifier"},
                 "scope_path": {"type": "string",
                                "description": "optional repo-relative folder to scope the map to files under it"},
+                "rerank": {"type": "boolean", "default": True,
+                           "description": "default true: a cheap LLM judge reorders the "
+                                          "near-tied head — mechanism over symptom-formatting "
+                                          "(~1-2s, fails open). false = pure deterministic "
+                                          "(~300ms)."},
             },
             "required": ["repo_path", "query"],
         },
@@ -382,7 +389,8 @@ def call_tool(name: str, args: dict) -> str:
     if name == "megabrain_map":
         from ..retrieval.mapcard import map_repo, render_map
         root, pf = _scope(args)
-        return render_map(map_repo(root, args["query"], path_filter=pf))
+        return render_map(map_repo(root, args["query"], path_filter=pf,
+                                   rerank=bool(args.get("rerank", True))))
     if name == "megabrain_grep":
         from ..retrieval.grepx import render_grep
         root, pf = _scope(args)

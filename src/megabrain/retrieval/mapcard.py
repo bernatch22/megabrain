@@ -32,21 +32,42 @@ _OUTLINE_KINDS = ("class", "function", "async_function", "method",
                   "async_method", "interface", "type", "enum", "module")
 
 
-def map_repo(root: Path, query: str, path_filter: str | None = None) -> dict:
+def map_repo(root: Path, query: str, path_filter: str | None = None,
+             rerank: bool = False) -> dict:
     t0 = time.time()
     root = Path(root)
     with load_state(root) as st:
+        # text is fetched ONLY as evidence for the judge — it never reaches
+        # the result or the render (the no-bodies contract is the point).
         res = prune_search(st, query, path_filter=path_filter,
-                           with_text=False, exclude_docs=True)
+                           with_text=rerank, exclude_docs=True)
+    # THE JUDGE — cosine can't tell "formats the symptom" from "causes it":
+    # on the mypy field run messages.py (which only BUILDS the error text the
+    # query quotes) near-tied with constraints.py (where the fix lived) and
+    # won on vocabulary. The rerank judge reorders the pool BEFORE grouping,
+    # so file order, the cut, and the trail's top-3 anchor all inherit the
+    # verdict. Fail-open: the deterministic order is the floor, never worse.
+    judged = None
+    if rerank:
+        from .rerank import llm_rerank
+        # rerank records its drops only into an EXISTING noise list — without
+        # this seed the judged-out chunks vanish and the tail can't label them
+        # (live run: checkexpr.py dropped invisibly, tail came back empty).
+        res.setdefault("noise", [])
+        res = llm_rerank(res, query)
+        judged = res.get("reranked") or None
     files: dict[str, dict] = {}
-    for c in res["chunks"]:
+    for pos, c in enumerate(list(res["chunks"]) + list(res.get("tests") or [])):
         f = files.setdefault(c["file"], {"file": c["file"], "score": c["score"],
-                                         "spans": [], "test": _is_test_path(c["file"])})
+                                         "pos": pos, "spans": [],
+                                         "test": _is_test_path(c["file"])})
         if len(f["spans"]) < MAX_SPANS:
             f["spans"].append({"start_line": c["start_line"],
                                "end_line": c["end_line"],
                                "name": c["name"] or c["kind"]})
-    ranked = sorted(files.values(), key=lambda f: -f["score"])
+    ranked = sorted(files.values(),
+                    key=(lambda f: f["pos"]) if judged
+                    else (lambda f: -f["score"]))
     ordered = ranked[:MAX_FILES]
     # FLAT TAIL — retrieval scores often near-tie past the head (mypy field
     # run: 1.17..1.04 across 13 files) and a hard cut at MAX_FILES throws the
@@ -57,6 +78,19 @@ def map_repo(root: Path, query: str, path_filter: str | None = None) -> dict:
              "span": f'L{f["spans"][0]["start_line"]}-{f["spans"][0]["end_line"]}',
              "names": str(f["spans"][0]["name"])[:80]}
             for f in ranked[MAX_FILES:MAX_FILES + 8] if not f["test"]]
+    # what the judge dropped joins the tail LABELED, never destroyed — judges
+    # err (a dropped test file was the spec once, rails#57197), and one line
+    # is cheap insurance against a confident wrong exclusion.
+    if judged:
+        seen_f = {f["file"] for f in ranked}
+        for c in (res.get("noise") or [])[:judged["dropped"]]:
+            if len(tail) >= 8 or c["file"] in seen_f:
+                continue
+            seen_f.add(c["file"])
+            tail.append({"file": c["file"], "score": c["score"],
+                         "span": f'L{c["start_line"]}-{c["end_line"]}',
+                         "names": str(c["name"] or c["kind"])[:80],
+                         "judged_noise": True})
 
     with Store(root) as store:
         for rank, f in enumerate(ordered, 1):
@@ -135,7 +169,11 @@ def map_repo(root: Path, query: str, path_filter: str | None = None) -> dict:
     # its callees (which may share no token — break_on_hyphens) ride its grep.
     seen_c: set[str] = set()
     scored: list[tuple[int, str]] = []
-    for f in ordered[:3]:
+    # impl files only: the trail is the MECHANISM lane — a test file in the
+    # judged top-3 (attrs/click live runs) otherwise floods it with
+    # test_* names, which already have two lanes of their own (each trail
+    # entry's pre-run grep lists its tests, and the pinning section).
+    for f in [f for f in ordered if not f["test"]][:3]:
         cands = [n.strip() for s in f["spans"]
                  for n in str(s["name"]).split(",")]
         cands += [s["signature"].split("(")[0].split()[-1]
@@ -172,13 +210,16 @@ def map_repo(root: Path, query: str, path_filter: str | None = None) -> dict:
             })
     return {"query": query, "repo": res["repo"], "files": ordered,
             "tail": tail, "defines": defines[:4], "trail": trail,
-            "pruned": res.get("pruned", 0),
+            "judged": judged, "pruned": res.get("pruned", 0),
             "ms": int((time.time() - t0) * 1000)}
 
 
 def render_map(res: dict) -> str:
+    j = res.get("judged")
+    judge = (f' · judged by {j["model"]} (kept {j["kept"]}, dropped {j["dropped"]})'
+             if j else "")
     L = [f'# megabrain map — "{res["query"]}"',
-         f'repo `{res["repo"]}` · {len(res["files"])} files · {res["ms"]}ms · '
+         f'repo `{res["repo"]}` · {len(res["files"])} files · {res["ms"]}ms{judge} · '
          f'NO code bodies: batch ALL your Reads in ONE message (each target once), then Edit.\n']
     if res["defines"]:
         L.append("DEFINES (exact identifiers from your query):")
@@ -219,7 +260,8 @@ def render_map(res: dict) -> str:
         L.append("ALSO MATCHED (scores nearly tie — when the top files only "
                  "FORMAT the symptom, the cause is often down here):")
         for f in res["tail"]:
-            L.append(f'  {f["file"]}  {f["span"]}  {f["names"]}')
+            mark = " · judged noise" if f.get("judged_noise") else ""
+            L.append(f'  {f["file"]}  {f["span"]}  {f["names"]}{mark}')
         L.append("")
     if tests:
         L.append("— tests pinning this behavior (the spec — read before changing):")
